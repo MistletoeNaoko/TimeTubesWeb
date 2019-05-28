@@ -1,4 +1,5 @@
 import React from 'react';
+import { SketchPicker } from 'react-color';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import DataStore from '../Stores/DataStore';
@@ -170,6 +171,20 @@ export default class Details extends React.Component{
         }
     }
 
+    showPopoverPlotColor() {
+        let state = $('#changePlotColor-' + this.state.id).css('visibility');
+        let leftPos = $('#plotColorPopoverBtn-' + this.state.id).position();
+        switch (state) {
+            case 'visible':
+                $('#changePlotColor-' + this.state.id).css('visibility', 'hidden');
+                break;
+            case 'hidden':
+                $('#changePlotColor-' + this.state.id).css('left', leftPos.left);
+                $('#changePlotColor-' + this.state.id).css('visibility', 'visible');
+                break;
+        }
+    }
+
     showPopoverColormap() {
         let state = $('#changeColormap-' + this.state.id).css('visibility');
         let leftPos = $('#colormapPopoverBtn-' + this.state.id).position();
@@ -201,10 +216,13 @@ export default class Details extends React.Component{
     searchTime() {
         let id = this.state.id;
         let dst = $('#searchTimeInput-' + id).val();
-        console.log('search clicked', id, dst);
         if (!isNaN(dst) && dst != '') {
             TimeTubesAction.searchTime(id, Number(dst));
         }
+    }
+
+    changePlotColor(color, event) {
+        TimeTubesAction.changePlotColor(this.state.id, color.hex);
     }
 
     render() {
@@ -251,6 +269,12 @@ export default class Details extends React.Component{
                             id={'farPopoverBtn-' + this.state.id}
                             onClick={this.showPopoverFar.bind(this)}>
                         Far
+                    </button>
+                    <button type="button"
+                            className="btn btn-sm btn-secondary"
+                            id={'plotColorPopoverBtn-' + this.state.id}
+                            onClick={this.showPopoverPlotColor.bind(this)}>
+                        Plot Color
                     </button>
                     <button type="button"
                             className="btn btn-sm btn-secondary"
@@ -302,8 +326,12 @@ export default class Details extends React.Component{
                     </div>
                 </div>
                 <div className="input-group input-group-sm popover-controller"
-                    id={"changePlot-" + this.state.id}
-                    style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: '10rem', zIndex:'51'}}>
+                    id={"changePlotColor-" + this.state.id}
+                    style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: 'auto', zIndex:'51'}}>
+                    <SketchPicker
+                        presetColors={TimeTubesStore.getPresetColors()}
+                        color={TimeTubesStore.getPlotColor(this.state.id)}
+                        onChange={this.changePlotColor.bind(this)}/>
                 </div>
                 <div className="input-group input-group-sm popover-controller"
                      id={"searchTime-" + this.state.id}

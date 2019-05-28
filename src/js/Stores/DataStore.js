@@ -97,6 +97,7 @@ class DataStore extends EventEmitter {
             };
         }
     }
+
 }
 
 const dataStore = new DataStore();

@@ -4,6 +4,11 @@ import dispatcher from "../Dispatcher/dispatcher";
 class TimeTubesStore extends EventEmitter{
     constructor() {
         super();
+        this.initColorIdx = 5;
+        this.presetColors = ['#DC143C', '#FF6347', '#FFA500', '#FFFF00',
+            '#00FF00', '#7FFFD4', '#00FFFF', '#00BFFF',
+            '#1E90FF', '#7B68EE', '#9932CC', '#FF00FF',
+            '#FF69B4', '#FFFFFF', '#FFF8DC', '#CD853F'];
         this.cameraProp = [{
             xpos: 0,
             ypos: 0,
@@ -18,6 +23,7 @@ class TimeTubesStore extends EventEmitter{
         this.focused = [];
         this.minmaxV = [];
         this.minmaxH = [];
+        this.plotColor = [];
     }
 
     handleActions(action) {
@@ -74,6 +80,8 @@ class TimeTubesStore extends EventEmitter{
             case 'UPDATE_MINMAXV':
                 this.updateMinMaxV(action.id, action.min, action.max);
                 break;
+            case 'CHANGE_PLOTCOLOR':
+                this.changePlotColor(action.id, action.color);
             default:
         }
     }
@@ -99,6 +107,7 @@ class TimeTubesStore extends EventEmitter{
     }
 
     uploadData() {
+        let idx = this.cameraProp.length;
         this.cameraProp.push(
             {
                 xpos: 0,
@@ -196,6 +205,35 @@ class TimeTubesStore extends EventEmitter{
     updateMinMaxV(id, min, max) {
         this.minmaxV[id] = [min, max];
         this.emit('updateMinMaxV', id);
+    }
+
+    changePlotColor(id, color) {
+        this.plotColor[id] = color;
+        this.emit('changePlotColor', id);
+    }
+
+    getPresetColors() {
+        return this.presetColors;
+    }
+
+    getPresetColor(idx) {
+        return this.presetColors[idx];
+    }
+
+    getPresetNum() {
+        return this.presetColors.length;
+    }
+
+    getPlotColor(id) {
+        return this.plotColor[id];
+    }
+
+    getInitColorIdx() {
+        return this.initColorIdx;
+    }
+
+    setPlotColor(id, colorIdx) {
+        this.plotColor[id] = this.presetColors[colorIdx];
     }
 }
 

@@ -66,3 +66,7 @@ export function updateMinMaxV(id, min, max) {
 export function updateMinMaxH(id, min, max) {
     dispatcher.dispatch({type: 'UPDATE_MINMAXH', id, min, max});
 }
+
+export function changePlotColor(id, color) {
+    dispatcher.dispatch({type: 'CHANGE_PLOTCOLOR', id, color});
+}

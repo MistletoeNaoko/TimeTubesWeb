@@ -56,7 +56,6 @@ export function mergeData(ids) {
         return (atmp < btmp) ? -1 : 1;
     })
     let [spatialData, lookup] = extractData(mergedData);
-    console.log(spatialData);
     let metaData = computeStats(spatialVar, spatialData);
     let splines = computeSplines(spatialData);
     dispatcher.dispatch({
@@ -78,9 +77,11 @@ function loadFile(file) {
     let dataIDx = DataStore.getDataNum();
     let type = 'csv';
     let initLine = Number($('#initialLineVal').text());
+    let fileName = [];
     let dataset = [];
     let blazarData = [];
     for (let i = 0; i < file.length; i++) {
+        fileName.push(file[i].name);
         let reader = new FileReader();
         reader.readAsText(file[i]);
         reader.onload = function () {
@@ -114,7 +115,7 @@ function loadFile(file) {
                 let splines = computeSplines(spatialData);
                 dispatcher.dispatch({
                     type:'UPLOAD_DATA',
-                    data: { name:file[0].name,
+                    data: { name:fileName.join(','),
                         data:blazarData,
                         spatial: spatialData,
                         meta: metaData,

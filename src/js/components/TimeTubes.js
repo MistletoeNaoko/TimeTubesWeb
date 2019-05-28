@@ -69,6 +69,8 @@ export default class TimeTubes extends React.Component{
         this.currentHighlightedPlot = 0;
         this.drag = false;
         this.animationPara = {flag: false, dep: 0, dst:0, speed: 40, now: 0};
+        TimeTubesStore.setPlotColor(this.id, (TimeTubesStore.getInitColorIdx() + this.id) % TimeTubesStore.getPresetNum());
+        this.plotColor = TimeTubesStore.getPlotColor(this.id);
     }
 
     render() {
@@ -162,6 +164,11 @@ export default class TimeTubes extends React.Component{
                 this._setMinMaxV(TimeTubesStore.getMinMaxV(this.id));
             }
         });
+        TimeTubesStore.on('changePlotColor', (id) => {
+            if (id === this.id) {
+                this._changePlotsColor();
+            }
+        })
     }
 
     componentWillUnmount() {
@@ -377,10 +384,6 @@ export default class TimeTubes extends React.Component{
         this.camera.updateProjectionMatrix();
     }
 
-    _updateUniforms() {
-
-    }
-
     _switchCamera() {
         let currentPos = this.camera.position;
         if (this.cameraProp.type === 'Perspective') {
@@ -537,6 +540,11 @@ export default class TimeTubes extends React.Component{
         this.tube.material.uniforms.minmaxV.value = new THREE.Vector2(minmax[0], minmax[1]);
     }
 
+    _changePlotsColor() {
+        this.plotColor = TimeTubesStore.getPlotColor(this.id);
+        this.plot.material.color.set(this.plotColor);
+    }
+
     _drawGrid(size, divisions) {
         this.grid = new THREE.GridHelper(size, divisions, 'white', 'limegreen');
         this.grid.rotateX(Math.PI / 2);
@@ -647,7 +655,7 @@ export default class TimeTubes extends React.Component{
     _drawPlot() {
         let circlePositions = [];
         let circleColor = [];
-        let baseColor = new THREE.Color('rgb(127, 255, 212)');
+        let baseColor = new THREE.Color(this.plotColor);//'rgb(127, 255, 212)');
         let circleIndices = Array(this.data.position.length * this.segment * 2);
         let del = Math.PI * 2 / this.segment;
         let range = this.data.meta.range;
