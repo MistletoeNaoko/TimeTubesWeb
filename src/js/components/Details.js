@@ -198,32 +198,10 @@ export default class Details extends React.Component{
         }
     }
 
-    changeColormap() {
-        let promise = Promise.resolve();
-        promise
-            .then(function () {
-                // show div element
-                $('#colormapPopoverBtn').popover();
-            })
-            .then(function () {
-                // add colormap and range bar
-            });
-    }
-
-    changeFar() {
-        let promise = Promise.resolve();
-        promise
-            .then(function () {
-                $('#farPopoverBtn').popover();
-            })
-            .then(function () {
-                // document.getElementById('farPopoverBody').innerHTML +=
-            });
-    }
-
     searchTime() {
         let id = this.state.id;
-        let dst = $('#searchTimeInput').val();
+        let dst = $('#searchTimeInput-' + id).val();
+        console.log('search clicked', id, dst);
         if (!isNaN(dst) && dst != '') {
             TimeTubesAction.searchTime(id, Number(dst));
         }

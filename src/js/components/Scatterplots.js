@@ -54,7 +54,7 @@ export default class Scatterplots extends React.Component{
         this.zoom = d3.zoom()
             .scaleExtent([.5, 20])
             .extent([[0, 0], [width, height]])
-            .on("zoom", zoomed);
+            .on("zoom", zoomed.bind(this));
 
         this.sp = elem
             .append('svg')
@@ -183,7 +183,7 @@ export default class Scatterplots extends React.Component{
                 .attr('cx', function(d) {return new_xScale(d[xItem])})
                 .attr('cy', function(d) {return new_yScale(d[yItem])});
 
-            let current = d3.select('circle.current');
+            let current = d3.select('circle.current.' + this.divID);
             if (current._groups[0][0]) {
                 let cx = current.attr('cx'), cy = current.attr('cy');
                 if (cy <= 0 || height <= cy) {
