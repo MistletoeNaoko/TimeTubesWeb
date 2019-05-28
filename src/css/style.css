@@ -78,3 +78,23 @@ g.x_axis line, g.y_axis line{
 .scatterplot {
     float: left;
 }
+
+.popover-controller {
+    background-color: white;
+    padding: 10px;
+    border: solid;
+    border-width: 1px;
+    border-radius: 3px;
+    border-color: dimgray;
+}
+
+output {
+    position: absolute;
+    display: none;
+    background-color: #fff;
+    opacity: 0.8;
+    border-radius: 3px;
+    color: #777;
+    font-size: .8em;
+    text-align: center;
+}

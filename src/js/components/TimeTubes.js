@@ -36,14 +36,18 @@ let fragmentShaderTube = [
     'uniform sampler2D texture;',
     'uniform int tubeNum;',
     'uniform bool shade;',
+    'uniform vec2 minmaxH;',
+    'uniform vec2 minmaxV;',
     '#include <clipping_planes_pars_fragment>',
     'void main()',
     '{',
     '#include <clipping_planes_fragment>',
     'vec3 lightDirection = normalize(lightPosition - vWorldPosition);',
     'vec2 T;',
-    'T.x = vColor.x;',
-    'T.y = vColor.y;',
+    'T.x = (vColor.x - minmaxH.x) / (minmaxH.y - minmaxH.x);',
+    'T.y = (vColor.y - minmaxV.x) / (minmaxV.y - minmaxV.x);',
+    '//T.x = (vColor.x);',
+    '//T.y = (vColor.y);',
     'vec4 resultColor = texture2D(texture, T);',
     'float c = max(0.0, dot(vNormal, lightDirection)) * 0.3;',
     'float opacity = 1.0 / float(tubeNum);//vPositionx;//vWorldPosition.x;//1.0 / float(TUBE_NUM);',
@@ -140,6 +144,22 @@ export default class TimeTubes extends React.Component{
         TimeTubesStore.on('switchShade', (id, state) => {
             if (id === this.id) {
                 this.tube.material.uniforms.shade.value = state;
+            }
+        });
+        TimeTubesStore.on('changeFar', (id) => {
+            if (id === this.id) {
+                this.cameraProp = TimeTubesStore.getCameraProp(this.id);
+                this._updateCamera();
+            }
+        });
+        TimeTubesStore.on('updateMinMaxH', (id) => {
+            if (id === this.id) {
+                this._setMinMaxH(TimeTubesStore.getMinMaxH(this.id));
+            }
+        });
+        TimeTubesStore.on('updateMinMaxV', (id) => {
+            if (id === this.id) {
+                this._setMinMaxV(TimeTubesStore.getMinMaxV(this.id));
             }
         });
     }
@@ -334,9 +354,10 @@ export default class TimeTubes extends React.Component{
         this.camera.position.z = 50;
         this.camera.lookAt(-this.scene.position);
 
-        $( "#farSlider" ).slider({
-            min: 10,
-            max: far
+        $( "#farSlider-" + this.id ).slider({
+            min: 50,
+            max: far,
+            value: far
         });
     }
 
@@ -348,6 +369,15 @@ export default class TimeTubes extends React.Component{
     }
 
     _updateCamera() {
+        this.camera.position.set(this.cameraProp.xpos, this.cameraProp.ypos, this.cameraProp.zpos);
+        this.camera.fov = this.cameraProp.fov;
+        this.camera.depth = this.cameraProp.depth;
+        this.camera.far = this.cameraProp.far;
+        this.camera.aspect = this.cameraProp.aspect;
+        this.camera.updateProjectionMatrix();
+    }
+
+    _updateUniforms() {
 
     }
 
@@ -429,8 +459,8 @@ export default class TimeTubes extends React.Component{
             currentColorX = 0;
             currentColorY = 0;
             if (idxGap < i && (i - idxGap) < divNumPho) {
-                currentColorX = (col[i - idxGap].x - minH) / (maxH - minH);
-                currentColorY = (col[i - idxGap].y - minV) / (maxV - minV);
+                currentColorX = col[i - idxGap].x;//(col[i - idxGap].x - minH) / (maxH - minH);
+                currentColorY = col[i - idxGap].y;//(col[i - idxGap].y - minV) / (maxV - minV);
             }
             for (let j = 0; j <= this.segment; j++) {
                 for (let k = 0; k < this.tubeNum; k++) {
@@ -483,7 +513,9 @@ export default class TimeTubes extends React.Component{
                 lightPosition: {value: new THREE.Vector3(-20, 40, 60)},
                 tubeNum: {value: this.tubeNum},
                 shade: {value: true},
-                texture: {value: this.texture}
+                texture: {value: this.texture},
+                minmaxH: {value: new THREE.Vector2(this.data.meta.min.H, this.data.meta.max.H)},
+                minmaxV: {value: new THREE.Vector2(this.data.meta.min.V, this.data.meta.max.V)}
             },
             side: THREE.DoubleSide,
             transparent: true,
@@ -493,6 +525,16 @@ export default class TimeTubes extends React.Component{
         this.tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
         this.tubeGroup.add(this.tube);
         this.tube.rotateY(Math.PI);
+        TimeTubesAction.updateMinMaxH(this.id, this.data.meta.min.H, this.data.meta.max.H);
+        TimeTubesAction.updateMinMaxV(this.id, this.data.meta.min.V, this.data.meta.max.V);
+    }
+
+    _setMinMaxH(minmax) {
+        this.tube.material.uniforms.minmaxH.value = new THREE.Vector2(minmax[0], minmax[1]);
+    }
+
+    _setMinMaxV(minmax) {
+        this.tube.material.uniforms.minmaxV.value = new THREE.Vector2(minmax[0], minmax[1]);
     }
 
     _drawGrid(size, divisions) {

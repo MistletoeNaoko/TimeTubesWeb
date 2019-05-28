@@ -52,9 +52,17 @@ export function switchShade(id, state) {
 }
 
 export function changeFar(id, value) {
-
+    dispatcher.dispatch({type: 'CHANGE_FAR', id, value});
 }
 
 export function updateFocus(id, zpos) {
     dispatcher.dispatch({type: 'UPDATE_FOCUS', id, zpos});
+}
+
+export function updateMinMaxV(id, min, max) {
+    dispatcher.dispatch({type: 'UPDATE_MINMAXV', id, min, max});
+}
+
+export function updateMinMaxH(id, min, max) {
+    dispatcher.dispatch({type: 'UPDATE_MINMAXH', id, min, max});
 }

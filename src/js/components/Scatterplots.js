@@ -26,8 +26,9 @@ export default class Scatterplots extends React.Component{
 
 
     componentWillMount() {
-        TimeTubesStore.on('updateFocus', (id, zpos) => {
+        TimeTubesStore.on('updateFocus', (id) => {
             if (id === this.id) {
+                let zpos = TimeTubesStore.getFocused(this.id);
                 this.highlightCurrentPlot(zpos);
             }
         });

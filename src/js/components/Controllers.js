@@ -134,12 +134,12 @@ export default class Controllers extends React.Component{
         DataAction.mergeData(checked);
     }
 
-    changeFar() {
-        let checked = this.getSelectedIDs();
-        checked.forEach(function (value) {
-            // TimeTubesAction
-        })
-    }
+    // changeFar() {
+    //     let checked = this.getSelectedIDs();
+    //     checked.forEach(function (value) {
+    //         // TimeTubesAction
+    //     })
+    // }
 
     clickClose() {
         let state = document.getElementById('closeFilePanel').innerText;
@@ -252,24 +252,6 @@ export default class Controllers extends React.Component{
                         onClick={this.switchCamera.bind(this)}>
                         Switch
                     </button>
-                    <div id='farSliderArea'>
-                        <label style={{float: 'left', width: '30%'}}>far</label>
-                        <div
-                            id='farSlider'
-                            style={{float: 'left', width: '70%', marginBottom: '.5rem', marginTop: '.5rem'}}
-                            onChange={this.changeFar.bind(this)}>
-                            <output id="farSliderVal" style={{
-                                position: 'absolute',
-                                display:'none',
-                                top: '-30px',
-                                backgroundColor: '#fff',
-                                opacity: '0.8',
-                                borderRadius: '3px',
-                                color: '#777',
-                                padding: '2px'
-                            }}></output>
-                        </div>
-                    </div>
                     <div style={{clear:'both'}}></div>
                 </div>
                 <div id='displayControllers' className='controllersElem'>

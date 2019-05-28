@@ -16,6 +16,8 @@ class TimeTubesStore extends EventEmitter{
         }];
         this.checked = [];
         this.focused = [];
+        this.minmaxV = [];
+        this.minmaxH = [];
     }
 
     handleActions(action) {
@@ -63,6 +65,15 @@ class TimeTubesStore extends EventEmitter{
             case 'UPDATE_FOCUS':
                 this.updateFocus(action.id, action.zpos);
                 break;
+            case 'CHANGE_FAR':
+                this.changeFar(action.id, action.value);
+                break;
+            case 'UPDATE_MINMAXH':
+                this.updateMinMaxH(action.id, action.min, action.max);
+                break;
+            case 'UPDATE_MINMAXV':
+                this.updateMinMaxV(action.id, action.min, action.max);
+                break;
             default:
         }
     }
@@ -73,6 +84,18 @@ class TimeTubesStore extends EventEmitter{
 
     getCheckedList() {
         return this.checked;
+    }
+
+    getFocused(id) {
+        return this.focused[id];
+    }
+
+    getMinMaxH(id) {
+        return this.minmaxH[id];
+    }
+
+    getMinMaxV(id) {
+        return this.minmaxV[id];
     }
 
     uploadData() {
@@ -89,6 +112,9 @@ class TimeTubesStore extends EventEmitter{
             }
         );
         this.checked.push(true);
+        this.focused.push(0);
+        this.minmaxV.push([0, 0]);
+        this.minmaxV.push([0, 0]);
         this.emit('upload');
     }
 
@@ -153,7 +179,23 @@ class TimeTubesStore extends EventEmitter{
     }
 
     updateFocus(id, zpos) {
-        this.emit('updateFocus', id, zpos);
+        this.focused[id] = zpos;
+        this.emit('updateFocus', id);
+    }
+
+    changeFar(id, value) {
+        this.cameraProp[id].far = value;
+        this.emit('changeFar', id);
+    }
+
+    updateMinMaxH(id, min, max) {
+        this.minmaxH[id] = [min, max];
+        this.emit('updateMinMaxH', id);
+    }
+
+    updateMinMaxV(id, min, max) {
+        this.minmaxV[id] = [min, max];
+        this.emit('updateMinMaxV', id);
     }
 }
 
