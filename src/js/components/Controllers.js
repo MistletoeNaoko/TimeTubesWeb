@@ -312,39 +312,21 @@ export default class Controllers extends React.Component{
                                 Plot
                             </label>
                     </div>
-                    <div className="form-group">
-                        <select
-                            className="form-control"
-                            id='backgroundList'
-                            onChange={this.changeBackground.bind(this)}
-                            style={{fontSize: '0.8rem'}}>
-                            <option value='0x000000'>Black</option>
-                            <option value='0x3f3f3f'>Gray 75</option>
-                            <option value='0x7f7f7f'>Gray 50</option>
-                            <option value='0xbfbfbf'>Gray 25</option>
-                            <option value='0xffffff'>White</option>
-                            <option value='0x191970'>Navy</option>
-                        </select>
-                    </div>
+                    <select
+                        className="form-control"
+                        id='backgroundList'
+                        onChange={this.changeBackground.bind(this)}
+                        style={{fontSize: '0.8rem'}}>
+                        <option value='0x000000'>Black</option>
+                        <option value='0x3f3f3f'>Gray 75</option>
+                        <option value='0x7f7f7f'>Gray 50</option>
+                        <option value='0xbfbfbf'>Gray 25</option>
+                        <option value='0xffffff'>White</option>
+                        <option value='0x191970'>Navy</option>
+                    </select>
                 </div>
                 <div id='tubeControllers' className='controllersElem'>
                     <h5>TIMETUBES</h5>
-                    {/*<div id="color_filter">*/}
-                    {/*    <div id="color_value" style={{float: 'left', height: '150px'}}>*/}
-                    {/*        <output id="color_value_max"></output>*/}
-                    {/*        <output id="color_value_min"></output>*/}
-                    {/*    </div>*/}
-                    {/*    <div id="color_map" style={{float: 'left', marginLeft: '10px'}}>*/}
-                    {/*        <label htmlFor="file_photo">*/}
-                    {/*            <img src="img/1_256.png" style={{width: '150px', height: '150px'}}/>*/}
-                    {/*        </label>*/}
-                    {/*    </div>*/}
-                    {/*    <div style={{clear:'both'}}></div>*/}
-                    {/*    <div id="color_hue" style={{width: '150px', marginTop: '5px', marginLeft: '20px'}}>*/}
-                    {/*        <output id="color_hue_max"></output>*/}
-                    {/*        <output id="color_hue_min"></output>*/}
-                    {/*    </div>*/}
-                    {/*</div>*/}
                     <div className="form-check form-check-inline">
                         <input
                             className="form-check-input"
@@ -380,8 +362,6 @@ export default class Controllers extends React.Component{
                         onClick={this.mergeTubes.bind(this)}>
                         Merge
                     </button>
-                    {/*<input type='text' id='searchTimeForm'/>*/}
-                    {/*<button id='searchBtn' onClick={this.searchTime.bind(this)}>Search</button>*/}
                 </div>
             </div>
         );

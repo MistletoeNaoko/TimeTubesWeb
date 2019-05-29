@@ -24,6 +24,7 @@ class TimeTubesStore extends EventEmitter{
         this.minmaxV = [];
         this.minmaxH = [];
         this.plotColor = [];
+        this.gridSize = 15;
     }
 
     handleActions(action) {
@@ -230,6 +231,10 @@ class TimeTubesStore extends EventEmitter{
 
     getInitColorIdx() {
         return this.initColorIdx;
+    }
+
+    getGridSize() {
+        return this.gridSize;
     }
 
     setPlotColor(id, colorIdx) {

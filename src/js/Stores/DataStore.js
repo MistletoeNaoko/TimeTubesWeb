@@ -98,6 +98,13 @@ class DataStore extends EventEmitter {
         }
     }
 
+    getIdFromName(fileName) {
+        for (let i = 0; i < this.data.length; i++) {
+            if (this.data[i].name === fileName)
+                return i;
+        }
+        return -1;
+    }
 }
 
 const dataStore = new DataStore();

@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import Details from './Details';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import TimeTubesStore from '../Stores/TimeTubesStore';
+import DataStore from '../Stores/DataStore';
 import BufferGeometryUtils from '../lib/BufferGeometryUtils';
 import OrbitControls from "three-orbitcontrols";
 import TextSprite from 'three.textsprite';
@@ -69,8 +70,29 @@ export default class TimeTubes extends React.Component{
         this.currentHighlightedPlot = 0;
         this.drag = false;
         this.animationPara = {flag: false, dep: 0, dst:0, speed: 40, now: 0};
-        TimeTubesStore.setPlotColor(this.id, (TimeTubesStore.getInitColorIdx() + this.id) % TimeTubesStore.getPresetNum());
-        this.plotColor = TimeTubesStore.getPlotColor(this.id);
+        if (this.data.merge) {
+            this.plotColor = [];
+            this.idNameLookup = {};
+            // get plot colors for each dataset
+            let viewNames = this.data.name.split(',');
+            // get id from viewNames (DataStore)
+            // get plot color for the ids (TimeTubesStore)
+            for (let i = 0; i < viewNames.length; i++) {
+                let id = DataStore.getIdFromName(viewNames[i]);
+                this.idNameLookup[viewNames[i]] = i;
+                let eachNames = viewNames[i].split('+');
+                if (eachNames.length > 1) {
+                    for (let j = 0; j < eachNames.length; j++) {
+                        this.idNameLookup[eachNames[j]] = i;
+                    }
+                }
+                this.plotColor.push(TimeTubesStore.getPlotColor(id));
+            }
+            TimeTubesStore.setPlotColor(this.id, this.plotColor);
+        } else {
+            TimeTubesStore.setPlotColor(this.id, (TimeTubesStore.getInitColorIdx() + this.id) % TimeTubesStore.getPresetNum());
+            this.plotColor = TimeTubesStore.getPlotColor(this.id);
+        }
     }
 
     render() {
@@ -224,8 +246,8 @@ export default class TimeTubes extends React.Component{
 
         let texture = new THREE.TextureLoader();
         texture.load('../../img/1_256.png', this._drawTube.bind(this));
-        this._drawGrid(20, 10);
-        this._drawLabel(10 / this.data.meta.range);
+        this._drawGrid(TimeTubesStore.getGridSize() * 2, 10);
+        this._drawLabel(TimeTubesStore.getGridSize() / this.data.meta.range);
         this._drawAxis();
         this._drawPlot();
     }
@@ -552,6 +574,7 @@ export default class TimeTubes extends React.Component{
     }
 
     _drawLabel(range) {
+        let gridSize = TimeTubesStore.getGridSize();
         this.labelGroup = new THREE.Group();
         this.scene.add(this.labelGroup);
         let pm = [
@@ -573,7 +596,7 @@ export default class TimeTubes extends React.Component{
                 },
             });
             this.labelGroup.add(label);
-            label.position.set( pm[i][0] * 10,  pm[i][1] * 10, 0);
+            label.position.set( pm[i][0] * gridSize,  pm[i][1] * gridSize, 0);
         }
         let QIlabel = new TextSprite({
             material: {
@@ -601,8 +624,8 @@ export default class TimeTubes extends React.Component{
         });
         this.labelGroup.add(QIlabel);
         this.labelGroup.add(UIlabel);
-        QIlabel.position.set(11, 0, 0);
-        UIlabel.position.set(0, 11, 0);
+        QIlabel.position.set(gridSize + 1, 0, 0);
+        UIlabel.position.set(0, gridSize + 1, 0);
     }
 
     _drawAxis() {
@@ -653,48 +676,105 @@ export default class TimeTubes extends React.Component{
     }
 
     _drawPlot() {
-        let circlePositions = [];
-        let circleColor = [];
-        let baseColor = new THREE.Color(this.plotColor);//'rgb(127, 255, 212)');
-        let circleIndices = Array(this.data.position.length * this.segment * 2);
-        let del = Math.PI * 2 / this.segment;
-        let range = this.data.meta.range;
-        // let plotNum = 0;
-        for (let i = 0; i < this.data.position.length; i++) {
-            let zpos = this.data.position[i].z - this.data.position[0].z;
-            let xcen = -this.data.position[i].x * range;
-            let ycen = this.data.position[i].y * range;
-            let xrad = this.data.radius[i].x * range;
-            let yrad = this.data.radius[i].y * range;
-            // 0-1, 1-2, 2-3, ... , 31-0
-            let currentIdx = this.segment * 2 * i;
-            circleIndices[currentIdx] = i * this.segment;
-            circleIndices[currentIdx + this.segment * 2 - 1] = i * this.segment;
-            for (let j = 0; j < this.segment; j++) {
-                circlePositions.push(xcen + xrad * Math.cos(del * j));
-                circlePositions.push(ycen + yrad * Math.sin(del * j));
-                circlePositions.push(zpos);
+        if (this.data.merge) {
+            let circlePositions = [];
+            let circleColor = [];
+            let baseColors = [];
+            for (let i = 0; i < this.plotColor.length; i++) {
+                baseColors.push(new THREE.Color(this.plotColor[i]));
+            }
+            let circleIndices = Array(this.data.position.length * this.segment * 2);
+            let posCount = 0;
+            console.log(circleIndices.length);
+            let del = Math.PI * 2 / this.segment;
+            let range = this.data.meta.range;
+            for (let i = 0; i < this.data.spatial.length; i++) {
+                if ('x' in this.data.spatial[i]) {
+                    let zpos = this.data.spatial[i].z - this.data.spatial[0].z;
+                    let xcen = -this.data.spatial[i].x * range;
+                    let ycen = this.data.spatial[i].y * range;
+                    let xrad = this.data.spatial[i].r_x * range;
+                    let yrad = this.data.spatial[i].r_y * range;
 
-                circleColor.push(baseColor.r);
-                circleColor.push(baseColor.g);
-                circleColor.push(baseColor.b);
+                    let currentIdx = this.segment * 2 * posCount;
+                    let source = this.data.spatial[i].source;
+                    let currentColor = baseColors[this.idNameLookup[source]];
+                    circleIndices[currentIdx] = posCount * this.segment;
+                    circleIndices[currentIdx + this.segment * 2 - 1] = posCount * this.segment;
+                    for (let j = 0; j < this.segment; j++) {
+                        circlePositions.push(xcen + xrad * Math.cos(del * j));
+                        circlePositions.push(ycen + yrad * Math.sin(del * j));
+                        circlePositions.push(zpos);
 
-                if (j !== 0) {
-                    circleIndices[currentIdx + 2 * (j - 1) + 1] = i * this.segment + j;
-                    circleIndices[currentIdx + 2 * (j - 1) + 2] = i * this.segment + j;
+                        circleColor.push(currentColor.r);
+                        circleColor.push(currentColor.g);
+                        circleColor.push(currentColor.b);
+
+                        if (j !== 0) {
+                            circleIndices[currentIdx + 2 * (j - 1) + 1] = posCount * this.segment + j;
+                            circleIndices[currentIdx + 2 * (j - 1) + 2] = posCount * this.segment + j;
+                        }
+                    }
+                    posCount++;
                 }
             }
-        }
-        let circleGeometry = new THREE.BufferGeometry();
-        circleGeometry.setIndex(circleIndices);
-        circleGeometry.addAttribute('position', new THREE.Float32BufferAttribute(circlePositions, 3));
-        circleGeometry.addAttribute('color', new THREE.Float32BufferAttribute(circleColor, 3));
+            let circleGeometry = new THREE.BufferGeometry();
+            circleGeometry.setIndex(circleIndices);
+            circleGeometry.addAttribute('position', new THREE.Float32BufferAttribute(circlePositions, 3));
+            circleGeometry.addAttribute('color', new THREE.Float32BufferAttribute(circleColor, 3));
+            let circleMaterial = new THREE.LineBasicMaterial({
+                vertexColors: THREE.VertexColors,
+                clippingPlanes: [this.clippingPlane]
+            });
+            this.plot = new THREE.LineSegments(circleGeometry, circleMaterial);
+            // console.log(this.plot);
+            // this.tubeGroup.add(this.plot);
+            // this.plot.rotateY(Math.PI);
+        } else {
+            let circlePositions = [];
+            let circleColor = [];
+            let baseColor = new THREE.Color(this.plotColor);//'rgb(127, 255, 212)');
+            let circleIndices = Array(this.data.position.length * this.segment * 2);
+            let del = Math.PI * 2 / this.segment;
+            let range = this.data.meta.range;
+            // let plotNum = 0;
+            for (let i = 0; i < this.data.position.length; i++) {
+                let zpos = this.data.position[i].z - this.data.position[0].z;
+                let xcen = -this.data.position[i].x * range;
+                let ycen = this.data.position[i].y * range;
+                let xrad = this.data.radius[i].x * range;
+                let yrad = this.data.radius[i].y * range;
+                // 0-1, 1-2, 2-3, ... , 31-0
+                let currentIdx = this.segment * 2 * i;
+                circleIndices[currentIdx] = i * this.segment;
+                circleIndices[currentIdx + this.segment * 2 - 1] = i * this.segment;
+                for (let j = 0; j < this.segment; j++) {
+                    circlePositions.push(xcen + xrad * Math.cos(del * j));
+                    circlePositions.push(ycen + yrad * Math.sin(del * j));
+                    circlePositions.push(zpos);
 
-        let circleMaterial = new THREE.LineBasicMaterial({
-            vertexColors: THREE.VertexColors,
-            clippingPlanes: [this.clippingPlane]
-        });
-        this.plot = new THREE.LineSegments(circleGeometry, circleMaterial);
+                    circleColor.push(baseColor.r);
+                    circleColor.push(baseColor.g);
+                    circleColor.push(baseColor.b);
+
+                    if (j !== 0) {
+                        circleIndices[currentIdx + 2 * (j - 1) + 1] = i * this.segment + j;
+                        circleIndices[currentIdx + 2 * (j - 1) + 2] = i * this.segment + j;
+                    }
+                }
+            }
+            let circleGeometry = new THREE.BufferGeometry();
+            circleGeometry.setIndex(circleIndices);
+            circleGeometry.addAttribute('position', new THREE.Float32BufferAttribute(circlePositions, 3));
+            circleGeometry.addAttribute('color', new THREE.Float32BufferAttribute(circleColor, 3));
+
+            let circleMaterial = new THREE.LineBasicMaterial({
+                vertexColors: THREE.VertexColors,
+                clippingPlanes: [this.clippingPlane]
+            });
+            this.plot = new THREE.LineSegments(circleGeometry, circleMaterial);
+        }
+        console.log(this.plot);
         this.tubeGroup.add(this.plot);
         this.plot.rotateY(Math.PI);
     }

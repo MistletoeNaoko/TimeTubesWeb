@@ -2,6 +2,7 @@ import * as d3 from 'd3';
 import * as THREE from 'three';
 import dispatcher from '../Dispatcher/dispatcher';
 import DataStore from '../Stores/DataStore';
+import TimeTubesStore from '../Stores/TimeTubesStore';
 
 const dataHeaders = {
     HU: {
@@ -46,7 +47,7 @@ export function mergeData(ids) {
         mergedData = mergedData.concat(data.data.data);
         files.push(data.name);
     }
-    let fileNames = files.join(', ');
+    let fileNames = files.join(',');
     mergedData.sort(function (a, b) {
         let atmp = a.JD, btmp = b.JD;
         if (Math.log10(a.JD) > 4)
@@ -68,7 +69,8 @@ export function mergeData(ids) {
             radius: splines.radius,
             color: splines.color,
             splines: splines.spline,
-            lookup: lookup
+            lookup: lookup,
+            merge: true
         }
     });
 }
@@ -97,6 +99,7 @@ function loadFile(file) {
                             if (!isNaN(d[value]))
                                 d[value] = Number(d[value]);
                         }, d);
+                        d.source = file[i].name;
                         return d;
                     });
                     break;
@@ -115,7 +118,7 @@ function loadFile(file) {
                 let splines = computeSplines(spatialData);
                 dispatcher.dispatch({
                     type:'UPLOAD_DATA',
-                    data: { name:fileName.join(','),
+                    data: { name:fileName.join('+'),
                         data:blazarData,
                         spatial: spatialData,
                         meta: metaData,
@@ -123,7 +126,8 @@ function loadFile(file) {
                         radius: splines.radius,
                         color: splines.color,
                         splines: splines.spline,
-                        lookup: lookup
+                        lookup: lookup,
+                        merge: false
                     }
                 });
             }
@@ -193,6 +197,7 @@ function extractData(data) {
                 }
             }
         }
+        result[i].source = data[i].source;
         // for (let key in lookup) {
         //     let tmp = data[i][lookup[key]];
         //     if (lookup[key] === 'JD' && Math.log10(tmp) > 4) {
@@ -229,7 +234,7 @@ function computeStats(lookup, data) {
     );
     let dataRange = Math.max(xRange, yRange);
     let int2dig = Math.round(dataRange * Math.pow(10, 2 - Math.ceil(Math.log10(dataRange))));
-    meta.range = 10 / (Math.ceil(int2dig / 5) * 5 * Math.pow(10, - (2 - Math.ceil(Math.log10(dataRange)))));
+    meta.range = TimeTubesStore.getGridSize() / (Math.ceil(int2dig / 5) * 5 * Math.pow(10, - (2 - Math.ceil(Math.log10(dataRange)))));
     return meta;
 }
 
