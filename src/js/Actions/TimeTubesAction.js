@@ -70,3 +70,7 @@ export function updateMinMaxH(id, min, max) {
 export function changePlotColor(id, color) {
     dispatcher.dispatch({type: 'CHANGE_PLOTCOLOR', id, color});
 }
+
+export function updateCurrentPos(id, zpos) {
+    dispatcher.dispatch({type: 'UPDATE_CURRENTPOS', id, zpos});
+}

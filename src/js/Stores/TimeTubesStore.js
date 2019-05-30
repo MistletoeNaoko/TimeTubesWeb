@@ -83,6 +83,10 @@ class TimeTubesStore extends EventEmitter{
                 break;
             case 'CHANGE_PLOTCOLOR':
                 this.changePlotColor(action.id, action.color);
+                break;
+            case 'UPDATE_CURRENTPOS':
+                this.updateCurrentPos(action.id, action.zpos);
+                break;
             default:
         }
     }
@@ -211,6 +215,10 @@ class TimeTubesStore extends EventEmitter{
     changePlotColor(id, color) {
         this.plotColor[id] = color;
         this.emit('changePlotColor', id);
+    }
+
+    updateCurrentPos(id, zpos) {
+        this.emit('updateCurrentPos', id, zpos);
     }
 
     getPresetColors() {

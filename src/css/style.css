@@ -98,3 +98,24 @@ output {
     font-size: .8em;
     text-align: center;
 }
+
+#detailValueArea {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.detailTable {
+    border-collapse:  collapse;
+    margin: 5px;
+}
+
+/* tr, td */
+.detailTableRow .detailTableData {
+    font-size: 0.8rem;
+    border: solid 1px;
+    border-color: dimgray;
+    padding: 2px 7px;
+}
+
+.detailTableVari {
+    font-style: italic;
+}

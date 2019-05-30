@@ -301,6 +301,9 @@ export default class TimeTubes extends React.Component{
                     break;
                 }
             }
+
+            TimeTubesAction.updateCurrentPos(this.id, dst);
+
             if ((dst === this.data.spatial[this.data.spatial.length - 1].z - this.data.spatial[0].z) && ('x' in this.data.spatial[this.data.spatial.length - 1])) {
                 changeColFlg = true;
             }
@@ -685,7 +688,6 @@ export default class TimeTubes extends React.Component{
             }
             let circleIndices = Array(this.data.position.length * this.segment * 2);
             let posCount = 0;
-            console.log(circleIndices.length);
             let del = Math.PI * 2 / this.segment;
             let range = this.data.meta.range;
             for (let i = 0; i < this.data.spatial.length; i++) {
@@ -774,7 +776,6 @@ export default class TimeTubes extends React.Component{
             });
             this.plot = new THREE.LineSegments(circleGeometry, circleMaterial);
         }
-        console.log(this.plot);
         this.tubeGroup.add(this.plot);
         this.plot.rotateY(Math.PI);
     }

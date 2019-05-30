@@ -38,6 +38,11 @@ export default class Scatterplots extends React.Component{
                 this.reset();
             }
         });
+        TimeTubesStore.on('updateCurrentPos', (id, zpos) => {
+            if (id === this.id) {
+                this.updateCurrentPos(zpos);
+            }
+        })
     }
 
     drawScatterplots(data) {
@@ -64,10 +69,10 @@ export default class Scatterplots extends React.Component{
             .call(this.zoom);
         let xItem = this.state.xItem, yItem = this.state.yItem;
         // Draw x axis
-        let xScale = d3.scaleLinear()
+        this.xScale = d3.scaleLinear()
             .domain([this.data.data.meta.min[xItem], this.data.data.meta.max[xItem]])
             .range([0, width]);
-        let xLabel = d3.axisBottom(xScale)
+        let xLabel = d3.axisBottom(this.xScale)
             .ticks(10)
             .tickSize(-height);
         let xAxis = this.sp.append("g")
@@ -84,10 +89,10 @@ export default class Scatterplots extends React.Component{
             .text(this.data.data.lookup[xItem]);
 
         // Draw y axis
-        let yScale = d3.scaleLinear()
+        this.yScale = d3.scaleLinear()
             .domain([this.data.data.meta.min[yItem], this.data.data.meta.max[yItem]])
             .range([height, 0]);
-        let yLabel = d3.axisLeft(yScale)
+        let yLabel = d3.axisLeft(this.yScale)
             .ticks(5)
             .tickSize(-width)
             .tickFormat(function (d) {
@@ -145,6 +150,7 @@ export default class Scatterplots extends React.Component{
             .attr("height", height);
 
         // Draw data points
+        let plotColor = TimeTubesStore.getPlotColor(this.id);
         let point_g = this.sp.append('g')
             .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')')
             .attr('clip-path', 'url(#clip)')
@@ -157,9 +163,9 @@ export default class Scatterplots extends React.Component{
             .select(function (d) {
                 return (xItem in d && yItem in d) ? this: null;
             })
-            .attr("cx", function(d) { return xScale(d[xItem]); })
-            .attr("cy", function(d) { return yScale(d[yItem]); })
-            .attr("fill", 'gray')//d3.rgb(color[0], color[1], color[2]))
+            .attr("cx", function(d) { return this.xScale(d[xItem]); }.bind((this)))
+            .attr("cy", function(d) { return this.yScale(d[yItem]); }.bind((this)))
+            .attr("fill", plotColor)//d3.rgb(color[0], color[1], color[2]))
             .attr('opacity', 0.7)
             .attr('stroke-width', 0.5)
             .attr('stroke', 'dimgray')
@@ -184,29 +190,29 @@ export default class Scatterplots extends React.Component{
                 .attr('cy', function(d) {return new_yScale(d[yItem])});
 
             let current = d3.select('circle.current.' + this.divID);
-            if (current._groups[0][0]) {
-                let cx = current.attr('cx'), cy = current.attr('cy');
-                if (cy <= 0 || height <= cy) {
-                    lineH
-                        .attr('transform', "translate(" + margin.left + "," + cy + ")")
-                        .style('opacity', 0);
-                } else {
-                    lineH.transition()
-                        .duration(0)
-                        .attr('transform', "translate(" + margin.left + "," + cy + ")")
-                        .style('opacity', 0.75);
-                }
-                if (cx <= 0 || width <= cx) {
-                    lineV
-                        .attr('transform', "translate(" + cx + "," + margin.top + ")")
-                        .style('opacity', 0);
-                } else {
-                    lineV.transition()
-                        .duration(0)
-                        .attr('transform', "translate(" + cx + "," + margin.top + ")")
-                        .style('opacity', 0.75);
-                }
-            }
+            // if (current._groups[0][0]) {
+            //     let cx = current.attr('cx'), cy = current.attr('cy');
+            //     if (cy <= 0 || height <= cy) {
+            //         lineH
+            //             .attr('transform', "translate(" + margin.left + "," + cy + ")")
+            //             .style('opacity', 0);
+            //     } else {
+            //         lineH.transition()
+            //             .duration(0)
+            //             .attr('transform', "translate(" + margin.left + "," + cy + ")")
+            //             .style('opacity', 0.75);
+            //     }
+            //     if (cx <= 0 || width <= cx) {
+            //         lineV
+            //             .attr('transform', "translate(" + cx + "," + margin.top + ")")
+            //             .style('opacity', 0);
+            //     } else {
+            //         lineV.transition()
+            //             .duration(0)
+            //             .attr('transform', "translate(" + cx + "," + margin.top + ")")
+            //             .style('opacity', 0.75);
+            //     }
+            // }
         }
         function spMouseOver(d) {
             d3.select(this)
@@ -281,21 +287,27 @@ export default class Scatterplots extends React.Component{
 
     highlightCurrentPlot(zpos) {
         let JD = zpos + this.data.data.spatial[0].z;
-        let sps = d3.selectAll('.scatterplots' + this.id);
-
-        sps.selectAll('circle')
-            .attr('stroke-width', 0.5)
-            .attr('stroke', 'dimgray')
-            .attr('class', this.divID);
-        let currentPlot = sps.selectAll('circle').filter(function (d) {
-            return d.z === JD;
+        let sps = d3.selectAll('svg.scatterplots' + this.id);
+        let divID = this.divID;
+        let xItem = this.state.xItem, yItem = this.state.yItem;
+        sps.each(function (d) {
+            let plots = d3.select(this).selectAll('circle');
+            plots
+                .attr('stroke-width', 0.5)
+                .attr('stroke', 'dimgray')
+                .attr('class', divID);
+            let currentPlots = plots.filter(function (d) {
+                return d.z === JD && xItem in d && yItem in d;
+            });
+            if (currentPlots._groups.length > 0) {
+                currentPlots
+                    .attr('stroke', 'orange')
+                    .attr('stroke-width', 1)
+                    .attr('class', divID + ' current')
+                    .moveToFront()
+                    .each(moveLines);
+            }
         });
-        currentPlot
-            .attr('stroke', 'orange')
-            .attr('stroke-width', 1)
-            .attr('class', this.divID + ' current')
-            .moveToFront()
-            .each(moveLines);
         function moveLines(d) {
             // plot (circle) has only one class named like 'scatterplots0_0'
             let margin = { "top": 10, "bottom": 30, "right": 30, "left": 60 };
@@ -313,6 +325,32 @@ export default class Scatterplots extends React.Component{
                 .duration(0)
                 .style('opacity', 0.75)
                 .attr('transform', 'translate(' + circle.attr('cx') + ',' + margin.top + ')');
+        }
+    }
+
+    updateCurrentPos(zpos) {
+        if (this.state.xItem === 'z') {
+            let JD = zpos + this.data.data.spatial[0].z;
+            let currentLineH = d3.selectAll('.currentLineH.' + this.divID + '.scatterplots' + this.id);
+            let currentLineV = d3.selectAll('.currentLineV.' + this.divID + '.scatterplots' + this.id);
+            currentLineH
+                .style('opacity', 0);
+            currentLineV
+                .transition()
+                .duration(0)
+                .style('opacity', 0.75)
+                .attr('transform', 'translate(' + (this.xScale(JD)) + ',' + this.margin.top + ')');
+        } else if (this.state.yItem === 'z') {
+            let JD = zpos + this.data.data.spatial[0].z;
+            let currentLineH = d3.selectAll('.currentLineH.' + this.divID + '.scatterplots' + this.id);
+            let currentLineV = d3.selectAll('.currentLineV.' + this.divID + '.scatterplots' + this.id);
+            currentLineV
+                .style('opacity', 0);
+            currentLineH
+                .transition()
+                .duration(0)
+                .style('opacity', 0.75)
+                .attr('transform', 'translate(' + this.margin.left + ',' + (this.yScale(JD)) + ')');
         }
     }
 

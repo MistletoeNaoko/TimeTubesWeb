@@ -17,27 +17,26 @@ export default class Details extends React.Component{
 
     componentWillMount() {
         // ToDo: at first file uploading, following 'upload' code cannot catch event emitter
-        DataStore.on('upload', (arg1) => {
+        DataStore.on('upload', (id) => {
             if (this.state.id === -1) {
                 this.setState({
-                    id: arg1,
-                    fileName: DataStore.getFileName(arg1),
+                    id: id,
+                    fileName: DataStore.getFileName(id),
                     currentVal: DataStore.getValues(0, 0),
                     checked: false
                 });
             }
         });
-        DataStore.on('updateDetail', (arg1, arg2) => {
-            if (this.state.id === arg1) {
+        DataStore.on('updateDetail', (id, zpos) => {
+            if (this.state.id === id) {
                 this.setState({
-
-                    currentVal: DataStore.getValues(arg1, arg2)
+                    currentVal: DataStore.getValues(id, zpos)
                 });
             }
         });
 
-        TimeTubesStore.on('updateChecked', (arg1) => {
-            if (this.state.id === arg1) {
+        TimeTubesStore.on('updateChecked', (id) => {
+            if (this.state.id === id) {
                 this.setState({
                     checked: !this.state.checked
                 });
@@ -239,6 +238,17 @@ export default class Details extends React.Component{
             }
             detail += cur.keys[i] + ': ' + val + '\n';
         }
+        let detailTable = cur.keys.map((key, i) => {
+            let val;
+            if (key === 'JD' || key === 'V-J') {
+                val = cur.vals[i].toFixed(3);
+            } else if (key === 'Flx(V)') {
+                val = cur.vals[i].toExponential(2);
+            } else {
+                val = cur.vals[i].toFixed(4);
+            }
+            return <tr key={key + '-' + this.state.id} className='detailTableRow'><td className='detailTableData detailTableVari'>{key}</td><td className='detailTableData'>{val}</td></tr>;
+        })
         let viewportWidth = 500; //TODO: get interactively!
         return (
             <div id={'onViewportControllers-' + this.state.id}>
@@ -346,8 +356,13 @@ export default class Details extends React.Component{
                             id={"searchTimeBtn-" + this.state.id}
                             onClick={this.searchTime.bind(this)} >Search</button>
                 </div>
-                <div style={{position: 'absolute', color: 'white', right: '0px', bottom: '0px', whiteSpace: 'pre-line', zIndex:'10', fontSize: '0.8rem'}}>
-                    {detail}
+                <div id='detailValueArea' style={{position: 'absolute', color: 'white', right: '0px', bottom: '0px', whiteSpace: 'pre-line', zIndex:'10', fontSize: '0.8rem'}}>
+                    <table className='detailTable'>
+                        <tbody className='detailTableBody'>
+                            {detailTable}
+                        </tbody>
+                    </table>
+                    {/*{detail}*/}
                 </div>
                 {/*<ul>{this.state.currentVal}</ul>*/}
             </div>
