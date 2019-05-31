@@ -182,10 +182,10 @@ export default class Scatterplots extends React.Component{
             .on('dblclick', spDblClick);
 
         function zoomed() {
-            let margin = { "top": 10, "bottom": 30, "right": 30, "left": 60 };
+            // let margin = { "top": 10, "bottom": 30, "right": 30, "left": 60 };
             // create new scale ojects based on event
-            let new_xScale = d3.event.transform.rescaleX(xScale);
-            let new_yScale = d3.event.transform.rescaleY(yScale);
+            let new_xScale = d3.event.transform.rescaleX(this.xScale);
+            let new_yScale = d3.event.transform.rescaleY(this.yScale);
             // update axes
             xAxis.call(xLabel.scale(new_xScale));
             yAxis.call(yLabel.scale(new_yScale));
