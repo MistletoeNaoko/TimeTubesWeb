@@ -42,7 +42,12 @@ export default class Scatterplots extends React.Component{
             if (id === this.id) {
                 this.updateCurrentPos(zpos);
             }
-        })
+        });
+        TimeTubesStore.on('changePlotColor', (id) => {
+            if (id === this.id) {
+                this.changePlotColor(TimeTubesStore.getPlotColor(id));
+            }
+        });
     }
 
     drawScatterplots(data) {
@@ -352,6 +357,11 @@ export default class Scatterplots extends React.Component{
                 .style('opacity', 0.75)
                 .attr('transform', 'translate(' + this.margin.left + ',' + (this.yScale(JD)) + ')');
         }
+    }
+
+    changePlotColor(color) {
+        d3.selectAll('circle')
+            .attr('fill', color);
     }
 
     reset() {
