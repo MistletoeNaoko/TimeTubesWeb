@@ -188,7 +188,14 @@ export default class TimeTubes extends React.Component{
         });
         TimeTubesStore.on('changePlotColor', (id) => {
             if (id === this.id) {
+                this.plotColor = TimeTubesStore.getPlotColor(this.id);
                 this._changePlotsColor();
+            } else if (this.data.merge) {
+                let fileName = DataStore.getFileName(id);
+                if (this.data.name.indexOf(fileName) >= 0) {
+                    this.plotColor[this.idNameLookup[fileName]] = TimeTubesStore.getPlotColor(id);
+                    this._changePlotsColor();
+                }
             }
         })
     }
@@ -312,15 +319,32 @@ export default class TimeTubes extends React.Component{
             }
 
             if (changeColFlg) {
-                for (let j = 0; j < this.data.position.length; j++) {
-                    if (dst === this.data.position[j].z - this.data.spatial[0].z) {
-                        let color = new THREE.Color('rgb(127, 255, 212)');//this.gui.__folders.Display.__folders.Plot.__controllers[1].object.plotColor;
-                        // this._changePlotColor(this.currentHighlightedPlot * this.segment, new THREE.Color(color[0] / 255, color[1] / 255, color[2] / 255));
-                        this._changePlotColor(this.currentHighlightedPlot * this.segment, color);
-                        this._changePlotColor(j * this.segment, new THREE.Color('red'));
-                        this.currentHighlightedPlot = j;
-                        TimeTubesAction.updateFocus(this.id, dst);
-                        // highlightCurrentPlot(this.idx, dst);
+                if (!this.data.merge) {
+                    for (let j = 0; j < this.data.position.length; j++) {
+                        if (dst === this.data.position[j].z - this.data.spatial[0].z) {
+                            let color = new THREE.Color('rgb(127, 255, 212)');//this.gui.__folders.Display.__folders.Plot.__controllers[1].object.plotColor;
+                            // this._changePlotColor(this.currentHighlightedPlot * this.segment, new THREE.Color(color[0] / 255, color[1] / 255, color[2] / 255));
+                            this._changePlotColor(this.currentHighlightedPlot * this.segment, color);
+                            this._changePlotColor(j * this.segment, new THREE.Color('red'));
+                            this.currentHighlightedPlot = j;
+                            TimeTubesAction.updateFocus(this.id, dst);
+                            // highlightCurrentPlot(this.idx, dst);
+                        }
+                    }
+                } else {
+                    let posCount = 0;
+                    for (let j = 0; j < this.data.spatial.length; j++) {
+                        if ('x' in this.data.spatial[j]) {
+                            if (dst === this.data.spatial[j].z - this.data.spatial[0].z) {
+                                let color = new THREE.Color(this.plotColor[this.idNameLookup[this.data.spatial[j].source]]);
+                                this._changePlotColor(this.currentHighlightedPlot * this.segment, color);
+                                this._changePlotColor(posCount * this.segment, new THREE.Color('red'));
+                                this.currentHighlightedPlot = posCount;
+                                TimeTubesAction.updateFocus(this.id, dst);
+                                // highlightCurrentPlot(this.idx, dst);
+                            }
+                            posCount++;
+                        }
                     }
                 }
             }
@@ -566,8 +590,31 @@ export default class TimeTubes extends React.Component{
     }
 
     _changePlotsColor() {
-        this.plotColor = TimeTubesStore.getPlotColor(this.id);
-        this.plot.material.color.set(this.plotColor);
+        if (!this.data.merge) {
+            this.plot.material.color.set(this.plotColor);
+        } else {
+            let circleColor = [];
+            let baseColors = [];
+            for (let i = 0; i < this.plotColor.length; i++) {
+                baseColors.push(new THREE.Color(this.plotColor[i]));
+            }
+            let circleIndices = Array(this.data.position.length * this.segment * 2);
+            let posCount = 0;
+            let del = Math.PI * 2 / this.segment;
+            let range = this.data.meta.range;
+            for (let i = 0; i < this.data.spatial.length; i++) {
+                if ('x' in this.data.spatial[i]) {
+                    let source = this.data.spatial[i].source;
+                    let currentColor = baseColors[this.idNameLookup[source]];
+                    for (let j = 0; j < this.segment; j++) {
+                        circleColor.push(currentColor.r);
+                        circleColor.push(currentColor.g);
+                        circleColor.push(currentColor.b);
+                    }
+                }
+            }
+            this.plot.geometry.addAttribute('color', new THREE.Float32BufferAttribute(circleColor, 3));
+        }
     }
 
     _drawGrid(size, divisions) {
