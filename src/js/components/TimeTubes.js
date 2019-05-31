@@ -96,11 +96,14 @@ export default class TimeTubes extends React.Component{
     }
 
     render() {
+        let width = ($(window).width() - $('#Controllers').width()) / DataStore.getDataNum() * 0.98;
+        let height = Math.max($('#Controllers').height(), 500);
+        this._updateSize(width, height);
         return (
             <div style={{position: 'relative', float: 'left'}}>
                 <div
                     className={'TimeTubes'}
-                    style={{width: "500px", height: "500px"}}
+                    style={{width: width + 'px', height: height + 'px'}}//"500px", height: "500px"}}
                     // style={{width: "500px", height: "500px", position: 'absolute', top: '0px', left: '0px', zIndex: '0'}}
                     ref={mount => {
                         this.mount = mount;
@@ -433,6 +436,13 @@ export default class TimeTubes extends React.Component{
         this.camera.updateProjectionMatrix();
     }
 
+    _updateSize(width, height) {
+        if (this.renderer) {
+            this.renderer.setSize(width, height);
+            TimeTubesAction.updateCamera(this.id, {aspect: width / height});
+        }
+    }
+
     _switchCamera() {
         let currentPos = this.camera.position;
         if (this.cameraProp.type === 'Perspective') {
@@ -452,7 +462,7 @@ export default class TimeTubes extends React.Component{
     }
 
     _searchTime(dst) {
-        let zpos = dst - this.data.data[0].JD;
+        let zpos = dst - this.data.spatial[0].z;
         if (isNaN(zpos)) {
             alert('Please input numbers.');
         } else {

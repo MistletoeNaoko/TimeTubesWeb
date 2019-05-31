@@ -119,3 +119,13 @@ output {
 .detailTableVari {
     font-style: italic;
 }
+
+#TimeTubesViewports {
+    overflow-x: scroll;
+    overflow-y: hidden;
+}
+
+#scatterplotsArea {
+    overflow-x: scroll;
+    overflow-y: hidden;
+}

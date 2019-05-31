@@ -58,12 +58,13 @@ class DataStore extends EventEmitter {
         if (id < 0) {
             return {keys: [], vals: []};
         } else {
-            let currentJD = zpos + this.data[id].data.data[0].JD;
+            let currentJD = zpos + this.data[id].data.spatial[0].z;
 
             let i;
             for (i = 1; i < this.data[id].data.position.length; i++) {
-                if (this.data[id].data.position[i - 1].z <= currentJD && currentJD < this.data[id].data.position[i].z)
+                if (this.data[id].data.position[i - 1].z <= currentJD && currentJD < this.data[id].data.position[i].z) {
                     break;
+                }
             }
             let tPos;
             if ((currentJD === this.data[id].data.position[this.data[id].data.position.length - 1].z) || (i > this.data[id].data.position.length - 1)) {
@@ -90,7 +91,6 @@ class DataStore extends EventEmitter {
             // VJ, Flx(V), JD
             let col = this.data[id].data.splines.color.getPoint(tCol);
 
-            // console.log(pos, err, col);
             return {
                 keys: ['JD', 'Q/I', 'E_Q/I', 'U/I', 'E_U/I', 'Flx(V)', 'V-J'],
                 vals: [pos.z, pos.x, err.x, pos.y, err.y, col.y, col.x]
