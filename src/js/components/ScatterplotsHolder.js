@@ -59,7 +59,13 @@ export default class ScatterplotsHolder extends React.Component{
         });
         let items = [];
         for (let key in this.data.lookup) {
-            items.push(<option key={key} value={key}>{this.data.lookup[key]}</option>);
+            let label = '';
+            if (this.data.lookup[key].length > 1) {
+                label = this.data.lookup[key].join(',');
+            } else {
+                label = this.data.lookup[key];
+            }
+            items.push(<option key={key} value={key}>{label}</option>);
         }
         return (
             <div>

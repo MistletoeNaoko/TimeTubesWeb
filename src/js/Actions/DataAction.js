@@ -40,39 +40,46 @@ export function updateDetails(id, zpos) {
 
 export function mergeData(ids) {
     // data: color, data, lookup, meta, name, position, radius, spatial, splines
+    let promise = Promise.resolve();
     let mergedData = [];
     let files = [];
-    for (let i = 0; i < ids.length; i++) {
-        let data = DataStore.getData(ids[i]);
-        mergedData = mergedData.concat(data.data.data);
-        files.push(data.name);
-    }
-    let fileNames = files.join(',');
-    mergedData.sort(function (a, b) {
-        let atmp = a.JD, btmp = b.JD;
-        if (Math.log10(a.JD) > 4)
-            atmp -= 2450000;
-        if (Math.log10(b.JD) > 4)
-            btmp -= 2450000;
-        return (atmp < btmp) ? -1 : 1;
-    })
-    let [spatialData, lookup] = extractData(mergedData);
-    let metaData = computeStats(spatialVar, spatialData);
-    let splines = computeSplines(spatialData);
-    dispatcher.dispatch({
-        type:'UPLOAD_DATA',
-        data: { name:fileNames,
-            data:mergedData,
-            spatial: spatialData,
-            meta: metaData,
-            position: splines.position,
-            radius: splines.radius,
-            color: splines.color,
-            splines: splines.spline,
-            lookup: lookup,
-            merge: true
-        }
-    });
+    promise
+        .then(function () {
+            for (let i = 0; i < ids.length; i++) {
+                let data = DataStore.getData(ids[i]);
+                mergedData = mergedData.concat(data.data.data);
+                files.push(data.name);
+            }
+            let fileNames = files.join(',');
+            mergedData.sort(function (a, b) {
+                let atmp = a.JD, btmp = b.JD;
+                if (Math.log10(a.JD) > 4)
+                    atmp -= 2450000;
+                if (Math.log10(b.JD) > 4)
+                    btmp -= 2450000;
+                return (atmp < btmp) ? -1 : 1;
+            })
+            let [spatialData, lookup] = extractData(mergedData);
+            let metaData = computeStats(spatialVar, spatialData);
+            let splines = computeSplines(spatialData);
+            return {fileName: fileNames, data: mergedData, spatial: spatialData, lookup: lookup, meta: metaData, splines: splines};
+        })
+        .then(function (value) {
+            dispatcher.dispatch({
+                type:'UPLOAD_DATA',
+                data: { name: value.fileName,
+                    data: value.data,
+                    spatial: value.spatial,
+                    meta: value.meta,
+                    position: value.splines.position,
+                    radius: value.splines.radius,
+                    color: value.splines.color,
+                    splines: value.splines.spline,
+                    lookup: value.lookup,
+                    merge: true
+                }
+            });
+        });
 }
 
 function loadFile(file) {
