@@ -26,13 +26,6 @@ export default class ScatterplotsHolder extends React.Component{
         });
     }
 
-    addScatterplots(xy) {
-        let list = this.state.scatterplotsList;
-        list.push(xy);
-        this.setState({
-            scatterplotsList: list
-        });
-    }
 
     addScatterplots() {
         let selectX = document.getElementById("scatterSelectXAxis_" + this.id);
