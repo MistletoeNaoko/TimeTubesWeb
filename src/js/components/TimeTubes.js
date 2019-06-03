@@ -88,9 +88,10 @@ export default class TimeTubes extends React.Component{
                 }
                 this.plotColor.push(TimeTubesStore.getPlotColor(id));
             }
-            TimeTubesStore.setPlotColor(this.id, this.plotColor);
+            // TimeTubesAction.changePlotColor(this.id, this.plotColor);
+            TimeTubesStore.setPlotColorbyIdx(this.id, this.plotColor);
         } else {
-            TimeTubesStore.setPlotColor(this.id, (TimeTubesStore.getInitColorIdx() + this.id) % TimeTubesStore.getPresetNum());
+            TimeTubesStore.setPlotColorbyIdx(this.id, (TimeTubesStore.getInitColorIdx() + this.id) % TimeTubesStore.getPresetNum());
             this.plotColor = TimeTubesStore.getPlotColor(this.id);
         }
     }

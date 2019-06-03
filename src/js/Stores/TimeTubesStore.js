@@ -245,7 +245,11 @@ class TimeTubesStore extends EventEmitter{
         return this.gridSize;
     }
 
-    setPlotColor(id, colorIdx) {
+    setPlotColor(id, color) {
+        this.plotColor[id] = color;
+    }
+
+    setPlotColorbyIdx(id, colorIdx) {
         this.plotColor[id] = this.presetColors[colorIdx];
     }
 }

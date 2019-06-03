@@ -155,31 +155,77 @@ export default class Scatterplots extends React.Component{
             .attr("height", height);
 
         // Draw data points
-        let plotColor = TimeTubesStore.getPlotColor(this.id);
-        let point_g = this.sp.append('g')
-            .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')')
-            .attr('clip-path', 'url(#clip)')
-            .classed('points_g', true);
-        let points = point_g
-            .selectAll("circle")
-            .data(this.data.data.spatial)
-            .enter()
-            .append("circle")
-            .select(function (d) {
-                return (xItem in d && yItem in d) ? this: null;
-            })
-            .attr("cx", function(d) { return this.xScale(d[xItem]); }.bind((this)))
-            .attr("cy", function(d) { return this.yScale(d[yItem]); }.bind((this)))
-            .attr("fill", plotColor)//d3.rgb(color[0], color[1], color[2]))
-            .attr('opacity', 0.7)
-            .attr('stroke-width', 0.5)
-            .attr('stroke', 'dimgray')
-            .attr("r", 4)
-            .attr('class', this.divID)
-            .on('mouseover', spMouseOver)
-            .on('mouseout', spMouseOut)
-            // .on('click', spClick)
-            .on('dblclick', spDblClick);
+        let points;
+        if (!this.data.data.merge) {
+            let plotColor = TimeTubesStore.getPlotColor(this.id);
+            let point_g = this.sp.append('g')
+                .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')')
+                .attr('clip-path', 'url(#clip)')
+                .classed('points_g', true);
+            points = point_g
+                .selectAll("circle")
+                .data(this.data.data.spatial)
+                .enter()
+                .append("circle")
+                .select(function (d) {
+                    return (xItem in d && yItem in d) ? this: null;
+                })
+                .attr("cx", function(d) { return this.xScale(d[xItem]); }.bind((this)))
+                .attr("cy", function(d) { return this.yScale(d[yItem]); }.bind((this)))
+                .attr("fill", plotColor)//d3.rgb(color[0], color[1], color[2]))
+                .attr('opacity', 0.7)
+                .attr('stroke-width', 0.5)
+                .attr('stroke', 'dimgray')
+                .attr("r", 4)
+                .attr('class', this.divID)
+                .on('mouseover', spMouseOver)
+                .on('mouseout', spMouseOut)
+                // .on('click', spClick)
+                .on('dblclick', spDblClick);
+        } else {
+            let idNameLookup = {};
+            let fileNames = this.data.name.split(',');
+            let plotColors = [];
+            for (let i = 0; i < fileNames.length; i++) {
+                let id = DataStore.getIdFromName(fileNames[i]);
+                idNameLookup[fileNames[i]] = i;
+                let eachNames = fileNames[i].split('+');
+                if (eachNames.length > 1) {
+                    for (let j = 0; j < eachNames.length; j++) {
+                        idNameLookup[eachNames[j]] = i;
+                    }
+                }
+                plotColors.push(TimeTubesStore.getPlotColor(id));
+            }
+            let point_g = this.sp.append('g')
+                .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')')
+                .attr('clip-path', 'url(#clip)')
+                .classed('points_g', true);
+            points = point_g
+                .selectAll("circle")
+                .data(this.data.data.spatial)
+                .enter()
+                .append("circle")
+                .select(function (d) {
+                    return (xItem in d && yItem in d) ? this: null;
+                })
+                .attr("cx", function(d) { return this.xScale(d[xItem]); }.bind((this)))
+                .attr("cy", function(d) { return this.yScale(d[yItem]); }.bind((this)))
+                .attr("fill", function (d) {
+                    return plotColors[idNameLookup[d.source]];
+                })//d3.rgb(color[0], color[1], color[2]))
+                .attr('opacity', 0.7)
+                .attr('stroke-width', 0.5)
+                .attr('stroke', 'dimgray')
+                .attr("r", 4)
+                .attr('class', this.divID)
+                .on('mouseover', spMouseOver)
+                .on('mouseout', spMouseOut)
+                // .on('click', spClick)
+                .on('dblclick', spDblClick);
+        }
+
+
 
         function zoomed() {
             // let margin = { "top": 10, "bottom": 30, "right": 30, "left": 60 };
