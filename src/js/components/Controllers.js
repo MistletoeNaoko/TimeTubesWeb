@@ -129,6 +129,11 @@ export default class Controllers extends React.Component{
         });
     }
 
+    timeFitting() {
+        let checked = this.getSelectedIDs();
+        // to which viewport?
+    }
+
     mergeTubes() {
         let checked = this.getSelectedIDs();
         DataAction.mergeData(checked);
@@ -356,6 +361,12 @@ export default class Controllers extends React.Component{
                             </label>
                     </div>
                     <br/>
+                    <button
+                        id='timeFittingBtn'
+                        className='btn btn-secondary btn-sm'
+                        onClick={this.timeFitting.bind(this)}>
+                        TimeFitting
+                    </button>
                     <button
                         id='mergeBtn'
                         className='btn btn-secondary btn-sm'

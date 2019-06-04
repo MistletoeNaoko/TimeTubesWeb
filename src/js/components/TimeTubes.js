@@ -97,7 +97,7 @@ export default class TimeTubes extends React.Component{
     }
 
     render() {
-        let width = ($(window).width() - $('#Controllers').width()) / DataStore.getDataNum() * 0.98;
+        let width = ($(window).width() - $('#Controllers').width()) / DataStore.getDataNum() * 0.95;
         let height = Math.max($('#Controllers').height(), 500);
         this._updateSize(width, height);
         return (

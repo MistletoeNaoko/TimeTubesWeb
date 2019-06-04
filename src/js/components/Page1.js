@@ -24,6 +24,14 @@ export default class Page1 extends React.Component{
         });
     }
 
+    collapseSidebar() {
+        console.log('collapse!');
+        $('#Controllers').toggle("slow");
+        //     .animate({
+        //     width : 'toggle'
+        // }, 'normal')//.toggle("slow");//Class('active');
+    }
+
     render() {
         const datasets = this.state.data;
         // When new file is loaded, new TimeTubes view will be created,
@@ -49,10 +57,11 @@ export default class Page1 extends React.Component{
         return (
             <div className="container-fluid">
                 <div className="row">
-                    <div className="col-md-2" id='Controllers'>
+                    <div id='Controllers'>
                         <Controllers/>
                     </div>
-                    <div className="col-md-10" id='TimeTubesViewports'>
+                    <button className='collapseBtn btn-collapse' id='collapseSidebar' data-toggle="sidebar" onClick={this.collapseSidebar.bind(this)}>☰</button>
+                    <div id='TimeTubesViewports'>
                         {TimeTubesList}
                     </div>
                 </div>

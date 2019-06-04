@@ -252,7 +252,9 @@ export default class Details extends React.Component{
         let viewportWidth = 500; //TODO: get interactively!
         return (
             <div id={'onViewportControllers-' + this.state.id}>
-                <div id={'fileSelector-' + this.state.id} style={{position: 'absolute', color: 'white', top: '0px', left: '0px', zIndex:'11', fontSize: '0.8rem'}}>
+                <div id={'fileSelector-' + this.state.id}
+                     className='controllersOnView'
+                     style={{position: 'absolute', color: 'white', top: '0px', left: '0px', zIndex:'11', fontSize: '0.8rem', marginLeft: '1.5rem'}}>
                     <label id={'fileName-' + this.state.id}>
                         <input
                             type='checkbox'
@@ -266,7 +268,8 @@ export default class Details extends React.Component{
                     </label>
                 </div>
                 <div id={'eachTubeControllers-' + this.state.id}
-                    style={{position: 'absolute', bottom: '0px', left: '0px', zIndex:'21', fontSize: '0.8rem'}}>
+                     className='controllersOnView'
+                     style={{position: 'absolute', bottom: '0px', left: '0px', zIndex:'21', fontSize: '0.8rem'}}>
                 {/*    Add camera far, search box, color map*/}
                     <button type="button"
                             className="btn btn-sm btn-secondary"
@@ -356,7 +359,9 @@ export default class Details extends React.Component{
                             id={"searchTimeBtn-" + this.state.id}
                             onClick={this.searchTime.bind(this)} >Search</button>
                 </div>
-                <div id='detailValueArea' style={{position: 'absolute', color: 'white', right: '0px', bottom: '0px', whiteSpace: 'pre-line', zIndex:'10', fontSize: '0.8rem'}}>
+                <div id='detailValueArea'
+                     className='controllersOnView'
+                     style={{position: 'absolute', color: 'white', right: '0px', bottom: '0px', whiteSpace: 'pre-line', zIndex:'10', fontSize: '0.8rem'}}>
                     <table className='detailTable'>
                         <tbody className='detailTableBody'>
                             {detailTable}
