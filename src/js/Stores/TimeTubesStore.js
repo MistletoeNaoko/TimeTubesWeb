@@ -25,6 +25,8 @@ class TimeTubesStore extends EventEmitter{
         this.minmaxH = [];
         this.plotColor = [];
         this.gridSize = 15;
+        this.visualQuery = false;
+        this.dragSelection = true;
     }
 
     handleActions(action) {
@@ -86,6 +88,12 @@ class TimeTubesStore extends EventEmitter{
                 break;
             case 'UPDATE_CURRENTPOS':
                 this.updateCurrentPos(action.id, action.zpos);
+                break;
+            case 'SWITCH_VISUALQUERY':
+                this.switchVisualQuery(action.status);
+                break;
+            case 'SWITCH_DRAGSELECTION':
+                this.switchDragSelection(action.status);
                 break;
             default:
         }
@@ -221,6 +229,16 @@ class TimeTubesStore extends EventEmitter{
         this.emit('updateCurrentPos', id, zpos);
     }
 
+    switchVisualQuery(status) {
+        this.visualQuery = status;
+        this.emit('switchVisualQuery');
+    }
+
+    switchDragSelection(status) {
+        this.dragSelection = status;
+        this.emit('switchDragSelection');
+    }
+
     getPresetColors() {
         return this.presetColors;
     }
@@ -243,6 +261,14 @@ class TimeTubesStore extends EventEmitter{
 
     getGridSize() {
         return this.gridSize;
+    }
+
+    getVisualQuery() {
+        return this.visualQuery;
+    }
+
+    getDragSelection() {
+        return this.dragSelection;
     }
 
     setPlotColor(id, color) {

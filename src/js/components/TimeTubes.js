@@ -72,8 +72,11 @@ export default class TimeTubes extends React.Component{
         this.cameraProp = TimeTubesStore.getCameraProp(props.id);
         this.tubeNum = 1;
         this.segment = 16;
+        this.division = 5;
         this.currentHighlightedPlot = 0;
         this.drag = false;
+        this.visualQuery = false;
+        this.dragSelection = true;
         this.animationPara = {flag: false, dep: 0, dst:0, speed: 40, now: 0};
         if (this.data.merge) {
             this.plotColor = [];
@@ -207,7 +210,23 @@ export default class TimeTubes extends React.Component{
                     this._changePlotsColor();
                 }
             }
-        })
+        });
+        TimeTubesStore.on('switchVisualQuery', () => {
+           this.visualQuery = TimeTubesStore.getVisualQuery();
+           if (this.visualQuery && this.dragSelection) {
+               this.controls.enabled = false;
+           } else {
+               this.controls.enabled = true;
+           }
+        });
+        TimeTubesStore.on('switchDragSelection', () => {
+            this.dragSelection = TimeTubesStore.getDragSelection();
+            if (this.visualQuery && this.dragSelection) {
+                this.controls.enabled = false;
+            } else {
+                this.controls.enabled = true;
+            }
+        });
     }
 
     componentWillUnmount() {
@@ -244,11 +263,15 @@ export default class TimeTubes extends React.Component{
         this._addControls();
         let canvas = document.querySelector('#TimeTubes_viewport_' + this.id);
         let onMouseWheel = this._onMouseWheel();
+        let onMouseDown = this._onMouseDown();
         let onMouseMove = this._onMouseMove();
+        let onMouseUp = this._onMouseUp();
         let onMouseClick = this._onMouseClick();
 
         canvas.addEventListener('wheel', onMouseWheel.bind(this), false);
+        canvas.addEventListener('mousedown', onMouseDown.bind(this), false);
         canvas.addEventListener('mousemove', onMouseMove.bind(this), false);
+        canvas.addEventListener('mouseup', onMouseUp.bind(this), false);
         canvas.addEventListener('click', onMouseClick.bind(this), false);
 
 
@@ -367,54 +390,93 @@ export default class TimeTubes extends React.Component{
         }.bind(this);
     }
 
+    _onMouseDown() {
+        return function (event) {
+            this.drag = true;
+        }
+    }
+
     _onMouseMove() {
         return function (event) {
-            let cameraPropNow = this.cameraProp;
-            cameraPropNow.xpos = this.camera.position.x;
-            cameraPropNow.ypos = this.camera.position.y;
-            cameraPropNow.zpos = this.camera.position.z;
+            if (this.drag) {
+                let cameraPropNow = this.cameraProp;
+                cameraPropNow.xpos = this.camera.position.x;
+                cameraPropNow.ypos = this.camera.position.y;
+                cameraPropNow.zpos = this.camera.position.z;
+                this.cameraProp = cameraPropNow;
 
-            this.cameraProp = cameraPropNow;
+                // let status = $('#switchVisualQuery').prop('checked');
+                // let dragSelection = $('#checkboxDragTube').prop('checked');
+                // if (dragSelection) {
+                //     this.controls.enabled = false;
+                // }
+                if (this.visualQuery && this.dragSelection) {
+                    // console.log('dragSelection!', event, this._getIntersectedIndex(event));
+                    let face = this._getIntersectedIndex(event);
+                    if (face !== undefined && this.tube) {
+                        this.tube.geometry.colorsNeedUpdate = true;
+                        this.tube.geometry.attributes.selected.needsUpdate = true;
+                        let startIdx = Math.floor(Math.min(face.a, face.b, face.c) / this.segment);
+                        // highlight a tube at one observation
+                        for (let i = 0; i < this.segment; i++) {
+                            this.tube.geometry.attributes.selected.array[startIdx * this.segment + i] = 1;
+                            this.tube.geometry.attributes.selected.array[(startIdx + 1) * this.segment + i] = 1;
+                        }
+                        this.renderer.render(this.scene, this.camera);
+                    }
+
+                }
+            }
+        }
+    }
+
+    _onMouseUp() {
+        return function (event) {
+            this.drag = false;
         }
     }
 
     _onMouseClick() {
         return function (event) {
-            let status = $('#switchVisualQuery').prop('checked');
-            if (status) {
-                console.log('clicked!', this.tube, status, event);
-                let square = this._getIntersectedIndex(event);
-                if (square !== undefined && this.tube) {
+            if (this.visualQuery && !this.dragSelection) {
+                let face = this._getIntersectedIndex(event);
+                if (face !== undefined && this.tube) {
                     this.tube.geometry.colorsNeedUpdate = true;
                     this.tube.geometry.attributes.selected.needsUpdate = true;
-                    this.tube.geometry.attributes.selected.array[square.a] = 1;
-                    this.tube.geometry.attributes.selected.array[square.b] = 1;
-                    this.tube.geometry.attributes.selected.array[square.c] = 1;
+                    let startIdx = Math.floor(Math.min(face.a, face.b, face.c) / this.segment);
+                    // highlight a tube at one observation
+                    for (let i = 0; i < this.segment; i++) {
+                        this.tube.geometry.attributes.selected.array[startIdx * this.segment + i] = 1;
+                        this.tube.geometry.attributes.selected.array[(startIdx + 1) * this.segment + i] = 1;
+                    }
+                    // this.tube.geometry.attributes.selected.array[face.a] = 1;
+                    // this.tube.geometry.attributes.selected.array[face.b] = 1;
+                    // this.tube.geometry.attributes.selected.array[face.c] = 1;
                     // this.tube.geometry.attributes.selected.array[square] = 1;
                     // this.tube.geometry.faces[square].color.set(0x00ff00);
+                    this.renderer.render(this.scene, this.camera);
                 }
-                this.renderer.render(this.scene, this.camera);
+
             }
         }
     }
 
     _getIntersectedIndex(event) {
-        let square;
+        let face;
         let raymouse = new THREE.Vector2();
         raymouse.x = (event.offsetX / this.renderer.domElement.clientWidth) * 2 - 1;
         raymouse.y = -(event.offsetY / this.renderer.domElement.clientHeight) * 2 + 1;
         this.raycaster.setFromCamera(raymouse, this.camera);
         let intersects = this.raycaster.intersectObject(this.tube);
-        console.log(raymouse, intersects, this.tube);
         // for ( var i = 0; i < intersects.length; i++ ) {
         //
         //     intersects[ i ].object.material.color.set( 0xff0000 );
         //
         // }
         if (intersects.length > 0) {
-            square = intersects[0].face;//faceIndex;
+            face = intersects[0].face;//faceIndex;
         }
-        return square;
+        return face;
     }
 
     // change the color of the currently focused plot
@@ -547,7 +609,7 @@ export default class TimeTubes extends React.Component{
         let minJD = this.data.spatial[0].z;
         let maxJD = this.data.spatial[this.data.spatial.length - 1].z;
         let range = this.data.meta.range;
-        let divNum = 10 * Math.ceil(maxJD - minJD);
+        let divNum = this.division * Math.ceil(maxJD - minJD);
         let delTime = (maxJD - minJD) / divNum;
         let divNumPol = Math.ceil((this.data.splines.position.getPoint(1).z - this.data.splines.position.getPoint(0).z) / delTime);
         let divNumPho = Math.ceil((this.data.splines.color.getPoint(1).z - this.data.splines.color.getPoint(0).z) / delTime);

@@ -74,3 +74,11 @@ export function changePlotColor(id, color) {
 export function updateCurrentPos(id, zpos) {
     dispatcher.dispatch({type: 'UPDATE_CURRENTPOS', id, zpos});
 }
+
+export function switchVisualQuery(status) {
+    dispatcher.dispatch({type: 'SWITCH_VISUALQUERY', status});
+}
+
+export function switchDragSelection(status) {
+    dispatcher.dispatch({type: 'SWITCH_DRAGSELECTION', status});
+}

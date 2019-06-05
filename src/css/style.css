@@ -195,3 +195,7 @@ html,
 body {
     height: 100%;
 }
+
+#featureArea {
+    font-size: 0.8rem;
+}
