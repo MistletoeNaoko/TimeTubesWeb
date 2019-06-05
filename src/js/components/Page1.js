@@ -4,6 +4,7 @@ import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import Controllers from './Controllers';
 // import Details from './Details';
 import TimeTubes from './TimeTubes';
+import Feature from './Feature';
 import ScatterplotsHolder from './ScatterplotsHolder';
 import DataStore from '../Stores/DataStore';
 
@@ -25,11 +26,11 @@ export default class Page1 extends React.Component{
     }
 
     collapseSidebar() {
-        console.log('collapse!');
         $('#Controllers').toggle("slow");
-        //     .animate({
-        //     width : 'toggle'
-        // }, 'normal')//.toggle("slow");//Class('active');
+    }
+
+    collapseFeature() {
+        $('#Feature').toggle('slow');
     }
 
     render() {
@@ -55,18 +56,36 @@ export default class Page1 extends React.Component{
         });
         let width = window.innerWidth;
         return (
-            <div className="container-fluid">
-                <div className="row">
+            <div className='maincontainer' id='maincontainer'>
+                <div className='contents' id='mainVisArea'>
+                    <div className='row'>
                     <div id='Controllers'>
                         <Controllers/>
                     </div>
-                    <button className='collapseBtn btn-collapse' id='collapseSidebar' data-toggle="sidebar" onClick={this.collapseSidebar.bind(this)}>☰</button>
+                    <button
+                        className='collapseBtn btn-collapse'
+                        id='collapseSidebar'
+                        data-toggle="sidebar"
+                        onClick={this.collapseSidebar.bind(this)}>
+                        ☰</button>
                     <div id='TimeTubesViewports'>
                         {TimeTubesList}
                     </div>
+                    </div>
+                    <div className='row' id='scatterplotsArea'  style={{whiteSpace: 'pre-line'}}>
+                        {scatterplotsList}
+                    </div>
                 </div>
-                <div className="row" id='scatterplotsArea' style={{whiteSpace: 'pre-line'}}>
-                    {scatterplotsList}
+                <div className='right'>
+                    <div id='Feature'>
+                        <Feature/>
+                    </div>
+                    <button
+                        className='collapseBtn btn-collapse'
+                        id='collapseFeature'
+                        data-toggle="sidebar"
+                        onClick={this.collapseFeature.bind(this)}>
+                        ☰</button>
                 </div>
             </div>
         );

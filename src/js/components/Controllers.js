@@ -188,7 +188,7 @@ export default class Controllers extends React.Component{
         //  This will not affect to the program.
         // ToDo: codes are too long, too confusing
         return (
-            <div >
+            <div>
                 <div id='inputFile' className='controllersElem'>
                     <h5>FILE</h5>
                     <div id="fileMainArea">

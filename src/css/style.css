@@ -20,7 +20,7 @@ g.x_axis line, g.y_axis line{
 #Controllers {
     background: #f8f9fa;
     font-size: 0.8rem;
-    padding: 1rem 0px 1rem 0px;
+    padding: 0.5rem 0px 1rem 0px;
     /*width: 16%;*/
     width: 250px;
     float: left;
@@ -144,13 +144,54 @@ output {
     /*top: 20px;*/
     /*left: 16%;*/
     /*border-radius: 5px 5px 0 0;*/
-    z-index: 1000;
     background-color: #f8f9fa;
     border-style: none;
-    float: left;
     /*transform: rotate(90deg);*/
+}
+
+#collapseSidebar {
+    float: left;
+    z-index: 1010;
+}
+
+#collapseFeature {
+    float: right;
+    right: 0px;
+    z-index: 1020;
 }
 
 .controllersOnView {
     margin: 0.2rem 1rem;
+}
+
+.maincontainer {
+    display: flex;
+}
+
+.right {
+    width: 30%;
+    height: 100vh;
+}
+
+#Feature {
+    width: 100%;
+    height: 100vh;
+    background: #f8f9fa;
+    float: right;
+    padding: 0.5rem 0px 1rem 0px;
+}
+
+.contents{
+    flex: 1;
+    width: 100%;
+}
+
+.row {
+    margin-left: 0px;
+    margin-right: 0px;
+}
+
+html,
+body {
+    height: 100%;
 }

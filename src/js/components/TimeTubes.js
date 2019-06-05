@@ -7,14 +7,17 @@ import DataStore from '../Stores/DataStore';
 import BufferGeometryUtils from '../lib/BufferGeometryUtils';
 import OrbitControls from "three-orbitcontrols";
 import TextSprite from 'three.textsprite';
+import EventListener from 'react-event-listener';
 import * as DataAction from '../Actions/DataAction';
 
 let vertexShaderTube = [
     'precision mediump float;',
     'attribute vec2 colorData;',
+    'attribute float selected;',
     'varying vec3 vNormal;',
     'varying vec3 vWorldPosition;',
     'varying vec2 vColor;',
+    'varying float vSelected;',
     '#include <clipping_planes_pars_vertex>',
     'void main() {',
     '#include <begin_vertex>',
@@ -22,6 +25,7 @@ let vertexShaderTube = [
     'vec4 worldPosition = modelMatrix * vec4(position, 1.0);',
     'vWorldPosition = worldPosition.xyz;',
     'vColor = colorData;',
+    'vSelected = selected;',
     'gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
     'vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);',
     '#include <clipping_planes_vertex>',
@@ -33,6 +37,7 @@ let fragmentShaderTube = [
     'varying vec3 vNormal;',
     'varying vec3 vWorldPosition;',
     'varying vec2 vColor;',
+    'varying float vSelected;',
     'uniform vec3 lightPosition;',
     'uniform sampler2D texture;',
     'uniform int tubeNum;',
@@ -47,8 +52,6 @@ let fragmentShaderTube = [
     'vec2 T;',
     'T.x = (vColor.x - minmaxH.x) / (minmaxH.y - minmaxH.x);',
     'T.y = (vColor.y - minmaxV.x) / (minmaxV.y - minmaxV.x);',
-    '//T.x = (vColor.x);',
-    '//T.y = (vColor.y);',
     'vec4 resultColor = texture2D(texture, T);',
     'float c = max(0.0, dot(vNormal, lightDirection)) * 0.3;',
     'float opacity = 1.0 / float(tubeNum);//vPositionx;//vWorldPosition.x;//1.0 / float(TUBE_NUM);',
@@ -56,6 +59,8 @@ let fragmentShaderTube = [
     'gl_FragColor = vec4(resultColor.r + c, resultColor.g + c, resultColor.b + c, opacity);',
     'else',
     'gl_FragColor = vec4(resultColor.r, resultColor.g, resultColor.b, opacity);',
+    'if (vSelected != 0.0) {',
+    'gl_FragColor = vec4(1.0, 0.0, 0.0, opacity);}',
     '}',
 ].join('\n');
 
@@ -94,10 +99,11 @@ export default class TimeTubes extends React.Component{
             TimeTubesStore.setPlotColorbyIdx(this.id, (TimeTubesStore.getInitColorIdx() + this.id) % TimeTubesStore.getPresetNum());
             this.plotColor = TimeTubesStore.getPlotColor(this.id);
         }
+        this.raycaster = new THREE.Raycaster();
     }
 
     render() {
-        let width = ($(window).width() - $('#Controllers').width()) / DataStore.getDataNum() * 0.95;
+        let width = ($(window).width() - $('#Controllers').width() - $('.right').width()) / DataStore.getDataNum()// * 0.95;
         let height = Math.max($('#Controllers').height(), 500);
         this._updateSize(width, height);
         return (
@@ -239,9 +245,11 @@ export default class TimeTubes extends React.Component{
         let canvas = document.querySelector('#TimeTubes_viewport_' + this.id);
         let onMouseWheel = this._onMouseWheel();
         let onMouseMove = this._onMouseMove();
+        let onMouseClick = this._onMouseClick();
 
         canvas.addEventListener('wheel', onMouseWheel.bind(this), false);
         canvas.addEventListener('mousemove', onMouseMove.bind(this), false);
+        canvas.addEventListener('click', onMouseClick.bind(this), false);
 
 
         // for test
@@ -368,6 +376,45 @@ export default class TimeTubes extends React.Component{
 
             this.cameraProp = cameraPropNow;
         }
+    }
+
+    _onMouseClick() {
+        return function (event) {
+            let status = $('#switchVisualQuery').prop('checked');
+            if (status) {
+                console.log('clicked!', this.tube, status, event);
+                let square = this._getIntersectedIndex(event);
+                if (square !== undefined && this.tube) {
+                    this.tube.geometry.colorsNeedUpdate = true;
+                    this.tube.geometry.attributes.selected.needsUpdate = true;
+                    this.tube.geometry.attributes.selected.array[square.a] = 1;
+                    this.tube.geometry.attributes.selected.array[square.b] = 1;
+                    this.tube.geometry.attributes.selected.array[square.c] = 1;
+                    // this.tube.geometry.attributes.selected.array[square] = 1;
+                    // this.tube.geometry.faces[square].color.set(0x00ff00);
+                }
+                this.renderer.render(this.scene, this.camera);
+            }
+        }
+    }
+
+    _getIntersectedIndex(event) {
+        let square;
+        let raymouse = new THREE.Vector2();
+        raymouse.x = (event.offsetX / this.renderer.domElement.clientWidth) * 2 - 1;
+        raymouse.y = -(event.offsetY / this.renderer.domElement.clientHeight) * 2 + 1;
+        this.raycaster.setFromCamera(raymouse, this.camera);
+        let intersects = this.raycaster.intersectObject(this.tube);
+        console.log(raymouse, intersects, this.tube);
+        // for ( var i = 0; i < intersects.length; i++ ) {
+        //
+        //     intersects[ i ].object.material.color.set( 0xff0000 );
+        //
+        // }
+        if (intersects.length > 0) {
+            square = intersects[0].face;//faceIndex;
+        }
+        return square;
     }
 
     // change the color of the currently focused plot
@@ -515,6 +562,7 @@ export default class TimeTubes extends React.Component{
         }
         let indices = [];
         let colors = [];
+        let selected = [];
         let currentColorX = 0, currentColorY = 0;
         let minH = this.data.meta.min.H, maxH = this.data.meta.max.H;
         let minV = this.data.meta.min.V, maxV = this.data.meta.max.V;
@@ -533,10 +581,12 @@ export default class TimeTubes extends React.Component{
                     vertices[k].push((cen[i].x * range + currad * rad[i].x * range * Math.cos(deg)) * -1);
                     vertices[k].push(cen[i].y * range + currad * rad[i].y * range * Math.sin(deg));
                     vertices[k].push(cen[i].z - minJD);
+
                 }
 
                 colors.push(currentColorX);
                 colors.push(currentColorY);
+
 
                 if (j !== this.segment) {
                     indices.push(j + i * (this.segment + 1));
@@ -549,6 +599,7 @@ export default class TimeTubes extends React.Component{
             }
         }
         indices = indices.slice(0, -1 * this.segment * 3 * 2);
+        selected = new Float32Array(vertices[0].length);
         let normals = new Float32Array(vertices[0].length);
         let geometries = [];
         for (let i = 0; i < this.tubeNum; i++) {
@@ -556,6 +607,7 @@ export default class TimeTubes extends React.Component{
             geometryTmp.addAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices[i]), 3));
             geometryTmp.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
             geometryTmp.addAttribute('colorData', new THREE.BufferAttribute(new Float32Array(colors), 2));
+            geometryTmp.addAttribute('selected', new THREE.BufferAttribute(new Float32Array(selected), 1));
             geometryTmp.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
             // geometryTmp.computeFaceNormals();
             geometryTmp.computeVertexNormals();
