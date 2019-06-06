@@ -20,7 +20,6 @@ export default class Feature extends React.Component {
 
     switchSelector() {
         this.setState({selector: !this.state.selector});
-        console.log('switch selector');
         TimeTubesAction.switchSelector();
     }
 
@@ -35,7 +34,10 @@ export default class Feature extends React.Component {
     }
 
     selectTimeInterval() {
-
+        let val = $('#selectTimeIntervalInput').val();
+        if (!isNaN(val) && val != '') {
+            TimeTubesAction.selectTimeInterval(val);
+        }
     }
 
     render() {
@@ -100,7 +102,7 @@ export default class Feature extends React.Component {
                                 onClick={this.selectTimeInterval.bind(this)} >Select</button>
                     </div>
                     <button
-                        id='resetCameraBtn'
+                        id='resetSelectionBtn'
                         className='btn btn-secondary btn-sm featureRow'
                         disabled={!this.state.visualQuery}
                         onClick={this.resetSelection.bind(this)}>

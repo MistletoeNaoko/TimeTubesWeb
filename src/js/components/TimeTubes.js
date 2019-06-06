@@ -234,6 +234,9 @@ export default class TimeTubes extends React.Component{
         TimeTubesStore.on('switchSelector', () => {
             this.selector = !this.selector;
         });
+        TimeTubesStore.on('selectTimeInterval', (value) => {
+            this._selectTimeInterval(value);
+        });
     }
 
     componentWillUnmount() {
@@ -490,6 +493,17 @@ export default class TimeTubes extends React.Component{
         this.renderer.render(this.scene, this.camera);
     }
 
+    _selectTimeInterval(value) {
+        this.tube.geometry.colorsNeedUpdate = true;
+        this.tube.geometry.attributes.selected.needsUpdate = true;
+        let currentPos = this.tubeGroup.position.z;
+        let initIdx = (Math.round(currentPos) * this.division + 1) * this.segment;//(Math.floor(currentPos) * this.division + 1) * this.segment;
+        for (let i = 0; i < (Math.floor(value)) * (this.division) * this.segment; i++) {
+            this.tube.geometry.attributes.selected.array[initIdx + i] = 1.0;
+        }
+        this.renderer.render(this.scene, this.camera);
+    }
+
     // change the color of the currently focused plot
     _changePlotColor(idx, color) {
         for (let i = 0; i < this.segment; i++) {
@@ -628,7 +642,7 @@ export default class TimeTubes extends React.Component{
         let rad = this.data.splines.radius.getSpacedPoints(divNumPol);
         let col = this.data.splines.color.getSpacedPoints(divNumPho);
         let idxGap = Math.ceil((this.data.splines.color.getPoint(0).z - this.data.splines.position.getPoint(0).z) / delTime);
-        let del = Math.PI * 2 / this.segment;
+        let del = Math.PI * 2 / (this.segment - 1);
         let vertices = [];
         for (let i = 0; i < this.tubeNum; i++) {
             vertices[i] = [];
@@ -646,7 +660,7 @@ export default class TimeTubes extends React.Component{
                 currentColorX = col[i - idxGap].x;//(col[i - idxGap].x - minH) / (maxH - minH);
                 currentColorY = col[i - idxGap].y;//(col[i - idxGap].y - minV) / (maxV - minV);
             }
-            for (let j = 0; j <= this.segment; j++) {
+            for (let j = 0; j < this.segment; j++) {
                 for (let k = 0; k < this.tubeNum; k++) {
                     k = 0;
                     let currad = (1 / this.tubeNum) * (k + 1);
@@ -661,16 +675,17 @@ export default class TimeTubes extends React.Component{
                 colors.push(currentColorY);
 
 
-                if (j !== this.segment) {
-                    indices.push(j + i * (this.segment + 1));
-                    indices.push(j + (this.segment + 1) + i * (this.segment + 1));
-                    indices.push(j + 1 + i * (this.segment + 1));
-                    indices.push(j + (this.segment + 1) + i * (this.segment + 1));
-                    indices.push(j + 1 + (this.segment + 1) + i * (this.segment + 1));
-                    indices.push(j + 1 + i * (this.segment + 1));
+                if (j !== this.segment - 1) {
+                    indices.push(j + i * (this.segment));
+                    indices.push(j + (this.segment) + i * (this.segment));
+                    indices.push(j + 1 + i * (this.segment));
+                    indices.push(j + (this.segment) + i * (this.segment));
+                    indices.push(j + 1 + (this.segment) + i * (this.segment));
+                    indices.push(j + 1 + i * (this.segment));
                 }
             }
         }
+        console.log(vertices);
         indices = indices.slice(0, -1 * this.segment * 3 * 2);
         selected = new Float32Array(vertices[0].length);
         let normals = new Float32Array(vertices[0].length);

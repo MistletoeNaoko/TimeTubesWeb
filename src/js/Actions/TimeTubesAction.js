@@ -90,3 +90,7 @@ export function resetSelection() {
 export function switchSelector() {
     dispatcher.dispatch({type: 'SWITCH_SELECTOR'});
 }
+
+export function selectTimeInterval(value) {
+    dispatcher.dispatch({type:'SELECT_TIMEINTERVAL', value});
+}

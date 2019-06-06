@@ -101,6 +101,9 @@ class TimeTubesStore extends EventEmitter{
             case 'SWITCH_SELECTOR':
                 this.switchSelector();
                 break;
+            case 'SELECT_TIMEINTERVAL':
+                this.selectTimeInterval(action.value);
+                break;
             default:
         }
     }
@@ -251,6 +254,10 @@ class TimeTubesStore extends EventEmitter{
 
     switchSelector() {
         this.emit('switchSelector');
+    }
+
+    selectTimeInterval(value) {
+        this.emit('selectTimeInterval', value);
     }
 
     getPresetColors() {
