@@ -7,7 +7,8 @@ export default class Feature extends React.Component {
         super();
         this.state = {
             visualQuery: false,
-            dragSelection: true
+            dragSelection: true,
+            selector: true
         };
     }
 
@@ -17,10 +18,24 @@ export default class Feature extends React.Component {
         TimeTubesAction.switchVisualQuery(status);
     }
 
+    switchSelector() {
+        this.setState({selector: !this.state.selector});
+        console.log('switch selector');
+        TimeTubesAction.switchSelector();
+    }
+
     switchDragSelection() {
         let status = !this.state.dragSelection;
         this.setState({dragSelection: status});
         TimeTubesAction.switchDragSelection(status);
+    }
+
+    resetSelection() {
+        TimeTubesAction.resetSelection();
+    }
+
+    selectTimeInterval() {
+
     }
 
     render() {
@@ -30,7 +45,8 @@ export default class Feature extends React.Component {
             featureStatus = true;
         return (
             <div id='featureArea' className='controllersElem'>
-                <div className="custom-control custom-switch">
+                <h5>FEATURE EXTRACTION</h5>
+                <div className="custom-control custom-switch featureElem">
                     <input
                         type="checkbox"
                         className="custom-control-input"
@@ -44,20 +60,70 @@ export default class Feature extends React.Component {
                             Visual query
                         </label>
                 </div>
-                <div className="form-check form-check-inline">
-                    <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="checkboxDragTube"
-                        value="option1"
-                        checked={this.state.dragSelection}
+                <div className='featureElem'>
+                    <h6>Selection</h6>
+                    <form id='selector featureRow' onChange={this.switchSelector.bind(this)}>
+                        <div className="form-check form-check-inline">
+                            <input
+                                type="radio"
+                                name="file_type"
+                                value="select"
+                                disabled={!this.state.visualQuery}
+                                checked={this.state.selector}/>
+                            <label className="form-check-label" htmlFor="inlineCheckbox1">Select</label>
+                        </div>
+                        <div className="form-check form-check-inline">
+                            <input
+                                type="radio"
+                                name="file_type"
+                                value="Deselect"
+                                disabled={!this.state.visualQuery}
+                                checked={!this.state.selector}/>
+                            <label className="form-check-label" htmlFor="inlineCheckbox1">Deselect</label>
+                        </div>
+                    </form>
+                    <div id='selectTimeInterval' className='form-row featureRow'>
+                        <div className="input-group input-group-sm" style={{width: '10rem', marginRight: '1.5rem'}}>
+                            <span style={{marginRight: '0.3rem'}}>Select</span>
+                            <input
+                                type="text"
+                                className="form-control custom-input"
+                                id='selectTimeIntervalInput'
+                                disabled={!this.state.visualQuery}/>
+                            <span style={{marginLeft: '0.3rem'}}>days</span>
+                        </div>
+                        <button className="btn btn-secondary btn-sm"
+                                type="button"
+                                id='selectTimeIntervalBtn'
+                                style={{right: '0'}}
+                                disabled={!this.state.visualQuery}
+                                onClick={this.selectTimeInterval.bind(this)} >Select</button>
+                    </div>
+                    <button
+                        id='resetCameraBtn'
+                        className='btn btn-secondary btn-sm featureRow'
                         disabled={!this.state.visualQuery}
-                        onChange={this.switchDragSelection.bind(this)}/>
-                    <label
-                        className="form-check-label"
-                        htmlFor="inlineCheckbox1">
-                        Selection by drag
-                    </label>
+                        onClick={this.resetSelection.bind(this)}>
+                        Reset Selection
+                    </button>
+                </div>
+                <div className='featureElem'>
+                    <h6>Options</h6>
+                    <div className="form-check form-check-inline">
+                        <input
+                            className="form-check-input"
+                            type="checkbox"
+                            id="checkboxDragTube"
+                            value="option1"
+                            checked={this.state.dragSelection}
+                            disabled={!this.state.visualQuery}
+                            onChange={this.switchDragSelection.bind(this)}/>
+                        <label
+                            className="form-check-label"
+                            htmlFor="inlineCheckbox1">
+                            Selection by drag
+                        </label>
+                    </div>
                 </div>
             </div>
         );

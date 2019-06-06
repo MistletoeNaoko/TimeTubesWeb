@@ -77,6 +77,7 @@ export default class TimeTubes extends React.Component{
         this.drag = false;
         this.visualQuery = false;
         this.dragSelection = true;
+        this.selector = true;
         this.animationPara = {flag: false, dep: 0, dst:0, speed: 40, now: 0};
         if (this.data.merge) {
             this.plotColor = [];
@@ -226,6 +227,12 @@ export default class TimeTubes extends React.Component{
             } else {
                 this.controls.enabled = true;
             }
+        });
+        TimeTubesStore.on('resetSelection', () => {
+            this._resetSelection();
+        });
+        TimeTubesStore.on('switchSelector', () => {
+            this.selector = !this.selector;
         });
     }
 
@@ -405,26 +412,25 @@ export default class TimeTubes extends React.Component{
                 cameraPropNow.zpos = this.camera.position.z;
                 this.cameraProp = cameraPropNow;
 
-                // let status = $('#switchVisualQuery').prop('checked');
-                // let dragSelection = $('#checkboxDragTube').prop('checked');
-                // if (dragSelection) {
-                //     this.controls.enabled = false;
-                // }
                 if (this.visualQuery && this.dragSelection) {
-                    // console.log('dragSelection!', event, this._getIntersectedIndex(event));
                     let face = this._getIntersectedIndex(event);
                     if (face !== undefined && this.tube) {
                         this.tube.geometry.colorsNeedUpdate = true;
                         this.tube.geometry.attributes.selected.needsUpdate = true;
                         let startIdx = Math.floor(Math.min(face.a, face.b, face.c) / this.segment);
+                        let setValue;
+                        if (this.selector) {
+                            setValue = 1;
+                        } else {
+                            setValue = 0;
+                        }
                         // highlight a tube at one observation
                         for (let i = 0; i < this.segment; i++) {
-                            this.tube.geometry.attributes.selected.array[startIdx * this.segment + i] = 1;
-                            this.tube.geometry.attributes.selected.array[(startIdx + 1) * this.segment + i] = 1;
+                            this.tube.geometry.attributes.selected.array[startIdx * this.segment + i] = setValue;
+                            this.tube.geometry.attributes.selected.array[(startIdx + 1) * this.segment + i] = setValue;
                         }
                         this.renderer.render(this.scene, this.camera);
                     }
-
                 }
             }
         }
@@ -444,16 +450,17 @@ export default class TimeTubes extends React.Component{
                     this.tube.geometry.colorsNeedUpdate = true;
                     this.tube.geometry.attributes.selected.needsUpdate = true;
                     let startIdx = Math.floor(Math.min(face.a, face.b, face.c) / this.segment);
+                    let setValue;
+                    if (this.selector) {
+                        setValue = 1;
+                    } else {
+                        setValue = 0;
+                    }
                     // highlight a tube at one observation
                     for (let i = 0; i < this.segment; i++) {
-                        this.tube.geometry.attributes.selected.array[startIdx * this.segment + i] = 1;
-                        this.tube.geometry.attributes.selected.array[(startIdx + 1) * this.segment + i] = 1;
+                        this.tube.geometry.attributes.selected.array[startIdx * this.segment + i] = setValue;
+                        this.tube.geometry.attributes.selected.array[(startIdx + 1) * this.segment + i] = setValue;
                     }
-                    // this.tube.geometry.attributes.selected.array[face.a] = 1;
-                    // this.tube.geometry.attributes.selected.array[face.b] = 1;
-                    // this.tube.geometry.attributes.selected.array[face.c] = 1;
-                    // this.tube.geometry.attributes.selected.array[square] = 1;
-                    // this.tube.geometry.faces[square].color.set(0x00ff00);
                     this.renderer.render(this.scene, this.camera);
                 }
 
@@ -468,15 +475,19 @@ export default class TimeTubes extends React.Component{
         raymouse.y = -(event.offsetY / this.renderer.domElement.clientHeight) * 2 + 1;
         this.raycaster.setFromCamera(raymouse, this.camera);
         let intersects = this.raycaster.intersectObject(this.tube);
-        // for ( var i = 0; i < intersects.length; i++ ) {
-        //
-        //     intersects[ i ].object.material.color.set( 0xff0000 );
-        //
-        // }
         if (intersects.length > 0) {
             face = intersects[0].face;//faceIndex;
         }
         return face;
+    }
+
+    _resetSelection() {
+        this.tube.geometry.colorsNeedUpdate = true;
+        this.tube.geometry.attributes.selected.needsUpdate = true;
+        for (let i = 0; i < this.tube.geometry.attributes.selected.array.length; i++) {
+            this.tube.geometry.attributes.selected.array[i] = 0;
+        }
+        this.renderer.render(this.scene, this.camera);
     }
 
     // change the color of the currently focused plot

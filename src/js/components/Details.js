@@ -350,10 +350,9 @@ export default class Details extends React.Component{
                      id={"searchTime-" + this.state.id}
                      style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: '10rem', zIndex:'61'}}>
                     <input type="text"
-                           className="form-control"
+                           className="form-control custom-input"
                            id={"searchTimeInput-" + this.state.id}
-                           placeholder="Input JD"
-                           style={{height: '1.5rem'}}/>
+                           placeholder="Input JD"/>
                     <button className="btn btn-secondary btn-sm"
                             type="button"
                             id={"searchTimeBtn-" + this.state.id}

@@ -95,6 +95,12 @@ class TimeTubesStore extends EventEmitter{
             case 'SWITCH_DRAGSELECTION':
                 this.switchDragSelection(action.status);
                 break;
+            case 'RESET_SELECTION':
+                this.resetSelection();
+                break;
+            case 'SWITCH_SELECTOR':
+                this.switchSelector();
+                break;
             default:
         }
     }
@@ -237,6 +243,14 @@ class TimeTubesStore extends EventEmitter{
     switchDragSelection(status) {
         this.dragSelection = status;
         this.emit('switchDragSelection');
+    }
+
+    resetSelection() {
+        this.emit('resetSelection');
+    }
+
+    switchSelector() {
+        this.emit('switchSelector');
     }
 
     getPresetColors() {

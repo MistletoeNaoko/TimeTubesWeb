@@ -199,3 +199,35 @@ body {
 #featureArea {
     font-size: 0.8rem;
 }
+
+
+#featureArea h5 {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+#featureArea h6 {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+}
+
+.custom-input {
+    height: 1.5rem !important;
+    border-radius: 3.2px !important;
+}
+
+.form-row {
+    margin-right: 0px;
+    margin-left: 0px;
+}
+
+.featureElem {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.featureRow {
+    margin-top: 0.2rem;
+    margin-bottom: 0.2rem;
+}

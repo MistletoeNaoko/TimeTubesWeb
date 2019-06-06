@@ -82,3 +82,11 @@ export function switchVisualQuery(status) {
 export function switchDragSelection(status) {
     dispatcher.dispatch({type: 'SWITCH_DRAGSELECTION', status});
 }
+
+export function resetSelection() {
+    dispatcher.dispatch({type: 'RESET_SELECTION'});
+}
+
+export function switchSelector() {
+    dispatcher.dispatch({type: 'SWITCH_SELECTOR'});
+}
