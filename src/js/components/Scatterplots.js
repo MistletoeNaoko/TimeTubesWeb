@@ -71,7 +71,8 @@ export default class Scatterplots extends React.Component{
             .attr('width', outerWidth)
             .attr('height', outerHeight)
             .attr('class', 'scatterplot scatterplots' + this.id + ' ' + this.divID)
-            .call(this.zoom);
+            .call(this.zoom)
+            .on("dblclick.zoom", null);
         let xItem = this.state.xItem, yItem = this.state.yItem;
         // Draw x axis
         this.xScale = d3.scaleLinear()

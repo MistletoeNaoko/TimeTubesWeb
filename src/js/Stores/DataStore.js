@@ -38,6 +38,22 @@ class DataStore extends EventEmitter {
         return this.data;
     }
 
+    getAllFileNames() {
+        let fileNames = [];
+        for (let i = 0; i < this.data.length; i++) {
+            fileNames.push(this.data[i].name);
+        }
+        return fileNames;
+    }
+
+    getAllIdsFileNames() {
+        let idFile = [];
+        for (let i = 0; i < this.data.length; i++) {
+            idFile.push({id: this.data[i].id, name: this.data[i].name});
+        }
+        return idFile;
+    }
+
     getData(id) {
         return this.data[id];
     }

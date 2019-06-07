@@ -2,13 +2,15 @@ import React from 'react';
 import * as THREE from 'three';
 import Details from './Details';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
+import * as DataAction from '../Actions/DataAction';
+import * as FeatureAction from '../Actions/FeatureAction';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import DataStore from '../Stores/DataStore';
+import FeatureStore from '../Stores/FeatureStore';
 import BufferGeometryUtils from '../lib/BufferGeometryUtils';
 import OrbitControls from "three-orbitcontrols";
 import TextSprite from 'three.textsprite';
 import EventListener from 'react-event-listener';
-import * as DataAction from '../Actions/DataAction';
 
 let vertexShaderTube = [
     'precision mediump float;',
@@ -212,29 +214,37 @@ export default class TimeTubes extends React.Component{
                 }
             }
         });
-        TimeTubesStore.on('switchVisualQuery', () => {
-           this.visualQuery = TimeTubesStore.getVisualQuery();
-           if (this.visualQuery && this.dragSelection) {
-               this.controls.enabled = false;
-           } else {
-               this.controls.enabled = true;
+        FeatureStore.on('switchVisualQuery', () => {
+           this.visualQuery = FeatureStore.getVisualQuery();
+           let sourceId = FeatureStore.getSource();
+           if (sourceId !== this.id) {
+               this.visualQuery = false;
            }
+           this.updateControls();
+           this.resetSelection();
         });
-        TimeTubesStore.on('switchDragSelection', () => {
-            this.dragSelection = TimeTubesStore.getDragSelection();
-            if (this.visualQuery && this.dragSelection) {
-                this.controls.enabled = false;
+        FeatureStore.on('updateSource', () => {
+            let visualQuery = FeatureStore.getVisualQuery();
+            let sourceId = FeatureStore.getSource();
+            if (sourceId === this.id) {
+                this.visualQuery = true && visualQuery;
             } else {
-                this.controls.enabled = true;
+                this.visualQuery = false && visualQuery;
             }
+            this.updateControls();
+            this.resetSelection();
         });
-        TimeTubesStore.on('resetSelection', () => {
-            this._resetSelection();
+        FeatureStore.on('switchDragSelection', () => {
+            this.dragSelection = FeatureStore.getDragSelection();
+            this.updateControls();
         });
-        TimeTubesStore.on('switchSelector', () => {
-            this.selector = !this.selector;
+        FeatureStore.on('resetSelection', () => {
+            this.deselectAll();
         });
-        TimeTubesStore.on('selectTimeInterval', (value) => {
+        FeatureStore.on('switchSelector', () => {
+            this.selector = FeatureStore.getSelector();
+        });
+        FeatureStore.on('selectTimeInterval', (value) => {
             this._selectTimeInterval(value);
         });
     }
@@ -329,6 +339,14 @@ export default class TimeTubes extends React.Component{
         this.controls.screenSpacePanning = false;
         this.controls.enableZoom = false;
         // controls.enablePan = false;
+    }
+
+    updateControls() {
+        if (this.visualQuery && this.dragSelection) {
+            this.controls.enabled = false;
+        } else {
+            this.controls.enabled = true;
+        }
     }
 
     _onMouseWheel() {
@@ -433,6 +451,7 @@ export default class TimeTubes extends React.Component{
                             this.tube.geometry.attributes.selected.array[(startIdx + 1) * this.segment + i] = setValue;
                         }
                         this.renderer.render(this.scene, this.camera);
+                        this.getSelectedInterval();
                     }
                 }
             }
@@ -466,7 +485,7 @@ export default class TimeTubes extends React.Component{
                     }
                     this.renderer.render(this.scene, this.camera);
                 }
-
+                this.getSelectedInterval();
             }
         }
     }
@@ -479,18 +498,24 @@ export default class TimeTubes extends React.Component{
         this.raycaster.setFromCamera(raymouse, this.camera);
         let intersects = this.raycaster.intersectObject(this.tube);
         if (intersects.length > 0) {
-            face = intersects[0].face;//faceIndex;
+            face = intersects[0].face;
         }
         return face;
     }
 
-    _resetSelection() {
+    deselectAll() {
         this.tube.geometry.colorsNeedUpdate = true;
         this.tube.geometry.attributes.selected.needsUpdate = true;
         for (let i = 0; i < this.tube.geometry.attributes.selected.array.length; i++) {
             this.tube.geometry.attributes.selected.array[i] = 0;
         }
         this.renderer.render(this.scene, this.camera);
+        // FeatureAction.updateSelectedInterval([0, 0]);
+    }
+
+    resetSelection() {
+        if (!this.visualQuery)
+            this.deselectAll();
     }
 
     _selectTimeInterval(value) {
@@ -502,6 +527,17 @@ export default class TimeTubes extends React.Component{
             this.tube.geometry.attributes.selected.array[initIdx + i] = 1.0;
         }
         this.renderer.render(this.scene, this.camera);
+        this.getSelectedInterval();
+    }
+
+    getSelectedInterval() {
+        // get the first and last index of selected area
+        let firstIdx = this.tube.geometry.attributes.selected.array.indexOf(1);
+        let lastIdx = this.tube.geometry.attributes.selected.array.lastIndexOf(1);
+        let minJD = this.data.spatial[0].z;
+        let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
+        let lastJD = (Math.floor(lastIdx / this.segment) + 1) * (1 / this.division) + minJD;
+        FeatureAction.updateSelectedInterval([firstJD, lastJD]);
     }
 
     // change the color of the currently focused plot
@@ -685,7 +721,6 @@ export default class TimeTubes extends React.Component{
                 }
             }
         }
-        console.log(vertices);
         indices = indices.slice(0, -1 * this.segment * 3 * 2);
         selected = new Float32Array(vertices[0].length);
         let normals = new Float32Array(vertices[0].length);

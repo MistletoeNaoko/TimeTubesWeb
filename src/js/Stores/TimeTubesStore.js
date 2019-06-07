@@ -89,21 +89,6 @@ class TimeTubesStore extends EventEmitter{
             case 'UPDATE_CURRENTPOS':
                 this.updateCurrentPos(action.id, action.zpos);
                 break;
-            case 'SWITCH_VISUALQUERY':
-                this.switchVisualQuery(action.status);
-                break;
-            case 'SWITCH_DRAGSELECTION':
-                this.switchDragSelection(action.status);
-                break;
-            case 'RESET_SELECTION':
-                this.resetSelection();
-                break;
-            case 'SWITCH_SELECTOR':
-                this.switchSelector();
-                break;
-            case 'SELECT_TIMEINTERVAL':
-                this.selectTimeInterval(action.value);
-                break;
             default:
         }
     }
@@ -238,28 +223,6 @@ class TimeTubesStore extends EventEmitter{
         this.emit('updateCurrentPos', id, zpos);
     }
 
-    switchVisualQuery(status) {
-        this.visualQuery = status;
-        this.emit('switchVisualQuery');
-    }
-
-    switchDragSelection(status) {
-        this.dragSelection = status;
-        this.emit('switchDragSelection');
-    }
-
-    resetSelection() {
-        this.emit('resetSelection');
-    }
-
-    switchSelector() {
-        this.emit('switchSelector');
-    }
-
-    selectTimeInterval(value) {
-        this.emit('selectTimeInterval', value);
-    }
-
     getPresetColors() {
         return this.presetColors;
     }
@@ -288,10 +251,6 @@ class TimeTubesStore extends EventEmitter{
         return this.visualQuery;
     }
 
-    getDragSelection() {
-        return this.dragSelection;
-    }
-
     setPlotColor(id, color) {
         this.plotColor[id] = color;
     }
@@ -301,6 +260,6 @@ class TimeTubesStore extends EventEmitter{
     }
 }
 
-const cameraStore = new TimeTubesStore;
-dispatcher.register(cameraStore.handleActions.bind(cameraStore));
-export default cameraStore;
+const timetubesStore = new TimeTubesStore;
+dispatcher.register(timetubesStore.handleActions.bind(timetubesStore));
+export default timetubesStore;

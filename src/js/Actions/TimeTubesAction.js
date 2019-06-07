@@ -74,23 +74,3 @@ export function changePlotColor(id, color) {
 export function updateCurrentPos(id, zpos) {
     dispatcher.dispatch({type: 'UPDATE_CURRENTPOS', id, zpos});
 }
-
-export function switchVisualQuery(status) {
-    dispatcher.dispatch({type: 'SWITCH_VISUALQUERY', status});
-}
-
-export function switchDragSelection(status) {
-    dispatcher.dispatch({type: 'SWITCH_DRAGSELECTION', status});
-}
-
-export function resetSelection() {
-    dispatcher.dispatch({type: 'RESET_SELECTION'});
-}
-
-export function switchSelector() {
-    dispatcher.dispatch({type: 'SWITCH_SELECTOR'});
-}
-
-export function selectTimeInterval(value) {
-    dispatcher.dispatch({type:'SELECT_TIMEINTERVAL', value});
-}
