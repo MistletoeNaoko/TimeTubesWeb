@@ -307,7 +307,7 @@ export default class TimeTubes extends React.Component{
         this.scene.add(this.tubeGroup);
 
         let texture = new THREE.TextureLoader();
-        texture.load('../../img/1_256.png', this._drawTube.bind(this));
+        texture.load('img/1_256.png', this._drawTube.bind(this));
         this._drawGrid(TimeTubesStore.getGridSize() * 2, 10);
         this._drawLabel(TimeTubesStore.getGridSize() / this.data.meta.range);
         this._drawAxis();
@@ -669,6 +669,7 @@ export default class TimeTubes extends React.Component{
         this.texture = texture;
         let minJD = this.data.spatial[0].z;
         let maxJD = this.data.spatial[this.data.spatial.length - 1].z;
+        console.log(this.data.spatial, maxJD);
         let range = this.data.meta.range;
         let divNum = this.division * Math.ceil(maxJD - minJD);
         let delTime = (maxJD - minJD) / divNum;
@@ -698,7 +699,7 @@ export default class TimeTubes extends React.Component{
             }
             for (let j = 0; j < this.segment; j++) {
                 for (let k = 0; k < this.tubeNum; k++) {
-                    k = 0;
+                    // k = 0;
                     let currad = (1 / this.tubeNum) * (k + 1);
                     let deg = del * j;
                     vertices[k].push((cen[i].x * range + currad * rad[i].x * range * Math.cos(deg)) * -1);
