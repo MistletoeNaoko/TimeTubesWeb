@@ -81,6 +81,8 @@ export default class TimeTubes extends React.Component{
         this.dragSelection = true;
         this.selector = true;
         this.animationPara = {flag: false, dep: 0, dst:0, speed: 40, now: 0};
+        this.raycaster = new THREE.Raycaster();
+        // set plot color
         if (this.data.merge) {
             this.plotColor = [];
             this.idNameLookup = {};
@@ -105,7 +107,6 @@ export default class TimeTubes extends React.Component{
             TimeTubesStore.setPlotColorbyIdx(this.id, (TimeTubesStore.getInitColorIdx() + this.id) % TimeTubesStore.getPresetNum());
             this.plotColor = TimeTubesStore.getPlotColor(this.id);
         }
-        this.raycaster = new THREE.Raycaster();
     }
 
     render() {
@@ -322,12 +323,12 @@ export default class TimeTubes extends React.Component{
 
     stop() {
         cancelAnimationFrame(this.frameId);
-    };
+    }
 
     animate() {
         this.renderScene();
         this.frameId = window.requestAnimationFrame(this.animate.bind(this));
-    };
+    }
 
     renderScene() {
         if (this.renderer) this.renderer.render(this.scene, this.camera);
@@ -669,7 +670,6 @@ export default class TimeTubes extends React.Component{
         this.texture = texture;
         let minJD = this.data.spatial[0].z;
         let maxJD = this.data.spatial[this.data.spatial.length - 1].z;
-        console.log(this.data.spatial, maxJD);
         let range = this.data.meta.range;
         let divNum = this.division * Math.ceil(maxJD - minJD);
         let delTime = (maxJD - minJD) / divNum;
@@ -723,7 +723,7 @@ export default class TimeTubes extends React.Component{
             }
         }
         indices = indices.slice(0, -1 * this.segment * 3 * 2);
-        selected = new Float32Array(vertices[0].length);
+        selected = new Float32Array(vertices[0].length / 3);
         let normals = new Float32Array(vertices[0].length);
         let geometries = [];
         for (let i = 0; i < this.tubeNum; i++) {
