@@ -12,60 +12,6 @@ import OrbitControls from "three-orbitcontrols";
 import TextSprite from 'three.textsprite';
 import EventListener from 'react-event-listener';
 
-let vertexShaderTube = [
-    'precision mediump float;',
-    'attribute vec2 colorData;',
-    'attribute float selected;',
-    'varying vec3 vNormal;',
-    'varying vec3 vWorldPosition;',
-    'varying vec2 vColor;',
-    'varying float vSelected;',
-    '#include <clipping_planes_pars_vertex>',
-    'void main() {',
-    '#include <begin_vertex>',
-    'vNormal = normalMatrix * normal;',
-    'vec4 worldPosition = modelMatrix * vec4(position, 1.0);',
-    'vWorldPosition = worldPosition.xyz;',
-    'vColor = colorData;',
-    'vSelected = selected;',
-    'gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
-    'vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);',
-    '#include <clipping_planes_vertex>',
-    '}'
-].join('\n');
-
-let fragmentShaderTube = [
-    'precision mediump float;',
-    'varying vec3 vNormal;',
-    'varying vec3 vWorldPosition;',
-    'varying vec2 vColor;',
-    'varying float vSelected;',
-    'uniform vec3 lightPosition;',
-    'uniform sampler2D texture;',
-    'uniform int tubeNum;',
-    'uniform bool shade;',
-    'uniform vec2 minmaxH;',
-    'uniform vec2 minmaxV;',
-    '#include <clipping_planes_pars_fragment>',
-    'void main()',
-    '{',
-    '#include <clipping_planes_fragment>',
-    'vec3 lightDirection = normalize(lightPosition - vWorldPosition);',
-    'vec2 T;',
-    'T.x = (vColor.x - minmaxH.x) / (minmaxH.y - minmaxH.x);',
-    'T.y = (vColor.y - minmaxV.x) / (minmaxV.y - minmaxV.x);',
-    'vec4 resultColor = texture2D(texture, T);',
-    'float c = max(0.0, dot(vNormal, lightDirection)) * 0.3;',
-    'float opacity = 1.0 / float(tubeNum);//vPositionx;//vWorldPosition.x;//1.0 / float(TUBE_NUM);',
-    'if (shade)',
-    'gl_FragColor = vec4(resultColor.r + c, resultColor.g + c, resultColor.b + c, opacity);',
-    'else',
-    'gl_FragColor = vec4(resultColor.r, resultColor.g, resultColor.b, opacity);',
-    'if (vSelected != 0.0) {',
-    'gl_FragColor = vec4(1.0, 0.0, 0.0, opacity);}',
-    '}',
-].join('\n');
-
 export default class TimeTubes extends React.Component{
     constructor(props) {
         super();
@@ -82,6 +28,8 @@ export default class TimeTubes extends React.Component{
         this.selector = true;
         this.animationPara = {flag: false, dep: 0, dst:0, speed: 40, now: 0};
         this.raycaster = new THREE.Raycaster();
+        this.vertex = document.getElementById('vertexShader_tube').textContent;
+        this.fragment = document.getElementById('fragmentShader_tube').textContent;
         // set plot color
         if (this.data.merge) {
             this.plotColor = [];
@@ -538,6 +486,12 @@ export default class TimeTubes extends React.Component{
         let minJD = this.data.spatial[0].z;
         let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
         let lastJD = (Math.floor(lastIdx / this.segment) + 1) * (1 / this.division) + minJD;
+        let pos = this.tube.geometry.attributes.position.array.slice(firstIdx * 3, lastIdx * 3);
+        let colorData = this.tube.geometry.attributes.colorData.array.slice(firstIdx * 2, lastIdx * 2);
+        let indices = this.tube.geometry.index.array.slice(
+            firstIdx / this.segment * (this.segment - 1) * 3 * 2,
+            lastIdx / this.segment * (this.segment - 1) * 3 * 2,
+            );
         FeatureAction.updateSelectedInterval([firstJD, lastJD]);
     }
 
@@ -746,8 +700,8 @@ export default class TimeTubes extends React.Component{
         // tubeGeometry.computeFaceNormals();
         // tubeGeometry.computeVertexNormals();
         let tubeMaterial = new THREE.ShaderMaterial({
-            vertexShader: vertexShaderTube,
-            fragmentShader: fragmentShaderTube,
+            vertexShader: this.vertex,//vertexShaderTube,
+            fragmentShader: this.fragment,//fragmentShaderTube,
             uniforms: {
                 lightPosition: {value: new THREE.Vector3(-20, 40, 60)},
                 tubeNum: {value: this.tubeNum},
