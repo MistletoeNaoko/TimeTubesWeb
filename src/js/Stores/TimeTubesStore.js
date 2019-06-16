@@ -19,12 +19,14 @@ class TimeTubesStore extends EventEmitter{
             aspect: 1,
             type: 'Perspective'
         }];
+        this.texture = [];
         this.checked = [];
         this.focused = [];
         this.minmaxV = [];
         this.minmaxH = [];
         this.plotColor = [];
         this.gridSize = 15;
+        this.tubeNum = 1;
         this.visualQuery = false;
         this.dragSelection = true;
     }
@@ -88,6 +90,9 @@ class TimeTubesStore extends EventEmitter{
                 break;
             case 'UPDATE_CURRENTPOS':
                 this.updateCurrentPos(action.id, action.zpos);
+                break;
+            case 'UPDATE_TEXTURE':
+                this.updateTexture(action.id, action.texture);
                 break;
             default:
         }
@@ -223,6 +228,11 @@ class TimeTubesStore extends EventEmitter{
         this.emit('updateCurrentPos', id, zpos);
     }
 
+    updateTexture(id, texture) {
+        this.texture[id] = texture;
+        this.emit('updateTexture', id);
+    }
+
     getPresetColors() {
         return this.presetColors;
     }
@@ -249,6 +259,14 @@ class TimeTubesStore extends EventEmitter{
 
     getVisualQuery() {
         return this.visualQuery;
+    }
+
+    getTexture(id) {
+        return this.texture[id];
+    }
+
+    getTubeNum() {
+        return this.tubeNum;
     }
 
     setPlotColor(id, color) {

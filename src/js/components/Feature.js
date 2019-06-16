@@ -1,7 +1,9 @@
 import React from 'react';
+import * as THREE from 'three';
 import * as FeatureAction from '../Actions/FeatureAction';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
+import SelectedTimeSlice from './SelectedTimeSlice';
 
 export default class Feature extends React.Component {
     constructor() {
@@ -9,13 +11,19 @@ export default class Feature extends React.Component {
         this.state = {
             visualQuery: false,
             dragSelection: true,
-            selector: true
+            selector: true,
+            source: -1,
+            selectedInterval: []
         };
     }
 
     componentWillMount() {
-        FeatureStore.on('updateSelectedInterval', (period) => {
-            this.updateSelectedInterval(period);
+        FeatureStore.on('updateSelectedInterval', () => {
+            this.setState({selectedInterval: FeatureStore.getSelectedInterval()});
+            this.updateSelectedInterval();
+        });
+        FeatureStore.on('updateSource', () => {
+            this.setState({source: FeatureStore.getSource()});
         });
     }
 
@@ -55,11 +63,16 @@ export default class Feature extends React.Component {
     }
 
     updateTarget() {
-        console.log('updateTarget');
+        // console.log('updateTarget');
     }
 
-    updateSelectedInterval(period) {
+    updateSelectedInterval() {
+        let period = this.state.selectedInterval;
         $('#selectedInterval').text('JD: ' + period[0] + ' - ' + period[1]);
+    }
+
+    showSelectedTube() {
+        // new react component
     }
 
     render() {
@@ -76,6 +89,10 @@ export default class Feature extends React.Component {
         const targetList = idFile.map((data) => {
             return (<label className="form-check form-check-inline" htmlFor="inlineCheckbox1" key={data.id}><input className="form-check-input" type="checkbox" id={"checkboxTarget" + data.id} value={data.id} key={data.id} disabled={!visualQueryStatus}/>{data.name}</label>);
         });
+        let selectedTimeSlice = null;
+        if (this.state.source >= 0) {
+            selectedTimeSlice = <SelectedTimeSlice sourceId={this.state.source} selectedInterval={this.state.selectedInterval}/>;
+        }
         return (
             <div id='featureArea' className='controllersElem'>
                 <h5>FEATURE EXTRACTION</h5>
@@ -177,6 +194,10 @@ export default class Feature extends React.Component {
                 <div className='featureElem'>
                     <h6>Selection Detail</h6>
                     <span id='selectedInterval'></span>
+                    <div id='selectedIntervalViewArea'>
+                        {selectedTimeSlice}
+                        {/*<SelectedTimeSlice sourceId={this.state.source} selectedInterval={this.state.selectedInterval}/>*/}
+                    </div>
                 </div>
             </div>
         );

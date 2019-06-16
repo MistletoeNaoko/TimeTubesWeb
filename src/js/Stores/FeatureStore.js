@@ -10,6 +10,9 @@ class FeatureStore extends EventEmitter {
         this.selector = true;
         this.dragSelection = true;
         this.selectedInterval = [];
+        this.selectedPos = [];
+        this.selectedColor = [];
+        this.selectedIndices = [];
     }
 
     handleActions(action) {
@@ -36,7 +39,7 @@ class FeatureStore extends EventEmitter {
                 this.selectTimeInterval(action.value);
                 break;
             case 'UPDATE_SELECTEDINTERVAL':
-                this.updateSelectedInterval(action.period);
+                this.updateSelectedInterval(action.period, action.pos, action.color, action.indices);
                 break;
         }
     }
@@ -63,6 +66,18 @@ class FeatureStore extends EventEmitter {
 
     getSelectedInterval() {
         return this.selectedInterval;
+    }
+
+    getSelectedPos() {
+        return this.selectedPos;
+    }
+
+    getSelectedColor() {
+        return this.selectedColor;
+    }
+
+    getSelectedIndices() {
+        return this.selectedIndices;
     }
 
     switchVisualQuery(status) {
@@ -98,9 +113,17 @@ class FeatureStore extends EventEmitter {
         this.emit('selectTimeInterval', value);
     }
 
-    updateSelectedInterval(period) {
+    updateSelectedInterval(period, pos, color, indices) {
         this.selectedInterval = period;
-        this.emit('updateSelectedInterval', period);
+        this.selectedPos = pos;
+        this.selectedColor = color;
+        this.selectedIndices = indices;
+        this.emit('updateSelectedInterval');
+    }
+
+    setTexture(texture) {
+        this.texture = texture;
+        this.emit('setTexture');
     }
 }
 

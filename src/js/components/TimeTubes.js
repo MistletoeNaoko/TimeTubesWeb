@@ -171,6 +171,7 @@ export default class TimeTubes extends React.Component{
            }
            this.updateControls();
            this.resetSelection();
+           // FeatureAction.setTexture(this.tube.material.uniforms.texture.value);
         });
         FeatureStore.on('updateSource', () => {
             let visualQuery = FeatureStore.getVisualQuery();
@@ -489,10 +490,18 @@ export default class TimeTubes extends React.Component{
         let pos = this.tube.geometry.attributes.position.array.slice(firstIdx * 3, lastIdx * 3);
         let colorData = this.tube.geometry.attributes.colorData.array.slice(firstIdx * 2, lastIdx * 2);
         let indices = this.tube.geometry.index.array.slice(
-            firstIdx / this.segment * (this.segment - 1) * 3 * 2,
-            lastIdx / this.segment * (this.segment - 1) * 3 * 2,
+            0,// firstIdx / this.segment * (this.segment - 1) * 3 * 2,
+            ((lastIdx - firstIdx) / this.segment - 1) * (this.segment - 1) * 3 * 2// lastIdx / this.segment * (this.segment - 1) * 3 * 2,
             );
-        FeatureAction.updateSelectedInterval([firstJD, lastJD]);
+
+        // console.log(indices, firstIdx, firstIdx / this.segment * (this.segment - 1) * 3 * 2, lastIdx / this.segment * (this.segment - 1) * 3 * 2);
+        // let minIndices = firstIdx / this.segment * (this.segment - 1) * 3 * 2;
+        // console.log(minIndices);
+        // for (let i = 0; i < indices.length; i++) {
+        //     indices[i] -= firstIdx;
+        // }
+        // ToDo: 位置もmin弾かなきゃだめ！
+        FeatureAction.updateSelectedInterval([firstJD, lastJD], pos, colorData, indices);
     }
 
     // change the color of the currently focused plot
@@ -621,6 +630,7 @@ export default class TimeTubes extends React.Component{
     }
 
     _drawTube(texture){//texture, spline, minList, maxList) {
+        TimeTubesAction.updateTexture(this.id, texture);
         this.texture = texture;
         let minJD = this.data.spatial[0].z;
         let maxJD = this.data.spatial[this.data.spatial.length - 1].z;

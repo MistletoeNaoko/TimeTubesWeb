@@ -74,3 +74,7 @@ export function changePlotColor(id, color) {
 export function updateCurrentPos(id, zpos) {
     dispatcher.dispatch({type: 'UPDATE_CURRENTPOS', id, zpos});
 }
+
+export function updateTexture(id, texture) {
+    dispatcher.dispatch({type: 'UPDATE_TEXTURE', id, texture});
+}

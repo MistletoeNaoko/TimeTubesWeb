@@ -28,6 +28,6 @@ export function selectTimeInterval(value) {
     dispatcher.dispatch({type:'SELECT_TIMEINTERVAL', value});
 }
 
-export function updateSelectedInterval(period) {
-    dispatcher.dispatch({type: 'UPDATE_SELECTEDINTERVAL', period});
+export function updateSelectedInterval(period, pos, color, indices) {
+    dispatcher.dispatch({type: 'UPDATE_SELECTEDINTERVAL', period, pos, color, indices});
 }
