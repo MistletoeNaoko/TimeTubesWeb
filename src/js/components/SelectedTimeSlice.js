@@ -44,6 +44,9 @@ export default class SelectedTimeSlice extends React.Component {
                this.switchCamera();
            }
         });
+        FeatureStore.on('resetSelection', () => {
+            this.deselectAll();
+        });
     }
 
     componentWillUnmount() {
@@ -204,6 +207,22 @@ export default class SelectedTimeSlice extends React.Component {
         this.tube.geometry.attributes.selected = new THREE.BufferAttribute(new Float32Array(pos.length / 3), 1);
         this.tube.geometry.attributes.normal = new THREE.BufferAttribute(new Float32Array(pos.length), 1);
         this.tube.geometry.index = new THREE.BufferAttribute(new Uint32Array(indices), 1);
+        this.tube.geometry.computeVertexNormals();
+        this.renderer.render(this.scene, this.camera);
+    }
+
+    deselectAll() {
+        this.tube.geometry.attributes.position.needsUpdate = true;
+        this.tube.geometry.attributes.normal.needsUpdate = true;
+        this.tube.geometry.attributes.colorData.needsUpdate = true;
+        this.tube.geometry.attributes.selected.needsUpdate = true;
+        this.tube.geometry.index.needsUpdate = true;
+
+        this.tube.geometry.attributes.position = new THREE.BufferAttribute(new Float32Array(0), 3);
+        this.tube.geometry.attributes.colorData = new THREE.BufferAttribute(new Float32Array(0), 2);
+        this.tube.geometry.attributes.selected = new THREE.BufferAttribute(new Float32Array(0), 1);
+        this.tube.geometry.attributes.normal = new THREE.BufferAttribute(new Float32Array(0), 1);
+        this.tube.geometry.index = new THREE.BufferAttribute(new Uint32Array(0), 1);
         this.tube.geometry.computeVertexNormals();
         this.renderer.render(this.scene, this.camera);
     }
