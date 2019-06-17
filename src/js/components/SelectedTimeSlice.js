@@ -39,6 +39,11 @@ export default class SelectedTimeSlice extends React.Component {
                 FeatureStore.getSelectedIndices()
             );
         });
+        TimeTubesStore.on('switch', () => {
+           if (this.camera) {
+               this.switchCamera();
+           }
+        });
     }
 
     componentWillUnmount() {
@@ -52,15 +57,7 @@ export default class SelectedTimeSlice extends React.Component {
             const height = this.mount.clientHeight;
             this.scene = new THREE.Scene();
 
-            let cameraProp = TimeTubesStore.getCameraProp(this.sourceId);
-            this.camera = new THREE.PerspectiveCamera(
-                45,//cameraProp.fov,
-                1,// cameraProp.aspect,
-                0.1,
-                2000//cameraProp.far
-            );
-            this.camera.position.z = 50;
-            this.camera.lookAt(-this.scene.position);
+            this.setCameras();
 
             this.renderer = new THREE.WebGLRenderer({antialias: true});
             this.renderer.setClearColor("#000000");
@@ -79,11 +76,13 @@ export default class SelectedTimeSlice extends React.Component {
             this.scene.add(ambientLight);
 
             this.addControls();
+
+            this.setPlaceHolder();
             // let geo = new THREE.BoxGeometry(5, 5, 5);
             // let mat = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
             // this.cube = new THREE.Mesh(geo, mat);
             // this.scene.add(this.cube);
-            var axis = new THREE.AxisHelper(1000);
+            var axis = new THREE.AxesHelper(1000);
             this.scene.add(axis);
         }
     }
@@ -107,20 +106,39 @@ export default class SelectedTimeSlice extends React.Component {
         if (this.renderer) this.renderer.render(this.scene, this.camera);
     }
 
-    addControls() {
-        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-        this.controls.position0.set(0, 0, 50);
-        this.controls.screenSpacePanning = false;
-        this.controls.enableZoom = false;
-        // controls.enablePan = false;
+    setCameras() {
+        // initialize camera properties
+        let cameraProp = TimeTubesStore.getCameraProp(this.sourceId);
+        this.cameraSet = {};
+        this.cameraSet.perspective = new THREE.PerspectiveCamera(
+            cameraProp.fov,
+            1,
+            0.1,
+            cameraProp.far
+        );
+        let size_y = cameraProp.depth * (50);
+        let size_x = cameraProp.depth * (50) * 1;
+        this.cameraSet.orthographic = new THREE.OrthographicCamera(
+            -size_x / 2, size_x / 2,
+            size_y / 2, -size_y / 2, 0.1,
+            cameraProp.far);
+
+        if (cameraProp.type === 'Perspective') {
+            this.camera = this.cameraSet.perspective;
+        } else {
+            this.camera = this.cameraSet.orthographic;
+        }
+        this.camera.position.z = 50;
+        this.camera.lookAt(-this.scene.position);
     }
 
-    drawSelectedTube(pos, color, indices) {
-        // 短いから、TubeBufferGeometryで作り直すか
-    //    カットプレインとかで切り出すか？
+    setPlaceHolder() {
         let texture = TimeTubesStore.getTexture(this.sourceId);
-        let normals = new Float32Array(pos.length);
-        let selected = new Float32Array(pos.length / 3);
+        let pos = new Float32Array(0);
+        let color = new Float32Array(0);
+        let normals = new Float32Array(0);
+        let selected = new Float32Array(0);
+        let indices = new Uint32Array(0);
         let tubeGeometry = new THREE.BufferGeometry();
         tubeGeometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
         tubeGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
@@ -145,5 +163,48 @@ export default class SelectedTimeSlice extends React.Component {
         this.tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
         this.tube.rotateY(Math.PI);
         this.scene.add(this.tube);
+    }
+
+    switchCamera() {
+        let currentPos = this.camera.position;
+        let cameraProp = TimeTubesStore.getCameraProp(this.sourceId);
+        if (cameraProp.type === 'Perspective') {
+            this.camera = this.cameraSet.perspective;
+            this.camera.position.x = currentPos.x;
+            this.camera.position.y = currentPos.y;
+            this.camera.position.z = currentPos.z;
+            this.camera.lookAt(this.scene.position);
+        } else if (cameraProp.type === 'Orthographic') {
+            this.camera = this.cameraSet.orthographic;
+            this.camera.position.x = currentPos.x;
+            this.camera.position.y = currentPos.y;
+            this.camera.position.z = currentPos.z;
+            this.camera.lookAt(this.scene.position);
+        }
+        this.addControls();
+    }
+
+    addControls() {
+        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.controls.position0.set(0, 0, 50);
+        this.controls.screenSpacePanning = false;
+        this.controls.enableZoom = false;
+        // controls.enablePan = false;
+    }
+
+    drawSelectedTube(pos, color, indices) {
+        this.tube.geometry.attributes.position.needsUpdate = true;
+        this.tube.geometry.attributes.normal.needsUpdate = true;
+        this.tube.geometry.attributes.colorData.needsUpdate = true;
+        this.tube.geometry.attributes.selected.needsUpdate = true;
+        this.tube.geometry.index.needsUpdate = true;
+
+        this.tube.geometry.attributes.position = new THREE.BufferAttribute(new Float32Array(pos), 3);
+        this.tube.geometry.attributes.colorData = new THREE.BufferAttribute(new Float32Array(color), 2);
+        this.tube.geometry.attributes.selected = new THREE.BufferAttribute(new Float32Array(pos.length / 3), 1);
+        this.tube.geometry.attributes.normal = new THREE.BufferAttribute(new Float32Array(pos.length), 1);
+        this.tube.geometry.index = new THREE.BufferAttribute(new Uint32Array(indices), 1);
+        this.tube.geometry.computeVertexNormals();
+        this.renderer.render(this.scene, this.camera);
     }
 }

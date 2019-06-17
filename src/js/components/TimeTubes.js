@@ -484,6 +484,10 @@ export default class TimeTubes extends React.Component{
         // get the first and last index of selected area
         let firstIdx = this.tube.geometry.attributes.selected.array.indexOf(1);
         let lastIdx = this.tube.geometry.attributes.selected.array.lastIndexOf(1);
+        for (let i = firstIdx; i <= lastIdx; i++) {
+            this.tube.geometry.attributes.selected.array[i] = 1;
+        }
+        this.renderer.render(this.scene, this.camera);
         let minJD = this.data.spatial[0].z;
         let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
         let lastJD = (Math.floor(lastIdx / this.segment) + 1) * (1 / this.division) + minJD;
@@ -494,13 +498,10 @@ export default class TimeTubes extends React.Component{
             ((lastIdx - firstIdx) / this.segment - 1) * (this.segment - 1) * 3 * 2// lastIdx / this.segment * (this.segment - 1) * 3 * 2,
             );
 
-        // console.log(indices, firstIdx, firstIdx / this.segment * (this.segment - 1) * 3 * 2, lastIdx / this.segment * (this.segment - 1) * 3 * 2);
-        // let minIndices = firstIdx / this.segment * (this.segment - 1) * 3 * 2;
-        // console.log(minIndices);
-        // for (let i = 0; i < indices.length; i++) {
-        //     indices[i] -= firstIdx;
-        // }
-        // ToDo: 位置もmin弾かなきゃだめ！
+        let firstZpos = pos[2];
+        for (let i = 0; i < pos.length / 3; i++) {
+            pos[3 * i + 2] -= firstZpos;
+        }
         FeatureAction.updateSelectedInterval([firstJD, lastJD], pos, colorData, indices);
     }
 
