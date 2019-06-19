@@ -17,6 +17,10 @@ export default class Scatterplots extends React.Component{
         this.id = props.id;
         this.divID = props.divID;
         this.data = DataStore.getData(this.id);
+        this.width = 500;
+        this.height = 350;
+        this.xMinMax = [0, 0];
+        this.yMinMax = [0, 0];
         this.state = {
             xItem: props.xItem,
             yItem: props.yItem
@@ -33,7 +37,6 @@ export default class Scatterplots extends React.Component{
             }
         });
         ScatterplotsStore.on('resetScatterplots',  (id) => {
-            console.log('resetScatter')
             if (id === this.id) {
                 this.reset();
             }
@@ -56,7 +59,7 @@ export default class Scatterplots extends React.Component{
         let elem = parentArea
             .append('div')
             .attr('id', this.divID);
-        let outerWidth = 500, outerHeight = 350;
+        let outerWidth = this.width, outerHeight = this.height;
         let width = outerWidth - this.margin.left - this.margin.right;
         let height = outerHeight - this.margin.top - this.margin.bottom;
 
@@ -77,13 +80,16 @@ export default class Scatterplots extends React.Component{
         // Draw x axis
         this.xScale = d3.scaleLinear()
             .domain([this.data.data.meta.min[xItem], this.data.data.meta.max[xItem]])
+            .nice()
             .range([0, width]);
+        this.xMinMax = this.xScale.domain();
+
         let xLabel = d3.axisBottom(this.xScale)
             .ticks(10)
             .tickSize(-height);
         let xAxis = this.sp.append("g")
             .attr("class", "x_axis " + this.divID)
-            .attr("transform", "translate(" + this.margin.left + ', ' + (this.margin.top + height) + ")")
+            .attr("transform", "translate(" + this.margin.left + ',' + (this.margin.top + height) + ")")
             .call(xLabel);
         d3.selectAll('g.x_axis.' + this.divID)
             .append('text')
@@ -97,7 +103,9 @@ export default class Scatterplots extends React.Component{
         // Draw y axis
         this.yScale = d3.scaleLinear()
             .domain([this.data.data.meta.min[yItem], this.data.data.meta.max[yItem]])
+            .nice()
             .range([height, 0]);
+        this.yMinMax = this.yScale.domain();
         let yLabel = d3.axisLeft(this.yScale)
             .ticks(5)
             .tickSize(-width)
@@ -106,7 +114,7 @@ export default class Scatterplots extends React.Component{
             });
         let yAxis = this.sp.append("g")
             .attr("class", "y_axis "+ this.divID)
-            .attr("transform", "translate(" + this.margin.left + ', ' + this.margin.top + ")")
+            .attr("transform", "translate(" + this.margin.left + ',' + this.margin.top + ")")
             .call(yLabel);
         d3.selectAll('g.y_axis.' + this.divID)
             .append('text')
@@ -229,10 +237,31 @@ export default class Scatterplots extends React.Component{
 
 
         function zoomed() {
-            // let margin = { "top": 10, "bottom": 30, "right": 30, "left": 60 };
             // create new scale ojects based on event
+            // let lineHPos, lineVPos;
+            // if (lineH || lineV) {
+            //     let currentXScale = d3.scaleLinear()
+            //         .domain([this.xMinMax[0], this.xMinMax[1]])
+            //         .range([0, this.width - this.margin.left - this.margin.right]);
+            //     let currentYScale = d3.scaleLinear()
+            //         .domain([this.yMinMax[0], this.yMinMax[1]])
+            //         .range([0, this.height - this.margin.top - this.margin.bottom]);
+            //     let pos = lineH.attr('transform').split('translate(')[1].split(')')[0];
+            //     if (pos.indexOf(' ') >= 0) {
+            //         lineVPos = Number(pos.split(', ')[0]);  // x
+            //         lineHPos = Number(pos.split(', ')[1]);  // y
+            //     } else {
+            //         lineVPos = Number(pos.split(',')[0]);  // x
+            //         lineHPos = Number(pos.split(',')[1]);  // y
+            //     }
+            //     lineVPos = currentXScale.invert(lineVPos);  // x
+            //     lineHPos = currentYScale.invert(lineHPos);  // y
+            // }
             let new_xScale = d3.event.transform.rescaleX(this.xScale);
             let new_yScale = d3.event.transform.rescaleY(this.yScale);
+
+            this.xMinMax = new_xScale.domain();
+            this.yMinMax = new_yScale.domain();
             // update axes
             xAxis.call(xLabel.scale(new_xScale));
             yAxis.call(yLabel.scale(new_yScale));
@@ -241,30 +270,37 @@ export default class Scatterplots extends React.Component{
                 .attr('cx', function(d) {return new_xScale(d[xItem])})
                 .attr('cy', function(d) {return new_yScale(d[yItem])});
 
-            let current = d3.select('circle.current.' + this.divID);
-            // if (current._groups[0][0]) {
-            //     let cx = current.attr('cx'), cy = current.attr('cy');
-            //     if (cy <= 0 || height <= cy) {
-            //         lineH
-            //             .attr('transform', "translate(" + margin.left + "," + cy + ")")
-            //             .style('opacity', 0);
-            //     } else {
-            //         lineH.transition()
-            //             .duration(0)
-            //             .attr('transform', "translate(" + margin.left + "," + cy + ")")
-            //             .style('opacity', 0.75);
-            //     }
-            //     if (cx <= 0 || width <= cx) {
-            //         lineV
-            //             .attr('transform', "translate(" + cx + "," + margin.top + ")")
-            //             .style('opacity', 0);
-            //     } else {
-            //         lineV.transition()
-            //             .duration(0)
-            //             .attr('transform', "translate(" + cx + "," + margin.top + ")")
-            //             .style('opacity', 0.75);
-            //     }
+            // if (lineH) {
+            //     lineH.attr('transform', 'translate(' + this.margin.left + ',' + new_yScale(lineHPos) + ')');
             // }
+            // if (lineV) {
+            //     lineV.attr('transform', 'translate(' + new_xScale(lineVPos) + ',' + this.margin.top + ')');
+            // }
+            let current = d3.select('circle.current.' + this.divID);
+
+            if (current._groups[0][0]) {
+                let cx = current.attr('cx'), cy = current.attr('cy');
+                if (cy <= 0 || height <= cy) {
+                    lineH
+                        .attr('transform', "translate(" + this.margin.left + "," + cy + ")")
+                        .style('opacity', 0);
+                } else {
+                    lineH.transition()
+                        .duration(0)
+                        .attr('transform', "translate(" + this.margin.left + "," + cy + ")")
+                        .style('opacity', 0.75);
+                }
+                if (cx <= 0 || width <= cx) {
+                    lineV
+                        .attr('transform', "translate(" + cx + "," + this.margin.top + ")")
+                        .style('opacity', 0);
+                } else {
+                    lineV.transition()
+                        .duration(0)
+                        .attr('transform', "translate(" + cx + "," + this.margin.top + ")")
+                        .style('opacity', 0.75);
+                }
+            }
         }
         function spMouseOver(d) {
             d3.select(this)
@@ -382,6 +418,9 @@ export default class Scatterplots extends React.Component{
 
     updateCurrentPos(zpos) {
         if (this.state.xItem === 'z') {
+            let new_xScale = d3.scaleLinear()
+                .domain([this.xMinMax[0], this.xMinMax[1]])
+                .range([0, this.width - this.margin.left - this.margin.right]);
             let JD = zpos + this.data.data.spatial[0].z;
             let currentLineH = d3.selectAll('.currentLineH.' + this.divID + '.scatterplots' + this.id);
             let currentLineV = d3.selectAll('.currentLineV.' + this.divID + '.scatterplots' + this.id);
@@ -391,8 +430,11 @@ export default class Scatterplots extends React.Component{
                 .transition()
                 .duration(0)
                 .style('opacity', 0.75)
-                .attr('transform', 'translate(' + (this.xScale(JD)) + ',' + this.margin.top + ')');
+                .attr('transform', 'translate(' + (new_xScale(JD)) + ',' + this.margin.top + ')');
         } else if (this.state.yItem === 'z') {
+            let new_yScale = d3.scaleLinear()
+                .domain([this.yMinMax[0], this.yMinMax[1]])
+                .range([0, this.height - this.margin.top - this.margin.bottom]);
             let JD = zpos + this.data.data.spatial[0].z;
             let currentLineH = d3.selectAll('.currentLineH.' + this.divID + '.scatterplots' + this.id);
             let currentLineV = d3.selectAll('.currentLineV.' + this.divID + '.scatterplots' + this.id);
@@ -402,7 +444,7 @@ export default class Scatterplots extends React.Component{
                 .transition()
                 .duration(0)
                 .style('opacity', 0.75)
-                .attr('transform', 'translate(' + this.margin.left + ',' + (this.yScale(JD)) + ')');
+                .attr('transform', 'translate(' + this.margin.left + ',' + (new_yScale(JD)) + ')');
         }
     }
 
