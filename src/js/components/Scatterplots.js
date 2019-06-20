@@ -186,7 +186,7 @@ export default class Scatterplots extends React.Component{
                 .attr('stroke-width', 0.5)
                 .attr('stroke', 'dimgray')
                 .attr("r", 4)
-                .attr('class', this.divID)
+                .attr('class', this.divID + ' scatterplots' + this.id)
                 .on('mouseover', spMouseOver)
                 .on('mouseout', spMouseOut)
                 // .on('click', spClick)
@@ -227,7 +227,7 @@ export default class Scatterplots extends React.Component{
                 .attr('stroke-width', 0.5)
                 .attr('stroke', 'dimgray')
                 .attr("r", 4)
-                .attr('class', this.divID)
+                .attr('class', this.divID + ' scatterplots' + this.id)
                 .on('mouseover', spMouseOver)
                 .on('mouseout', spMouseOut)
                 // .on('click', spClick)
@@ -376,14 +376,15 @@ export default class Scatterplots extends React.Component{
     highlightCurrentPlot(zpos) {
         let JD = zpos + this.data.data.spatial[0].z;
         let sps = d3.selectAll('svg.scatterplots' + this.id);
-        let divID = this.divID;
         let xItem = this.state.xItem, yItem = this.state.yItem;
         sps.each(function (d) {
-            let plots = d3.select(this).selectAll('circle');
+            let sp = d3.select(this);
+            let plots = sp.selectAll('circle');
+            let spId = sp.attr('class').split(' '); // scatterplot scatterplots0 scatterplots0_0
             plots
                 .attr('stroke-width', 0.5)
                 .attr('stroke', 'dimgray')
-                .attr('class', divID);
+                .attr('class', spId[1] + ' ' + spId[2]);
             let currentPlots = plots.filter(function (d) {
                 return d.z === JD && xItem in d && yItem in d;
             });
@@ -391,7 +392,7 @@ export default class Scatterplots extends React.Component{
                 currentPlots
                     .attr('stroke', 'orange')
                     .attr('stroke-width', 1)
-                    .attr('class', divID + ' current')
+                    .attr('class', spId[1] + ' ' + spId[2] + ' current')
                     .moveToFront()
                     .each(moveLines);
             }
@@ -400,7 +401,7 @@ export default class Scatterplots extends React.Component{
             // plot (circle) has only one class named like 'scatterplots0_0'
             let margin = { "top": 10, "bottom": 30, "right": 30, "left": 60 };
             let circle = d3.select(this);
-            let lineClass = circle.attr('class').split(' ')[0];
+            let lineClass = circle.attr('class').split(' ')[1]; // scatterplots0_0
             let currentLineH = d3.selectAll('.currentLineH.' + lineClass);
             let currentLineV = d3.selectAll('.currentLineV.' + lineClass);
             currentLineH
