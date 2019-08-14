@@ -78,3 +78,11 @@ export function updateCurrentPos(id, zpos) {
 export function updateTexture(id, texture) {
     dispatcher.dispatch({type: 'UPDATE_TEXTURE', id, texture});
 }
+
+export function activateViewport(id) {
+    dispatcher.dispatch({type: 'ACTIVATE_VIEWPORT', id});
+}
+
+export function timeFitting(dst) {
+    dispatcher.dispatch({type: 'TIME_FITTING', dst});
+}

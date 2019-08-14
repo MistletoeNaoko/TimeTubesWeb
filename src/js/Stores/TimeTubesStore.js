@@ -29,6 +29,7 @@ class TimeTubesStore extends EventEmitter{
         this.tubeNum = 1;
         this.visualQuery = false;
         this.dragSelection = true;
+        this.activeId = -1;
     }
 
     handleActions(action) {
@@ -94,12 +95,21 @@ class TimeTubesStore extends EventEmitter{
             case 'UPDATE_TEXTURE':
                 this.updateTexture(action.id, action.texture);
                 break;
+            case 'ACTIVATE_VIEWPORT':
+                this.activateViewport(action.id);
+                break;
+            case 'TIME_FITTING':
+                this.timeFitting(action.dst);
             default:
         }
     }
 
     getCameraProp(id) {
         return this.cameraProp[id];
+    }
+
+    getChecked(id) {
+        return this.checked[id];
     }
 
     getCheckedList() {
@@ -116,6 +126,10 @@ class TimeTubesStore extends EventEmitter{
 
     getMinMaxV(id) {
         return this.minmaxV[id];
+    }
+
+    getActiveId() {
+        return this.activeId;
     }
 
     uploadData() {
@@ -231,6 +245,14 @@ class TimeTubesStore extends EventEmitter{
     updateTexture(id, texture) {
         this.texture[id] = texture;
         this.emit('updateTexture', id);
+    }
+
+    activateViewport(id) {
+        this.activeId = id;
+    }
+
+    timeFitting(dst) {
+        this.emit('timeFitting', dst);
     }
 
     getPresetColors() {

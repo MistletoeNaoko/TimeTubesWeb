@@ -130,8 +130,16 @@ export default class Controllers extends React.Component{
     }
 
     timeFitting() {
-        let checked = this.getSelectedIDs();
-        // to which viewport?
+        // move all checked TimeTubes to the observation time of the active window
+        // JD_Current<JD_Min：to JD_Min
+        // JD_Max<JD_Current：to JD_Max
+        // pass dstJD to Action. Each TimeTubes view think about how much I should move
+        let activeId = TimeTubesStore.getActiveId();
+        let currentJD = TimeTubesStore.getFocused(activeId);
+        let currentData = DataStore.getData(activeId);
+        // ここのcurrentJDに最小値足さなきゃだめよ！！！！
+        console.log(currentData);
+        TimeTubesAction.timeFitting(currentJD + currentData.data.spatial[0].z);
     }
 
     mergeTubes() {

@@ -6,6 +6,19 @@ class DataStore extends EventEmitter {
     constructor() {
         super();
         this.data = [];
+        // id: id,
+        // name: data.name,
+        // data: data,
+            //    name: value.fileName,
+            //    data: value.data,
+            //    spatial: value.spatial,
+            //    meta: value.meta,
+            //    position: value.splines.position,
+            //    radius: value.splines.radius,
+            //    color: value.splines.color,
+            //    splines: value.splines.spline,
+            //    lookup: value.lookup,
+            //    merge: true
     }
 
     handleActions(action) {

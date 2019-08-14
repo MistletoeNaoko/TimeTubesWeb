@@ -163,6 +163,23 @@ export default class TimeTubes extends React.Component{
                 }
             }
         });
+        TimeTubesStore.on('timeFitting', (dst) => {
+            if (TimeTubesStore.getChecked(this.id)) {
+                let focused = TimeTubesStore.getFocused(this.id) + this.data.spatial[0].z;
+                let fittingDst = dst;
+                if (focused < this.data.spatial[0].z) {
+                    // JD_Current<JD_Min：to JD_Min
+                    fittingDst = this.data.spatial[0].z;
+                } else if (this.data.spatial[this.data.spatial.length - 1].z < focused) {
+                    // JD_Max<JD_Current：to JD_Max
+                    fittingDst = this.data.spatial[this.data.spatial.length - 1].z;
+                } else {
+                    // move TimeTubes to the observation time of the active window
+                    // do nothing
+                }
+                this._searchTime(fittingDst);
+            }
+        });
         FeatureStore.on('switchVisualQuery', () => {
            this.visualQuery = FeatureStore.getVisualQuery();
            let sourceId = FeatureStore.getSource();
@@ -216,7 +233,9 @@ export default class TimeTubes extends React.Component{
         this.renderer.setSize(width, height);
         this.renderer.localClippingEnabled = true;
         this.renderer.domElement.id = 'TimeTubes_viewport_' + this.id;
+        this.renderer.domElement.className = 'TimeTubes_viewport';
 
+        // assign a canvas with the name of 'TimeTubes_viewport_ + this.id' to div element
         this.mount.appendChild(this.renderer.domElement);
 
         this.renderScene();
@@ -334,7 +353,7 @@ export default class TimeTubes extends React.Component{
             if (changeColFlg) {
                 if (!this.data.merge) {
                     for (let j = 0; j < this.data.position.length; j++) {
-                        if (dst === this.data.position[j].z - this.data.spatial[0].z) {
+                        if (dst === this.data.spatial[j].z - this.data.spatial[0].z) {
                             let color = new THREE.Color('rgb(127, 255, 212)');//this.gui.__folders.Display.__folders.Plot.__controllers[1].object.plotColor;
                             // this._changePlotColor(this.currentHighlightedPlot * this.segment, new THREE.Color(color[0] / 255, color[1] / 255, color[2] / 255));
                             this._changePlotColor(this.currentHighlightedPlot * this.segment, color);
@@ -436,6 +455,19 @@ export default class TimeTubes extends React.Component{
                     this.renderer.render(this.scene, this.camera);
                 }
                 this.getSelectedInterval();
+            } else {
+                // activate the viewport
+                // remove borders from all viewports
+                let viewports = document.getElementsByClassName('TimeTubes_viewport');
+                for (let i = 0; i < viewports.length; i++) {
+                    viewports[i].style.border = 'none';
+                }
+                // add a border to the clicked viewport
+                let currentViewport = document.getElementById('TimeTubes_viewport_' + this.id);
+                currentViewport.style.border = 'solid 3px red';
+                currentViewport.style.boxSizing = 'border-box';
+                console.log(TimeTubesStore.getActiveId());
+                TimeTubesAction.activateViewport(this.id);
             }
         }
     }
@@ -611,13 +643,14 @@ export default class TimeTubes extends React.Component{
 
     _moveTube() {
         if (this.animationPara.flag) {
-            requestAnimationFrame(this._moveTube.bind(this));
-            this.renderer.render(this.scene, this.camera);
-            this.animationPara.now += 1;
-            let anim = (1 - Math.cos(Math.PI * this.animationPara.now / this.animationPara.speed)) / 2;
-            this.tubeGroup.position.z = this.animationPara.dep + (this.animationPara.dst - this.animationPara.dep) * anim;
+            if (this.animationPara.now < this.animationPara.speed) {
+                requestAnimationFrame(this._moveTube.bind(this));
+                this.renderer.render(this.scene, this.camera);
+                this.animationPara.now += 1;
+                let anim = (1 - Math.cos(Math.PI * this.animationPara.now / this.animationPara.speed)) / 2;
+                this.tubeGroup.position.z = this.animationPara.dep + (this.animationPara.dst - this.animationPara.dep) * anim;
+            }
             if (this.animationPara.now === this.animationPara.speed) {
-                // showCurrentVal(this.idx, this.animationPara.dst);
                 DataAction.updateDetails(this.id, this.animationPara.dst);
                 this.animationPara.flag = false;
                 this.animationPara.now = 0;
