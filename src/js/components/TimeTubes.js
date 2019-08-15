@@ -181,14 +181,15 @@ export default class TimeTubes extends React.Component{
             }
         });
         FeatureStore.on('switchVisualQuery', () => {
-           this.visualQuery = FeatureStore.getVisualQuery();
-           let sourceId = FeatureStore.getSource();
-           if (sourceId !== this.id) {
-               this.visualQuery = false;
-           }
-           this.updateControls();
-           this.resetSelection();
-           // FeatureAction.setTexture(this.tube.material.uniforms.texture.value);
+            // when the visual query is switched on, make the parameter 'visualQuery' true if the TimeTubes view is active
+            let activeId = TimeTubesStore.getActiveId();
+            if (activeId !== this.id) {
+                this.visualQuery = false;
+            } else {
+                this.visualQuery = true;
+            }
+            this.updateControls();
+            this.resetSelection();
         });
         FeatureStore.on('updateSource', () => {
             let visualQuery = FeatureStore.getVisualQuery();
@@ -466,7 +467,6 @@ export default class TimeTubes extends React.Component{
                 let currentViewport = document.getElementById('TimeTubes_viewport_' + this.id);
                 currentViewport.style.border = 'solid 3px red';
                 currentViewport.style.boxSizing = 'border-box';
-                console.log(TimeTubesStore.getActiveId());
                 TimeTubesAction.activateViewport(this.id);
             }
         }
