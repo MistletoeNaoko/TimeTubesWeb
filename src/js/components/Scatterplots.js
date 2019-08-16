@@ -56,6 +56,7 @@ export default class Scatterplots extends React.Component{
     drawScatterplots(data) {
         let id = this.id;
         let parentArea = d3.select('#scatterplots_' + this.id);
+        console.log('scatterplots' + parentArea)
         let elem = parentArea
             .append('div')
             .attr('id', this.divID);
@@ -158,7 +159,7 @@ export default class Scatterplots extends React.Component{
 
         // create a clipping region
         this.sp.append("defs").append("clipPath")
-            .attr("id", "clip")
+            .attr("id", "clipScatterplots")
             .append("rect")
             .attr("width", width)
             .attr("height", height);
@@ -169,7 +170,7 @@ export default class Scatterplots extends React.Component{
             let plotColor = TimeTubesStore.getPlotColor(this.id);
             let point_g = this.sp.append('g')
                 .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')')
-                .attr('clip-path', 'url(#clip)')
+                .attr('clip-path', 'url(#clipScatterplots)')
                 .classed('points_g', true);
             points = point_g
                 .selectAll("circle")

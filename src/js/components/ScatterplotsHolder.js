@@ -1,5 +1,6 @@
 import React from 'react';
 import Scatterplots from './Scatterplots';
+import TimeSelector from './TimeSelector';
 import DataStore from '../Stores/DataStore';
 import * as ScatterplotsAction from '../Actions/ScatterplotsAction';
 
@@ -47,6 +48,7 @@ export default class ScatterplotsHolder extends React.Component{
     }
 
     render() {
+        console.log('render scatterplots holder')
         let scatterplots = this.state.scatterplotsList.map((axis, i) => {
             return <Scatterplots key={i} id={this.id} divID={'scatterplots' + this.id + '_' + i} xItem={axis.x} yItem={axis.y}/>;
         });
@@ -62,6 +64,9 @@ export default class ScatterplotsHolder extends React.Component{
         }
         return (
             <div>
+                <div id={'timeSelectorHolder_' + this.id} className='timeSelectorHolder'>
+                    <TimeSelector id={this.id} divID={'timeSelector_' + this.id}/>
+                </div>
                 <div className='scatterplotsMenu row'>
                         {this.fileName}
                         <button
