@@ -11,6 +11,8 @@ class ScatterplotsStore extends EventEmitter {
             case 'RESET_SCATTERPLOTS':
                 this.emit('resetScatterplots', action.id);
                 break;
+            case 'MOVE_CURRENT_LINE_ON_TIMESELECTOR':
+                this.emit('moveCurrentLineonTimeSelector', action.id, action.zpos);
             default:
         }
     }

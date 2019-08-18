@@ -2,6 +2,7 @@ import React from 'react';
 import * as THREE from 'three';
 import Details from './Details';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
+import * as ScatterplotsAction from '../Actions/ScatterplotsAction';
 import * as DataAction from '../Actions/DataAction';
 import * as FeatureAction from '../Actions/FeatureAction';
 import TimeTubesStore from '../Stores/TimeTubesStore';
@@ -342,8 +343,6 @@ export default class TimeTubes extends React.Component{
                 }
             }
 
-            TimeTubesAction.updateCurrentPos(this.id, dst);
-
             if ((dst === this.data.spatial[this.data.spatial.length - 1].z - this.data.spatial[0].z) && ('x' in this.data.spatial[this.data.spatial.length - 1])) {
                 changeColFlg = true;
             }
@@ -360,8 +359,6 @@ export default class TimeTubes extends React.Component{
                             this._changePlotColor(this.currentHighlightedPlot * this.segment, color);
                             this._changePlotColor(j * this.segment, new THREE.Color('red'));
                             this.currentHighlightedPlot = j;
-                            TimeTubesAction.updateFocus(this.id, dst);
-                            // highlightCurrentPlot(this.idx, dst);
                         }
                     }
                 } else {
@@ -373,17 +370,16 @@ export default class TimeTubes extends React.Component{
                                 this._changePlotColor(this.currentHighlightedPlot * this.segment, color);
                                 this._changePlotColor(posCount * this.segment, new THREE.Color('red'));
                                 this.currentHighlightedPlot = posCount;
-                                TimeTubesAction.updateFocus(this.id, dst);
-                                // highlightCurrentPlot(this.idx, dst);
                             }
                             posCount++;
                         }
                     }
                 }
             }
+
+            TimeTubesAction.updateFocus(this.id, dst, changeColFlg);
+            ScatterplotsAction.moveCurrentLineonTimeSelector(this.id, dst + this.data.spatial[0].z);
             this.tubeGroup.position.z = dst;
-            // this.gui.__folders.Tube.__controllers[0].setValue(dst + this.blazar.data[0].z);
-            // showCurrentVal(this.idx, dst);
             DataAction.updateDetails(this.id, dst);
         }.bind(this);
     }
@@ -652,6 +648,7 @@ export default class TimeTubes extends React.Component{
             }
             if (this.animationPara.now === this.animationPara.speed) {
                 DataAction.updateDetails(this.id, this.animationPara.dst);
+                TimeTubesAction.updateFocus(this.id, this.animationPara.dst, false);
                 this.animationPara.flag = false;
                 this.animationPara.now = 0;
                 this.animationPara.dep = 0;

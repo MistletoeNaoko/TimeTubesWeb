@@ -30,10 +30,13 @@ export default class Scatterplots extends React.Component{
 
 
     componentWillMount() {
-        TimeTubesStore.on('updateFocus', (id) => {
+        TimeTubesStore.on('updateFocus', (id, zpos, flag) => {
+            // when flag is true, change the color of the plot
             if (id === this.id) {
-                let zpos = TimeTubesStore.getFocused(this.id);
-                this.highlightCurrentPlot(zpos);
+                if (flag)
+                    this.highlightCurrentPlot(zpos)
+                else
+                    this.updateCurrentPos(zpos);
             }
         });
         ScatterplotsStore.on('resetScatterplots',  (id) => {
@@ -41,11 +44,11 @@ export default class Scatterplots extends React.Component{
                 this.reset();
             }
         });
-        TimeTubesStore.on('updateCurrentPos', (id, zpos) => {
-            if (id === this.id) {
-                this.updateCurrentPos(zpos);
-            }
-        });
+        // TimeTubesStore.on('updateCurrentPos', (id, zpos) => {
+        //     if (id === this.id) {
+        //         this.updateCurrentPos(zpos);
+        //     }
+        // });
         TimeTubesStore.on('changePlotColor', (id) => {
             if (id === this.id) {
                 this.changePlotColor(TimeTubesStore.getPlotColor(id));
@@ -56,7 +59,6 @@ export default class Scatterplots extends React.Component{
     drawScatterplots(data) {
         let id = this.id;
         let parentArea = d3.select('#scatterplots_' + this.id);
-        console.log('scatterplots' + parentArea)
         let elem = parentArea
             .append('div')
             .attr('id', this.divID);
@@ -373,6 +375,12 @@ export default class Scatterplots extends React.Component{
             TimeTubesAction.searchTime(id, d.z);
         }
     }
+
+    // differences between highlightCurrentPlot and updateCurrentPos
+    // highlightCurrentPlot: Use only when the currently focued plot on TimeTubes coincides with the observation
+    //      change the color of the plot and move the current lines
+    // updateCurrentPos: Use only when the currently focued plot on TimeTubes locates between observations
+    //      move the current lines
 
     highlightCurrentPlot(zpos) {
         let JD = zpos + this.data.data.spatial[0].z;

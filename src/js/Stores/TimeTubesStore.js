@@ -75,7 +75,7 @@ class TimeTubesStore extends EventEmitter{
                 this.switchShade(action.id, action.state);
                 break;
             case 'UPDATE_FOCUS':
-                this.updateFocus(action.id, action.zpos);
+                this.updateFocus(action.id, action.zpos, action.flag);
                 break;
             case 'CHANGE_FAR':
                 this.changeFar(action.id, action.value);
@@ -88,9 +88,6 @@ class TimeTubesStore extends EventEmitter{
                 break;
             case 'CHANGE_PLOTCOLOR':
                 this.changePlotColor(action.id, action.color);
-                break;
-            case 'UPDATE_CURRENTPOS':
-                this.updateCurrentPos(action.id, action.zpos);
                 break;
             case 'UPDATE_TEXTURE':
                 this.updateTexture(action.id, action.texture);
@@ -213,9 +210,9 @@ class TimeTubesStore extends EventEmitter{
         this.emit('switchShade', id, state);
     }
 
-    updateFocus(id, zpos) {
+    updateFocus(id, zpos, flag) {
         this.focused[id] = zpos;
-        this.emit('updateFocus', id);
+        this.emit('updateFocus', id, zpos, flag);
     }
 
     changeFar(id, value) {
@@ -236,10 +233,6 @@ class TimeTubesStore extends EventEmitter{
     changePlotColor(id, color) {
         this.plotColor[id] = color;
         this.emit('changePlotColor', id);
-    }
-
-    updateCurrentPos(id, zpos) {
-        this.emit('updateCurrentPos', id, zpos);
     }
 
     updateTexture(id, texture) {

@@ -55,8 +55,8 @@ export function changeFar(id, value) {
     dispatcher.dispatch({type: 'CHANGE_FAR', id, value});
 }
 
-export function updateFocus(id, zpos) {
-    dispatcher.dispatch({type: 'UPDATE_FOCUS', id, zpos});
+export function updateFocus(id, zpos, flag) {
+    dispatcher.dispatch({type: 'UPDATE_FOCUS', id, zpos, flag});
 }
 
 export function updateMinMaxV(id, min, max) {
@@ -69,10 +69,6 @@ export function updateMinMaxH(id, min, max) {
 
 export function changePlotColor(id, color) {
     dispatcher.dispatch({type: 'CHANGE_PLOTCOLOR', id, color});
-}
-
-export function updateCurrentPos(id, zpos) {
-    dispatcher.dispatch({type: 'UPDATE_CURRENTPOS', id, zpos});
 }
 
 export function updateTexture(id, texture) {
