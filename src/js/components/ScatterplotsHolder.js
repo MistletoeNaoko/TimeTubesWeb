@@ -48,7 +48,6 @@ export default class ScatterplotsHolder extends React.Component{
     }
 
     render() {
-        console.log('render scatterplots holder')
         let scatterplots = this.state.scatterplotsList.map((axis, i) => {
             return <Scatterplots key={i} id={this.id} divID={'scatterplots' + this.id + '_' + i} xItem={axis.x} yItem={axis.y}/>;
         });

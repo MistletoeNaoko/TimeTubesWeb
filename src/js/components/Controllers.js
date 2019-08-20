@@ -14,7 +14,8 @@ export default class Controllers extends React.Component{
             axis: true,
             plot: true,
             clip: true,
-            shade: true
+            shade: true,
+            lock: false
         }
     }
 
@@ -137,8 +138,6 @@ export default class Controllers extends React.Component{
         let activeId = TimeTubesStore.getActiveId();
         let currentJD = TimeTubesStore.getFocused(activeId);
         let currentData = DataStore.getData(activeId);
-        // ここのcurrentJDに最小値足さなきゃだめよ！！！！
-        console.log(currentData);
         TimeTubesAction.timeFitting(currentJD + currentData.data.spatial[0].z);
     }
 
@@ -147,12 +146,14 @@ export default class Controllers extends React.Component{
         DataAction.mergeData(checked);
     }
 
-    // changeFar() {
-    //     let checked = this.getSelectedIDs();
-    //     checked.forEach(function (value) {
-    //         // TimeTubesAction
-    //     })
-    // }
+    lockControl() {
+        let state = !this.state.lock;
+        this.setState({
+            lock: state
+        });
+        let checked = this.getSelectedIDs();
+        TimeTubesAction.lockControl(checked, state);
+    }
 
     clickClose() {
         let state = document.getElementById('closeFilePanel').innerText;
@@ -367,6 +368,22 @@ export default class Controllers extends React.Component{
                                 htmlFor="inlineCheckbox1">
                                 Shade
                             </label>
+                    </div>
+                    <br/>
+                    <div className="form-check form-check-inline">
+                        <input
+                            className="form-check-input"
+                            type="checkbox"
+                            id='checkboxLock'
+                            value="option1"
+                            checked={this.state.lock}
+                            onChange={this.lockControl.bind(this)}/>
+
+                        <label
+                            className="form-check-label"
+                            htmlFor="inlineCheckbox1">
+                            Lock
+                        </label>
                     </div>
                     <br/>
                     <button

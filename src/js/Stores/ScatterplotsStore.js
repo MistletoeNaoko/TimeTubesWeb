@@ -13,6 +13,7 @@ class ScatterplotsStore extends EventEmitter {
                 break;
             case 'MOVE_CURRENT_LINE_ON_TIMESELECTOR':
                 this.emit('moveCurrentLineonTimeSelector', action.id, action.zpos);
+                break;
             default:
         }
     }

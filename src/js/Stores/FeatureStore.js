@@ -41,6 +41,7 @@ class FeatureStore extends EventEmitter {
             case 'UPDATE_SELECTEDINTERVAL':
                 this.updateSelectedInterval(action.period, action.pos, action.color, action.indices);
                 break;
+            default:
         }
     }
 

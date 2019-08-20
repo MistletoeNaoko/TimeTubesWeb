@@ -82,3 +82,11 @@ export function activateViewport(id) {
 export function timeFitting(dst) {
     dispatcher.dispatch({type: 'TIME_FITTING', dst});
 }
+
+export function lockControl(ids, state) {
+    dispatcher.dispatch({type: 'LOCK_CONTROL', ids, state});
+}
+
+export function synchronizeTubes(id, zpos, pos, deg) {
+    dispatcher.dispatch({type: 'SYNCHRONIZE_TUBES', id, zpos, pos, deg});
+}

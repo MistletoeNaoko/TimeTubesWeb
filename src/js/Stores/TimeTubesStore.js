@@ -30,10 +30,11 @@ class TimeTubesStore extends EventEmitter{
         this.visualQuery = false;
         this.dragSelection = true;
         this.activeId = -1;
+        this.lock = [];
     }
 
     handleActions(action) {
-        // console.log('CameraStore received an action', action);
+        // console.log('TimeTubesStore received an action', action);
         switch (action.type) {
             case 'UPLOAD_DATA':
                 this.uploadData();
@@ -97,6 +98,13 @@ class TimeTubesStore extends EventEmitter{
                 break;
             case 'TIME_FITTING':
                 this.timeFitting(action.dst);
+                break;
+            case 'LOCK_CONTROL':
+                this.lockControl(action.ids, action.state);
+                break;
+            case 'SYNCHRONIZE_TUBES':
+                this.synchronizeTubes(action.id, action.zpos, action.pos, action.deg);
+                break;
             default:
         }
     }
@@ -114,6 +122,7 @@ class TimeTubesStore extends EventEmitter{
     }
 
     getFocused(id) {
+        // focused is not JD, but the position of the tube in the 3D space
         return this.focused[id];
     }
 
@@ -147,6 +156,7 @@ class TimeTubesStore extends EventEmitter{
         this.focused.push(0);
         this.minmaxV.push([0, 0]);
         this.minmaxV.push([0, 0]);
+        this.lock.push(0);
         this.emit('upload');
     }
 
@@ -248,6 +258,26 @@ class TimeTubesStore extends EventEmitter{
         this.emit('timeFitting', dst);
     }
 
+    lockControl(ids, state) {
+        if (!state) {
+            // reset this.lock
+            for (let i = 0; i < this.lock.length; i++) {
+                this.lock[i] = 0;
+            }
+        } else {
+            // set the current position of the tube to lock[]
+            // current positions can be got by getFocus
+            for (let i = 0; i < ids.length; i++) {
+                this.lock[ids[i]] = this.getFocused(ids[i]);
+            }
+        }
+        this.emit('lockControl', ids, state);
+    }
+
+    synchronizeTubes(id, zpos, pos, deg) {
+        this.emit('synchronizeTubes', id, zpos, pos, deg);
+    }
+
     getPresetColors() {
         return this.presetColors;
     }
@@ -282,6 +312,10 @@ class TimeTubesStore extends EventEmitter{
 
     getTubeNum() {
         return this.tubeNum;
+    }
+
+    getLock(id) {
+        return this.lock[id];
     }
 
     setPlotColor(id, color) {

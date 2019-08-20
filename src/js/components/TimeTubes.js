@@ -31,6 +31,7 @@ export default class TimeTubes extends React.Component{
         this.raycaster = new THREE.Raycaster();
         this.vertex = document.getElementById('vertexShader_tube').textContent;
         this.fragment = document.getElementById('fragmentShader_tube').textContent;
+        this.lock = false;
         // set plot color
         if (this.data.merge) {
             this.plotColor = [];
@@ -179,6 +180,36 @@ export default class TimeTubes extends React.Component{
                     // do nothing
                 }
                 this._searchTime(fittingDst);
+            }
+        });
+        TimeTubesStore.on('lockControl', (ids, state) => {
+            if (!state || ids.indexOf(this.id) < 0) {
+                this.lock = false;
+            } else {
+                this.lock = true;
+                this._resetCamera();
+            }
+        });
+        TimeTubesStore.on('synchronizeTubes', (id, zpos, pos, deg) => {
+            if (this.lock & id !== this.id) {
+                if (zpos !== 0) {
+                    // move in the direction of the observation time
+                    let min = this.data.meta.min['z'];
+                    let max = this.data.meta.max['z'];
+                    let dst = zpos + TimeTubesStore.getLock(this.id) - TimeTubesStore.getLock(id) + min;
+                    if (min <= dst && dst <= max) {
+                        // dst is fine
+                    } else if (dst < min) {
+                        dst = min;
+                    } else if (max < dst) {
+                        dst = max;
+                    }
+                    this._searchTime(dst);
+                } else if (!pos.equals(new THREE.Vector3(0, 0, 0))) {
+                    // rotate the tube
+                    this.controls.object.position.set(pos.x, pos.y, pos.z);
+                    this.controls.object.rotation.set(deg.x, deg.y, deg.z);
+                }
             }
         });
         FeatureStore.on('switchVisualQuery', () => {
@@ -377,9 +408,11 @@ export default class TimeTubes extends React.Component{
                 }
             }
 
-            TimeTubesAction.updateFocus(this.id, dst, changeColFlg);
-            ScatterplotsAction.moveCurrentLineonTimeSelector(this.id, dst + this.data.spatial[0].z);
             this.tubeGroup.position.z = dst;
+            TimeTubesAction.updateFocus(this.id, dst, changeColFlg);
+            if (this.lock)
+                TimeTubesAction.synchronizeTubes(this.id, dst, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 0));
+            ScatterplotsAction.moveCurrentLineonTimeSelector(this.id, dst + this.data.spatial[0].z);
             DataAction.updateDetails(this.id, dst);
         }.bind(this);
     }
@@ -398,7 +431,11 @@ export default class TimeTubes extends React.Component{
                 cameraPropNow.ypos = this.camera.position.y;
                 cameraPropNow.zpos = this.camera.position.z;
                 this.cameraProp = cameraPropNow;
-
+                if (this.lock) {
+                    let deg = new THREE.Vector3(this.controls.object.rotation._x, this.controls.object.rotation._y, this.controls.object.rotation._z);
+                    let pos = this.controls.object.position;
+                    TimeTubesAction.synchronizeTubes(this.id, 0, pos, deg);
+                }
                 if (this.visualQuery && this.dragSelection) {
                     let face = this._getIntersectedIndex(event);
                     if (face !== undefined && this.tube) {
