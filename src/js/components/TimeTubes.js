@@ -62,7 +62,7 @@ export default class TimeTubes extends React.Component{
     render() {
         let width = ($(window).width() - $('#Controllers').width() - $('.right').width()) / DataStore.getDataNum()// * 0.95;
         let height = Math.max($('#Controllers').height(), 500);
-        this._updateSize(width, height);
+        this.updateSize(width, height);
         return (
             <div style={{position: 'relative', float: 'left'}}>
                 <div
@@ -81,25 +81,25 @@ export default class TimeTubes extends React.Component{
     componentWillMount() {
         TimeTubesStore.on('upload', () => {
             this.cameraProp = TimeTubesStore.getCameraProp(this.id);
-            this._updateCamera();
+            this.updateCamera();
         });
         TimeTubesStore.on('change', () => {
             this.cameraProp = TimeTubesStore.getCameraProp(this.id);
-            this._updateCamera();
+            this.updateCamera();
         });
         TimeTubesStore.on('reset', () => {
             this.cameraProp = TimeTubesStore.getCameraProp(this.id);
             if (this.cameraProp.xpos === 0 && this.cameraProp.ypos === 0 && this.cameraProp.zpos === 50) {
-                this._resetCamera();
+                this.resetCamera();
             }
         });
         TimeTubesStore.on('switch', () => {
             this.cameraProp = TimeTubesStore.getCameraProp(this.id);
-            this._switchCamera();
+            this.switchCamera();
         });
         TimeTubesStore.on('searchTime', (id, dst) => {
             if (id === this.id) {
-                this._searchTime(dst);
+                this.searchTime(dst);
             }
         });
         TimeTubesStore.on('switchGrid', (id, state) => {
@@ -140,28 +140,28 @@ export default class TimeTubes extends React.Component{
         TimeTubesStore.on('changeFar', (id) => {
             if (id === this.id) {
                 this.cameraProp = TimeTubesStore.getCameraProp(this.id);
-                this._updateCamera();
+                this.updateCamera();
             }
         });
         TimeTubesStore.on('updateMinMaxH', (id) => {
             if (id === this.id) {
-                this._setMinMaxH(TimeTubesStore.getMinMaxH(this.id));
+                this.setMinMaxH(TimeTubesStore.getMinMaxH(this.id));
             }
         });
         TimeTubesStore.on('updateMinMaxV', (id) => {
             if (id === this.id) {
-                this._setMinMaxV(TimeTubesStore.getMinMaxV(this.id));
+                this.setMinMaxV(TimeTubesStore.getMinMaxV(this.id));
             }
         });
         TimeTubesStore.on('changePlotColor', (id) => {
             if (id === this.id) {
                 this.plotColor = TimeTubesStore.getPlotColor(this.id);
-                this._changePlotsColor();
+                this.changePlotsColor();
             } else if (this.data.merge) {
                 let fileName = DataStore.getFileName(id);
                 if (this.data.name.indexOf(fileName) >= 0) {
                     this.plotColor[this.idNameLookup[fileName]] = TimeTubesStore.getPlotColor(id);
-                    this._changePlotsColor();
+                    this.changePlotsColor();
                 }
             }
         });
@@ -179,7 +179,7 @@ export default class TimeTubes extends React.Component{
                     // move TimeTubes to the observation time of the active window
                     // do nothing
                 }
-                this._searchTime(fittingDst);
+                this.searchTime(fittingDst);
             }
         });
         TimeTubesStore.on('lockControl', (ids, state) => {
@@ -187,7 +187,7 @@ export default class TimeTubes extends React.Component{
                 this.lock = false;
             } else {
                 this.lock = true;
-                this._resetCamera();
+                this.resetCamera();
             }
         });
         TimeTubesStore.on('synchronizeTubes', (id, zpos, pos, deg) => {
@@ -204,7 +204,7 @@ export default class TimeTubes extends React.Component{
                     } else if (max < dst) {
                         dst = max;
                     }
-                    this._searchTime(dst);
+                    this.searchTime(dst);
                 } else if (!pos.equals(new THREE.Vector3(0, 0, 0))) {
                     // rotate the tube
                     this.controls.object.position.set(pos.x, pos.y, pos.z);
@@ -245,7 +245,7 @@ export default class TimeTubes extends React.Component{
             this.selector = FeatureStore.getSelector();
         });
         FeatureStore.on('selectTimeInterval', (value) => {
-            this._selectTimeInterval(value);
+            this.selectTimeInterval(value);
         });
     }
 
@@ -259,7 +259,7 @@ export default class TimeTubes extends React.Component{
         const height = this.mount.clientHeight;
         this.scene = new THREE.Scene();
 
-        this._setCameras(width, height);
+        this.setCameras(width, height);
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setClearColor("#000000");
@@ -282,13 +282,13 @@ export default class TimeTubes extends React.Component{
         let ambientLight = new THREE.AmbientLight(0x292929);
         this.scene.add(ambientLight);
 
-        this._addControls();
+        this.addControls();
         let canvas = document.querySelector('#TimeTubes_viewport_' + this.id);
-        let onMouseWheel = this._onMouseWheel();
-        let onMouseDown = this._onMouseDown();
-        let onMouseMove = this._onMouseMove();
-        let onMouseUp = this._onMouseUp();
-        let onMouseClick = this._onMouseClick();
+        let onMouseWheel = this.onMouseWheel();
+        let onMouseDown = this.onMouseDown();
+        let onMouseMove = this.onMouseMove();
+        let onMouseUp = this.onMouseUp();
+        let onMouseClick = this.onMouseClick();
 
         canvas.addEventListener('wheel', onMouseWheel.bind(this), false);
         canvas.addEventListener('mousedown', onMouseDown.bind(this), false);
@@ -309,11 +309,11 @@ export default class TimeTubes extends React.Component{
         this.scene.add(this.tubeGroup);
 
         let texture = new THREE.TextureLoader();
-        texture.load('img/1_256.png', this._drawTube.bind(this));
-        this._drawGrid(TimeTubesStore.getGridSize() * 2, 10);
-        this._drawLabel(TimeTubesStore.getGridSize() / this.data.meta.range);
-        this._drawAxis();
-        this._drawPlot();
+        texture.load('img/1_256.png', this.drawTube.bind(this));
+        this.drawGrid(TimeTubesStore.getGridSize() * 2, 10);
+        this.drawLabel(TimeTubesStore.getGridSize() / this.data.meta.range);
+        this.drawAxis();
+        this.drawPlot();
     }
 
     start() {
@@ -335,7 +335,7 @@ export default class TimeTubes extends React.Component{
         if (this.renderer) this.renderer.render(this.scene, this.camera);
     }
 
-    _addControls() {
+    addControls() {
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.position0.set(0, 0, 50);
         this.controls.screenSpacePanning = false;
@@ -351,7 +351,7 @@ export default class TimeTubes extends React.Component{
         }
     }
 
-    _onMouseWheel() {
+    onMouseWheel() {
         return function(event) {
             // 1 scroll = 100 in deltaY
             let changeColFlg = false;
@@ -387,8 +387,8 @@ export default class TimeTubes extends React.Component{
                         if (dst === this.data.spatial[j].z - this.data.spatial[0].z) {
                             let color = new THREE.Color('rgb(127, 255, 212)');//this.gui.__folders.Display.__folders.Plot.__controllers[1].object.plotColor;
                             // this._changePlotColor(this.currentHighlightedPlot * this.segment, new THREE.Color(color[0] / 255, color[1] / 255, color[2] / 255));
-                            this._changePlotColor(this.currentHighlightedPlot * this.segment, color);
-                            this._changePlotColor(j * this.segment, new THREE.Color('red'));
+                            this.changePlotColor(this.currentHighlightedPlot * this.segment, color);
+                            this.changePlotColor(j * this.segment, new THREE.Color('red'));
                             this.currentHighlightedPlot = j;
                         }
                     }
@@ -398,8 +398,8 @@ export default class TimeTubes extends React.Component{
                         if ('x' in this.data.spatial[j]) {
                             if (dst === this.data.spatial[j].z - this.data.spatial[0].z) {
                                 let color = new THREE.Color(this.plotColor[this.idNameLookup[this.data.spatial[j].source]]);
-                                this._changePlotColor(this.currentHighlightedPlot * this.segment, color);
-                                this._changePlotColor(posCount * this.segment, new THREE.Color('red'));
+                                this.changePlotColor(this.currentHighlightedPlot * this.segment, color);
+                                this.changePlotColor(posCount * this.segment, new THREE.Color('red'));
                                 this.currentHighlightedPlot = posCount;
                             }
                             posCount++;
@@ -417,13 +417,13 @@ export default class TimeTubes extends React.Component{
         }.bind(this);
     }
 
-    _onMouseDown() {
+    onMouseDown() {
         return function (event) {
             this.drag = true;
         }
     }
 
-    _onMouseMove() {
+    onMouseMove() {
         return function (event) {
             if (this.drag) {
                 let cameraPropNow = this.cameraProp;
@@ -437,7 +437,7 @@ export default class TimeTubes extends React.Component{
                     TimeTubesAction.synchronizeTubes(this.id, 0, pos, deg);
                 }
                 if (this.visualQuery && this.dragSelection) {
-                    let face = this._getIntersectedIndex(event);
+                    let face = this.getIntersectedIndex(event);
                     if (face !== undefined && this.tube) {
                         this.tube.geometry.colorsNeedUpdate = true;
                         this.tube.geometry.attributes.selected.needsUpdate = true;
@@ -461,16 +461,16 @@ export default class TimeTubes extends React.Component{
         }
     }
 
-    _onMouseUp() {
+    onMouseUp() {
         return function (event) {
             this.drag = false;
         }
     }
 
-    _onMouseClick() {
+    onMouseClick() {
         return function (event) {
             if (this.visualQuery && !this.dragSelection) {
-                let face = this._getIntersectedIndex(event);
+                let face = this.getIntersectedIndex(event);
                 if (face !== undefined && this.tube) {
                     this.tube.geometry.colorsNeedUpdate = true;
                     this.tube.geometry.attributes.selected.needsUpdate = true;
@@ -505,7 +505,7 @@ export default class TimeTubes extends React.Component{
         }
     }
 
-    _getIntersectedIndex(event) {
+    getIntersectedIndex(event) {
         let face;
         let raymouse = new THREE.Vector2();
         raymouse.x = (event.offsetX / this.renderer.domElement.clientWidth) * 2 - 1;
@@ -533,7 +533,7 @@ export default class TimeTubes extends React.Component{
             this.deselectAll();
     }
 
-    _selectTimeInterval(value) {
+    selectTimeInterval(value) {
         this.tube.geometry.colorsNeedUpdate = true;
         this.tube.geometry.attributes.selected.needsUpdate = true;
         let currentPos = this.tubeGroup.position.z;
@@ -571,14 +571,14 @@ export default class TimeTubes extends React.Component{
     }
 
     // change the color of the currently focused plot
-    _changePlotColor(idx, color) {
+    changePlotColor(idx, color) {
         for (let i = 0; i < this.segment; i++) {
             this.plot.geometry.attributes.color.needsUpdate = true;
             this.plot.geometry.attributes.color.setXYZ(idx + i, color.r, color.g, color.b);
         }
     }
 
-    _setCameras(width, height) {
+    setCameras(width, height) {
         // initialize camera properties
         let fov = 45;
         let far = Math.ceil(this.data.spatial[this.data.spatial.length - 1].z - this.data.spatial[0].z) + 50;
@@ -621,14 +621,14 @@ export default class TimeTubes extends React.Component{
         });
     }
 
-    _resetCamera() {
+    resetCamera() {
         // let cameraStatus = this.cameraProp;
         this.camera.position.set(this.cameraProp.xpos, this.cameraProp.ypos, this.cameraProp.zpos);
         // this.controls.position0
         this.controls.reset();
     }
 
-    _updateCamera() {
+    updateCamera() {
         this.camera.position.set(this.cameraProp.xpos, this.cameraProp.ypos, this.cameraProp.zpos);
         this.camera.fov = this.cameraProp.fov;
         this.camera.depth = this.cameraProp.depth;
@@ -637,14 +637,14 @@ export default class TimeTubes extends React.Component{
         this.camera.updateProjectionMatrix();
     }
 
-    _updateSize(width, height) {
+    updateSize(width, height) {
         if (this.renderer) {
             this.renderer.setSize(width, height);
             TimeTubesAction.updateCamera(this.id, {aspect: width / height});
         }
     }
 
-    _switchCamera() {
+    switchCamera() {
         let currentPos = this.camera.position;
         if (this.cameraProp.type === 'Perspective') {
             this.camera = this.cameraSet.perspective;
@@ -659,10 +659,10 @@ export default class TimeTubes extends React.Component{
             this.camera.position.z = currentPos.z;
             this.camera.lookAt(this.scene.position);
         }
-        this._addControls();
+        this.addControls();
     }
 
-    _searchTime(dst) {
+    searchTime(dst) {
         let zpos = dst - this.data.spatial[0].z;
         if (isNaN(zpos)) {
             alert('Please input numbers.');
@@ -670,14 +670,14 @@ export default class TimeTubes extends React.Component{
             this.animationPara.flag = true;
             this.animationPara.dep = this.tubeGroup.position.z;
             this.animationPara.dst = zpos;
-            this._moveTube();
+            this.moveTube();
         }
     }
 
-    _moveTube() {
+    moveTube() {
         if (this.animationPara.flag) {
             if (this.animationPara.now < this.animationPara.speed) {
-                requestAnimationFrame(this._moveTube.bind(this));
+                requestAnimationFrame(this.moveTube.bind(this));
                 this.renderer.render(this.scene, this.camera);
                 this.animationPara.now += 1;
                 let anim = (1 - Math.cos(Math.PI * this.animationPara.now / this.animationPara.speed)) / 2;
@@ -697,7 +697,7 @@ export default class TimeTubes extends React.Component{
         }
     }
 
-    _drawTube(texture){//texture, spline, minList, maxList) {
+    drawTube(texture){//texture, spline, minList, maxList) {
         TimeTubesAction.updateTexture(this.id, texture);
         this.texture = texture;
         let minJD = this.data.spatial[0].z;
@@ -800,15 +800,15 @@ export default class TimeTubes extends React.Component{
         TimeTubesAction.updateMinMaxV(this.id, this.data.meta.min.V, this.data.meta.max.V);
     }
 
-    _setMinMaxH(minmax) {
+    setMinMaxH(minmax) {
         this.tube.material.uniforms.minmaxH.value = new THREE.Vector2(minmax[0], minmax[1]);
     }
 
-    _setMinMaxV(minmax) {
+    setMinMaxV(minmax) {
         this.tube.material.uniforms.minmaxV.value = new THREE.Vector2(minmax[0], minmax[1]);
     }
 
-    _changePlotsColor() {
+    changePlotsColor() {
         if (!this.data.merge) {
             this.plot.material.color.set(this.plotColor);
         } else {
@@ -836,13 +836,13 @@ export default class TimeTubes extends React.Component{
         }
     }
 
-    _drawGrid(size, divisions) {
+    drawGrid(size, divisions) {
         this.grid = new THREE.GridHelper(size, divisions, 'white', 'limegreen');
         this.grid.rotateX(Math.PI / 2);
         this.scene.add(this.grid);
     }
 
-    _drawLabel(range) {
+    drawLabel(range) {
         let gridSize = TimeTubesStore.getGridSize();
         this.labelGroup = new THREE.Group();
         this.scene.add(this.labelGroup);
@@ -897,7 +897,7 @@ export default class TimeTubes extends React.Component{
         UIlabel.position.set(0, gridSize + 1, 0);
     }
 
-    _drawAxis() {
+    drawAxis() {
         // 20 * 20
         let axisGeometry = new THREE.BufferGeometry();
         let axisMaterial = new THREE.LineBasicMaterial({
@@ -944,7 +944,7 @@ export default class TimeTubes extends React.Component{
         this.axis.rotateY(Math.PI);
     }
 
-    _drawPlot() {
+    drawPlot() {
         if (this.data.merge) {
             let circlePositions = [];
             let circleColor = [];

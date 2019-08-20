@@ -369,7 +369,7 @@ export default class Controllers extends React.Component{
                                 Shade
                             </label>
                     </div>
-                    <br/>
+                    <h6>Control multiple tubes</h6>
                     <div className="form-check form-check-inline">
                         <input
                             className="form-check-input"
