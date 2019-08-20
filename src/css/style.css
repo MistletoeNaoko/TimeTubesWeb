@@ -66,6 +66,7 @@ g.x_axis line, g.y_axis line{
 .btn-sm {
     height: 1.5rem;
     font-size: 0.7rem;
+    line-height: 0.8rem;
 }
 
 .sub {
