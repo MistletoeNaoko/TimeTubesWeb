@@ -7,9 +7,10 @@ import DataStore from '../Stores/DataStore';
 export default class Details extends React.Component{
     constructor() {
         super();
+        this.id = DataStore.getTailID();
         this.state = {
-            id: DataStore.getTailID(),
-            fileName: DataStore.getFileName(DataStore.getTailID()),
+            // id: DataStore.getTailID(),
+            fileName: DataStore.getFileName(this.id),
             currentVal: DataStore.getValues(-1, 0),
             checked: true
         };
@@ -18,7 +19,7 @@ export default class Details extends React.Component{
     componentWillMount() {
         // ToDo: at first file uploading, following 'upload' code cannot catch event emitter
         DataStore.on('upload', (id) => {
-            if (this.state.id === -1) {
+            if (this.id === -1) {
                 this.setState({
                     id: id,
                     fileName: DataStore.getFileName(id),
@@ -28,7 +29,7 @@ export default class Details extends React.Component{
             }
         });
         DataStore.on('updateDetail', (id, zpos) => {
-            if (this.state.id === id) {
+            if (this.id === id) {
                 this.setState({
                     currentVal: DataStore.getValues(id, zpos)
                 });
@@ -36,7 +37,7 @@ export default class Details extends React.Component{
         });
 
         TimeTubesStore.on('updateChecked', (id) => {
-            if (this.state.id === id) {
+            if (this.id === id) {
                 this.setState({
                     checked: !this.state.checked
                 });
@@ -51,7 +52,7 @@ export default class Details extends React.Component{
     }
 
     setFarSlider() {
-        let id = this.state.id;
+        let id = this.id;
         let val = $('#farSliderVal-' + id);
         $("#farSlider-" + id).slider({
             range: "min",
@@ -77,7 +78,7 @@ export default class Details extends React.Component{
     }
 
     setColormapValueSlider() {
-        let id = this.state.id;
+        let id = this.id;
         let value = $("#colorValue-" + id);
         let vMin = $('#colorValueMin-' + id);
         let vMax = $('#colorValueMax-' + id);
@@ -112,7 +113,7 @@ export default class Details extends React.Component{
     }
 
     setColormapHueSlider() {
-        let id = this.state.id;
+        let id = this.id;
         let hue = $("#colorHue-" + id);
         let hMin = $('#colorHueMin-' + id);
         let hMax = $('#colorHueMax-' + id);
@@ -157,63 +158,63 @@ export default class Details extends React.Component{
     }
 
     showPopoverFar() {
-        let state = $('#changeFar-' + this.state.id).css('visibility');
-        let leftPos = $('#farPopoverBtn-' + this.state.id).position();
+        let state = $('#changeFar-' + this.id).css('visibility');
+        let leftPos = $('#farPopoverBtn-' + this.id).position();
         switch (state) {
             case 'visible':
-                $('#changeFar-' + this.state.id).css('visibility', 'hidden');
+                $('#changeFar-' + this.id).css('visibility', 'hidden');
                 break;
             case 'hidden':
-                $('#changeFar-' + this.state.id).css('left', leftPos.left);
-                $('#changeFar-' + this.state.id).css('visibility', 'visible');
+                $('#changeFar-' + this.id).css('left', leftPos.left);
+                $('#changeFar-' + this.id).css('visibility', 'visible');
                 break;
         }
     }
 
     showPopoverPlotColor() {
-        let state = $('#changePlotColor-' + this.state.id).css('visibility');
-        let leftPos = $('#plotColorPopoverBtn-' + this.state.id).position();
+        let state = $('#changePlotColor-' + this.id).css('visibility');
+        let leftPos = $('#plotColorPopoverBtn-' + this.id).position();
         switch (state) {
             case 'visible':
-                $('#changePlotColor-' + this.state.id).css('visibility', 'hidden');
+                $('#changePlotColor-' + this.id).css('visibility', 'hidden');
                 break;
             case 'hidden':
-                $('#changePlotColor-' + this.state.id).css('left', leftPos.left);
-                $('#changePlotColor-' + this.state.id).css('visibility', 'visible');
+                $('#changePlotColor-' + this.id).css('left', leftPos.left);
+                $('#changePlotColor-' + this.id).css('visibility', 'visible');
                 break;
         }
     }
 
     showPopoverColormap() {
-        let state = $('#changeColormap-' + this.state.id).css('visibility');
-        let leftPos = $('#colormapPopoverBtn-' + this.state.id).position();
+        let state = $('#changeColormap-' + this.id).css('visibility');
+        let leftPos = $('#colormapPopoverBtn-' + this.id).position();
         switch (state) {
             case 'visible':
-                $('#changeColormap-' + this.state.id).css('visibility', 'hidden');
+                $('#changeColormap-' + this.id).css('visibility', 'hidden');
                 break;
             case 'hidden':
-                $('#changeColormap-' + this.state.id).css('left', leftPos.left);
-                $('#changeColormap-' + this.state.id).css('visibility', 'visible');
+                $('#changeColormap-' + this.id).css('left', leftPos.left);
+                $('#changeColormap-' + this.id).css('visibility', 'visible');
                 break;
         }
     }
 
     showPopoverSearch() {
-        let state = $('#searchTime-' + this.state.id).css('visibility');
-        let leftPos = $('#searchPopoverBtn-' + this.state.id).position();
+        let state = $('#searchTime-' + this.id).css('visibility');
+        let leftPos = $('#searchPopoverBtn-' + this.id).position();
         switch (state) {
             case 'visible':
-                $('#searchTime-' + this.state.id).css('visibility', 'hidden');
+                $('#searchTime-' + this.id).css('visibility', 'hidden');
                 break;
             case 'hidden':
-                $('#searchTime-' + this.state.id).css('left', leftPos.left);
-                $('#searchTime-' + this.state.id).css('visibility', 'visible');
+                $('#searchTime-' + this.id).css('left', leftPos.left);
+                $('#searchTime-' + this.id).css('visibility', 'visible');
                 break;
         }
     }
 
     searchTime() {
-        let id = this.state.id;
+        let id = this.id;
         let dst = $('#searchTimeInput-' + id).val();
         if (!isNaN(dst) && dst != '') {
             TimeTubesAction.searchTime(id, Number(dst));
@@ -221,7 +222,7 @@ export default class Details extends React.Component{
     }
 
     changePlotColor(color, event) {
-        TimeTubesAction.changePlotColor(this.state.id, color.hex);
+        TimeTubesAction.changePlotColor(this.id, color.hex);
     }
 
     render() {
@@ -247,84 +248,84 @@ export default class Details extends React.Component{
             } else {
                 val = cur.vals[i].toFixed(4);
             }
-            return <tr key={key + '-' + this.state.id} className='detailTableRow'><td className='detailTableData detailTableVari'>{key}</td><td className='detailTableData'>{val}</td></tr>;
+            return <tr key={key + '-' + this.id} className='detailTableRow'><td className='detailTableData detailTableVari'>{key}</td><td className='detailTableData'>{val}</td></tr>;
         })
         let viewportWidth = 500; //TODO: get interactively!
         return (
-            <div id={'onViewportControllers-' + this.state.id}>
-                <div id={'fileSelector-' + this.state.id}
+            <div id={'onViewportControllers-' + this.id}>
+                <div id={'fileSelector-' + this.id}
                      className='controllersOnView'
                      style={{position: 'absolute', color: 'white', top: '0px', left: '0px', zIndex:'11', fontSize: '0.8rem', marginLeft: '1.5rem'}}>
-                    <label id={'fileName-' + this.state.id}>
+                    <label id={'fileName-' + this.id}>
                         <input
                             type='checkbox'
-                            id={'selectView-' + this.state.id}
+                            id={'selectView-' + this.id}
                             name='selectView'
-                            key={this.state.id}
-                            value={this.state.id}
+                            key={this.id}
+                            value={this.id}
                             checked={this.state.checked}
-                            onChange={this.onChangeCheckbox.bind(this, this.state.id)}/>
+                            onChange={this.onChangeCheckbox.bind(this, this.id)}/>
                         {this.state.fileName}
                     </label>
                 </div>
-                <div id={'eachTubeControllers-' + this.state.id}
+                <div id={'eachTubeControllers-' + this.id}
                      className='controllersOnView'
                      style={{position: 'absolute', bottom: '0px', left: '0px', zIndex:'21', fontSize: '0.8rem'}}>
                 {/*    Add camera far, search box, color map*/}
                     <button type="button"
                             className="btn btn-sm btn-secondary"
-                            id={'colormapPopoverBtn-' + this.state.id}
+                            id={'colormapPopoverBtn-' + this.id}
                             onClick={this.showPopoverColormap.bind(this)}>
                         Colormap
                     </button>
                     <button type="button"
                             className="btn btn-sm btn-secondary"
-                            id={'farPopoverBtn-' + this.state.id}
+                            id={'farPopoverBtn-' + this.id}
                             onClick={this.showPopoverFar.bind(this)}>
                         Far
                     </button>
                     <button type="button"
                             className="btn btn-sm btn-secondary"
-                            id={'plotColorPopoverBtn-' + this.state.id}
+                            id={'plotColorPopoverBtn-' + this.id}
                             onClick={this.showPopoverPlotColor.bind(this)}>
                         Plot Color
                     </button>
                     <button type="button"
                             className="btn btn-sm btn-secondary"
-                            id={'searchPopoverBtn-' + this.state.id}
+                            id={'searchPopoverBtn-' + this.id}
                             onClick={this.showPopoverSearch.bind(this)}>
                         Search
                     </button>
                 </div>
                 <div className="input-group input-group-sm popover-controller"
-                    id={"changeColormap-" + this.state.id}
+                    id={"changeColormap-" + this.id}
                     style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: 'auto', zIndex:'31'}}>
-                    <div id={"colorFilter-" + this.state.id}>
-                        <div id={"colorValue-" + this.state.id} style={{float: 'left', height: '150px'}}>
-                            <output id={"colorValueMax-" + this.state.id} style={{marginLeft: '1.3rem'}}></output>
-                            <output id={"colorValueMin-" + this.state.id} style={{marginLeft: '1.3rem'}}></output>
+                    <div id={"colorFilter-" + this.id}>
+                        <div id={"colorValue-" + this.id} style={{float: 'left', height: '150px'}}>
+                            <output id={"colorValueMax-" + this.id} style={{marginLeft: '1.3rem'}}></output>
+                            <output id={"colorValueMin-" + this.id} style={{marginLeft: '1.3rem'}}></output>
                         </div>
-                        <div id={"colorMap-" + this.state.id} style={{float: 'left', marginLeft: '10px'}}>
+                        <div id={"colorMap-" + this.id} style={{float: 'left', marginLeft: '10px'}}>
                             <label htmlFor="file_photo">
                                 <img src="img/1_256.png" style={{width: '150px', height: '150px'}}/>
                             </label>
                         </div>
                         <div style={{clear:'both'}}></div>
-                        <div id={"colorHue-" + this.state.id} style={{width: '150px', marginTop: '5px', marginLeft: '20px'}}>
-                            <output id={"colorHueMax-" + this.state.id} style={{bottom: '1.3rem'}}></output>
-                            <output id={"colorHueMin-" + this.state.id} style={{bottom: '1.3rem'}}></output>
+                        <div id={"colorHue-" + this.id} style={{width: '150px', marginTop: '5px', marginLeft: '20px'}}>
+                            <output id={"colorHueMax-" + this.id} style={{bottom: '1.3rem'}}></output>
+                            <output id={"colorHueMin-" + this.id} style={{bottom: '1.3rem'}}></output>
                         </div>
                     </div>
                 </div>
                 <div className="input-group input-group-sm popover-controller"
-                    id={"changeFar-" + this.state.id}
+                    id={"changeFar-" + this.id}
                     style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: 'auto', zIndex:'41'}}>
-                    <div id={'farSliderArea-' + this.state.id}>
-                        <label id={'idLabel-' + this.state.id} style={{float: 'left', width: '2rem'}}>far</label>
-                        <div id={'farSlider-' + this.state.id}
+                    <div id={'farSliderArea-' + this.id}>
+                        <label id={'idLabel-' + this.id} style={{float: 'left', width: '2rem'}}>far</label>
+                        <div id={'farSlider-' + this.id}
                             style={{float: 'left', width: '8rem', marginBottom: '.5rem', marginTop: '.5rem'}}>
                             {/* onChange={this.changeFar.bind(this)}>*/}
-                            <output id={"farSliderVal-" + this.state.id}
+                            <output id={"farSliderVal-" + this.id}
                                     style={{
                                         position: 'absolute',
                                         display:'none',
@@ -339,23 +340,23 @@ export default class Details extends React.Component{
                     </div>
                 </div>
                 <div className="input-group input-group-sm popover-controller"
-                    id={"changePlotColor-" + this.state.id}
+                    id={"changePlotColor-" + this.id}
                     style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: 'auto', zIndex:'51'}}>
                     <SketchPicker
                         presetColors={TimeTubesStore.getPresetColors()}
-                        color={TimeTubesStore.getPlotColor(this.state.id)}
+                        color={TimeTubesStore.getPlotColor(this.id)}
                         onChange={this.changePlotColor.bind(this)}/>
                 </div>
                 <div className="input-group input-group-sm popover-controller"
-                     id={"searchTime-" + this.state.id}
+                     id={"searchTime-" + this.id}
                      style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: '10rem', zIndex:'61'}}>
                     <input type="text"
                            className="form-control custom-input"
-                           id={"searchTimeInput-" + this.state.id}
+                           id={"searchTimeInput-" + this.id}
                            placeholder="Input JD"/>
                     <button className="btn btn-secondary btn-sm"
                             type="button"
-                            id={"searchTimeBtn-" + this.state.id}
+                            id={"searchTimeBtn-" + this.id}
                             onClick={this.searchTime.bind(this)} >Search</button>
                 </div>
                 <div id='detailValueArea'
