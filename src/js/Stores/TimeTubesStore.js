@@ -17,6 +17,7 @@ class TimeTubesStore extends EventEmitter{
             far: 2000,
             depth: 0,
             aspect: 1,
+            zoom: 1,
             type: 'Perspective'
         }];
         this.texture = [];
@@ -105,6 +106,15 @@ class TimeTubesStore extends EventEmitter{
             case 'SYNCHRONIZE_TUBES':
                 this.synchronizeTubes(action.id, action.zpos, action.pos, action.deg);
                 break;
+            case 'ZOOM_OUT_TIMETUBE':
+                this.zoomOutTimeTubes(action.id);
+                break;
+            case 'RESET_ZOOM_TIMETUBES':
+                this.resetZoomTimeTubes(action.id);
+                break;
+            case 'ZOOM_IN_TIMETUBES':
+                this.zoomInTimeTubes(action.id);
+                break;
             default:
         }
     }
@@ -149,6 +159,7 @@ class TimeTubesStore extends EventEmitter{
                 depth: 0,
                 far: 2000,
                 aspect: 1,
+                zoom: 1,
                 type: 'Perspective'
             }
         );
@@ -276,6 +287,23 @@ class TimeTubesStore extends EventEmitter{
 
     synchronizeTubes(id, zpos, pos, deg) {
         this.emit('synchronizeTubes', id, zpos, pos, deg);
+    }
+
+    zoomOutTimeTubes(id) {
+        if (this.cameraProp[id].zoom >= 0.2) {
+            this.cameraProp[id].zoom -= 0.1;
+            this.emit('updateZoomTimeTubes', id);
+        }
+    }
+
+    resetZoomTimeTubes(id) {
+        this.cameraProp[id].zoom = 1;
+        this.emit('updateZoomTimeTubes', id);
+    }
+
+    zoomInTimeTubes(id) {
+        this.cameraProp[id].zoom += 0.1;
+        this.emit('updateZoomTimeTubes', id);
     }
 
     getPresetColors() {

@@ -157,6 +157,18 @@ export default class Details extends React.Component{
         // });
     }
 
+    zoomOutTimeTubes() {
+        TimeTubesAction.zoomOutTimeTubes(this.id);
+    }
+
+    resetZoomTimeTubes() {
+        TimeTubesAction.resetZoomTimeTubes(this.id);
+    }
+
+    zoomInTimeTubes() {
+        TimeTubesAction.zoomInTimeTubes(this.id);
+    }
+
     showPopoverFar() {
         let state = $('#changeFar-' + this.id).css('visibility');
         let leftPos = $('#farPopoverBtn-' + this.id).position();
@@ -267,6 +279,28 @@ export default class Details extends React.Component{
                             onChange={this.onChangeCheckbox.bind(this, this.id)}/>
                         {this.state.fileName}
                     </label>
+                </div>
+                <div id={'zoomControllers-' + this.id}
+                     className='controllersOnView'
+                     style={{position: 'absolute', top: '0px', right: '0px', zIndex: '71', fontSize: '0.8rem'}}>
+                    <button type="button"
+                            className="btn btn-sm btn-secondary"
+                            id={'zoomOutBtn' + this.id}
+                            onClick={this.zoomOutTimeTubes.bind(this)}>
+                        -
+                    </button>
+                    <button type="button"
+                            className="btn btn-sm btn-secondary"
+                            id={'resetZoomBtn' + this.id}
+                            onClick={this.resetZoomTimeTubes.bind(this)}>
+                        □
+                    </button>
+                    <button type="button"
+                            className="btn btn-sm btn-secondary"
+                            id={'zoomInBtn' + this.id}
+                            onClick={this.zoomInTimeTubes.bind(this)}>
+                        +
+                    </button>
                 </div>
                 <div id={'eachTubeControllers-' + this.id}
                      className='controllersOnView'

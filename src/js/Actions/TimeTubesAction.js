@@ -90,3 +90,15 @@ export function lockControl(ids, state) {
 export function synchronizeTubes(id, zpos, pos, deg) {
     dispatcher.dispatch({type: 'SYNCHRONIZE_TUBES', id, zpos, pos, deg});
 }
+
+export function zoomOutTimeTubes(id) {
+    dispatcher.dispatch({type: 'ZOOM_OUT_TIMETUBE', id});
+}
+
+export function resetZoomTimeTubes(id) {
+    dispatcher.dispatch({type: 'RESET_ZOOM_TIMETUBES', id});
+}
+
+export function zoomInTimeTubes(id) {
+    dispatcher.dispatch({type: 'ZOOM_IN_TIMETUBES', id});
+}

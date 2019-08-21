@@ -212,6 +212,12 @@ export default class TimeTubes extends React.Component{
                 }
             }
         });
+        TimeTubesStore.on('updateZoomTimeTubes', (id) => {
+            if (id === this.id) {
+                this.cameraProp = TimeTubesStore.getCameraProp(this.id);
+                this.updateCamera();
+            }
+        });
         FeatureStore.on('switchVisualQuery', () => {
             // when the visual query is switched on, make the parameter 'visualQuery' true if the TimeTubes view is active
             let activeId = TimeTubesStore.getActiveId();
@@ -607,6 +613,7 @@ export default class TimeTubes extends React.Component{
             far: far,
             depth: depth,
             aspect: aspect,
+            zoom: 1,
             type: 'Perspective'
         });
 
@@ -624,6 +631,7 @@ export default class TimeTubes extends React.Component{
     resetCamera() {
         // let cameraStatus = this.cameraProp;
         this.camera.position.set(this.cameraProp.xpos, this.cameraProp.ypos, this.cameraProp.zpos);
+        this.camera.zoom = this.cameraProp.zoom;
         // this.controls.position0
         this.controls.reset();
     }
@@ -634,6 +642,7 @@ export default class TimeTubes extends React.Component{
         this.camera.depth = this.cameraProp.depth;
         this.camera.far = this.cameraProp.far;
         this.camera.aspect = this.cameraProp.aspect;
+        this.camera.zoom = this.cameraProp.zoom;
         this.camera.updateProjectionMatrix();
     }
 
