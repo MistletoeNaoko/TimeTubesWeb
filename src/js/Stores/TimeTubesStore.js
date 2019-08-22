@@ -1,5 +1,38 @@
 import {EventEmitter} from 'events';
 import dispatcher from "../Dispatcher/dispatcher";
+import * as THREE from "three";
+
+const opacityDistSet = {
+    Default: [
+        [0.00, 1.00],
+        [0.05, 0.75],
+        [0.37, 0.50],
+        [0.62, 0.50],
+        [0.95, 0.25],
+        [1.00, 0.00]
+    ],
+    Linear: [
+        [0.00, 1.00],
+        [0.25, 0.75],
+        [0.50, 0.50],
+        [0.75, 0.25],
+        [1.00, 0.00]
+    ],
+    Flat: [
+        [0.00, 1.00],
+        [0.25, 1.00],
+        [0.50, 1.00],
+        [0.75, 1.00],
+        [1.00, 1.00]
+    ],
+    Valley: [
+        [0.00, 1.00],
+        [0.25, 0.75],
+        [0.50, 0.50],
+        [0.75, 0.75],
+        [1.00, 1.00]
+    ]
+};
 
 class TimeTubesStore extends EventEmitter{
     constructor() {
@@ -32,6 +65,14 @@ class TimeTubesStore extends EventEmitter{
         this.dragSelection = true;
         this.activeId = -1;
         this.lock = [];
+        this.opacityCurves = {};
+        for (let key in opacityDistSet) {
+            let points = [];
+            for (let i = 0; i < opacityDistSet[key].length; i++) {
+                points.push(new THREE.Vector2(opacityDistSet[key][i][0], opacityDistSet[key][i][1]));
+            }
+            this.opacityCurves[key] = new THREE.SplineCurve(points);
+        }
     }
 
     handleActions(action) {
@@ -344,6 +385,18 @@ class TimeTubesStore extends EventEmitter{
 
     getLock(id) {
         return this.lock[id];
+    }
+
+    getOpacityDistSet() {
+        return opacityDistSet;
+    }
+
+    getOpacityCurves() {
+        return this.opacityCurves;
+    }
+
+    getOpacityCurve(opt) {
+        return this.opacityCurves[opt];
     }
 
     setPlotColor(id, color) {

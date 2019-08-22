@@ -6,38 +6,6 @@ import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import DataStore from '../Stores/DataStore';
 
-const opacityDistSet = {
-    Default: [
-        [0.00, 1.00],
-        [0.05, 0.75],
-        [0.37, 0.50],
-        [0.62, 0.50],
-        [0.95, 0.25],
-        [1.00, 0.00]
-    ],
-    Linear: [
-        [0.00, 1.00],
-        [0.25, 0.75],
-        [0.50, 0.50],
-        [0.75, 0.25],
-        [1.00, 0.00]
-    ],
-    Flat: [
-        [0.00, 1.00],
-        [0.25, 1.00],
-        [0.50, 1.00],
-        [0.75, 1.00],
-        [1.00, 1.00]
-    ],
-    Valley: [
-        [0.00, 1.00],
-        [0.25, 0.75],
-        [0.50, 0.50],
-        [0.75, 0.75],
-        [1.00, 1.00]
-    ]
-};
-
 export default class Details extends React.Component{
     constructor() {
         super();
@@ -48,15 +16,9 @@ export default class Details extends React.Component{
             currentVal: DataStore.getValues(-1, 0),
             checked: true
         };
-        this.opacityCurves = {};
-        for (let key in opacityDistSet) {
-            let points = [];
-            for (let i = 0; i < opacityDistSet[key].length; i++) {
-                points.push(new THREE.Vector2(opacityDistSet[key][i][0], opacityDistSet[key][i][1]));
-            }
-            this.opacityCurves[key] = new THREE.SplineCurve(points);
-        }
         this.tubeNum = TimeTubesStore.getTubeNum();
+        this.opacityDistSet = TimeTubesStore.getOpacityDistSet();
+        this.opacityCurves = TimeTubesStore.getOpacityCurves();
     }
 
     componentWillMount() {
@@ -261,7 +223,7 @@ export default class Details extends React.Component{
 
 
         svg.append('path')
-            .datum(opacityDistSet.Default)
+            .datum(this.opacityDistSet.Default)
             .style('fill', 'none')
             .style('stroke', 'lightcoral')
             .style('stroke-width', 3)
@@ -439,7 +401,7 @@ export default class Details extends React.Component{
         let svg = d3.select('#opacityCurveArea-' + this.id);
 
         svg.append('path')
-            .datum(opacityDistSet[opt])
+            .datum(this.opacityDistSet[opt])
             .style('fill', 'none')
             .style('stroke', 'lightcoral')
             .style('stroke-width', 3)
