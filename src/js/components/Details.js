@@ -1,8 +1,42 @@
 import React from 'react';
+import * as d3 from 'd3';
+import * as THREE from 'three';
 import { SketchPicker } from 'react-color';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import DataStore from '../Stores/DataStore';
+
+const opacityDistSet = {
+    Default: [
+        [0.00, 1.00],
+        [0.05, 0.75],
+        [0.37, 0.50],
+        [0.62, 0.50],
+        [0.95, 0.25],
+        [1.00, 0.00]
+    ],
+    Linear: [
+        [0.00, 1.00],
+        [0.25, 0.75],
+        [0.50, 0.50],
+        [0.75, 0.25],
+        [1.00, 0.00]
+    ],
+    Flat: [
+        [0.00, 1.00],
+        [0.25, 1.00],
+        [0.50, 1.00],
+        [0.75, 1.00],
+        [1.00, 1.00]
+    ],
+    Valley: [
+        [0.00, 1.00],
+        [0.25, 0.75],
+        [0.50, 0.50],
+        [0.75, 0.75],
+        [1.00, 1.00]
+    ]
+};
 
 export default class Details extends React.Component{
     constructor() {
@@ -14,6 +48,14 @@ export default class Details extends React.Component{
             currentVal: DataStore.getValues(-1, 0),
             checked: true
         };
+        this.opacityCurves = {};
+        for (let key in opacityDistSet) {
+            let points = [];
+            for (let i = 0; i < opacityDistSet[key].length; i++) {
+                points.push(new THREE.Vector2(opacityDistSet[key][i][0], opacityDistSet[key][i][1]));
+            }
+            this.opacityCurves[key] = new THREE.SplineCurve(points);
+        }
     }
 
     componentWillMount() {
@@ -49,6 +91,8 @@ export default class Details extends React.Component{
         this.setFarSlider();
         this.setColormapValueSlider();
         this.setColormapHueSlider();
+        this.setOpacityCurve();
+        this.setOpacityEllipse();
     }
 
     setFarSlider() {
@@ -144,6 +188,90 @@ export default class Details extends React.Component{
         hMax.val(hue.slider('values', 1));
     }
 
+    setOpacityCurve() {
+        let outerWidth = 150, outerHeight = 150;
+        let margin = {'top': 10, 'bottom': 10, 'left': 10, 'right': 10};
+        let width = outerWidth - margin.left - margin.right;
+        let height = outerHeight - margin.top - margin.bottom;
+        let svg = d3.select('#opacityCurve-' + this.id)
+            .append('svg')
+            .attr('width', outerWidth)
+            .attr('height', outerHeight)
+            .attr('id', 'opacityCurveArea-' + this.id);
+
+        // frame of the svg
+        svg
+            .append('rect')
+            .attr('width', width)
+            .attr('height', height)
+            .style('fill', 'none')
+            .style('stroke', 'lightgray')
+            .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+        this.xScaleOpacity = d3.scaleLinear()
+            .domain([0, 1])
+            .range([margin.left, outerWidth - margin.left]);
+
+        this.yScaleOpacity = d3.scaleLinear()
+            .domain([0, 1])
+            .range([outerHeight - margin.top, margin.bottom]);
+
+        svg.append('path')
+            .datum(opacityDistSet.Default)
+            .style('fill', 'none')
+            .style('stroke', 'lightcoral')
+            .style('stroke-width', 3)
+            .attr('id', 'opacityCurvePath-' + this.id)
+            .attr('d', d3.line()
+                .x(function (d) {
+                    return this.xScaleOpacity(d[0]);
+                }.bind(this))
+                .y(function (d) {
+                    return this.yScaleOpacity(d[1]);
+                }.bind(this))
+                .curve(d3.curveBasis)
+            );
+    }
+
+    setOpacityEllipse() {
+        let outerWidth = 150, outerHeight = 150;
+        let margin = {'top': 10, 'bottom': 10, 'left': 10, 'right': 10};
+        let width = outerWidth - margin.left - margin.right;
+        let height = outerHeight - margin.top - margin.bottom;
+        let svg = d3.select('#opacityEllipse-' + this.id)
+            .append('svg')
+            .attr('width', outerWidth)
+            .attr('height', outerHeight)
+            .attr('id', 'opacityEllipseArea-' + this.id);
+
+        // frame of the svg
+        svg
+            .append('rect')
+            .attr('width', width)
+            .attr('height', height)
+            .style('fill', 'none')
+            .style('stroke', 'lightgray')
+            .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+        // make n ellipses with different radius and opacity values
+        // rx = 50 * i / tubeNum
+        // ry = 30 * i / tubbeNum
+        let tubeNum = TimeTubesStore.getTubeNum();
+        let posX = Math.ceil(margin.left + width / 2),
+            posY = Math.ceil(margin.top + height / 2);
+        let points = this.opacityCurves.Default.getSpacedPoints(tubeNum);
+        for (let i = 1; i <= tubeNum; i++) {
+            svg.append('ellipse')
+                .attr('cx', posX)
+                .attr('cy', posY)
+                .attr('rx', 50 * i / tubeNum)
+                .attr('ry', 30 * i / tubeNum)
+                .attr('id', 'opacityEllipseEllipse-' + this.id + '-' + i)
+                .style('fill', 'orange')
+                .style('opacity', points[i - 1].y);
+        }
+    }
+
     onChangeCheckbox(id) {
         TimeTubesAction.updateChecked(id);
         // this.setState({
@@ -197,6 +325,20 @@ export default class Details extends React.Component{
         }
     }
 
+    showPopoverOpacity() {
+        let state = $('#changeOpacity-' + this.id).css('visibility');
+        let leftPos = $('#opacityPopoverBtn-' + this.id).position();
+        switch (state) {
+            case 'visible':
+                $('#changeOpacity-' + this.id).css('visibility', 'hidden');
+                break;
+            case 'hidden':
+                $('#changeOpacity-' + this.id).css('left', leftPos.left);
+                $('#changeOpacity-' + this.id).css('visibility', 'visible');
+                break;
+        }
+    }
+
     showPopoverColormap() {
         let state = $('#changeColormap-' + this.id).css('visibility');
         let leftPos = $('#colormapPopoverBtn-' + this.id).position();
@@ -237,6 +379,56 @@ export default class Details extends React.Component{
         TimeTubesAction.changePlotColor(this.id, color.hex);
     }
 
+    changeOpacityDistribution() {
+        let opacityList = document.getElementById('opacityList');
+        let selectedIdx = opacityList.selectedIndex;
+        let selectedOpt = opacityList.options[selectedIdx].value;
+        this.drawOpacityCurve(selectedOpt);
+        this.drawOpacityEllipse(selectedOpt);
+        // A := 1-(1-_DragCurve.ValueY(I/_DivR)) /(1- _DragCurve.ValueY((I+1)/_DivR));
+        //
+        // with _Faces[ I ] do
+        //     begin
+        //     // 欠損期間が一定以上なら描画しない
+        //     //if ( Blazer.Grids[ I + 1 ].JD - Blazer.Grids[ I ].JD ) < _Period then
+        //
+        //     DrawTriangles( VertexBuffer, IndexBuffer, TMaterialSource.ValidMaterial( _MatF ), A );
+        // end;
+
+    }
+
+    drawOpacityCurve(opt) {
+        d3.select('#opacityCurvePath-' + this.id)
+            .remove();
+
+        let svg = d3.select('#opacityCurveArea-' + this.id);
+
+        svg.append('path')
+            .datum(opacityDistSet[opt])
+            .style('fill', 'none')
+            .style('stroke', 'lightcoral')
+            .style('stroke-width', 3)
+            .attr('id', 'opacityCurvePath-' + this.id)
+            .attr('d', d3.line()
+                .x(function (d) {
+                    return this.xScaleOpacity(d[0]);
+                }.bind(this))
+                .y(function (d) {
+                    return this.yScaleOpacity(d[1]);
+                }.bind(this))
+                .curve(d3.curveBasis)
+            );
+    }
+
+    drawOpacityEllipse(opt) {
+        let tubeNum = TimeTubesStore.getTubeNum();
+        let points = this.opacityCurves[opt].getSpacedPoints(tubeNum);
+        for (let i = 1; i <= tubeNum; i++) {
+            d3.select('#opacityEllipseEllipse-' + this.id + '-' + i)
+                .style('opacity', points[i - 1].y);
+        }
+    }
+
     render() {
         let cur = this.state.currentVal;
         let detail = '';
@@ -263,11 +455,16 @@ export default class Details extends React.Component{
             return <tr key={key + '-' + this.id} className='detailTableRow'><td className='detailTableData detailTableVari'>{key}</td><td className='detailTableData'>{val}</td></tr>;
         })
         let viewportWidth = 500; //TODO: get interactively!
+        // Z index
+        // 10 ~ : check box for files
+        // 20 ~ : zoom
+        // 30 ~ : tube controllers
+        // 11 : detail panel
         return (
             <div id={'onViewportControllers-' + this.id}>
                 <div id={'fileSelector-' + this.id}
                      className='controllersOnView'
-                     style={{position: 'absolute', color: 'white', top: '0px', left: '0px', zIndex:'11', fontSize: '0.8rem', marginLeft: '1.5rem'}}>
+                     style={{position: 'absolute', color: 'white', top: '0px', left: '0px', zIndex:'10', fontSize: '0.8rem', marginLeft: '1.5rem'}}>
                     <label id={'fileName-' + this.id}>
                         <input
                             type='checkbox'
@@ -282,7 +479,7 @@ export default class Details extends React.Component{
                 </div>
                 <div id={'zoomControllers-' + this.id}
                      className='controllersOnView'
-                     style={{position: 'absolute', top: '0px', right: '0px', zIndex: '71', fontSize: '0.8rem'}}>
+                     style={{position: 'absolute', top: '0px', right: '0px', zIndex: '20', fontSize: '0.8rem'}}>
                     <button type="button"
                             className="btn btn-sm btn-secondary"
                             id={'zoomOutBtn' + this.id}
@@ -304,7 +501,7 @@ export default class Details extends React.Component{
                 </div>
                 <div id={'eachTubeControllers-' + this.id}
                      className='controllersOnView'
-                     style={{position: 'absolute', bottom: '0px', left: '0px', zIndex:'21', fontSize: '0.8rem'}}>
+                     style={{position: 'absolute', bottom: '0px', left: '0px', zIndex:'30', fontSize: '0.8rem'}}>
                 {/*    Add camera far, search box, color map*/}
                     <button type="button"
                             className="btn btn-sm btn-secondary"
@@ -323,6 +520,12 @@ export default class Details extends React.Component{
                             id={'plotColorPopoverBtn-' + this.id}
                             onClick={this.showPopoverPlotColor.bind(this)}>
                         Plot Color
+                    </button>
+                    <button type="button"
+                            className="btn btn-sm btn-secondary"
+                            id={'opacityPopoverBtn-' + this.id}
+                            onClick={this.showPopoverOpacity.bind(this)}>
+                        Opacity
                     </button>
                     <button type="button"
                             className="btn btn-sm btn-secondary"
@@ -353,7 +556,7 @@ export default class Details extends React.Component{
                 </div>
                 <div className="input-group input-group-sm popover-controller"
                     id={"changeFar-" + this.id}
-                    style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: 'auto', zIndex:'41'}}>
+                    style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: 'auto', zIndex:'32'}}>
                     <div id={'farSliderArea-' + this.id}>
                         <label id={'idLabel-' + this.id} style={{float: 'left', width: '2rem'}}>far</label>
                         <div id={'farSlider-' + this.id}
@@ -375,15 +578,34 @@ export default class Details extends React.Component{
                 </div>
                 <div className="input-group input-group-sm popover-controller"
                     id={"changePlotColor-" + this.id}
-                    style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: 'auto', zIndex:'51'}}>
+                    style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: 'auto', zIndex:'33'}}>
                     <SketchPicker
                         presetColors={TimeTubesStore.getPresetColors()}
                         color={TimeTubesStore.getPlotColor(this.id)}
                         onChange={this.changePlotColor.bind(this)}/>
                 </div>
                 <div className="input-group input-group-sm popover-controller"
+                     id={"changeOpacity-" + this.id}
+                     style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: 'auto', zIndex:'34', display: 'block'}}>
+                    <select
+                        className="form-control"
+                        id='opacityList'
+                        onChange={this.changeOpacityDistribution.bind(this)}
+                        style={{fontSize: '0.8rem', width: '150px'}}>
+                        <option value='Default'>Default</option>
+                        <option value='Flat'>Flat</option>
+                        <option value='Linear'>Linear</option>
+                        <option value='Valley'>Valley shaped</option>
+                    </select>
+                    <div className={'currentOpacity'}
+                         style={{display: 'flex'}}>
+                        <div id={'opacityCurve-' + this.id}></div>
+                        <div id={'opacityEllipse-' + this.id}></div>
+                    </div>
+                </div>
+                <div className="input-group input-group-sm popover-controller"
                      id={"searchTime-" + this.id}
-                     style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: '10rem', zIndex:'61'}}>
+                     style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: '10rem', zIndex:'35'}}>
                     <input type="text"
                            className="form-control custom-input"
                            id={"searchTimeInput-" + this.id}
@@ -395,7 +617,7 @@ export default class Details extends React.Component{
                 </div>
                 <div id='detailValueArea'
                      className='controllersOnView'
-                     style={{position: 'absolute', color: 'white', right: '0px', bottom: '0px', whiteSpace: 'pre-line', zIndex:'10', fontSize: '0.8rem'}}>
+                     style={{position: 'absolute', color: 'white', right: '0px', bottom: '0px', whiteSpace: 'pre-line', zIndex:'11', fontSize: '0.8rem'}}>
                     <table className='detailTable'>
                         <tbody className='detailTableBody'>
                             {detailTable}

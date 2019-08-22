@@ -19,7 +19,7 @@ export default class TimeTubes extends React.Component{
         this.id = props.id;
         this.data = props.data;
         this.cameraProp = TimeTubesStore.getCameraProp(props.id);
-        this.tubeNum = 1;
+        this.tubeNum = 16;
         this.segment = 16;
         this.division = 5;
         this.currentHighlightedPlot = 0;
