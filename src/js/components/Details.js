@@ -56,6 +56,7 @@ export default class Details extends React.Component{
             }
             this.opacityCurves[key] = new THREE.SplineCurve(points);
         }
+        this.tubeNum = TimeTubesStore.getTubeNum();
     }
 
     componentWillMount() {
@@ -208,13 +209,56 @@ export default class Details extends React.Component{
             .style('stroke', 'lightgray')
             .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
 
+        // draw a grid
+        let del = width / (this.tubeNum - 1);
+        for (let i = 1; i < this.tubeNum; i++) {
+            svg
+                .append('line')
+                .attr('x1', del * i)
+                .attr('y1', 0)
+                .attr('x2', del * i)
+                .attr('y2', width)
+                .style('stroke', 'lightgray')
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+            svg
+                .append('line')
+                .attr('x1', 0)
+                .attr('y1', del * i)
+                .attr('x2', height)
+                .attr('y2', del * i)
+                .style('stroke', 'lightgray')
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+        }
+
+        // scales
         this.xScaleOpacity = d3.scaleLinear()
             .domain([0, 1])
             .range([margin.left, outerWidth - margin.left]);
-
         this.yScaleOpacity = d3.scaleLinear()
             .domain([0, 1])
             .range([outerHeight - margin.top, margin.bottom]);
+
+        // Draw the explanation of the opacity curve
+        svg.append('g')
+            .attr('class', 'axisLabel opacityCurveXAxis')
+            .append('text')
+            .attr('x', outerWidth / 2)
+            .attr('y', outerHeight - margin.bottom / 2 + 5)
+            .style('fill', 'black')
+            .style('text-anchor', 'middle')
+            .style('font-size', 'xx-small')
+            .text('Radial size of the tube');
+        svg.append('g')
+            .append('text')
+            .attr('class', 'axisLabel opacityCurveYAxis')
+            .attr('transform', 'rotate(-90)')
+            .attr('x', - outerHeight / 2)
+            .attr('y', margin.left / 2 + 2)
+            .style('fill', 'black')
+            .style('font-size', 'xx-small')
+            .style('text-anchor', 'middle')
+            .text('Opacity');
+
 
         svg.append('path')
             .datum(opacityDistSet.Default)
@@ -256,19 +300,20 @@ export default class Details extends React.Component{
         // make n ellipses with different radius and opacity values
         // rx = 50 * i / tubeNum
         // ry = 30 * i / tubbeNum
-        let tubeNum = TimeTubesStore.getTubeNum();
         let posX = Math.ceil(margin.left + width / 2),
             posY = Math.ceil(margin.top + height / 2);
-        let points = this.opacityCurves.Default.getSpacedPoints(tubeNum);
-        for (let i = 1; i <= tubeNum; i++) {
+        let points = this.opacityCurves.Default.getSpacedPoints(this.tubeNum);
+
+        for (let i = 1; i <= this.tubeNum; i++) {
+            let alpha = 1 - (1 - points[i - 1].y) / (1 - points[i].y);
             svg.append('ellipse')
                 .attr('cx', posX)
                 .attr('cy', posY)
-                .attr('rx', 50 * i / tubeNum)
-                .attr('ry', 30 * i / tubeNum)
+                .attr('rx', 50 * i / this.tubeNum)
+                .attr('ry', 30 * i / this.tubeNum)
                 .attr('id', 'opacityEllipseEllipse-' + this.id + '-' + i)
                 .style('fill', 'orange')
-                .style('opacity', points[i - 1].y);
+                .style('opacity', alpha);
         }
     }
 
@@ -385,16 +430,6 @@ export default class Details extends React.Component{
         let selectedOpt = opacityList.options[selectedIdx].value;
         this.drawOpacityCurve(selectedOpt);
         this.drawOpacityEllipse(selectedOpt);
-        // A := 1-(1-_DragCurve.ValueY(I/_DivR)) /(1- _DragCurve.ValueY((I+1)/_DivR));
-        //
-        // with _Faces[ I ] do
-        //     begin
-        //     // 欠損期間が一定以上なら描画しない
-        //     //if ( Blazer.Grids[ I + 1 ].JD - Blazer.Grids[ I ].JD ) < _Period then
-        //
-        //     DrawTriangles( VertexBuffer, IndexBuffer, TMaterialSource.ValidMaterial( _MatF ), A );
-        // end;
-
     }
 
     drawOpacityCurve(opt) {
@@ -421,11 +456,19 @@ export default class Details extends React.Component{
     }
 
     drawOpacityEllipse(opt) {
-        let tubeNum = TimeTubesStore.getTubeNum();
-        let points = this.opacityCurves[opt].getSpacedPoints(tubeNum);
-        for (let i = 1; i <= tubeNum; i++) {
-            d3.select('#opacityEllipseEllipse-' + this.id + '-' + i)
-                .style('opacity', points[i - 1].y);
+        let alpha = 1;
+        if (opt === 'Flat') {
+            for (let i = 1; i <= this.tubeNum; i++) {
+                d3.select('#opacityEllipseEllipse-' + this.id + '-' + i)
+                    .style('opacity', alpha);
+            }
+        } else {
+            let points = this.opacityCurves[opt].getSpacedPoints(this.tubeNum);
+            for (let i = 1; i <= this.tubeNum; i++) {
+                alpha = 1 - (1 - points[i - 1].y) / (1 - points[i].y);
+                d3.select('#opacityEllipseEllipse-' + this.id + '-' + i)
+                    .style('opacity', alpha);
+            }
         }
     }
 
