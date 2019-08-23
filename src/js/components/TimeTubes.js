@@ -628,7 +628,7 @@ export default class TimeTubes extends React.Component{
         this.camera.position.z = 50;
         this.camera.lookAt(-this.scene.position);
 
-        $( "#farSlider-" + this.id ).slider({
+        $( "#farSlider_" + this.id ).slider({
             min: 50,
             max: far,
             value: far
