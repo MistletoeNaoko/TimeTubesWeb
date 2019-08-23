@@ -102,3 +102,7 @@ export function resetZoomTimeTubes(id) {
 export function zoomInTimeTubes(id) {
     dispatcher.dispatch({type: 'ZOOM_IN_TIMETUBES', id});
 }
+
+export function updateOpacity(id, opt) {
+    dispatcher.dispatch({type: 'UPDATE_OPACITY', id, opt});
+}

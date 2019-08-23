@@ -32,6 +32,7 @@ export default class TimeTubes extends React.Component{
         this.vertex = document.getElementById('vertexShader_tube').textContent;
         this.fragment = document.getElementById('fragmentShader_tube').textContent;
         this.lock = false;
+        this.opacityCurve = TimeTubesStore.getOpacityCurve('Default');
         // set plot color
         if (this.data.merge) {
             this.plotColor = [];
@@ -216,6 +217,12 @@ export default class TimeTubes extends React.Component{
             if (id === this.id) {
                 this.cameraProp = TimeTubesStore.getCameraProp(this.id);
                 this.updateCamera();
+            }
+        });
+        TimeTubesStore.on('updateOpacity', (id, opt) => {
+            if (id === this.id) {
+                this.opacityCurve = TimeTubesStore.getOpacityCurve(opt);
+                this.updateOpacity(opt);
             }
         });
         FeatureStore.on('switchVisualQuery', () => {
@@ -706,6 +713,65 @@ export default class TimeTubes extends React.Component{
         }
     }
 
+    setMinMaxH(minmax) {
+        this.tube.material.uniforms.minmaxH.value = new THREE.Vector2(minmax[0], minmax[1]);
+    }
+
+    setMinMaxV(minmax) {
+        this.tube.material.uniforms.minmaxV.value = new THREE.Vector2(minmax[0], minmax[1]);
+    }
+
+    changePlotsColor() {
+        if (!this.data.merge) {
+            this.plot.material.color.set(this.plotColor);
+        } else {
+            let circleColor = [];
+            let baseColors = [];
+            for (let i = 0; i < this.plotColor.length; i++) {
+                baseColors.push(new THREE.Color(this.plotColor[i]));
+            }
+            let circleIndices = Array(this.data.position.length * this.segment * 2);
+            let posCount = 0;
+            let del = Math.PI * 2 / this.segment;
+            let range = this.data.meta.range;
+            for (let i = 0; i < this.data.spatial.length; i++) {
+                if ('x' in this.data.spatial[i]) {
+                    let source = this.data.spatial[i].source;
+                    let currentColor = baseColors[this.idNameLookup[source]];
+                    for (let j = 0; j < this.segment; j++) {
+                        circleColor.push(currentColor.r);
+                        circleColor.push(currentColor.g);
+                        circleColor.push(currentColor.b);
+                    }
+                }
+            }
+            this.plot.geometry.addAttribute('color', new THREE.Float32BufferAttribute(circleColor, 3));
+        }
+    }
+
+    updateOpacity(opt) {
+        this.tube.geometry.colorsNeedUpdate = true;
+        this.tube.geometry.attributes.colorData.needsUpdate = true;
+        let opacityPoints = this.opacityCurve.getSpacedPoints(this.tubeNum);
+        let opacityList = [];
+        if (opt === 'Flat') {
+            for (let i = 1; i <= this.tubeNum; i++) {
+                opacityList.push(1);
+            }
+        } else {
+            for (let i = 1; i <= this.tubeNum; i++) {
+                opacityList.push(1 - (1 - opacityPoints[i - 1].y) / (1 - opacityPoints[i].y));
+            }
+        }
+        let divNumPol = this.tube.geometry.attributes.colorData.array.length / (3 * this.segment * this.tubeNum);
+        for (let i = 0; i < this.tubeNum; i++) {
+            for (let j = 0; j < divNumPol * this.segment; j++) {
+                this.tube.geometry.attributes.colorData.array[divNumPol * this.segment * 3 * i + 3 * j + 2] = opacityList[i];
+            }
+        }
+        this.renderer.render(this.scene, this.camera);
+    }
+
     drawTube(texture){//texture, spline, minList, maxList) {
         TimeTubesAction.updateTexture(this.id, texture);
         this.texture = texture;
@@ -722,15 +788,21 @@ export default class TimeTubes extends React.Component{
         let idxGap = Math.ceil((this.data.splines.color.getPoint(0).z - this.data.splines.position.getPoint(0).z) / delTime);
         let del = Math.PI * 2 / (this.segment - 1);
         let vertices = [];
+        let colors = [];
         for (let i = 0; i < this.tubeNum; i++) {
             vertices[i] = [];
+            colors[i] = [];
         }
         let indices = [];
-        let colors = [];
         let selected = [];
         let currentColorX = 0, currentColorY = 0;
         let minH = this.data.meta.min.H, maxH = this.data.meta.max.H;
         let minV = this.data.meta.min.V, maxV = this.data.meta.max.V;
+        let opacityPoints = this.opacityCurve.getSpacedPoints(this.tubeNum);
+        let opacityList = [];
+        for (let i = 1; i <= this.tubeNum; i++) {
+            opacityList.push(1 - (1 - opacityPoints[i - 1].y) / (1 - opacityPoints[i].y));
+        }
         for (let i = 0; i <= divNumPol; i++) {
             currentColorX = 0;
             currentColorY = 0;
@@ -747,11 +819,10 @@ export default class TimeTubes extends React.Component{
                     vertices[k].push(cen[i].y * range + currad * rad[i].y * range * Math.sin(deg));
                     vertices[k].push(cen[i].z - minJD);
 
+                    colors[k].push(currentColorX);
+                    colors[k].push(currentColorY);
+                    colors[k].push(opacityList[k]);
                 }
-
-                colors.push(currentColorX);
-                colors.push(currentColorY);
-
 
                 if (j !== this.segment - 1) {
                     indices.push(j + i * (this.segment));
@@ -771,7 +842,7 @@ export default class TimeTubes extends React.Component{
             const geometryTmp = new THREE.BufferGeometry();
             geometryTmp.addAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices[i]), 3));
             geometryTmp.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-            geometryTmp.addAttribute('colorData', new THREE.BufferAttribute(new Float32Array(colors), 2));
+            geometryTmp.addAttribute('colorData', new THREE.BufferAttribute(new Float32Array(colors[i]), 3));
             geometryTmp.addAttribute('selected', new THREE.BufferAttribute(new Float32Array(selected), 1));
             geometryTmp.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
             // geometryTmp.computeFaceNormals();
@@ -807,42 +878,6 @@ export default class TimeTubes extends React.Component{
         this.tube.rotateY(Math.PI);
         TimeTubesAction.updateMinMaxH(this.id, this.data.meta.min.H, this.data.meta.max.H);
         TimeTubesAction.updateMinMaxV(this.id, this.data.meta.min.V, this.data.meta.max.V);
-    }
-
-    setMinMaxH(minmax) {
-        this.tube.material.uniforms.minmaxH.value = new THREE.Vector2(minmax[0], minmax[1]);
-    }
-
-    setMinMaxV(minmax) {
-        this.tube.material.uniforms.minmaxV.value = new THREE.Vector2(minmax[0], minmax[1]);
-    }
-
-    changePlotsColor() {
-        if (!this.data.merge) {
-            this.plot.material.color.set(this.plotColor);
-        } else {
-            let circleColor = [];
-            let baseColors = [];
-            for (let i = 0; i < this.plotColor.length; i++) {
-                baseColors.push(new THREE.Color(this.plotColor[i]));
-            }
-            let circleIndices = Array(this.data.position.length * this.segment * 2);
-            let posCount = 0;
-            let del = Math.PI * 2 / this.segment;
-            let range = this.data.meta.range;
-            for (let i = 0; i < this.data.spatial.length; i++) {
-                if ('x' in this.data.spatial[i]) {
-                    let source = this.data.spatial[i].source;
-                    let currentColor = baseColors[this.idNameLookup[source]];
-                    for (let j = 0; j < this.segment; j++) {
-                        circleColor.push(currentColor.r);
-                        circleColor.push(currentColor.g);
-                        circleColor.push(currentColor.b);
-                    }
-                }
-            }
-            this.plot.geometry.addAttribute('color', new THREE.Float32BufferAttribute(circleColor, 3));
-        }
     }
 
     drawGrid(size, divisions) {

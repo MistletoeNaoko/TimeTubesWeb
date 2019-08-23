@@ -22,11 +22,11 @@
 <!--    <script src="js/slider.js"></script>-->
     <script type="x-shader/x-vertex" id="vertexShader_tube">
         precision mediump float;
-        attribute vec2 colorData;
+        attribute vec3 colorData;
         attribute float selected;
         varying vec3 vNormal;
         varying vec3 vWorldPosition;
-        varying vec2 vColor;
+        varying vec3 vColor;
         varying float vSelected;
         #include <clipping_planes_pars_vertex>
         void main() {
@@ -45,7 +45,7 @@
         precision mediump float;
         varying vec3 vNormal;
         varying vec3 vWorldPosition;
-        varying vec2 vColor;
+        varying vec3 vColor;
         varying float vSelected;
         uniform vec3 lightPosition;
         uniform sampler2D texture;
@@ -63,7 +63,7 @@
             T.y = (vColor.y - minmaxV.x) / (minmaxV.y - minmaxV.x);
             vec4 resultColor = texture2D(texture, T);
             float c = max(0.0, dot(vNormal, lightDirection)) * 0.3;
-            float opacity = 1.0 / float(tubeNum);//vPositionx;//vWorldPosition.x;//1.0 / float(TUBE_NUM);
+            float opacity = vColor.z;//1.0 / float(tubeNum);//vPositionx;//vWorldPosition.x;//1.0 / float(TUBE_NUM);
             if (shade)
                 gl_FragColor = vec4(resultColor.r + c, resultColor.g + c, resultColor.b + c, opacity);
             else

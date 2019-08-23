@@ -387,11 +387,12 @@ export default class Details extends React.Component{
     }
 
     changeOpacityDistribution() {
-        let opacityList = document.getElementById('opacityList');
+        let opacityList = document.getElementById('opacityList-' + this.id);
         let selectedIdx = opacityList.selectedIndex;
         let selectedOpt = opacityList.options[selectedIdx].value;
         this.drawOpacityCurve(selectedOpt);
         this.drawOpacityEllipse(selectedOpt);
+        TimeTubesAction.updateOpacity(this.id, selectedOpt);
     }
 
     drawOpacityCurve(opt) {
@@ -594,7 +595,7 @@ export default class Details extends React.Component{
                      style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: 'auto', zIndex:'34', display: 'block'}}>
                     <select
                         className="form-control"
-                        id='opacityList'
+                        id={'opacityList-' + this.id}
                         onChange={this.changeOpacityDistribution.bind(this)}
                         style={{fontSize: '0.8rem', width: '150px'}}>
                         <option value='Default'>Default</option>

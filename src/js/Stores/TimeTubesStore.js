@@ -156,6 +156,9 @@ class TimeTubesStore extends EventEmitter{
             case 'ZOOM_IN_TIMETUBES':
                 this.zoomInTimeTubes(action.id);
                 break;
+            case 'UPDATE_OPACITY':
+                this.updateOpacity(action.id, action.opt);
+                break;
             default:
         }
     }
@@ -187,6 +190,66 @@ class TimeTubesStore extends EventEmitter{
 
     getActiveId() {
         return this.activeId;
+    }
+
+    getPresetColors() {
+        return this.presetColors;
+    }
+
+    getPresetColor(idx) {
+        return this.presetColors[idx];
+    }
+
+    getPresetNum() {
+        return this.presetColors.length;
+    }
+
+    getPlotColor(id) {
+        return this.plotColor[id];
+    }
+
+    getInitColorIdx() {
+        return this.initColorIdx;
+    }
+
+    getGridSize() {
+        return this.gridSize;
+    }
+
+    getVisualQuery() {
+        return this.visualQuery;
+    }
+
+    getTexture(id) {
+        return this.texture[id];
+    }
+
+    getTubeNum() {
+        return this.tubeNum;
+    }
+
+    getLock(id) {
+        return this.lock[id];
+    }
+
+    getOpacityDistSet() {
+        return opacityDistSet;
+    }
+
+    getOpacityCurves() {
+        return this.opacityCurves;
+    }
+
+    getOpacityCurve(opt) {
+        return this.opacityCurves[opt];
+    }
+
+    setPlotColor(id, color) {
+        this.plotColor[id] = color;
+    }
+
+    setPlotColorbyIdx(id, colorIdx) {
+        this.plotColor[id] = this.presetColors[colorIdx];
     }
 
     uploadData() {
@@ -347,64 +410,8 @@ class TimeTubesStore extends EventEmitter{
         this.emit('updateZoomTimeTubes', id);
     }
 
-    getPresetColors() {
-        return this.presetColors;
-    }
-
-    getPresetColor(idx) {
-        return this.presetColors[idx];
-    }
-
-    getPresetNum() {
-        return this.presetColors.length;
-    }
-
-    getPlotColor(id) {
-        return this.plotColor[id];
-    }
-
-    getInitColorIdx() {
-        return this.initColorIdx;
-    }
-
-    getGridSize() {
-        return this.gridSize;
-    }
-
-    getVisualQuery() {
-        return this.visualQuery;
-    }
-
-    getTexture(id) {
-        return this.texture[id];
-    }
-
-    getTubeNum() {
-        return this.tubeNum;
-    }
-
-    getLock(id) {
-        return this.lock[id];
-    }
-
-    getOpacityDistSet() {
-        return opacityDistSet;
-    }
-
-    getOpacityCurves() {
-        return this.opacityCurves;
-    }
-
-    getOpacityCurve(opt) {
-        return this.opacityCurves[opt];
-    }
-
-    setPlotColor(id, color) {
-        this.plotColor[id] = color;
-    }
-
-    setPlotColorbyIdx(id, colorIdx) {
-        this.plotColor[id] = this.presetColors[colorIdx];
+    updateOpacity(id, opt) {
+        this.emit('updateOpacity', id, opt);
     }
 }
 
