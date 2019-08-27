@@ -132,7 +132,7 @@ export default class Feature extends React.Component {
                         <div className="form-check form-check-inline">
                             <input
                                 type="radio"
-                                name="file_type"
+                                name="pen"
                                 value="select"
                                 disabled={!visualQueryStatus}
                                 checked={this.state.selector}/>
@@ -141,7 +141,7 @@ export default class Feature extends React.Component {
                         <div className="form-check form-check-inline">
                             <input
                                 type="radio"
-                                name="file_type"
+                                name="eraser"
                                 value="Deselect"
                                 disabled={!visualQueryStatus}
                                 checked={!this.state.selector}/>

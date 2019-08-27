@@ -48,8 +48,15 @@ export default class ScatterplotsHolder extends React.Component{
     }
 
     render() {
+        // first div: to align SPs vertically
+        // second div: to change the width of the div depending on the child's size (svg)
+        // Scatterplots: main SP elements
         let scatterplots = this.state.scatterplotsList.map((axis, i) => {
-            return <Scatterplots key={i} id={this.id} divID={'scatterplots' + this.id + '_' + i} xItem={axis.x} yItem={axis.y}/>;
+            return <div key={this.id + '_' + i}>
+                <div key={this.id + '_' + i} id={'scatterplots' + this.id + '_' + i} style={{display: 'inline-block'}}>
+                <Scatterplots key={this.id + '_' + i} id={this.id} divID={'scatterplots' + this.id + '_' + i} xItem={axis.x} yItem={axis.y}/>
+                </div>
+                </div>;
         });
         let items = [];
         for (let key in this.data.lookup) {
