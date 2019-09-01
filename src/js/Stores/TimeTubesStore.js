@@ -252,6 +252,10 @@ class TimeTubesStore extends EventEmitter{
         this.plotColor[id] = this.presetColors[colorIdx];
     }
 
+    setLock(id, dst) {
+        this.lock[id] = dst;
+    }
+
     uploadData() {
         let idx = this.cameraProp.length;
         this.cameraProp.push(

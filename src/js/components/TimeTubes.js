@@ -180,6 +180,10 @@ export default class TimeTubes extends React.Component{
                     // move TimeTubes to the observation time of the active window
                     // do nothing
                 }
+
+                if (this.lock) {
+                    TimeTubesStore.setLock(this.id, fittingDst - this.data.spatial[0].z);
+                }
                 this.searchTime(fittingDst);
             }
         });
@@ -205,6 +209,7 @@ export default class TimeTubes extends React.Component{
                     } else if (max < dst) {
                         dst = max;
                     }
+
                     this.searchTime(dst);
                 } else if (!pos.equals(new THREE.Vector3(0, 0, 0))) {
                     // rotate the tube

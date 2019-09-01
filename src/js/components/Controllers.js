@@ -15,7 +15,8 @@ export default class Controllers extends React.Component{
             plot: true,
             clip: true,
             shade: true,
-            lock: false
+            lock: false,
+            multiOptions: false
         }
     }
 
@@ -24,6 +25,11 @@ export default class Controllers extends React.Component{
             this.setState({
                 data: DataStore.getAllData()
             });
+            if (document.getElementsByClassName('TimeTubes').length > 1) {
+                this.setState({
+                    multiOptions: true
+                });
+            }
         });
     }
 
@@ -377,8 +383,8 @@ export default class Controllers extends React.Component{
                             id='checkboxLock'
                             value="option1"
                             checked={this.state.lock}
-                            onChange={this.lockControl.bind(this)}/>
-
+                            onChange={this.lockControl.bind(this)}
+                            disabled={!this.state.multiOptions}/>
                         <label
                             className="form-check-label"
                             htmlFor="inlineCheckbox1">
@@ -389,13 +395,15 @@ export default class Controllers extends React.Component{
                     <button
                         id='timeFittingBtn'
                         className='btn btn-secondary btn-sm'
-                        onClick={this.timeFitting.bind(this)}>
+                        onClick={this.timeFitting.bind(this)}
+                        disabled={!this.state.multiOptions}>
                         TimeFitting
                     </button>
                     <button
                         id='mergeBtn'
                         className='btn btn-secondary btn-sm'
-                        onClick={this.mergeTubes.bind(this)}>
+                        onClick={this.mergeTubes.bind(this)}
+                        disabled={!this.state.multiOptions}>
                         Merge
                     </button>
                 </div>
