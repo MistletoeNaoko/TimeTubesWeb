@@ -58,17 +58,21 @@ export default class TimeTubes extends React.Component{
             TimeTubesStore.setPlotColorbyIdx(this.id, (TimeTubesStore.getInitColorIdx() + this.id) % TimeTubesStore.getPresetNum());
             this.plotColor = TimeTubesStore.getPlotColor(this.id);
         }
+        this.state = {
+            width: props.width,
+            height: props.height
+        }
     }
 
     render() {
-        let width = ($(window).width() - $('#Controllers').width() - $('.right').width()) / DataStore.getDataNum()// * 0.95;
-        let height = Math.max($('#Controllers').height(), 500);
-        this.updateSize(width, height);
+        // let width = ($(window).width() - $('#Controllers').width() - $('.right').width()) / DataStore.getDataNum()// * 0.95;
+        // let height = Math.max($('#Controllers').height(), 500);
+        this.updateSize(this.props.width, this.props.height);
         return (
             <div style={{position: 'relative', float: 'left'}}>
                 <div
                     className={'TimeTubes'}
-                    style={{width: width + 'px', height: height + 'px'}}//"500px", height: "500px"}}
+                    style={{width: this.props.width + 'px', height: this.props.height + 'px'}}//"500px", height: "500px"}}
                     // style={{width: "500px", height: "500px", position: 'absolute', top: '0px', left: '0px', zIndex: '0'}}
                     ref={mount => {
                         this.mount = mount;

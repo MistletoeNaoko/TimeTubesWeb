@@ -18,15 +18,15 @@ export default class Scatterplots extends React.Component{
         this.divID = props.divID;
         this.SPID = props.id + '_' + props.divID.split('_')[1];  // e.g. 0_1
         this.data = DataStore.getData(this.id);
-        this.width = 500;
-        this.height = 350;
         this.xMinMax = [0, 0];
         this.yMinMax = [0, 0];
         this.state = {
             xItem: props.xItem,
             yItem: props.yItem,
             xItemonPanel: props.xItem,
-            yItemonPanel: props.yItem
+            yItemonPanel: props.yItem,
+            width: props.width,
+            height: props.height
         };
     }
 
@@ -59,7 +59,8 @@ export default class Scatterplots extends React.Component{
     }
 
     componentDidMount() {
-        this.drawScatterplots(this.data);
+        this.initalizeElements();
+        this.drawScatterplots();
         // let xAxisPanel = document.getElementById("selectXAxisForm_" + this.SPID);
         // let yAxisPanel = document.getElementById("selectYAxisForm_" + this.SPID);
         // let xItems = xAxisPanel["selectXAxisForm_" + this.SPID];
@@ -78,37 +79,108 @@ export default class Scatterplots extends React.Component{
         // }
     }
 
-    drawScatterplots(data) {
+    initalizeElements() {
+        this.zoom = d3.zoom()
+            .scaleExtent([.5, 20]);
+        this.sp = d3.select('#' + this.divID)
+            .append('svg')
+            .attr('id', 'scatterplotsSVG_' + this.SPID)
+            .attr('class', 'scatterplot scatterplots' + this.id + ' ' + this.divID);
+        this.xScale = d3.scaleLinear();
+        this.xAxis = this.sp.append("g")
+            .attr("class", "x_axis " + this.divID);
+        this.xAxisText = d3.selectAll('g.x_axis.' + this.divID)
+            .append('text')
+            .attr('class', 'axisLabel ' + this.divID)
+            .attr('fill', 'black')
+            .attr('text-anchor', 'middle');
+        this.yScale = d3.scaleLinear();
+        this.yAxis = this.sp.append("g")
+            .attr("class", "y_axis "+ this.divID)
+            .attr("transform", "translate(" + this.margin.left + ',' + this.margin.top + ")");
+        this.yAxisText = d3.selectAll('g.y_axis.' + this.divID)
+            .append('text')
+            .attr('class', 'axisLabel ' + this.divID)
+            .attr('fill', 'black')
+            .attr('transform', 'rotate(-90)')
+            .attr('text-anchor', 'middle');
+
+        // tooltip
+        this.tooltip = d3.select('#scatterplots_' + this.id)
+            .append('div')
+            .attr('class', 'tooltip ' + this.divID)
+            .attr('id', 'tooltip_' + this.SPID)
+            .style('opacity', 0.75)
+            .style('visibility', 'hidden');
+
+        this.line = d3.line()
+            .x(function(d){ return d[0]; })
+            .y(function(d){ return d[1]; });
+        this.lineH = this.sp.append('path')
+            .attr('stroke', 'orange')
+            .attr("fill", "none")
+            .attr('class', 'currentLineH ' + this.divID + ' scatterplots' + this.id)
+            .style('opacity', 0.75)
+            .style('visibility', 'hidden');
+        this.lineV = this.sp.append('path')
+            .attr('stroke', 'orange')
+            .attr("fill", "none")
+            .attr('class', 'currentLineV ' + this.divID + ' scatterplots' + this.id)
+            .style('opacity', 0.75)
+            .style('visibility', 'hidden');
+        this.clip = this.sp.append("defs").append("clipPath")
+            .attr("id", "clipScatterplots_" + this.SPID)
+            .append("rect");
+        this.point_g = this.sp.append('g')
+            .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')')
+            .attr('clip-path', 'url(#clipScatterplots_' + this.SPID + ')')
+            .classed('points_g', true);
+
+        let xItem = this.state.xItem, yItem = this.state.yItem;
+        this.points = this.point_g
+            .selectAll("circle")
+            .data(this.data.data.spatial)
+            .enter()
+            .append("circle")
+            .select(function (d) {
+                return (xItem in d && yItem in d) ? this: null;
+            })
+            .attr('opacity', 0.7)
+            .attr('stroke-width', 0.5)
+            .attr('stroke', 'dimgray')
+            .attr("r", 4)
+            .attr('class', this.divID + ' scatterplots' + this.id);
+    }
+
+    drawScatterplots() {
         let id = this.id;
         let SPID = this.SPID;
         let divID = this.divID;
         let margin = this.margin;
+        let data = this.data;
         // let parentArea = d3.select('#scatterplots_' + this.id);
         // let elem = parentArea
         //     .append('div')
         //     .attr('id', this.divID);
         // let elem = d3.select('#' + this.divID);
-        let outerWidth = this.width, outerHeight = this.height;
+        let outerWidth = this.props.width, outerHeight = this.props.height;
         let width = outerWidth - this.margin.left - this.margin.right;
         let height = outerHeight - this.margin.top - this.margin.bottom;
+        let xItem = this.state.xItem, yItem = this.state.yItem;
+        let tooltip = this.tooltip;
 
         // Pan and zoom
-        this.zoom = d3.zoom()
-            .scaleExtent([.5, 20])
+        this.zoom
             .extent([[0, 0], [width, height]])
             .on("zoom", zoomed.bind(this));
 
-        this.sp = d3.select('#' + this.divID)
-            .append('svg')
-            .attr('id', 'scatterplotsSVG_' + this.SPID)
+        this.sp
             .attr('width', outerWidth)
             .attr('height', outerHeight)
-            .attr('class', 'scatterplot scatterplots' + this.id + ' ' + this.divID)
             .call(this.zoom)
             .on("dblclick.zoom", null);
-        let xItem = this.state.xItem, yItem = this.state.yItem;
         // Draw x axis
-        this.xScale = d3.scaleLinear()
+        this.xScale
             .domain([this.data.data.meta.min[xItem], this.data.data.meta.max[xItem]])
             .nice()
             .range([0, width]);
@@ -117,24 +189,19 @@ export default class Scatterplots extends React.Component{
         this.xLabel = d3.axisBottom(this.xScale)
             .ticks(10)
             .tickSize(-height);
-        this.xAxis = this.sp.append("g")
-            .attr("class", "x_axis " + this.divID)
+        this.xAxis
             .attr("transform", "translate(" + this.margin.left + ',' + (this.margin.top + height) + ")")
             .call(this.xLabel);
-        d3.selectAll('g.x_axis.' + this.divID)
-            .append('text')
-            .attr('class', 'axisLabel ' + this.divID)
+        this.xAxisText
             .attr('x', width / 2)
             .attr('y', this.margin.bottom / 2 + 10)
-            .attr('fill', 'black')
-            .attr('text-anchor', 'middle')
             .text(this.data.data.lookup[xItem])
             .on('click', spXLabelClick.bind(this))
             .on('mouseover', spXLabelMouseOver)
             .on('mouseout', spXLabelMouseOut);
 
         // Draw y axis
-        this.yScale = d3.scaleLinear()
+        this.yScale
             .domain([this.data.data.meta.min[yItem], this.data.data.meta.max[yItem]])
             .nice()
             .range([height, 0]);
@@ -145,29 +212,16 @@ export default class Scatterplots extends React.Component{
             .tickFormat(function (d) {
                 return d.toExponential(0);
             });
-        this.yAxis = this.sp.append("g")
-            .attr("class", "y_axis "+ this.divID)
-            .attr("transform", "translate(" + this.margin.left + ',' + this.margin.top + ")")
+        this.yAxis
             .call(this.yLabel);
-        d3.selectAll('g.y_axis.' + this.divID)
-            .append('text')
-            .attr('class', 'axisLabel ' + this.divID)
+        this.yAxisText
             .attr('x', -height / 2)
             .attr('y', -this.margin.left / 2 - 10)
-            .attr('fill', 'black')
-            .attr('transform', 'rotate(-90)')
-            .attr('text-anchor', 'middle')
             .text(this.data.data.lookup[yItem])
             .on('click', spYLabelClick.bind(this))
             .on('mouseover', spYLabelMouseOver)
             .on('mouseout', spYLabelMouseOut);
 
-        // tooltip
-        let tooltip = d3.select('#scatterplots_' + this.id)
-            .append('div')
-            .attr('class', 'tooltip ' + this.divID)
-            .style('opacity', 0.75)
-            .style('visibility', 'hidden');
 
         // the panels for changing the item of each axis
         // let changeXAxisPanel = d3.select('#scatterplots_' + this.id)
@@ -183,35 +237,20 @@ export default class Scatterplots extends React.Component{
 
         let curLineH = [[0, this.margin.top], [width, this.margin.top]];
         let curLineV = [[this.margin.left, 0], [this.margin.left, height]];
-        let line = d3.line()
-            .x(function(d){ return d[0]; })
-            .y(function(d){ return d[1]; });
-        let lineH = this.sp.append('path')
-            .attr('d', line(curLineH))
-            .attr('stroke', 'orange')
-            .attr("fill", "none")
-            .attr('class', 'currentLineH ' + this.divID + ' scatterplots' + this.id)
-            .style('opacity', 0.75)
-            .style('visibility', 'hidden');
-        let lineV = this.sp.append('path')
-            .attr('d', line(curLineV))
-            .attr('stroke', 'orange')
-            .attr("fill", "none")
-            .attr('class', 'currentLineV ' + this.divID + ' scatterplots' + this.id)
-            .style('opacity', 0.75)
-            .style('visibility', 'hidden');
+        this.lineH
+            .attr('d', this.line(curLineH));
+        this.lineV
+            .attr('d', this.line(curLineV));
 
-        this.sp.append("rect")
-            .attr("width", width)
-            .attr("height", height)
-            .style("fill", "none")
-            .style("pointer-events", "all")
-            .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
+        // this.sp.append("rect")
+        //     .attr("width", width)
+        //     .attr("height", height)
+        //     .style("fill", "none")
+        //     .style("pointer-events", "all")
+        //     .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
 
         // create a clipping region
-        this.sp.append("defs").append("clipPath")
-            .attr("id", "clipScatterplots")
-            .append("rect")
+        this.clip
             .attr("width", width)
             .attr("height", height);
 
@@ -219,26 +258,10 @@ export default class Scatterplots extends React.Component{
         let points;
         if (!this.data.data.merge) {
             let plotColor = TimeTubesStore.getPlotColor(this.id);
-            let point_g = this.sp.append('g')
-                .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')')
-                .attr('clip-path', 'url(#clipScatterplots)')
-                .classed('points_g', true);
-            points = point_g
-                .selectAll("circle")
-                .data(this.data.data.spatial)
-                .enter()
-                .append("circle")
-                .select(function (d) {
-                    return (xItem in d && yItem in d) ? this: null;
-                })
+            this.points
                 .attr("cx", function(d) { return this.xScale(d[xItem]); }.bind((this)))
                 .attr("cy", function(d) { return this.yScale(d[yItem]); }.bind((this)))
                 .attr("fill", plotColor)//d3.rgb(color[0], color[1], color[2]))
-                .attr('opacity', 0.7)
-                .attr('stroke-width', 0.5)
-                .attr('stroke', 'dimgray')
-                .attr("r", 4)
-                .attr('class', this.divID + ' scatterplots' + this.id)
                 .on('mouseover', spMouseOver)
                 .on('mouseout', spMouseOut)
                 // .on('click', spClick)
@@ -258,28 +281,12 @@ export default class Scatterplots extends React.Component{
                 }
                 plotColors.push(TimeTubesStore.getPlotColor(id));
             }
-            let point_g = this.sp.append('g')
-                .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')')
-                .attr('clip-path', 'url(#clip)')
-                .classed('points_g', true);
-            points = point_g
-                .selectAll("circle")
-                .data(this.data.data.spatial)
-                .enter()
-                .append("circle")
-                .select(function (d) {
-                    return (xItem in d && yItem in d) ? this: null;
-                })
+            this.points
                 .attr("cx", function(d) { return this.xScale(d[xItem]); }.bind((this)))
                 .attr("cy", function(d) { return this.yScale(d[yItem]); }.bind((this)))
                 .attr("fill", function (d) {
                     return plotColors[idNameLookup[d.source]];
                 })//d3.rgb(color[0], color[1], color[2]))
-                .attr('opacity', 0.7)
-                .attr('stroke-width', 0.5)
-                .attr('stroke', 'dimgray')
-                .attr("r", 4)
-                .attr('class', this.divID + ' scatterplots' + this.id)
                 .on('mouseover', spMouseOver)
                 .on('mouseout', spMouseOut)
                 // .on('click', spClick)
@@ -333,21 +340,21 @@ export default class Scatterplots extends React.Component{
             if (current._groups[0][0]) {
                 let cx = current.attr('cx'), cy = current.attr('cy');
                 if (cy <= 0 || height <= cy) {
-                    lineH
+                    this.lineH
                         .attr('transform', "translate(" + this.margin.left + "," + cy + ")")
                         .style('visibility', 'hidden');
                 } else {
-                    lineH.transition()
+                    this.lineH.transition()
                         .duration(0)
                         .attr('transform', "translate(" + this.margin.left + "," + cy + ")")
                         .style('visibility', 'visible');
                 }
                 if (cx <= 0 || width <= cx) {
-                    lineV
+                    this.lineV
                         .attr('transform', "translate(" + cx + "," + this.margin.top + ")")
                         .style('visibility', 'hidden');
                 } else {
-                    lineV.transition()
+                    this.lineV.transition()
                         .duration(0)
                         .attr('transform', "translate(" + cx + "," + this.margin.top + ")")
                         .style('visibility', 'visible');
@@ -537,13 +544,13 @@ export default class Scatterplots extends React.Component{
         if (this.state.xItem === 'z') {
             let new_xScale = d3.scaleLinear()
                 .domain([this.xMinMax[0], this.xMinMax[1]])
-                .range([0, this.width - this.margin.left - this.margin.right]);
+                .range([0, this.props.width - this.margin.left - this.margin.right]);
             let JD = zpos + this.data.data.spatial[0].z;
-            let currentLineH = d3.selectAll('.currentLineH.' + this.divID + '.scatterplots' + this.id);
-            let currentLineV = d3.selectAll('.currentLineV.' + this.divID + '.scatterplots' + this.id);
-            currentLineH
+            // let currentLineH = d3.selectAll('.currentLineH.' + this.divID + '.scatterplots' + this.id);
+            // let currentLineV = d3.selectAll('.currentLineV.' + this.divID + '.scatterplots' + this.id);
+            this.lineH
                 .style('visibility', 'hidden');
-            currentLineV
+            this.lineV
                 .transition()
                 .duration(0)
                 .style('visibility', 'visible')
@@ -551,13 +558,13 @@ export default class Scatterplots extends React.Component{
         } else if (this.state.yItem === 'z') {
             let new_yScale = d3.scaleLinear()
                 .domain([this.yMinMax[0], this.yMinMax[1]])
-                .range([0, this.height - this.margin.top - this.margin.bottom]);
+                .range([0, this.props.height - this.margin.top - this.margin.bottom]);
             let JD = zpos + this.data.data.spatial[0].z;
-            let currentLineH = d3.selectAll('.currentLineH.' + this.divID + '.scatterplots' + this.id);
-            let currentLineV = d3.selectAll('.currentLineV.' + this.divID + '.scatterplots' + this.id);
-            currentLineV
+            // this.lineH = d3.selectAll('.currentLineH.' + this.divID + '.scatterplots' + this.id);
+            // let currentLineV = d3.selectAll('.currentLineV.' + this.divID + '.scatterplots' + this.id);
+            this.lineV
                 .style('visibility', 'hidden');
-            currentLineH
+            this.lineH
                 .transition()
                 .duration(0)
                 .style('visibility', 'visible')
@@ -590,7 +597,7 @@ export default class Scatterplots extends React.Component{
             .nice();
 
         // move all plots to the new positions
-        this.sp.selectAll('circle')
+        this.points
             .data(this.data.data.spatial)
             .transition()
             .duration(1000)
@@ -620,8 +627,7 @@ export default class Scatterplots extends React.Component{
             .duration(100)
             .call(this.xLabel.scale(this.xScale));
         // change the label of the x axis
-        d3.select('g.x_axis.' + this.divID)
-            .select('text.axisLabel.' + this.divID)
+        this.xAxisText
             .text(this.data.data.lookup[this.state.xItemonPanel]);
 
         // make the x axis change panel hidden
@@ -643,7 +649,7 @@ export default class Scatterplots extends React.Component{
             .nice();
 
         // move all plots to the new positions
-        this.sp.selectAll('circle')
+        this.points
             .data(this.data.data.spatial)
             .transition()
             .duration(1000)
@@ -673,8 +679,7 @@ export default class Scatterplots extends React.Component{
             .duration(100)
             .call(this.yLabel.scale(this.yScale));
         // change the label of the y axis
-        d3.select('g.y_axis.' + this.divID)
-            .select('text.axisLabel.' + this.divID)
+        this.yAxisText
             .text(this.data.data.lookup[this.state.yItemonPanel]);
 
         // make the y axis change panel hidden
@@ -691,6 +696,9 @@ export default class Scatterplots extends React.Component{
     }
 
     render() {
+        if (d3.selectAll('svg#scatterplotsSVG_' + this.SPID).size() > 0) {
+            this.drawScatterplots();
+        }
         let xItems = [], yItems = [];
         let lookup = this.data.data.lookup;
         for (let key in lookup) {
@@ -726,7 +734,6 @@ export default class Scatterplots extends React.Component{
         }
         return (
             <div id={'scatterplotsSelectors_' + this.SPID}>
-                {/*<svg id={'scatterplotsSVG_' + this.SPID}></svg>*/}
                 <div className='overlayPanel'
                      id={'changeXAxisPanel_' + this.SPID}
                      style={{visibility: 'hidden', textAlign: 'center'}}>

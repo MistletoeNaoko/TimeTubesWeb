@@ -11,7 +11,9 @@ export default class ScatterplotsHolder extends React.Component{
         this.data = props.data;
         this.fileName = this.data.name;
         this.state = {
-            scatterplotsList: []
+            scatterplotsList: [],
+            width: props.width,
+            height: props.height
         }; //x, y, xrange, yrange
     }
 
@@ -52,11 +54,22 @@ export default class ScatterplotsHolder extends React.Component{
         // second div: to change the width of the div depending on the child's size (svg)
         // Scatterplots: main SP elements
         let scatterplots = this.state.scatterplotsList.map((axis, i) => {
-            return <div key={this.id + '_' + i}>
-                <div key={this.id + '_' + i} id={'scatterplots' + this.id + '_' + i} style={{display: 'inline-block'}}>
-                <Scatterplots key={this.id + '_' + i} id={this.id} divID={'scatterplots' + this.id + '_' + i} xItem={axis.x} yItem={axis.y}/>
-                </div>
-                </div>;
+            return (
+                <div key={this.id + '_' + i}>
+                    <div
+                        key={this.id + '_' + i}
+                        id={'scatterplots' + this.id + '_' + i}
+                        style={{display: 'inline-block'}}>
+                        <Scatterplots
+                            key={this.id + '_' + i}
+                            id={this.id}
+                            divID={'scatterplots' + this.id + '_' + i}
+                            xItem={axis.x}
+                            yItem={axis.y}
+                            width={this.props.width}
+                            height={this.props.height}/>
+                    </div>
+                </div>);
         });
         let items = [];
         for (let key in this.data.lookup) {
@@ -69,15 +82,12 @@ export default class ScatterplotsHolder extends React.Component{
             items.push(<option key={key} value={key}>{label}</option>);
         }
         return (
-            <div>
-                <div id={'timeSelectorHolder_' + this.id} className='timeSelectorHolder'>
-                    <TimeSelector id={this.id} divID={'timeSelector_' + this.id}/>
-                </div>
+            <div className='scatterplotsHolder' id={'scatterplotsHolder_' + this.id}>
                 <div className='scatterplotsMenu row'>
                         {this.fileName}
                         <button
                             type="button"
-                            className="btn btn-secondary btn-sm"
+                            className="btn btn-primary btn-sm"
                             id={"scatterResetBtn_" + this.id}
                             onClick={this.resetScatterplotsZoom.bind(this)}>Reset</button>
                         <select
@@ -96,7 +106,7 @@ export default class ScatterplotsHolder extends React.Component{
                         </select>
                         <button
                             type="button"
-                            className="btn btn-secondary btn-sm"
+                            className="btn btn-primary btn-sm"
                             id={"showScatter_" + this.id}
                             style={{float: 'right'}}
                             onClick={this.addScatterplots.bind(this)}>+</button>

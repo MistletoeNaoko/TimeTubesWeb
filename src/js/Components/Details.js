@@ -487,19 +487,19 @@ export default class Details extends React.Component{
                      className='controllersOnView'
                      style={{position: 'absolute', top: '0px', right: '0px', zIndex: '20', fontSize: '0.8rem'}}>
                     <button type="button"
-                            className="btn btn-sm btn-secondary"
+                            className="btn btn-sm btn-primary"
                             id={'zoomOutBtn_' + this.id}
                             onClick={this.zoomOutTimeTubes.bind(this)}>
                         -
                     </button>
                     <button type="button"
-                            className="btn btn-sm btn-secondary"
+                            className="btn btn-sm btn-primary"
                             id={'resetZoomBtn_' + this.id}
                             onClick={this.resetZoomTimeTubes.bind(this)}>
                         □
                     </button>
                     <button type="button"
-                            className="btn btn-sm btn-secondary"
+                            className="btn btn-sm btn-primary"
                             id={'zoomInBtn_' + this.id}
                             onClick={this.zoomInTimeTubes.bind(this)}>
                         +
@@ -510,31 +510,31 @@ export default class Details extends React.Component{
                      style={{position: 'absolute', bottom: '0px', left: '0px', zIndex:'30', fontSize: '0.8rem'}}>
                 {/*    Add camera far, search box, color map*/}
                     <button type="button"
-                            className="btn btn-sm btn-secondary"
+                            className="btn btn-sm btn-primary"
                             id={'colormapPopoverBtn_' + this.id}
                             onClick={this.showPopoverColormap.bind(this)}>
                         Colormap
                     </button>
                     <button type="button"
-                            className="btn btn-sm btn-secondary"
+                            className="btn btn-sm btn-primary"
                             id={'farPopoverBtn_' + this.id}
                             onClick={this.showPopoverFar.bind(this)}>
                         Far
                     </button>
                     <button type="button"
-                            className="btn btn-sm btn-secondary"
+                            className="btn btn-sm btn-primary"
                             id={'plotColorPopoverBtn_' + this.id}
                             onClick={this.showPopoverPlotColor.bind(this)}>
                         Plot Color
                     </button>
                     <button type="button"
-                            className="btn btn-sm btn-secondary"
+                            className="btn btn-sm btn-primary"
                             id={'opacityPopoverBtn_' + this.id}
                             onClick={this.showPopoverOpacity.bind(this)}>
                         Opacity
                     </button>
                     <button type="button"
-                            className="btn btn-sm btn-secondary"
+                            className="btn btn-sm btn-primary"
                             id={'searchPopoverBtn_' + this.id}
                             onClick={this.showPopoverSearch.bind(this)}>
                         Search
@@ -616,7 +616,7 @@ export default class Details extends React.Component{
                            className="form-control custom-input"
                            id={"searchTimeInput_" + this.id}
                            placeholder="Input JD"/>
-                    <button className="btn btn-secondary btn-sm"
+                    <button className="btn btn-primary btn-sm"
                             type="button"
                             id={"searchTimeBtn_" + this.id}
                             onClick={this.searchTime.bind(this)} >Search</button>

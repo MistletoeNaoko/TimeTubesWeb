@@ -42,18 +42,22 @@ g.x_axis line, g.y_axis line{
     font-size: 0.8rem;
 }
 
-#Controllers {
-    background: #f8f9fa;
-    font-size: 0.8rem;
-    padding: 0.5rem 0px 1rem 0px;
-    /*width: 16%;*/
-    width: 250px;
-    float: left;
-}
+/*#Controllers {*/
+    /*background: #f8f9fa;*/
+    /*font-size: 0.8rem;*/
+    /*padding: 0.5rem 0px 1rem 0px;*/
+    /*!*width: 16%;*!*/
+    /*width: 250px;*/
+    /*float: left;*/
+/*}*/
 
 #scatterplotsArea {
     padding: 0px;
     margin: 0px;
+}
+
+#tubeControllers {
+    height: 2rem;
 }
 
 .scatterplotsViewports {
@@ -122,6 +126,25 @@ output {
     font-size: .8em;
     text-align: center;
 }
+label.menuLabel {
+    padding: 0px;
+    margin-bottom: 0px;
+}
+.form-check-inline.menuItem {
+    margin-right: 0px;
+    padding-left: 0.5rem;
+}
+.form-check-input.menuCheck {
+    margin-right: 0px;
+    margin-left: 0px;
+}
+#TimeTubesMenu ul {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+#TimeTubesMenu ul+ul {
+    border-left:1px solid white;
+}
 
 #detailValueArea {
     background-color: rgba(0, 0, 0, 0.5);
@@ -141,6 +164,11 @@ output {
 
 .detailTableVari {
     font-style: italic;
+}
+
+.outerContainer {
+    display: inline-block;
+    /*min-width: 100%;*/
 }
 
 #TimeTubesViewports {
