@@ -18,9 +18,9 @@ export default class DataColumn extends React.Component{
 
     render() {
         return (
-            <div className='dataColumn outerContainer col-sm'
+            <div className='dataColumn'
                  id={'dataColumn_' + this.id}
-                 style={{padding:'unset'}}>
+                 style={{padding:'unset', display: 'table-cell'}}>
                 <TimeTubesHolder
                     id={this.id}
                     data={this.data}

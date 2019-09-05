@@ -325,7 +325,7 @@ export default class Scatterplots extends React.Component{
             this.xAxis.call(this.xLabel.scale(new_xScale));
             this.yAxis.call(this.yLabel.scale(new_yScale));
 
-            points
+            this.points
                 .attr('cx', function(d) {return new_xScale(d[xItem])})
                 .attr('cy', function(d) {return new_yScale(d[yItem])});
 

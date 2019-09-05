@@ -48,9 +48,14 @@ export default class Visualization extends React.Component{
         let width = this.state.width;
         let heightTT = this.state.heightTT;
         let heightSP = this.state.heightSP;
-        if (datasets.length > 0) {
-            width = $(window).width() / DataStore.getDataNum();// * 0.95;
-            let height = $(window).height() - $('#appHeader').outerHeight() - $('#tubeControllers').outerHeight();
+        let dataNum = DataStore.getDataNum();
+        if (dataNum > 0) {
+            if (dataNum <= 3) {
+                width = $(window).innerWidth() / dataNum;// * 0.95;
+            } else {
+                width = Math.ceil($(window).innerWidth() / 3);
+            }
+            let height = $(window).innerHeight() - $('#appHeader').outerHeight() - $('#tubeControllers').outerHeight();
             heightTT = Math.ceil(height * 0.6) + 100;
             heightSP = height - heightTT;
         }
@@ -65,29 +70,19 @@ export default class Visualization extends React.Component{
                 heightSP={heightSP}
             />;
         });
-        // const TimeTubesList = datasets.map((data) => {
-        //     return <TimeTubes
-        //         key={data.id}
-        //         id={data.id}
-        //         data={data.data}
-        //     />;
-        // });
-        // const scatterplotsList = datasets.map((data) => {
-        //     return <ScatterplotsHolder
-        //         key={data.id}
-        //         id={data.id}
-        //         data={data.data}
-        //         />;
-        // });
         return (
             <div className='maincontainer' id='maincontainer'>
                 <div className='contents' id='mainVisArea'>
                     <Controllers/>
                     <div id='dataColumns'
                          className='container'
-                         style={{display: 'inline-block', minWidth: '100%', padding: 'unset'}}>
-                        <div className='row'
-                             style={{margin: 'unset'}}>
+                         style={{
+                             display: 'inline-block',
+                             minWidth: '100%',
+                             padding: 'unset',
+                             overflowX: 'scroll',
+                             overflowY: 'hidden'}}>
+                        <div style={{margin: 'unset'}}>
                             {dataColumns}
                         </div>
                     </div>

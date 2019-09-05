@@ -17,7 +17,7 @@ export default class TimeTubesHolder extends React.Component{
 
     render() {
         return (
-            <div className='TimeTubesHolder outerContainer'
+            <div className='TimeTubesHolder'
                  id={'TimeTubesHolder_' + this.id}>
                 <TimeTubes
                     id={this.id}
@@ -26,7 +26,7 @@ export default class TimeTubesHolder extends React.Component{
                     height={this.props.height - 100}/>
                 <div
                     id={this.divID}
-                    className='timeSelector outerContainer'>
+                    className='timeSelector'>
                 <TimeSelector
                     id={this.id}
                     divID={'timeSelector_' + this.id}
