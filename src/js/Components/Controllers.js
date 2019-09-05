@@ -206,14 +206,14 @@ export default class Controllers extends React.Component{
             <ul className="navbar-nav" id='basicMenu'>
                 <li className="nav-item dropdown">
                     <label
-                        className="nav-link dropdown-toggle menuLabel"
+                        className="nav-link menuLabel"
                         href="#"
                         id='controllersFileDropdown'
                         role='button'
-                        data-toggle="dropdown"
-                        aria-haspopup="true"
-                        aria-expanded="false">File</label>
-                    <div className="dropdown-menu" aria-labelledby="navbarDropdown">
+                        onClick={this.showFileInputPanel.bind(this)}>File</label>
+                    <div className="input-group input-group-sm dropdownonTubeMenu"
+                         style={{visibility: 'hidden', position: 'absolute', top: '2rem', width: 'auto', zIndex:'100'}}
+                         id='fileInputPanel'>
                         {this.fileInputPanel()}
                     </div>
                 </li>
@@ -231,6 +231,20 @@ export default class Controllers extends React.Component{
                 </li>
             </ul>
         );
+    }
+
+    showFileInputPanel() {
+        let state = $('#fileInputPanel').css('visibility');
+        let leftPos = $('#controllersFileDropdown').position();
+        switch (state) {
+            case 'visible':
+                $('#fileInputPanel').css('visibility', 'hidden');
+                break;
+            case 'hidden':
+                $('#fileInputPanel').css('left', leftPos.left);
+                $('#fileInputPanel').css('visibility', 'visible');
+                break;
+        }
     }
 
     fileInputPanel() {

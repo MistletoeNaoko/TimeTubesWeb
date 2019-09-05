@@ -166,6 +166,17 @@ label.menuLabel {
     font-style: italic;
 }
 
+.dropdownonTubeMenu {
+    font-size: 0.875rem;
+    color: #3E3F3A;
+    text-align: left;
+    list-style: none;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 0.25rem;
+}
+
 .outerContainer {
     display: inline-block;
     /*min-width: 100%;*/
