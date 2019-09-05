@@ -12,19 +12,20 @@ import DataStore from '../Stores/DataStore';
 export default class Visualization extends React.Component{
     constructor() {
         super();
-        let width = $(window).width() / DataStore.getDataNum();// * 0.95;
-        let height = $(window).height() - $('#appHeader').height() - $('#tubeControllers').height()
-        let heightTT = Math.ceil(height * 0.6) + 100;
-        let heightSP = height - heightTT;
+        // let width = $(window).width() / DataStore.getDataNum();// * 0.95;
+        // let height = $(window).height() - $('#appHeader').height() - $('#tubeControllers').height();
+        // let heightTT = Math.ceil(height * 0.6) + 100;
+        // let heightSP = height - heightTT;
         this.state = {
             data: DataStore.getAllData(),
-            width: width,
-            heightTT: heightTT,
-            heightSP: heightSP
+            width: $(window).width(),
+            heightTT: ($(window).height() / 2),
+            heightSP: ($(window).height() / 2)
         }
     }
 
     componentWillMount() {
+
         DataStore.on('upload', () => {
             // add new data & create new TimeTubes view
             this.setState({
@@ -44,15 +45,24 @@ export default class Visualization extends React.Component{
 
     render() {
         const datasets = this.state.data;
+        let width = this.state.width;
+        let heightTT = this.state.heightTT;
+        let heightSP = this.state.heightSP;
+        if (datasets.length > 0) {
+            width = $(window).width() / DataStore.getDataNum();// * 0.95;
+            let height = $(window).height() - $('#appHeader').outerHeight() - $('#tubeControllers').outerHeight();
+            heightTT = Math.ceil(height * 0.6) + 100;
+            heightSP = height - heightTT;
+        }
         // When new file is loaded, new DataColumn will be created,
         const dataColumns = datasets.map((data) => {
             return <DataColumn
                 key={data.id}
                 id={data.id}
                 data={data.data}
-                width={this.state.width}
-                heightTT={this.state.heightTT}
-                heightSP={this.state.heightSP}
+                width={width}
+                heightTT={heightTT}
+                heightSP={heightSP}
             />;
         });
         // const TimeTubesList = datasets.map((data) => {
