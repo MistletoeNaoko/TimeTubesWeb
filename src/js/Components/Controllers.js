@@ -30,6 +30,7 @@ export default class Controllers extends React.Component{
                     multiOptions: true
                 });
             }
+            $('#fileInputPanel').css('visibility', 'hidden');
         });
     }
 
