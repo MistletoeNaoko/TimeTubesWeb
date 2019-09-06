@@ -102,10 +102,11 @@ export default class Feature extends React.Component {
     }
 
     extractionSource() {
-        const idFile = DataStore.getAllIdsFileNames();
-        const sourceList = idFile.map((data) => {
+        let idFile = DataStore.getAllIdsFileNames();
+        let sourceList = idFile.map((data) => {
             return <option value={data.id} key={data.id}>{data.name}</option>;
         });
+        sourceList.unshift(<option value='default' key='default'>Select a source of the visual query</option>)
         return (
             <div className='featureElem'>
                 <h5>Source</h5>
@@ -257,7 +258,7 @@ export default class Feature extends React.Component {
         if (this.state.queryMode === 'QBE') {
             queryDefinition = this.QBESelection();
         } else if (this.state.queryMode === 'QBS') {
-            
+
         }
         return (
             <div id='featureArea' className='controllersElem'>

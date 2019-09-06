@@ -29,7 +29,7 @@ export default class ExtractionMenu extends React.Component {
         return (
             <div>
                 <div id='targetDatasetsList' className='controllersElem'>
-                    <h6>Target datasets</h6>
+                    <h5>Target datasets</h5>
                     {targetList}
                 </div>
                 <ul className="nav nav-tabs">
