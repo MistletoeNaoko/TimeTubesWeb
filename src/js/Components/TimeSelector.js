@@ -2,6 +2,7 @@ import React from 'react';
 import * as d3 from 'd3';
 import DataStore from '../Stores/DataStore';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
+import * as ScatterplotsAction from '../Actions/ScatterplotsAction';
 import ScatterplotsStore from '../Stores/ScatterplotsStore';
 
 export default class TimeSelector extends React.Component {
@@ -11,6 +12,7 @@ export default class TimeSelector extends React.Component {
         this.id = props.id;
         this.divID = props.divID;
         this.data = DataStore.getData(this.id);
+        this.selectedRange = [this.data.data.meta.min.z, this.data.data.meta.max.z];
         this.state = {
             width: props.width,
             height: 100
@@ -23,6 +25,11 @@ export default class TimeSelector extends React.Component {
            if (id === this.id) {
                this.moveCurrentLine(zpos);
            }
+        });
+        ScatterplotsStore.on('updateTimeRange', (id, range) => {
+            if (id === this.id) {
+                this.selectedRange = range;
+            }
         });
     }
 
@@ -71,20 +78,23 @@ export default class TimeSelector extends React.Component {
     }
 
     drawTimeSelector() {
+        let id = this.id;
+        let divID = this.divID;
         let outerWidth = this.props.width, outerHeight = this.state.height;
         let width = outerWidth - this.margin.left - this.margin.right;
         let height = outerHeight - this.margin.top - this.margin.bottom;
-
+        let selectedRange = this.selectedRange;
         this.svg
             .attr('width', this.props.width)
             .attr('height', this.state.height);
 
         this.xScale
             .range([0, width]);
+        let xScale = this.xScale;
         let xLabel = d3.axisBottom(this.xScale);
         this.brush
             .extent([[0, 0], [width, height]])
-            .on('start brush', brushed);
+            .on('start brush', brushed.bind(this));
 
         this.yScale
             .range([height, 0]);
@@ -110,9 +120,7 @@ export default class TimeSelector extends React.Component {
             .call(xLabel);
         this.timeSelectorBrusher
             .call(this.brush)
-            .call(this.brush.move, this.xScale.range());
-
-
+            .call(this.brush.move, [this.invertScale(this.selectedRange[0]), this.invertScale(this.selectedRange[1])]);
         // current line on the TimeSelector
         let drag = d3.drag()
             .on('start', dragstarted)
@@ -127,6 +135,11 @@ export default class TimeSelector extends React.Component {
 
         function brushed() {
             // do something (change the color of selected part of area graph, etc) when brushed
+            let s = d3.event.selection || this.xScale.range;
+            let xRange = s.map(this.xScale.invert, this.xScale);
+            if ((d3.selectAll('.scatterplots' + this.id).size() > 0) && (xRange.toString() !== this.selectedRange.toString())) {
+                ScatterplotsAction.updateTimeRange(id, xRange);
+            }
             // if (d3.event.sourceEvent && d3.event.sourceEvent.type === 'zoom') return;
             // let selection = d3.event.selection || xScale.range();
             // if (selection === null) {
@@ -165,6 +178,61 @@ export default class TimeSelector extends React.Component {
         }
     }
 
+    invertScale(val) {
+        let range = this.xScale.range();
+        let domain = this.xScale.domain();
+        return (val - domain[0]) * (range[1] - range[0]) / (domain[1] - domain[0]) + range[0];
+    }
+
+    updateTimeSelector() {
+        let id = this.id;
+        let divID = this.divID;
+        let outerWidth = this.props.width, outerHeight = this.state.height;
+        let width = outerWidth - this.margin.left - this.margin.right;
+        let height = outerHeight - this.margin.top - this.margin.bottom;
+        let selectedRange = this.selectedRange;
+        this.svg
+            .attr('width', this.props.width)
+            .attr('height', this.state.height);
+
+        this.xScale
+            .range([0, width]);
+        let xScale = this.xScale;
+        let xLabel = d3.axisBottom(this.xScale);
+        this.brush
+            .extent([[0, 0], [width, height]]);
+
+        this.yScale
+            .range([height, 0]);
+
+        this.clip
+            .attr('width', width)
+            .attr('height', height);
+
+        this.timeCurve
+            .x(function (d) {
+                return this.xScale(d.z);
+            }.bind(this))
+            .y0(height)
+            .y1(function (d) {
+                return this.yScale(d.y); // d.y = flx(V)
+            }.bind(this));
+
+        // timeSelector
+        this.timeSelectorGraph
+            .attr('d', this.timeCurve);
+        this.timeSelectorXAxis
+            .attr('transform', 'translate(0,' + height + ')')
+            .call(xLabel);
+        this.timeSelectorBrusher
+            .call(this.brush.move, [this.invertScale(this.selectedRange[0]), this.invertScale(this.selectedRange[1])]);
+
+
+        // current line on the TimeSelector
+        this.currentLine
+            .attr('y2', height + this.margin.top);
+    }
+
     moveCurrentLine(zpos) {
         let line = d3.select('#timeSelectorCurrent_' + this.id);
         let pos = this.xScale(zpos) + this.margin.left;
@@ -175,7 +243,8 @@ export default class TimeSelector extends React.Component {
 
     render() {
         if (d3.selectAll('svg#timeSelectorSVG_' + this.id).size() > 0) {
-            this.drawTimeSelector();
+            // this.drawTimeSelector();
+            this.updateTimeSelector();
         }
         return (
                 <div

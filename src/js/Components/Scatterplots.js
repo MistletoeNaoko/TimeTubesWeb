@@ -18,6 +18,13 @@ export default class Scatterplots extends React.Component{
         this.divID = props.divID;
         this.SPID = props.id + '_' + props.divID.split('_')[1];  // e.g. 0_1
         this.data = DataStore.getData(this.id);
+        let timeRange = ScatterplotsStore.getTimeRange(this.id);
+        if (typeof timeRange === 'undefined') {
+            this.timeRange = [this.data.data.meta.min.z, this.data.data.meta.max.z];
+        } else {
+            this.timeRange = timeRange;
+        }
+        this.slicedData = this.data.data.spatial;
         this.xMinMax = [0, 0];
         this.yMinMax = [0, 0];
         this.state = {
@@ -41,11 +48,6 @@ export default class Scatterplots extends React.Component{
                     this.updateCurrentPos(zpos);
             }
         });
-        ScatterplotsStore.on('resetScatterplots',  (id) => {
-            if (id === this.id) {
-                this.reset();
-            }
-        });
         // TimeTubesStore.on('updateCurrentPos', (id, zpos) => {
         //     if (id === this.id) {
         //         this.updateCurrentPos(zpos);
@@ -56,10 +58,23 @@ export default class Scatterplots extends React.Component{
                 this.changePlotColor(TimeTubesStore.getPlotColor(id));
             }
         });
+        ScatterplotsStore.on('resetScatterplots',  (id) => {
+            if (id === this.id) {
+                this.reset();
+            }
+        });
+        ScatterplotsStore.on('updateTimeRange', (id, range) => {
+            if (id === this.id) {
+                this.timeRange = range;
+                this.computeRange(this.state.xItem, this.state.yItem);
+                this.updateScatterplots(this.state.xItem, this.state.yItem);
+            }
+        });
     }
 
     componentDidMount() {
         this.initalizeElements();
+        this.computeRange(this.state.xItem, this.state.yItem);
         this.drawScatterplots();
         // let xAxisPanel = document.getElementById("selectXAxisForm_" + this.SPID);
         // let yAxisPanel = document.getElementById("selectYAxisForm_" + this.SPID);
@@ -139,7 +154,7 @@ export default class Scatterplots extends React.Component{
         let xItem = this.state.xItem, yItem = this.state.yItem;
         this.points = this.point_g
             .selectAll("circle")
-            .data(this.data.data.spatial)
+            .data(this.slicedData)
             .enter()
             .append("circle")
             .select(function (d) {
@@ -158,11 +173,6 @@ export default class Scatterplots extends React.Component{
         let divID = this.divID;
         let margin = this.margin;
         let data = this.data;
-        // let parentArea = d3.select('#scatterplots_' + this.id);
-        // let elem = parentArea
-        //     .append('div')
-        //     .attr('id', this.divID);
-        // let elem = d3.select('#' + this.divID);
         let outerWidth = this.props.width, outerHeight = this.props.height;
         let width = outerWidth - this.margin.left - this.margin.right;
         let height = outerHeight - this.margin.top - this.margin.bottom;
@@ -181,14 +191,15 @@ export default class Scatterplots extends React.Component{
             .on("dblclick.zoom", null);
         // Draw x axis
         this.xScale
-            .domain([this.data.data.meta.min[xItem], this.data.data.meta.max[xItem]])
+            .domain(this.xMinMax)
             .nice()
             .range([0, width]);
         this.xMinMax = this.xScale.domain();
 
         this.xLabel = d3.axisBottom(this.xScale)
             .ticks(10)
-            .tickSize(-height);
+            .tickSize(-height)
+            .tickFormat(tickFormatting);
         this.xAxis
             .attr("transform", "translate(" + this.margin.left + ',' + (this.margin.top + height) + ")")
             .call(this.xLabel);
@@ -202,16 +213,14 @@ export default class Scatterplots extends React.Component{
 
         // Draw y axis
         this.yScale
-            .domain([this.data.data.meta.min[yItem], this.data.data.meta.max[yItem]])
+            .domain(this.yMinMax)
             .nice()
             .range([height, 0]);
         this.yMinMax = this.yScale.domain();
         this.yLabel = d3.axisLeft(this.yScale)
             .ticks(5)
             .tickSize(-width)
-            .tickFormat(function (d) {
-                return d.toExponential(0);
-            });
+            .tickFormat(tickFormatting);
         this.yAxis
             .call(this.yLabel);
         this.yAxisText
@@ -293,8 +302,13 @@ export default class Scatterplots extends React.Component{
                 .on('dblclick', spDblClick);
         }
 
-
-
+        function tickFormatting(d) {
+            let result = d;
+            if (Math.log10(Math.abs(d)) < -2 && d !== 0) {
+                result = d.toExponential(0);
+            }
+            return result;
+        }
         function zoomed() {
             // create new scale ojects based on event
             // let lineHPos, lineVPos;
@@ -585,47 +599,67 @@ export default class Scatterplots extends React.Component{
         this.setState({yItemonPanel: e.target.value});
     }
 
+    computeRange(xItem, yItem) {
+        this.slicedData = this.data.data.spatial.filter(function (d) {
+            return (this.timeRange[0] <= d.z) && (d.z <= this.timeRange[1]);
+        }.bind(this));
+        this.xMinMax = d3.extent(this.slicedData, function (d) {
+            return d[xItem];
+        });
+        this.yMinMax = d3.extent(this.slicedData, function (d) {
+            return d[yItem];
+        });
+    }
+
+    updateScatterplots(xItem, yItem) {
+        this.xScale
+            .domain(this.xMinMax)
+            .nice();
+        this.yScale
+            .domain(this.yMinMax)
+            .nice();
+
+        // update all circles
+        this.points
+            .data(this.slicedData)
+            .attr('cx', function(d) { return this.xScale(d[xItem]); }.bind((this)))
+            .attr('cy', function(d) { return this.yScale(d[yItem]); }.bind((this)));
+        // this.points
+        //     .data(this.slicedData)
+        //     .enter()
+        //     .append('circle')
+        //     .attr('cx', function(d) { return this.xScale(d[xItem]); }.bind((this)))
+        //     .attr('cy', function(d) { return this.yScale(d[yItem]); }.bind((this)));
+        this.points
+            .data(this.slicedData)
+            .enter()
+            .append('circle')
+            .attr('cx', function(d) { return this.xScale(d[xItem]); }.bind((this)))
+            .attr('cy', function(d) { return this.yScale(d[yItem]); }.bind((this)))
+            .select(function (d) {
+                return (xItem in d && yItem in d) ? this: null;
+            })
+            .attr('opacity', 0.7)
+            .attr('stroke-width', 0.5)
+            .attr('stroke', 'dimgray')
+            .attr("r", 4)
+            .attr('class', this.divID + ' scatterplots' + this.id);
+        this.points.data(this.slicedData).exit().remove();
+
+        this.xAxis
+            .call(this.xLabel.scale(this.xScale));
+        this.yAxis
+            .call(this.yLabel.scale(this.yScale));
+    }
+
     onClickXAxisDone(e) {
         this.setState({
             xItem: this.state.xItemonPanel
         });
-        let min = this.data.data.meta.min[this.state.xItemonPanel];
-        let max = this.data.data.meta.max[this.state.xItemonPanel];
-        // update the domain of the y axis
-        this.xScale
-            .domain([min, max])
-            .nice();
 
-        // move all plots to the new positions
-        this.points
-            .data(this.data.data.spatial)
-            .transition()
-            .duration(1000)
-            .attr('cx', function (d) {
-                return this.xScale(d[this.state.xItemonPanel]);
-            }.bind((this)))
-            .attr('cy', function (d) {
-                return this.yScale(d[this.state.yItem]);
-            }.bind((this)));
+        this.computeRange(this.state.xItemonPanel, this.state.yItem);
+        this.updateScatterplots(this.state.xItemonPanel, this.state.yItem);
 
-        // update how to show ticks
-        if (Math.max(Math.abs(Math.log10(min)), Math.abs(Math.log10(max))) >= 3) {
-            this.xLabel
-                .tickFormat(function (d) {
-                return d.toExponential(0);
-                });
-        } else {
-            this.xLabel
-                .tickFormat(function (d) {
-                    return d;
-                });
-        }
-
-        // change ticks on the x axis
-        this.xAxis
-            .transition()
-            .duration(100)
-            .call(this.xLabel.scale(this.xScale));
         // change the label of the x axis
         this.xAxisText
             .text(this.data.data.lookup[this.state.xItemonPanel]);
@@ -641,43 +675,9 @@ export default class Scatterplots extends React.Component{
         this.setState({
             yItem: this.state.yItemonPanel
         });
-        let min = this.data.data.meta.min[this.state.yItemonPanel];
-        let max = this.data.data.meta.max[this.state.yItemonPanel];
-        // update the domain of the y axis
-        this.yScale
-            .domain([this.data.data.meta.min[this.state.yItemonPanel], this.data.data.meta.max[this.state.yItemonPanel]])
-            .nice();
+        this.computeRange(this.state.xItem, this.state.yItemonPanel);
+        this.updateScatterplots(this.state.xItem, this.state.yItemonPanel);
 
-        // move all plots to the new positions
-        this.points
-            .data(this.data.data.spatial)
-            .transition()
-            .duration(1000)
-            .attr('cx', function (d) {
-                return this.xScale(d[this.state.xItem]);
-            }.bind((this)))
-            .attr('cy', function (d) {
-                return this.yScale(d[this.state.yItemonPanel]);
-            }.bind((this)));
-
-        // update how to show ticks
-        if (Math.max(Math.abs(Math.log10(min)), Math.abs(Math.log10(max))) >= 3) {
-            this.yLabel
-                .tickFormat(function (d) {
-                    return d.toExponential(0);
-                });
-        } else {
-            this.yLabel
-                .tickFormat(function (d) {
-                    return d;
-                });
-        }
-
-        // change ticks on the x axis
-        this.yAxis
-            .transition()
-            .duration(100)
-            .call(this.yLabel.scale(this.yScale));
         // change the label of the y axis
         this.yAxisText
             .text(this.data.data.lookup[this.state.yItemonPanel]);
