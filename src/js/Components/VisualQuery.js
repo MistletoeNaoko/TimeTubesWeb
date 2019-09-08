@@ -11,7 +11,7 @@ export default class Feature extends React.Component {
         this.state = {
             visualQuery: false,
             dragSelection: true,
-            queryMode: 'QBE',
+            queryMode: FeatureStore.getMode(),
             QBESource: 'SP',
             selector: true,
             source: -1,
@@ -25,7 +25,14 @@ export default class Feature extends React.Component {
             this.updateSelectedInterval();
         });
         FeatureStore.on('updateSource', () => {
-            this.setState({source: FeatureStore.getSource()});
+            this.setState({
+                source: FeatureStore.getSource()
+            });
+        });
+        FeatureStore.on('switchQueryMode', (mode) => {
+            this.setState({
+                queryMode: mode
+            });
         });
     }
 
@@ -46,16 +53,9 @@ export default class Feature extends React.Component {
         FeatureAction.switchDragSelection();
     }
 
-    switchQueryMode() {
-        let mode = '';
-        if (this.state.queryMode === 'QBE') {
-            mode = 'QBS';
-        } else if (this.state.queryMode === 'QBS') {
-            mode = 'QBE';
-        }
-        this.setState({
-            queryMode: mode
-        });
+    switchQueryMode(obj) {
+        let selectedQueryMode = $('input[name=queryMode]:checked').val();
+        FeatureAction.switchQueryMode(selectedQueryMode);
     }
 
     switchQBESource() {
@@ -132,7 +132,7 @@ export default class Feature extends React.Component {
                     <div className="form-check form-check-inline">
                         <input
                             type="radio"
-                            name="QBE"
+                            name="queryMode"
                             value="QBE"
                             checked={this.state.queryMode === 'QBE'}/>
                         <label className="form-check-label" htmlFor="QBE">Query-by-example</label>
@@ -140,7 +140,7 @@ export default class Feature extends React.Component {
                     <div className="form-check form-check-inline">
                         <input
                             type="radio"
-                            name="QBS"
+                            name="queryMode"
                             value="QBS"
                             checked={this.state.queryMode === 'QBS'}/>
                         <label className="form-check-label" htmlFor="QBS">Query-by-sketch</label>
@@ -157,7 +157,7 @@ export default class Feature extends React.Component {
                 <div className="form-check">
                     <input
                         type='radio'
-                        name='QBESourceSP'
+                        name='QBESource'
                         value='SP'
                         checked={this.state.QBESource === 'SP'}/>
                     <label className="form-check-label" htmlFor='QBESourceSP'>Scatterplots</label>
@@ -165,8 +165,8 @@ export default class Feature extends React.Component {
                 <div className="form-check">
                     <input
                         type='radio'
-                        name='QBESourceSP'
-                        value='SP'
+                        name='QBESource'
+                        value='TT'
                         checked={this.state.QBESource === 'TT'}/>
                     <label className="form-check-label" htmlFor='QBESourceSP'>TimeTubes</label>
                 </div>
@@ -182,7 +182,7 @@ export default class Feature extends React.Component {
                     <div className="form-check form-check-inline">
                         <input
                             type="radio"
-                            name="pen"
+                            name="selector"
                             value="select"
                             checked={this.state.selector}/>
                         <label className="form-check-label" htmlFor="pen">Select</label>
@@ -190,7 +190,7 @@ export default class Feature extends React.Component {
                     <div className="form-check form-check-inline">
                         <input
                             type="radio"
-                            name="eraser"
+                            name="selector"
                             value="Deselect"
                             checked={!this.state.selector}/>
                         <label className="form-check-label" htmlFor="eraser">Deselect</label>
@@ -260,6 +260,7 @@ export default class Feature extends React.Component {
         } else if (this.state.queryMode === 'QBS') {
 
         }
+
         return (
             <div id='featureArea' className='controllersElem'>
                 {/*<div className="custom-control custom-switch featureElem">*/}

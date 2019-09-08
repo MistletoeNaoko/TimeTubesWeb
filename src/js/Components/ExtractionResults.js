@@ -7,7 +7,7 @@ export default class ExtractionResults extends React.Component {
 
     render() {
         return (
-            <div>
+            <div id='extractionResults'>
                 Results of feature extraction will be shown here
             </div>
         );
