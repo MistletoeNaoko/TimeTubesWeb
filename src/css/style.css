@@ -1,4 +1,7 @@
-
+html,
+body {
+    height: 100%;
+}
 h5 {
     font-size: 0.9rem;
     color: #6c757d;
@@ -40,6 +43,10 @@ g.x_axis line, g.y_axis line{
     background: white;
     box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.3);
     font-size: 0.8rem;
+}
+
+.indentedRadio {
+    margin-left: 1rem;
 }
 
 /*#Controllers {*/
@@ -224,6 +231,7 @@ label.menuLabel {
 
 .maincontainer {
     display: flex;
+    height: 100%;
 }
 
 .right {
@@ -237,6 +245,19 @@ label.menuLabel {
     background: #f8f9fa;
     float: right;
     padding: 0.5rem 0px 1rem 0px;
+}
+
+#extractionMenu {
+    float: left;
+    width: 30%;
+    height: 100vh;
+}
+
+#extractionResults {
+    float: right;
+    width: 70%;
+    height: 100vh;
+    background-color: #DFD7CA;
 }
 
 .contents{

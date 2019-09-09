@@ -5,6 +5,7 @@ class FeatureStore extends EventEmitter {
     constructor() {
         super();
         this.visualQuery = false;
+        this.mode = 'AE';
         this.source = -1;
         this.target = [];
         this.selector = true;
@@ -40,6 +41,9 @@ class FeatureStore extends EventEmitter {
                 break;
             case 'UPDATE_SELECTEDINTERVAL':
                 this.updateSelectedInterval(action.period, action.pos, action.color, action.indices);
+                break;
+            case 'SWITCH_QUERY_MODE':
+                this.switchQueryMode(action.mode);
                 break;
             default:
         }
@@ -81,6 +85,10 @@ class FeatureStore extends EventEmitter {
         return this.selectedIndices;
     }
 
+    getMode() {
+        return this.mode;
+    }
+
     switchVisualQuery(status) {
         this.visualQuery = status;
         this.emit('switchVisualQuery');
@@ -120,6 +128,11 @@ class FeatureStore extends EventEmitter {
         this.selectedColor = color;
         this.selectedIndices = indices;
         this.emit('updateSelectedInterval');
+    }
+
+    switchQueryMode(mode) {
+        this.mode = mode;
+        this.emit('switchQueryMode', mode);
     }
 
     setTexture(texture) {

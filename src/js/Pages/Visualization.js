@@ -4,7 +4,6 @@ import Controllers from '../Components/Controllers';
 import DataColumn from '../Components/DataColumn';
 // import Details from './Details';
 import TimeTubes from '../Components/TimeTubes';
-import Feature from '../Components/Feature';
 import ScatterplotsHolder from '../Components/ScatterplotsHolder';
 import DataStore from '../Stores/DataStore';
 
@@ -71,20 +70,18 @@ export default class Visualization extends React.Component{
             />;
         });
         return (
-            <div className='maincontainer' id='maincontainer'>
-                <div className='contents' id='mainVisArea'>
-                    <Controllers/>
-                    <div id='dataColumns'
-                         className='container'
-                         style={{
-                             display: 'inline-block',
-                             minWidth: '100%',
-                             padding: 'unset',
-                             overflowX: 'scroll',
-                             overflowY: 'hidden'}}>
-                        <div style={{margin: 'unset'}}>
-                            {dataColumns}
-                        </div>
+            <div className='contents' id='mainVisArea'>
+                <Controllers/>
+                <div id='dataColumns'
+                     className='container'
+                     style={{
+                         display: 'inline-block',
+                         minWidth: '100%',
+                         padding: 'unset',
+                         overflowX: 'scroll',
+                         overflowY: 'hidden'}}>
+                    <div style={{margin: 'unset'}}>
+                        {dataColumns}
                     </div>
                 </div>
                 {/*<div className='right'>*/}

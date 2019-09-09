@@ -514,6 +514,7 @@ export default class TimeTubes extends React.Component{
                     } else {
                         setValue = 0;
                     }
+                    console.log(this.tube.geometry.attributes.selected)
                     // highlight a tube at one observation
                     for (let i = 0; i < this.segment; i++) {
                         this.tube.geometry.attributes.selected.array[startIdx * this.segment + i] = setValue;

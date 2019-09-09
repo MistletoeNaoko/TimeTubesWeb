@@ -1,11 +1,24 @@
 import React from "react";
-import {BrowserRouter as Router, Link, Route} from "react-router-dom";
-import Header from '../Components/Header';
+import * as AppAction from '../Actions/AppAction';
+import AppStore from '../Stores/AppStore';
 
 // Header of the TimeTubes web
 export default class Menu extends React.Component {
     constructor() {
         super();
+        this.menu = 'Visualization';
+    }
+
+    componentWillMount() {
+        AppStore.on('selectMenu', (menu) => {
+           this.menu = menu;
+        });
+    }
+
+    componentDidMount() {
+        $("ul[id*=mainMenuList] li").click(function () {
+            AppAction.selectMenu($(this).attr('value'));
+        });
     }
 
     render() {
@@ -19,25 +32,24 @@ export default class Menu extends React.Component {
                 </button>
 
                 <div className="collapse navbar-collapse" id="navbarColor01">
-                    <ul className="navbar-nav mr-auto">
-                        <li className="nav-item">
-                            <Link className="nav-link" to='/about'>About</Link>
+                    <ul className="navbar-nav mr-auto" id='mainMenuList'>
+                        <li className="nav-item mainMenu" value='about'>
+                            <label className="nav-link menuLabel">About</label>
                         </li>
-                        <li className="nav-item active">
-                            <Link className="nav-link" to='/'>Visualization</Link>
+                        <li className="nav-item mainMenu" value='visualization'>
+                            <label className="nav-link menuLabel">Visualization</label>
                         </li>
-                        <li className="nav-item">
-                            <Link className="nav-link" to='/about'>Feature Extraction</Link>
+                        <li className="nav-item mainMenu" value='feature'>
+                            <label className="nav-link menuLabel">Feature Extraction</label>
                         </li>
-                        <li className="nav-item">
-                            <Link className="nav-link" to='/original'>Original Data</Link>
+                        <li className="nav-item mainMenu" value='original'>
+                            <label className="nav-link menuLabel">Original Data</label>
                         </li>
-                        <li className="nav-item">
-                            <Link className="nav-link" to='/contact'>Contact</Link>
+                        <li className="nav-item mainMenu" value='contact'>
+                            <label className="nav-link menuLabel">Contact</label>
                         </li>
                     </ul>
                 </div>
-
             </nav>
         );
     }

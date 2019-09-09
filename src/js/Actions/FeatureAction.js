@@ -31,3 +31,7 @@ export function selectTimeInterval(value) {
 export function updateSelectedInterval(period, pos, color, indices) {
     dispatcher.dispatch({type: 'UPDATE_SELECTEDINTERVAL', period, pos, color, indices});
 }
+
+export function switchQueryMode(mode) {
+    dispatcher.dispatch({type: 'SWITCH_QUERY_MODE', mode});
+}
