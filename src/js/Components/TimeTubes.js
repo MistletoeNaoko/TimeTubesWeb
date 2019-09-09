@@ -247,24 +247,22 @@ export default class TimeTubes extends React.Component{
             this.resetSelection();
         });
         FeatureStore.on('switchQueryMode', (mode) => {
-            if (mode === 'QBE') {
-                let sourceId = FeatureStore.getSource();
-                console.log('switchQueryMode', mode, sourceId, Number(sourceId) === this.id);
-                if (sourceId !== 'default') {
-                    this.visualQuery = (Number(sourceId) === this.id);
-                    this.updateControls();
-                    this.resetSelection();
-                }
+            let sourceId = FeatureStore.getSource();
+            if (mode === 'QBE' && sourceId !== 'default') {
+                this.visualQuery = (Number(sourceId) === this.id);
+                this.updateControls();
+                this.resetSelection();
+                this.setQBEView();
             }
         });
         FeatureStore.on('updateSource', () => {
             let mode = FeatureStore.getMode();
-            console.log('updateSource', mode);
-            if (mode === 'QBE') {
-                let sourceId = FeatureStore.getSource();
+            let sourceId = FeatureStore.getSource();
+            if (mode === 'QBE' && sourceId !== 'default') {
                 this.visualQuery = (Number(sourceId) === this.id);
                 this.updateControls();
                 this.resetSelection();
+                this.setQBEView();
             }
         });
         FeatureStore.on('switchDragSelection', () => {
@@ -294,12 +292,13 @@ export default class TimeTubes extends React.Component{
 
         this.setCameras(width, height);
 
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer = new THREE.WebGLRenderer(); //{ antialias: true }
         this.renderer.setClearColor("#000000");
         this.renderer.setSize(width, height);
         this.renderer.localClippingEnabled = true;
         this.renderer.domElement.id = 'TimeTubes_viewport_' + this.id;
         this.renderer.domElement.className = 'TimeTubes_viewport';
+        this.initQBEView();
 
         // assign a canvas with the name of 'TimeTubes_viewport_ + this.id' to div element
         this.mount.appendChild(this.renderer.domElement);
@@ -366,6 +365,7 @@ export default class TimeTubes extends React.Component{
 
     renderScene() {
         if (this.renderer) this.renderer.render(this.scene, this.camera);
+        if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
     }
 
     addControls() {
@@ -514,7 +514,6 @@ export default class TimeTubes extends React.Component{
                     } else {
                         setValue = 0;
                     }
-                    console.log(this.tube.geometry.attributes.selected)
                     // highlight a tube at one observation
                     for (let i = 0; i < this.segment; i++) {
                         this.tube.geometry.attributes.selected.array[startIdx * this.segment + i] = setValue;
@@ -647,7 +646,7 @@ export default class TimeTubes extends React.Component{
 
         this.camera = this.cameraSet.perspective;
         this.camera.position.z = 50;
-        this.camera.lookAt(-this.scene.position);
+        this.camera.lookAt(this.scene.position);
 
         $( "#farSlider_" + this.id ).slider({
             min: 50,
@@ -1109,5 +1108,28 @@ export default class TimeTubes extends React.Component{
         }
         this.tubeGroup.add(this.plot);
         this.plot.rotateY(Math.PI);
+    }
+
+    initQBEView() {
+        this.QBECamera = new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
+        this.QBECamera.position.z = 50;
+        this.QBERenderer = new THREE.WebGLRenderer();
+        this.QBERenderer.setSize(500, 500);
+        this.QBERenderer.setClearColor("#000000");
+        this.QBERenderer.localClippingEnabled = true;
+        this.QBERenderer.domElement.id = 'QBE_viewport_' + this.id;
+        this.QBERenderer.domElement.className = 'TimeTubes_viewport';
+        // this.QBERenderer.render(this.scene, this.QBECamera);
+    }
+
+    setQBEView() {
+        this.QBECamera.lookAt(this.scene.position);
+        this.QBECamera.far = this.camera.far;
+        let QBESourceWidth = $('#QBESource').innerWidth();
+        this.QBERenderer.setSize(QBESourceWidth, QBESourceWidth);
+        let canvas = document.getElementById('QBESourceTT');
+        canvas.appendChild(this.QBERenderer.domElement);
+        // this.renderScene();
+        // this.start();
     }
 }

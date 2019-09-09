@@ -19,34 +19,35 @@ export default class FeatureExtraction extends React.Component{
         FeatureStore.on('switchQueryMode', (mode) => {
             setTimeout(() =>
                 this.setState({
-               queryMode: mode
-           }));
+                    queryMode: mode
+                })
+            );
+            if (this.state.queryMode === 'QBE') {
+                $('#extractionResults').css({
+                    width: (100 - 30 * 2) + '%'
+                });
+            } else {
+                $('#extractionResults').css({
+                    width: (100 - 30) + '%'
+                });
+            }
         });
     }
 
     render() {
         let QBESource;
-        if (this.state.queryMode === 'QBE') {
-            QBESource = (
-                <div id='QBESource'
-                     style={{
-                         float: 'left',
-                         width: '30%',
-                         height: '100vh'}}>
-                    <ExtractionSource/>
-                </div>);
-            $('#extractionResults').css({
-                width: (100 - 30 * 2) + '%'
-            });
-        } else {
-            $('#extractionResults').css({
-                width: (100 - 30) + '%'
-            });
-        }
         return (
             <div className='contents' id='mainFeatureArea'>
                 <ExtractionMenu/>
-                {QBESource}
+                {/*{QBESource}*/}
+                <div id='QBESource'
+                    style={{
+                        float: 'left',
+                        width: '30%',
+                        height: '100vh',
+                        display: (this.state.queryMode === 'QBE') ? 'block': 'none'}}>
+                    <ExtractionSource/>
+                </div>
                 <ExtractionResults/>
             </div>
         );
