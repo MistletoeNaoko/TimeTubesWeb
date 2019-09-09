@@ -85,7 +85,8 @@ export default class Feature extends React.Component {
         let sourceList = document.getElementById('sourceList');
         let selectedIdx = sourceList.selectedIndex;
         let selectedId = sourceList.options[selectedIdx].value; // get id
-        FeatureAction.updateSource(selectedIdx);
+        console.log('visual query update source', selectedId)
+        FeatureAction.updateSource(selectedId);
     }
 
     updateTarget() {

@@ -62,6 +62,7 @@ export default class TimeTubes extends React.Component{
             width: props.width,
             height: props.height
         }
+        console.log('timetubes constructor')
     }
 
     render() {
@@ -245,16 +246,26 @@ export default class TimeTubes extends React.Component{
             this.updateControls();
             this.resetSelection();
         });
-        FeatureStore.on('updateSource', () => {
-            let visualQuery = FeatureStore.getVisualQuery();
-            let sourceId = FeatureStore.getSource();
-            if (sourceId === this.id) {
-                this.visualQuery = true && visualQuery;
-            } else {
-                this.visualQuery = false && visualQuery;
+        FeatureStore.on('switchQueryMode', (mode) => {
+            if (mode === 'QBE') {
+                let sourceId = FeatureStore.getSource();
+                console.log('switchQueryMode', mode, sourceId, Number(sourceId) === this.id);
+                if (sourceId !== 'default') {
+                    this.visualQuery = (Number(sourceId) === this.id);
+                    this.updateControls();
+                    this.resetSelection();
+                }
             }
-            this.updateControls();
-            this.resetSelection();
+        });
+        FeatureStore.on('updateSource', () => {
+            let mode = FeatureStore.getMode();
+            console.log('updateSource', mode);
+            if (mode === 'QBE') {
+                let sourceId = FeatureStore.getSource();
+                this.visualQuery = (Number(sourceId) === this.id);
+                this.updateControls();
+                this.resetSelection();
+            }
         });
         FeatureStore.on('switchDragSelection', () => {
             this.dragSelection = FeatureStore.getDragSelection();
