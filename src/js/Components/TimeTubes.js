@@ -260,9 +260,9 @@ export default class TimeTubes extends React.Component{
             let sourceId = FeatureStore.getSource();
             if (mode === 'QBE' && sourceId !== 'default') {
                 this.visualQuery = (Number(sourceId) === this.id);
+                this.setQBEView();
                 this.updateControls();
                 this.resetSelection();
-                this.setQBEView();
             }
         });
         FeatureStore.on('switchDragSelection', () => {
@@ -1134,7 +1134,6 @@ export default class TimeTubes extends React.Component{
             this.QBECamera.lookAt(this.scene.position);
             this.QBECamera.far = this.camera.far;
             let QBESourceWidth = $('#QBESource').outerWidth(true) - Number($('#QBESource').css('padding-left').replace('px', '')) * 2;
-            console.log(QBESourceWidth,$('#QBESource').width(), $('#QBESourceArea').width(), $('#QBESourceTT').width())
             this.QBERenderer.setSize(QBESourceWidth, QBESourceWidth);
             if (dom != null) {
                 dom.style.display = 'block';
