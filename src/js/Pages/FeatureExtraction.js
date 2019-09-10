@@ -22,7 +22,7 @@ export default class FeatureExtraction extends React.Component{
                     queryMode: mode
                 })
             );
-            if (this.state.queryMode === 'QBE') {
+            if (mode === 'QBE') {
                 $('#extractionResults').css({
                     width: (100 - 30 * 2) + '%'
                 });

@@ -243,6 +243,7 @@ export default class TimeTubes extends React.Component{
             } else {
                 this.visualQuery = true;
             }
+            this.setQBEView();
             this.updateControls();
             this.resetSelection();
         });
@@ -250,9 +251,9 @@ export default class TimeTubes extends React.Component{
             let sourceId = FeatureStore.getSource();
             if (mode === 'QBE' && sourceId !== 'default') {
                 this.visualQuery = (Number(sourceId) === this.id);
+                this.setQBEView();
                 this.updateControls();
                 this.resetSelection();
-                this.setQBEView();
             }
         });
         FeatureStore.on('updateSource', () => {
@@ -378,9 +379,9 @@ export default class TimeTubes extends React.Component{
 
     updateControls() {
         if (this.visualQuery && this.dragSelection) {
-            this.controls.enabled = false;
+            this.QBEControls.enabled = false;
         } else {
-            this.controls.enabled = true;
+            this.QBEControls.enabled = true;
         }
     }
 
@@ -487,6 +488,7 @@ export default class TimeTubes extends React.Component{
                             this.tube.geometry.attributes.selected.array[(startIdx + 1) * this.segment + i] = setValue;
                         }
                         this.renderer.render(this.scene, this.camera);
+                        this.QBERenderer.render(this.scene, this.QBECamera);
                         this.getSelectedInterval();
                     }
                 }
@@ -520,6 +522,7 @@ export default class TimeTubes extends React.Component{
                         this.tube.geometry.attributes.selected.array[(startIdx + 1) * this.segment + i] = setValue;
                     }
                     this.renderer.render(this.scene, this.camera);
+                    this.QBERenderer.render(this.scene, this.QBECamera);
                 }
                 this.getSelectedInterval();
             } else {
@@ -541,9 +544,9 @@ export default class TimeTubes extends React.Component{
     getIntersectedIndex(event) {
         let face;
         let raymouse = new THREE.Vector2();
-        raymouse.x = (event.offsetX / this.renderer.domElement.clientWidth) * 2 - 1;
-        raymouse.y = -(event.offsetY / this.renderer.domElement.clientHeight) * 2 + 1;
-        this.raycaster.setFromCamera(raymouse, this.camera);
+        raymouse.x = (event.offsetX / this.QBERenderer.domElement.clientWidth) * 2 - 1;
+        raymouse.y = -(event.offsetY / this.QBERenderer.domElement.clientHeight) * 2 + 1;
+        this.raycaster.setFromCamera(raymouse, this.QBECamera);
         let intersects = this.raycaster.intersectObject(this.tube);
         if (intersects.length > 0) {
             face = intersects[0].face;
@@ -558,6 +561,7 @@ export default class TimeTubes extends React.Component{
             this.tube.geometry.attributes.selected.array[i] = 0;
         }
         this.renderer.render(this.scene, this.camera);
+        this.QBERenderer.render(this.scene, this.QBECamera);
         // FeatureAction.updateSelectedInterval([0, 0]);
     }
 
@@ -575,21 +579,25 @@ export default class TimeTubes extends React.Component{
             this.tube.geometry.attributes.selected.array[initIdx + i] = 1.0;
         }
         this.renderer.render(this.scene, this.camera);
+        this.QBERenderer.render(this.scene, this.QBECamera);
         this.getSelectedInterval();
     }
 
     getSelectedInterval() {
         // get the first and last index of selected area
-        let firstIdx = this.tube.geometry.attributes.selected.array.indexOf(1);
-        let lastIdx = this.tube.geometry.attributes.selected.array.lastIndexOf(1);
+        let arraySize = this.tube.geometry.attributes.selected.array.length / this.tubeNum;
+        //  'idx - arraySize * (this.tubeNum - 1) / this.tubeNum' is because only the most outside tube is highlighted in red
+        let firstIdx = this.tube.geometry.attributes.selected.array.indexOf(1) % arraySize;
+        let lastIdx = this.tube.geometry.attributes.selected.array.lastIndexOf(1) % arraySize;
         for (let i = firstIdx; i <= lastIdx; i++) {
             this.tube.geometry.attributes.selected.array[i] = 1;
         }
         this.renderer.render(this.scene, this.camera);
+        this.QBERenderer.render(this.scene, this.QBECamera);
         let minJD = this.data.spatial[0].z;
         let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
         let lastJD = (Math.floor(lastIdx / this.segment) + 1) * (1 / this.division) + minJD;
-        let pos = this.tube.geometry.attributes.position.array.slice(firstIdx * 3, lastIdx * 3);
+        let pos = this.tube.geometry.attributes.position.array.slice(firstIdx * 3 + arraySize * 3 * (this.tubeNum - 1), lastIdx * 3 + arraySize * 3 * (this.tubeNum - 1));
         let colorData = this.tube.geometry.attributes.colorData.array.slice(firstIdx * 2, lastIdx * 2);
         let indices = this.tube.geometry.index.array.slice(
             0,// firstIdx / this.segment * (this.segment - 1) * 3 * 2,
@@ -1128,7 +1136,21 @@ export default class TimeTubes extends React.Component{
         let QBESourceWidth = $('#QBESource').innerWidth();
         this.QBERenderer.setSize(QBESourceWidth, QBESourceWidth);
         let canvas = document.getElementById('QBESourceTT');
+        let onMouseWheel = this.onMouseWheel();
+        let onMouseDown = this.onMouseDown();
+        let onMouseMove = this.onMouseMove();
+        let onMouseUp = this.onMouseUp();
+        let onMouseClick = this.onMouseClick();
         canvas.appendChild(this.QBERenderer.domElement);
+        canvas.addEventListener('wheel', onMouseWheel.bind(this), false);
+        canvas.addEventListener('mousedown', onMouseDown.bind(this), false);
+        canvas.addEventListener('mousemove', onMouseMove.bind(this), false);
+        canvas.addEventListener('mouseup', onMouseUp.bind(this), false);
+        canvas.addEventListener('click', onMouseClick.bind(this), false);
+        this.QBEControls = new OrbitControls(this.QBECamera, this.QBERenderer.domElement);
+        this.QBEControls.position0.set(0, 0, 50);
+        this.QBEControls.screenSpacePanning = false;
+        this.QBEControls.enableZoom = false;
         // this.renderScene();
         // this.start();
     }
