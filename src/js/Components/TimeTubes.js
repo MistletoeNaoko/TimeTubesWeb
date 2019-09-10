@@ -62,7 +62,6 @@ export default class TimeTubes extends React.Component{
             width: props.width,
             height: props.height
         }
-        console.log('timetubes constructor')
     }
 
     render() {
@@ -379,9 +378,9 @@ export default class TimeTubes extends React.Component{
 
     updateControls() {
         if (this.visualQuery && this.dragSelection) {
-            this.QBEControls.enabled = false;
+            if (this.QBEControls) this.QBEControls.enabled = false;
         } else {
-            this.QBEControls.enabled = true;
+            if (this.QBEControls) this.QBEControls.enabled = true;
         }
     }
 
@@ -488,7 +487,7 @@ export default class TimeTubes extends React.Component{
                             this.tube.geometry.attributes.selected.array[(startIdx + 1) * this.segment + i] = setValue;
                         }
                         this.renderer.render(this.scene, this.camera);
-                        this.QBERenderer.render(this.scene, this.QBECamera);
+                        if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
                         this.getSelectedInterval();
                     }
                 }
@@ -522,7 +521,7 @@ export default class TimeTubes extends React.Component{
                         this.tube.geometry.attributes.selected.array[(startIdx + 1) * this.segment + i] = setValue;
                     }
                     this.renderer.render(this.scene, this.camera);
-                    this.QBERenderer.render(this.scene, this.QBECamera);
+                    if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
                 }
                 this.getSelectedInterval();
             } else {
@@ -561,7 +560,7 @@ export default class TimeTubes extends React.Component{
             this.tube.geometry.attributes.selected.array[i] = 0;
         }
         this.renderer.render(this.scene, this.camera);
-        this.QBERenderer.render(this.scene, this.QBECamera);
+        if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
         // FeatureAction.updateSelectedInterval([0, 0]);
     }
 
@@ -579,7 +578,7 @@ export default class TimeTubes extends React.Component{
             this.tube.geometry.attributes.selected.array[initIdx + i] = 1.0;
         }
         this.renderer.render(this.scene, this.camera);
-        this.QBERenderer.render(this.scene, this.QBECamera);
+        if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
         this.getSelectedInterval();
     }
 
@@ -593,7 +592,7 @@ export default class TimeTubes extends React.Component{
             this.tube.geometry.attributes.selected.array[i] = 1;
         }
         this.renderer.render(this.scene, this.camera);
-        this.QBERenderer.render(this.scene, this.QBECamera);
+        if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
         let minJD = this.data.spatial[0].z;
         let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
         let lastJD = (Math.floor(lastIdx / this.segment) + 1) * (1 / this.division) + minJD;
@@ -1130,26 +1129,38 @@ export default class TimeTubes extends React.Component{
     }
 
     setQBEView() {
-        this.QBECamera.lookAt(this.scene.position);
-        this.QBECamera.far = this.camera.far;
-        let QBESourceWidth = $('#QBESource').innerWidth();
-        this.QBERenderer.setSize(QBESourceWidth, QBESourceWidth);
-        let canvas = document.getElementById('QBESourceTT');
-        let onMouseWheel = this.onMouseWheel();
-        let onMouseDown = this.onMouseDown();
-        let onMouseMove = this.onMouseMove();
-        let onMouseUp = this.onMouseUp();
-        let onMouseClick = this.onMouseClick();
-        canvas.appendChild(this.QBERenderer.domElement);
-        canvas.addEventListener('wheel', onMouseWheel.bind(this), false);
-        canvas.addEventListener('mousedown', onMouseDown.bind(this), false);
-        canvas.addEventListener('mousemove', onMouseMove.bind(this), false);
-        canvas.addEventListener('mouseup', onMouseUp.bind(this), false);
-        canvas.addEventListener('click', onMouseClick.bind(this), false);
-        this.QBEControls = new OrbitControls(this.QBECamera, this.QBERenderer.domElement);
-        this.QBEControls.position0.set(0, 0, 50);
-        this.QBEControls.screenSpacePanning = false;
-        this.QBEControls.enableZoom = false;
+        let dom = document.getElementById('QBE_viewport_' + this.id);
+        if (this.visualQuery) {
+            this.QBECamera.lookAt(this.scene.position);
+            this.QBECamera.far = this.camera.far;
+            let QBESourceWidth = $('#QBESource').outerWidth(true) - Number($('#QBESource').css('padding-left').replace('px', '')) * 2;
+            console.log(QBESourceWidth,$('#QBESource').width(), $('#QBESourceArea').width(), $('#QBESourceTT').width())
+            this.QBERenderer.setSize(QBESourceWidth, QBESourceWidth);
+            if (dom != null) {
+                dom.style.display = 'block';
+            } else {
+                let canvas = document.getElementById('QBESourceTT');
+                let onMouseWheel = this.onMouseWheel();
+                let onMouseDown = this.onMouseDown();
+                let onMouseMove = this.onMouseMove();
+                let onMouseUp = this.onMouseUp();
+                let onMouseClick = this.onMouseClick();
+                canvas.appendChild(this.QBERenderer.domElement);
+                canvas.addEventListener('wheel', onMouseWheel.bind(this), false);
+                canvas.addEventListener('mousedown', onMouseDown.bind(this), false);
+                canvas.addEventListener('mousemove', onMouseMove.bind(this), false);
+                canvas.addEventListener('mouseup', onMouseUp.bind(this), false);
+                canvas.addEventListener('click', onMouseClick.bind(this), false);
+                this.QBEControls = new OrbitControls(this.QBECamera, this.QBERenderer.domElement);
+                this.QBEControls.position0.set(0, 0, 50);
+                this.QBEControls.screenSpacePanning = false;
+                this.QBEControls.enableZoom = false;
+            }
+        } else {
+            if (dom != null) {
+                dom.style.display = 'none';
+            }
+        }
         // this.renderScene();
         // this.start();
     }

@@ -41,6 +41,7 @@ export default class FeatureExtraction extends React.Component{
                 <ExtractionMenu/>
                 {/*{QBESource}*/}
                 <div id='QBESource'
+                     className='controllersElem'
                     style={{
                         float: 'left',
                         width: '30%',

@@ -19,7 +19,8 @@ export default class ExtractionSource extends React.Component {
 
     render() {
         return (
-            <div id='QBESourceArea'>
+            <div
+                id='QBESourceArea'>
                 <div id='QBESourceTT'>
                     TimeTubes
                 </div>
