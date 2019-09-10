@@ -154,7 +154,7 @@ export default class SelectedTimeSlice extends React.Component {
             fragmentShader: document.getElementById('fragmentShader_tube').textContent,
             uniforms: {
                 lightPosition: {value: new THREE.Vector3(-20, 40, 60)},
-                tubeNum: {value: TimeTubesStore.getTubeNum()},
+                tubeNum: {value: 1},//TimeTubesStore.getTubeNum()},
                 shade: {value: false},
                 texture: {value: texture},
                 minmaxH: {value: new THREE.Vector2(this.data.data.meta.min.H, this.data.data.meta.max.H)},
@@ -203,7 +203,7 @@ export default class SelectedTimeSlice extends React.Component {
         this.tube.geometry.index.needsUpdate = true;
 
         this.tube.geometry.attributes.position = new THREE.BufferAttribute(new Float32Array(pos), 3);
-        this.tube.geometry.attributes.colorData = new THREE.BufferAttribute(new Float32Array(color), 2);
+        this.tube.geometry.attributes.colorData = new THREE.BufferAttribute(new Float32Array(color), 3);
         this.tube.geometry.attributes.selected = new THREE.BufferAttribute(new Float32Array(pos.length / 3), 1);
         this.tube.geometry.attributes.normal = new THREE.BufferAttribute(new Float32Array(pos.length), 1);
         this.tube.geometry.index = new THREE.BufferAttribute(new Uint32Array(indices), 1);

@@ -598,7 +598,7 @@ export default class TimeTubes extends React.Component{
         let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
         let lastJD = (Math.floor(lastIdx / this.segment) + 1) * (1 / this.division) + minJD;
         let pos = this.tube.geometry.attributes.position.array.slice(firstIdx * 3 + arraySize * 3 * (this.tubeNum - 1), lastIdx * 3 + arraySize * 3 * (this.tubeNum - 1));
-        let colorData = this.tube.geometry.attributes.colorData.array.slice(firstIdx * 2, lastIdx * 2);
+        let colorData = this.tube.geometry.attributes.colorData.array.slice(firstIdx * 3, lastIdx * 3);
         let indices = this.tube.geometry.index.array.slice(
             0,// firstIdx / this.segment * (this.segment - 1) * 3 * 2,
             ((lastIdx - firstIdx) / this.segment - 1) * (this.segment - 1) * 3 * 2// lastIdx / this.segment * (this.segment - 1) * 3 * 2,
@@ -890,7 +890,6 @@ export default class TimeTubes extends React.Component{
             fragmentShader: this.fragment,//fragmentShaderTube,
             uniforms: {
                 lightPosition: {value: new THREE.Vector3(-20, 40, 60)},
-                tubeNum: {value: this.tubeNum},
                 shade: {value: true},
                 texture: {value: this.texture},
                 minmaxH: {value: new THREE.Vector2(this.data.meta.min.H, this.data.meta.max.H)},
