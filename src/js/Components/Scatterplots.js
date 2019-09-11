@@ -512,8 +512,9 @@ export default class Scatterplots extends React.Component{
 
     highlightCurrentPlot(zpos) {
         let margin = this.margin;
+        let divID = this.divID;
         let JD = zpos + this.data.data.spatial[0].z;
-        let sps = d3.selectAll('svg.scatterplots' + this.id);
+        let sps = d3.selectAll('svg.' + divID);//.scatterplots' + this.id);
         let xItem = this.state.xItem, yItem = this.state.yItem;
         sps.each(function (d) {
             let sp = d3.select(this);
@@ -539,8 +540,9 @@ export default class Scatterplots extends React.Component{
             // plot (circle) has only one class named like 'scatterplots0_0'
             let circle = d3.select(this);
             let lineClass = circle.attr('class').split(' ')[1]; // scatterplots0_0
-            let currentLineH = d3.selectAll('.currentLineH.' + lineClass);
-            let currentLineV = d3.selectAll('.currentLineV.' + lineClass);
+            let sp = d3.select('svg.' + divID);
+            let currentLineH = sp.selectAll('.currentLineH');
+            let currentLineV = sp.selectAll('.currentLineV');
             currentLineH
                 .transition()
                 .duration(0)
