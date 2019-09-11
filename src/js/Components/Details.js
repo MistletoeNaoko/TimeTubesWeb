@@ -471,15 +471,17 @@ export default class Details extends React.Component{
                 <div id={'fileSelector_' + this.id}
                      className='controllersOnView'
                      style={{position: 'absolute', color: 'white', top: '0px', left: '0px', zIndex:'10', fontSize: '0.8rem', marginLeft: '1.5rem'}}>
-                    <label id={'fileName_' + this.id}>
-                        <input
-                            type='checkbox'
-                            id={'selectView_' + this.id}
-                            name='selectView'
-                            key={this.id}
-                            value={this.id}
-                            checked={this.state.checked}
-                            onChange={this.onChangeCheckbox.bind(this, this.id)}/>
+                    <input
+                        type='checkbox'
+                        id={'selectView_' + this.id}
+                        name='selectView'
+                        key={this.id}
+                        value={this.id}
+                        checked={this.state.checked}
+                        onChange={this.onChangeCheckbox.bind(this, this.id)}/>
+                    <label
+                        id={'fileName_' + this.id}
+                        style={{paddingLeft: '0.5rem', paddingRight: '0.5rem'}}>
                         {this.state.fileName}
                     </label>
                 </div>
