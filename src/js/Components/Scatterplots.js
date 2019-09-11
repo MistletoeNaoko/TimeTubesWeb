@@ -121,7 +121,7 @@ export default class Scatterplots extends React.Component{
             .attr('text-anchor', 'middle');
 
         // tooltip
-        this.tooltip = d3.select('#scatterplots_' + this.id)
+        this.tooltip = d3.select('#' + this.divID)//'#scatterplots_' + this.id)
             .append('div')
             .attr('class', 'tooltip ' + this.divID)
             .attr('id', 'tooltip_' + this.SPID)
