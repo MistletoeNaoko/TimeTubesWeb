@@ -68,8 +68,7 @@ export default class ExtractionSource extends React.Component {
                     key={data.id}
                     id={'QBE_SP_' + data.id}
                     style={{
-                        display: 'inline-block',
-                        visibility: (data.id === Number(this.state.source)) ? 'visible': 'hidden'}}>
+                        display: (data.id === Number(this.state.source)) ? 'block': 'none'}}>
                     <Scatterplots
                         key={data.id}
                         id={data.id}
