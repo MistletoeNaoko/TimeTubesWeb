@@ -165,6 +165,13 @@ export default class Scatterplots extends React.Component{
             .attr('stroke', 'dimgray')
             .attr("r", 4)
             .attr('class', this.divID + ' scatterplots' + this.id);
+        if (this.divID.indexOf('QBE') >= 0) {
+            this.brush = d3.brushX();
+            this.spBrusher = this.sp
+                .append('g')
+                .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')')
+                .attr('class', 'brush');
+        }
     }
 
     drawScatterplots() {
@@ -189,6 +196,17 @@ export default class Scatterplots extends React.Component{
             .attr('height', outerHeight)
             .call(this.zoom)
             .on("dblclick.zoom", null);
+        if (divID.indexOf('QBE') >= 0) {
+            this.sp
+                .on('mousedown.zoom', null);
+            this.brush
+                .extent([[0, 0], [width, height]])
+                .on('start brush', brushed.bind(this));
+            this.spBrusher
+                .call(this.brush)
+                .call(this.brush.move, [0, 0]);
+        }
+
         // Draw x axis
         this.xScale
             .domain(this.xMinMax)
@@ -330,9 +348,20 @@ export default class Scatterplots extends React.Component{
             //     lineVPos = currentXScale.invert(lineVPos);  // x
             //     lineHPos = currentYScale.invert(lineHPos);  // y
             // }
+            let minJD, maxJD;
+            if (divID.indexOf('QBE') >= 0) {
+                let rect = this.sp.select('g.brush')
+                    .select('rect.selection');
+                let xpos = Number(rect
+                    .attr('x'));
+                let rectWidth = Number(rect
+                    .attr('width'));
+                minJD = this.xScale.invert(xpos);
+                maxJD = this.xScale.invert(xpos + rectWidth);
+            }
+
             let new_xScale = d3.event.transform.rescaleX(this.xScale);
             let new_yScale = d3.event.transform.rescaleY(this.yScale);
-
             this.xMinMax = new_xScale.domain();
             this.yMinMax = new_yScale.domain();
             // update axes
@@ -374,6 +403,14 @@ export default class Scatterplots extends React.Component{
                         .style('visibility', 'visible');
                 }
             }
+            // if (divID.indexOf('QBE') >= 0) {
+            //     this.spBrusher
+            //         .call(this.brush.move, [new_xScale(minJD), new_xScale(maxJD)]);
+            //
+            // }
+        }
+        function brushed() {
+
         }
         function spMouseOver(d) {
             d3.select(this)
