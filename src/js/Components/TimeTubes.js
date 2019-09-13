@@ -625,15 +625,14 @@ export default class TimeTubes extends React.Component{
     }
 
     paintSelectedPeriod() {
-        this.tube.geometry.colorsNeedUpdate = true;
-        this.tube.geometry.attributes.selected.needsUpdate = true;
         this.deselectAll();
         let selectedPeriod = FeatureStore.getSelectedPeriod();
         let minJD = this.data.meta.min.z;
         let arraySize = this.tube.geometry.attributes.selected.array.length / this.tubeNum;
-
         let firstIdx = (Math.ceil(selectedPeriod[0] - minJD) * this.division * this.segment);
         let lastIdx = (Math.ceil(selectedPeriod[1] - minJD) * this.division * this.segment);
+        this.tube.geometry.colorsNeedUpdate = true;
+        this.tube.geometry.attributes.selected.needsUpdate = true;
         for (let i = firstIdx; i < lastIdx; i++) {
             this.tube.geometry.attributes.selected.array[arraySize * (this.tubeNum - 1) + i] = 1;
         }
