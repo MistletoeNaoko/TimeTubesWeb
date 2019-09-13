@@ -44,23 +44,28 @@ export default class SelectedTimeSlice extends React.Component {
         });
         FeatureStore.on('updateSelectedPeriod', () => {
             this.selectedPeriod = FeatureStore.getSelectedPeriod();
-            let attributes = FeatureStore.getTubeAttributes(Number(this.sourceId));
-            // let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
-            let firstIdx = (Math.ceil(this.selectedPeriod[0] - this.data.data.meta.min.z) * this.division * this.segment);
-            let lastIdx = (Math.ceil(this.selectedPeriod[1] - this.data.data.meta.min.z) * this.division * this.segment);
-            let pos = attributes.position.slice(firstIdx * 3, lastIdx * 3);
-            let col = attributes.color.slice(firstIdx * 3, lastIdx * 3);
-            let minPos = pos[2];
-            // move the tube to the initial position and show a solid tube
-            for (let i = 0; i < pos.length / 3; i++) {
-                pos[i * 3 + 2] -= minPos;
-                col[i * 3 + 2] = 1;
-            }
-            this.drawSelectedTube(
-                pos,
-                col,
-                attributes.indices.slice(0, ((lastIdx - firstIdx) / this.segment - 1) * (this.segment - 1) * 3 * 2)
-            );
+            // let attributes = FeatureStore.getTubeAttributes(Number(this.sourceId));
+            // // let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
+            // let firstIdx = (Math.ceil(this.selectedPeriod[0] - this.data.data.meta.min.z) * this.division * this.segment);
+            // let lastIdx = (Math.ceil(this.selectedPeriod[1] - this.data.data.meta.min.z) * this.division * this.segment);
+            // let pos = attributes.position.slice(firstIdx * 3, lastIdx * 3);
+            // let col = attributes.color.slice(firstIdx * 3, lastIdx * 3);
+            // let minPos = pos[2];
+            // // move the tube to the initial position and show a solid tube
+            // for (let i = 0; i < pos.length / 3; i++) {
+            //     pos[i * 3 + 2] -= minPos;
+            //     col[i * 3 + 2] = 1;
+            // }
+            // this.drawSelectedTube(
+            //     pos,
+            //     col,
+            //     attributes.indices.slice(0, ((lastIdx - firstIdx) / this.segment - 1) * (this.segment - 1) * 3 * 2)
+            // );
+            this.updateTimePeriod();
+        });
+        FeatureStore.on('selectPeriodfromSP', (period) => {
+            this.selectedPeriod = FeatureStore.getSelectedPeriod();
+            this.updateTimePeriod();
         });
     }
 
@@ -240,5 +245,25 @@ export default class SelectedTimeSlice extends React.Component {
         this.tube.geometry.index = new THREE.BufferAttribute(new Uint32Array(0), 1);
         this.tube.geometry.computeVertexNormals();
         this.renderer.render(this.scene, this.camera);
+    }
+
+    updateTimePeriod() {
+        let attributes = FeatureStore.getTubeAttributes(Number(this.sourceId));
+        // let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
+        let firstIdx = (Math.ceil(this.selectedPeriod[0] - this.data.data.meta.min.z) * this.division * this.segment);
+        let lastIdx = (Math.ceil(this.selectedPeriod[1] - this.data.data.meta.min.z) * this.division * this.segment);
+        let pos = attributes.position.slice(firstIdx * 3, lastIdx * 3);
+        let col = attributes.color.slice(firstIdx * 3, lastIdx * 3);
+        let minPos = pos[2];
+        // move the tube to the initial position and show a solid tube
+        for (let i = 0; i < pos.length / 3; i++) {
+            pos[i * 3 + 2] -= minPos;
+            col[i * 3 + 2] = 1;
+        }
+        this.drawSelectedTube(
+            pos,
+            col,
+            attributes.indices.slice(0, ((lastIdx - firstIdx) / this.segment - 1) * (this.segment - 1) * 3 * 2)
+        );
     }
 }
