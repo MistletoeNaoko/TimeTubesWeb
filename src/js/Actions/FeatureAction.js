@@ -1,9 +1,5 @@
 import dispatcher from '../Dispatcher/dispatcher';
 
-export function switchVisualQuery(status) {
-    dispatcher.dispatch({type: 'SWITCH_VISUALQUERY', status});
-}
-
 export function updateSource(id) {
     dispatcher.dispatch({type:'UPDATE_SOURCE', id});
 }
@@ -24,12 +20,17 @@ export function resetSelection() {
     dispatcher.dispatch({type: 'RESET_SELECTION'});
 }
 
-export function selectTimeInterval(value) {
-    dispatcher.dispatch({type:'SELECT_TIMEINTERVAL', value});
+export function selectTimeInterval(id, value) {
+    dispatcher.dispatch({type:'SELECT_TIMEINTERVAL', id, value});
 }
 
-export function updateSelectedInterval(period, pos, color, indices) {
-    dispatcher.dispatch({type: 'UPDATE_SELECTEDINTERVAL', period, pos, color, indices});
+export function updateSelectedPeriod(period) {
+    dispatcher.dispatch({type: 'UPDATE_SELECTED_PERIOD', period});
+}
+
+// only called by SP
+export function selectPeriodfromSP(period) {
+    dispatcher.dispatch({type: 'SELECT_PERIOD_FROM_SP', period});
 }
 
 export function switchQueryMode(mode) {

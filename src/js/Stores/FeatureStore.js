@@ -10,17 +10,12 @@ class FeatureStore extends EventEmitter {
         this.target = [];
         this.selector = true;
         this.dragSelection = true;
-        this.selectedInterval = [];
-        this.selectedPos = [];
-        this.selectedColor = [];
-        this.selectedIndices = [];
+        this.tubeAttributes = [];
+        this.selectedPeriod = [-1, -1];
     }
 
     handleActions(action) {
         switch (action.type) {
-            case 'SWITCH_VISUALQUERY':
-                this.switchVisualQuery(action.status);
-                break;
             case 'UPDATE_SOURCE':
                 this.updateSource(action.id);
                 break;
@@ -37,13 +32,19 @@ class FeatureStore extends EventEmitter {
                 this.resetSelection();
                 break;
             case 'SELECT_TIMEINTERVAL':
-                this.selectTimeInterval(action.value);
-                break;
-            case 'UPDATE_SELECTEDINTERVAL':
-                this.updateSelectedInterval(action.period, action.pos, action.color, action.indices);
+                this.selectTimeInterval(action.id, action.value);
                 break;
             case 'SWITCH_QUERY_MODE':
                 this.switchQueryMode(action.mode);
+                break;
+            case 'UPLOAD_TUBE_ATTRIBUTES':
+                this.uploadTubeAttributes(action.id, action.position, action.color, action.indices);
+                break;
+            case 'UPDATE_SELECTED_PERIOD':
+                this.updateSelectedPeriod(action.period);
+                break;
+            case 'SELECT_PERIOD_FROM_SP':
+                this.selectPeriodfromSP(action.period);
                 break;
             default:
         }
@@ -69,30 +70,18 @@ class FeatureStore extends EventEmitter {
         return this.dragSelection;
     }
 
-    getSelectedInterval() {
-        return this.selectedInterval;
-    }
-
-    getSelectedPos() {
-        return this.selectedPos;
-    }
-
-    getSelectedColor() {
-        return this.selectedColor;
-    }
-
-    getSelectedIndices() {
-        return this.selectedIndices;
+    getSelectedPeriod() {
+        return this.selectedPeriod;
     }
 
     getMode() {
         return this.mode;
     }
 
-    switchVisualQuery(status) {
-        this.visualQuery = status;
-        this.emit('switchVisualQuery');
+    getTubeAttributes(id) {
+        return this.tubeAttributes[id];
     }
+
 
     updateSource(id) {
         this.source = id;
@@ -118,21 +107,32 @@ class FeatureStore extends EventEmitter {
         this.emit('resetSelection');
     }
 
-    selectTimeInterval(value) {
-        this.emit('selectTimeInterval', value);
-    }
-
-    updateSelectedInterval(period, pos, color, indices) {
-        this.selectedInterval = period;
-        this.selectedPos = pos;
-        this.selectedColor = color;
-        this.selectedIndices = indices;
-        this.emit('updateSelectedInterval');
+    selectTimeInterval(id, value) {
+        this.emit('selectTimeInterval', id, value);
     }
 
     switchQueryMode(mode) {
         this.mode = mode;
         this.emit('switchQueryMode', mode);
+    }
+
+    uploadTubeAttributes(id, pos, col, indices) {
+        this.tubeAttributes[id] = {
+            position: pos,
+            color: col,
+            indices: indices
+        };
+        this.emit('uploadTubeAttributes');
+    }
+
+    updateSelectedPeriod(period) {
+        this.selectedPeriod = period;
+        this.emit('updateSelectedPeriod');
+    }
+
+    selectPeriodfromSP(period) {
+        this.selectedPeriod = period;
+        this.emit('selectPeriodfromSP');
     }
 
     setTexture(texture) {

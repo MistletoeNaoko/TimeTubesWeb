@@ -20,8 +20,10 @@ export default class Feature extends React.Component {
     }
 
     componentWillMount() {
-        FeatureStore.on('updateSelectedInterval', () => {
-            this.setState({selectedInterval: FeatureStore.getSelectedInterval()});
+        FeatureStore.on('updateSelectedTimeSlice', () => {
+            this.setState({
+                selectedInterval: FeatureStore.getSelectedInterval()
+            });
             this.updateSelectedInterval();
         });
         FeatureStore.on('updateSource', () => {
@@ -34,13 +36,10 @@ export default class Feature extends React.Component {
                 queryMode: mode
             });
         });
-    }
-
-    switchVisualQuery() {
-        let status = $('#switchVisualQuery').prop('checked');
-        this.setState({visualQuery: status});
-        FeatureAction.switchVisualQuery(status);
-        this.updateSource();
+        FeatureStore.on('updateSelectedPeriod', () => {
+            // this.selectedInterval = FeatureStore.getSelectedPeriod();
+            this.updateSelectedInterval();
+        });
     }
 
     switchSelector() {
@@ -76,8 +75,9 @@ export default class Feature extends React.Component {
 
     selectTimeInterval() {
         let val = $('#selectTimeIntervalInput').val();
+        console.log('selectTimeInterval')
         if (!isNaN(val) && val != '') {
-            FeatureAction.selectTimeInterval(val);
+            FeatureAction.selectTimeInterval(this.state.source, val);
         }
     }
 
@@ -85,7 +85,6 @@ export default class Feature extends React.Component {
         let sourceList = document.getElementById('sourceList');
         let selectedIdx = sourceList.selectedIndex;
         let selectedId = sourceList.options[selectedIdx].value; // get id
-        console.log('visual query update source', selectedId)
         FeatureAction.updateSource(selectedId);
     }
 
@@ -94,7 +93,10 @@ export default class Feature extends React.Component {
     }
 
     updateSelectedInterval() {
-        let period = this.state.selectedInterval;
+        let period = FeatureStore.getSelectedPeriod();
+        this.setState({
+            selectedInterval: period
+        });
         $('#selectedInterval').text('JD: ' + period[0] + ' - ' + period[1]);
     }
 
@@ -122,10 +124,6 @@ export default class Feature extends React.Component {
     }
 
     queryModes() {
-        let QBESource;
-        if (this.state.queryMode === 'QBE') {
-            QBESource = this.QBESource();
-        }
         return (
             <div className='featureElem'>
                 <h5>Query mode</h5>
@@ -147,31 +145,7 @@ export default class Feature extends React.Component {
                         <label className="form-check-label" htmlFor="QBS">Query-by-sketch</label>
                     </div>
                 </form>
-                {QBESource}
             </div>
-        );
-    }
-
-    QBESource() {
-        return (
-            <form id='QBESource' className='indentedRadio'onChange={this.switchQBESource.bind(this)}>
-                <div className="form-check">
-                    <input
-                        type='radio'
-                        name='QBESource'
-                        value='SP'
-                        checked={this.state.QBESource === 'SP'}/>
-                    <label className="form-check-label" htmlFor='QBESourceSP'>Scatterplots</label>
-                </div>
-                <div className="form-check">
-                    <input
-                        type='radio'
-                        name='QBESource'
-                        value='TT'
-                        checked={this.state.QBESource === 'TT'}/>
-                    <label className="form-check-label" htmlFor='QBESourceSP'>TimeTubes</label>
-                </div>
-            </form>
         );
     }
 
@@ -240,7 +214,7 @@ export default class Feature extends React.Component {
     selectionDetail() {
         let selectedTimeSlice;
         if (this.state.source >= 0) {
-            selectedTimeSlice = <SelectedTimeSlice sourceId={this.state.source} selectedInterval={this.state.selectedInterval}/>;
+            selectedTimeSlice = <SelectedTimeSlice sourceId={this.state.source}/>;
         }
         return (
             <div className='featureElem'>

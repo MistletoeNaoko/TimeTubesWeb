@@ -61,6 +61,8 @@ class TimeTubesStore extends EventEmitter{
         this.plotColor = [];
         this.gridSize = 15;
         this.tubeNum = 16;
+        this.segment = 16;
+        this.division = 5;
         this.visualQuery = false;
         this.dragSelection = true;
         this.activeId = -1;
@@ -226,6 +228,14 @@ class TimeTubesStore extends EventEmitter{
 
     getTubeNum() {
         return this.tubeNum;
+    }
+
+    getDivision() {
+        return this.division;
+    }
+
+    getSegment() {
+        return this.segment;
     }
 
     getLock(id) {

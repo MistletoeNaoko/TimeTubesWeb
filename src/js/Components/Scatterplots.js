@@ -1,9 +1,11 @@
 import React from 'react';
 import * as d3 from 'd3';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
+import * as FeatureAction from '../Actions/FeatureAction';
 import DataStore from '../Stores/DataStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import ScatterplotsStore from '../Stores/ScatterplotsStore';
+import FeatureStore from '../Stores/FeatureStore';
 
 d3.selection.prototype.moveToFront =
     function() {
@@ -27,6 +29,7 @@ export default class Scatterplots extends React.Component{
         this.slicedData = this.data.data.spatial;
         this.xMinMax = [0, 0];
         this.yMinMax = [0, 0];
+        this.selectedPeriod = [-1, -1];
         this.state = {
             xItem: props.xItem,
             yItem: props.yItem,
@@ -201,7 +204,8 @@ export default class Scatterplots extends React.Component{
                 .on('mousedown.zoom', null);
             this.brush
                 .extent([[0, 0], [width, height]])
-                .on('start brush', brushed.bind(this));
+                .on('start brush', brushed.bind(this))
+                .on('end', brushedEnd.bind(this));
             this.spBrusher
                 .call(this.brush)
                 .call(this.brush.move, [0, 0]);
@@ -410,7 +414,14 @@ export default class Scatterplots extends React.Component{
             // }
         }
         function brushed() {
-
+            let s = d3.event.selection || this.xScale.range;
+            let xRange = s.map(this.xScale.invert, this.xScale);
+            this.selectedPeriod = xRange;
+        }
+        function brushedEnd() {
+            if (FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id) {
+                FeatureAction.selectPeriodfromSP(this.selectedPeriod);
+            }
         }
         function spMouseOver(d) {
             d3.select(this)

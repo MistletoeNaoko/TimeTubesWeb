@@ -9,13 +9,15 @@ export default class SelectedTimeSlice extends React.Component {
     constructor(props) {
         super();
         this.sourceId = props.sourceId;
-        this.selectedInterval = props.selectedInterval;
+        this.selectedPeriod = FeatureStore.getSelectedPeriod();
         this.data = DataStore.getData(this.sourceId);
         this.texture = TimeTubesStore.getTexture();
+        this.segment = TimeTubesStore.getSegment();
+        this.division = TimeTubesStore.getDivision();
     }
 
     render() {
-        // this.props sourceId, selectedInterval
+        // this.props sourceId
         // console.log(this.props);
         let width = $('#selectedIntervalViewArea').width();
         let height = width;
@@ -32,13 +34,6 @@ export default class SelectedTimeSlice extends React.Component {
     }
 
     componentWillMount() {
-        FeatureStore.on('updateSelectedInterval', () => {
-            this.drawSelectedTube(
-                FeatureStore.getSelectedPos(),
-                FeatureStore.getSelectedColor(),
-                FeatureStore.getSelectedIndices()
-            );
-        });
         TimeTubesStore.on('switch', () => {
            if (this.camera) {
                this.switchCamera();
@@ -46,6 +41,26 @@ export default class SelectedTimeSlice extends React.Component {
         });
         FeatureStore.on('resetSelection', () => {
             this.deselectAll();
+        });
+        FeatureStore.on('updateSelectedPeriod', () => {
+            this.selectedPeriod = FeatureStore.getSelectedPeriod();
+            let attributes = FeatureStore.getTubeAttributes(Number(this.sourceId));
+            // let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
+            let firstIdx = (Math.ceil(this.selectedPeriod[0] - this.data.data.meta.min.z) * this.division * this.segment);
+            let lastIdx = (Math.ceil(this.selectedPeriod[1] - this.data.data.meta.min.z) * this.division * this.segment);
+            let pos = attributes.position.slice(firstIdx * 3, lastIdx * 3);
+            let col = attributes.color.slice(firstIdx * 3, lastIdx * 3);
+            let minPos = pos[2];
+            // move the tube to the initial position and show a solid tube
+            for (let i = 0; i < pos.length / 3; i++) {
+                pos[i * 3 + 2] -= minPos;
+                col[i * 3 + 2] = 1;
+            }
+            this.drawSelectedTube(
+                pos,
+                col,
+                attributes.indices.slice(0, ((lastIdx - firstIdx) / this.segment - 1) * (this.segment - 1) * 3 * 2)
+            );
         });
     }
 

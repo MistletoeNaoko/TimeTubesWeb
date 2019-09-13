@@ -106,3 +106,7 @@ export function zoomInTimeTubes(id) {
 export function updateOpacity(id, opt) {
     dispatcher.dispatch({type: 'UPDATE_OPACITY', id, opt});
 }
+
+export function uploadTubeAttributes(id, position, color, indices) {
+    dispatcher.dispatch({type: 'UPLOAD_TUBE_ATTRIBUTES', id, position, color, indices});
+}

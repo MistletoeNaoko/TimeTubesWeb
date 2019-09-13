@@ -60,7 +60,7 @@ export default class TimeTubes extends React.Component{
         }
         this.state = {
             width: props.width,
-            height: props.height
+            height: props.height,
         }
     }
 
@@ -234,18 +234,6 @@ export default class TimeTubes extends React.Component{
                 this.updateOpacity(opt);
             }
         });
-        FeatureStore.on('switchVisualQuery', () => {
-            // when the visual query is switched on, make the parameter 'visualQuery' true if the TimeTubes view is active
-            let activeId = TimeTubesStore.getActiveId();
-            if (activeId !== this.id) {
-                this.visualQuery = false;
-            } else {
-                this.visualQuery = true;
-            }
-            this.setQBEView();
-            this.updateControls();
-            this.resetSelection();
-        });
         FeatureStore.on('switchQueryMode', (mode) => {
             let sourceId = FeatureStore.getSource();
             if (mode === 'QBE' && sourceId !== 'default') {
@@ -275,8 +263,19 @@ export default class TimeTubes extends React.Component{
         FeatureStore.on('switchSelector', () => {
             this.selector = FeatureStore.getSelector();
         });
-        FeatureStore.on('selectTimeInterval', (value) => {
-            this.selectTimeInterval(value);
+        FeatureStore.on('selectTimeInterval', (id, value) => {
+            let mode = FeatureStore.getMode();
+            if (mode === 'QBE' && Number(id) === this.id) {
+                this.selectTimeInterval(Number(value));
+            }
+        });
+        FeatureStore.on('selectPeriodfromSP', (period) => {
+            let sourceId = FeatureStore.getSource();
+            let mode = FeatureStore.getMode();
+            if (mode === 'QBE' && Number(sourceId) === this.id) {
+                // paint the selected period red
+                this.paintSelectedPeriod();
+            }
         });
     }
 
@@ -481,14 +480,27 @@ export default class TimeTubes extends React.Component{
                         } else {
                             setValue = 0;
                         }
+
                         // highlight a tube at one observation
                         for (let i = 0; i < this.segment; i++) {
                             this.tube.geometry.attributes.selected.array[startIdx * this.segment + i] = setValue;
                             this.tube.geometry.attributes.selected.array[(startIdx + 1) * this.segment + i] = setValue;
                         }
+
+                        // fill between selections
+                        let arraySize = this.tube.geometry.attributes.selected.array.length / this.tubeNum;
+                        //  'idx - arraySize * (this.tubeNum - 1) / this.tubeNum' is because only the most outside tube is highlighted in red
+                        let firstIdx = this.tube.geometry.attributes.selected.array.indexOf(1) % arraySize;
+                        let lastIdx = this.tube.geometry.attributes.selected.array.lastIndexOf(1) % arraySize;
+                        for (let i = firstIdx; i <= lastIdx; i++) {
+                            this.tube.geometry.attributes.selected.array[arraySize * (this.tubeNum - 1) + i] = 1;
+                        }
+                        let minJD = this.data.meta.min.z;
+                        let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
+                        let lastJD = (Math.floor(lastIdx / this.segment) + 1) * (1 / this.division) + minJD;
+                        FeatureAction.updateSelectedPeriod([firstJD, lastJD]);
                         this.renderer.render(this.scene, this.camera);
                         if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
-                        this.getSelectedInterval();
                     }
                 }
             }
@@ -505,25 +517,44 @@ export default class TimeTubes extends React.Component{
         return function (event) {
             if (this.visualQuery && !this.dragSelection) {
                 let face = this.getIntersectedIndex(event);
+                let firstIdx, lastIdx;
                 if (face !== undefined && this.tube) {
                     this.tube.geometry.colorsNeedUpdate = true;
                     this.tube.geometry.attributes.selected.needsUpdate = true;
                     let startIdx = Math.floor(Math.min(face.a, face.b, face.c) / this.segment);
+                    let startJD = Math.floor(startIdx / this.segment) * (1 / this.division) + this.data.meta.min.z;
                     let setValue;
                     if (this.selector) {
                         setValue = 1;
                     } else {
                         setValue = 0;
                     }
+
                     // highlight a tube at one observation
                     for (let i = 0; i < this.segment; i++) {
                         this.tube.geometry.attributes.selected.array[startIdx * this.segment + i] = setValue;
                         this.tube.geometry.attributes.selected.array[(startIdx + 1) * this.segment + i] = setValue;
                     }
+
+                    // fill between selections
+                    let arraySize = this.tube.geometry.attributes.selected.array.length / this.tubeNum;
+                    //  'idx - arraySize * (this.tubeNum - 1) / this.tubeNum' is because only the most outside tube is highlighted in red
+                    firstIdx = this.tube.geometry.attributes.selected.array.indexOf(1) % arraySize;
+                    lastIdx = this.tube.geometry.attributes.selected.array.lastIndexOf(1) % arraySize;
+                    for (let i = firstIdx; i <= lastIdx; i++) {
+                        this.tube.geometry.attributes.selected.array[arraySize * (this.tubeNum - 1) + i] = 1;
+                    }
                     this.renderer.render(this.scene, this.camera);
                     if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
                 }
-                this.getSelectedInterval();
+                if (firstIdx >= lastIdx) {
+                    FeatureAction.updateSelectedPeriod([-1, -1]);
+                } else {
+                    let minJD = this.data.meta.min.z;
+                    let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
+                    let lastJD = (Math.floor(lastIdx / this.segment) + 1) * (1 / this.division) + minJD;
+                    FeatureAction.updateSelectedPeriod([firstJD, lastJD]);
+                }
             } else {
                 // activate the viewport
                 // remove borders from all viewports
@@ -572,42 +603,42 @@ export default class TimeTubes extends React.Component{
     selectTimeInterval(value) {
         this.tube.geometry.colorsNeedUpdate = true;
         this.tube.geometry.attributes.selected.needsUpdate = true;
-        let currentPos = this.tubeGroup.position.z;
-        let initIdx = (Math.round(currentPos) * this.division + 1) * this.segment;//(Math.floor(currentPos) * this.division + 1) * this.segment;
-        for (let i = 0; i < (Math.floor(value)) * (this.division) * this.segment; i++) {
-            this.tube.geometry.attributes.selected.array[initIdx + i] = 1.0;
-        }
-        this.renderer.render(this.scene, this.camera);
-        if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
-        this.getSelectedInterval();
-    }
-
-    getSelectedInterval() {
-        // get the first and last index of selected area
         let arraySize = this.tube.geometry.attributes.selected.array.length / this.tubeNum;
-        //  'idx - arraySize * (this.tubeNum - 1) / this.tubeNum' is because only the most outside tube is highlighted in red
+        let currentPos = this.tubeGroup.position.z;
+        let initIdx = (Math.round(currentPos) * this.division + 1) * this.segment + arraySize * (this.tubeNum - 1);//(Math.floor(currentPos) * this.division + 1) * this.segment;
+        for (let i = 0; i < (Math.floor(value)) * (this.division) * this.segment; i++) {
+            this.tube.geometry.attributes.selected.array[initIdx + i] = 1;
+        }
+
+        // fill the gaps between selections
         let firstIdx = this.tube.geometry.attributes.selected.array.indexOf(1) % arraySize;
         let lastIdx = this.tube.geometry.attributes.selected.array.lastIndexOf(1) % arraySize;
         for (let i = firstIdx; i <= lastIdx; i++) {
-            this.tube.geometry.attributes.selected.array[i] = 1;
+            this.tube.geometry.attributes.selected.array[arraySize * (this.tubeNum - 1) + i] = 1;
+        }
+        let minJD = this.data.meta.min.z;
+        let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
+        let lastJD = (Math.floor(lastIdx / this.segment) + 1) * (1 / this.division) + minJD;
+        FeatureAction.updateSelectedPeriod([firstJD, lastJD]);
+        this.renderer.render(this.scene, this.camera);
+        if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
+    }
+
+    paintSelectedPeriod() {
+        this.tube.geometry.colorsNeedUpdate = true;
+        this.tube.geometry.attributes.selected.needsUpdate = true;
+        this.deselectAll();
+        let selectedPeriod = FeatureStore.getSelectedPeriod();
+        let minJD = this.data.meta.min.z;
+        let arraySize = this.tube.geometry.attributes.selected.array.length / this.tubeNum;
+
+        let firstIdx = (Math.ceil(selectedPeriod[0] - minJD) * this.division * this.segment);
+        let lastIdx = (Math.ceil(selectedPeriod[1] - minJD) * this.division * this.segment);
+        for (let i = firstIdx; i < lastIdx; i++) {
+            this.tube.geometry.attributes.selected.array[arraySize * (this.tubeNum - 1) + i] = 1;
         }
         this.renderer.render(this.scene, this.camera);
         if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
-        let minJD = this.data.spatial[0].z;
-        let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
-        let lastJD = (Math.floor(lastIdx / this.segment) + 1) * (1 / this.division) + minJD;
-        let pos = this.tube.geometry.attributes.position.array.slice(firstIdx * 3 + arraySize * 3 * (this.tubeNum - 1), lastIdx * 3 + arraySize * 3 * (this.tubeNum - 1));
-        let colorData = this.tube.geometry.attributes.colorData.array.slice(firstIdx * 3, lastIdx * 3);
-        let indices = this.tube.geometry.index.array.slice(
-            0,// firstIdx / this.segment * (this.segment - 1) * 3 * 2,
-            ((lastIdx - firstIdx) / this.segment - 1) * (this.segment - 1) * 3 * 2// lastIdx / this.segment * (this.segment - 1) * 3 * 2,
-            );
-
-        let firstZpos = pos[2];
-        for (let i = 0; i < pos.length / 3; i++) {
-            pos[3 * i + 2] -= firstZpos;
-        }
-        FeatureAction.updateSelectedInterval([firstJD, lastJD], pos, colorData, indices);
     }
 
     // change the color of the currently focused plot
@@ -904,6 +935,10 @@ export default class TimeTubes extends React.Component{
         this.tube.rotateY(Math.PI);
         TimeTubesAction.updateMinMaxH(this.id, this.data.meta.min.H, this.data.meta.max.H);
         TimeTubesAction.updateMinMaxV(this.id, this.data.meta.min.V, this.data.meta.max.V);
+        let positionArray = vertices[this.tubeNum - 1];
+        let colorArray = colors[this.tubeNum - 1];
+        let indicesArray = indices;
+        TimeTubesAction.uploadTubeAttributes(this.id, positionArray, colorArray, indicesArray);
     }
 
     drawGrid(size, divisions) {
