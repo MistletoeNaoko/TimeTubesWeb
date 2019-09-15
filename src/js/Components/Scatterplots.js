@@ -208,7 +208,7 @@ export default class Scatterplots extends React.Component{
                 .on('end', brushedEnd.bind(this));
             this.spBrusher
                 .call(this.brush)
-                .call(this.brush.move, [0, 0]);
+                // .call(this.brush.move, [0, 0]);
         }
 
         // Draw x axis

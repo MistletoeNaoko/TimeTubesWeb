@@ -75,7 +75,6 @@ export default class Feature extends React.Component {
 
     selectTimeInterval() {
         let val = $('#selectTimeIntervalInput').val();
-        console.log('selectTimeInterval')
         if (!isNaN(val) && val != '') {
             FeatureAction.selectTimeInterval(this.state.source, val);
         }
