@@ -93,15 +93,17 @@ export default class ScatterplotsHolder extends React.Component{
                         <select
                             className="custom-select select_axis"
                             id={"scatterSelectXAxis_" + this.id}
+                            defaultValue={'unselected'}
                             style={{width: '6rem', height: '1.5rem', float: 'right'}}>
-                            <option value='unselected' selected>x axis</option>
+                            <option value='unselected'>x axis</option>
                             {items}
                         </select>
                         <select
                             className="custom-select select_axis"
                             id={"scatterSelectYAxis_" + this.id}
+                            defaultValue={'unselected'}
                             style={{width: '6rem', height: '1.5rem', float: 'right'}}>
-                            <option value='unselected' selected>y axis</option>
+                            <option value='unselected'>y axis</option>
                             {items}
                         </select>
                         <button

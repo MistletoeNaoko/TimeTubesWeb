@@ -9,6 +9,7 @@ export default class Controllers extends React.Component{
         super();
         this.state = {
             data: DataStore.getAllData(),
+            fileType: 'csv',
             grid: true,
             label: true,
             axis: true,
@@ -31,6 +32,13 @@ export default class Controllers extends React.Component{
                 });
             }
             $('#fileInputPanel').css('visibility', 'hidden');
+        });
+    }
+
+    changeFileType() {
+        let fileType = $('input[name=fileType]:checked').val();
+        this.setState({
+            fileType: fileType
         });
     }
 
@@ -252,17 +260,30 @@ export default class Controllers extends React.Component{
         return (
             <div id='inputFile' className='controllersElem'>
                 <h6>File type</h6>
-                <form id="fileType" style={{minWidth: '200px'}}>
+                <form id="fileType" style={{minWidth: '200px'}}
+                      onChange={this.changeFileType.bind(this)}>
                     <div className="form-check form-check-inline">
-                        <input type="radio" name="fileType" value="csv" checked />
+                        <input
+                            type="radio"
+                            name="fileType"
+                            value="csv"
+                            checked={this.state.fileType === 'csv'} readOnly/>
                         <label className="form-check-label" htmlFor="inlineCheckbox1">csv</label>
                     </div>
                     <div className="form-check form-check-inline">
-                        <input type="radio" name="fileType" value="tsv"/>
+                        <input
+                            type="radio"
+                            name="fileType"
+                            value="tsv"
+                            checked={this.state.fileType === 'tsv'} readOnly/>
                         <label className="form-check-label" htmlFor="inlineCheckbox1">tsv</label>
                     </div>
                     <div className="form-check form-check-inline">
-                        <input type="radio" name="fileType" value="space"/>
+                        <input
+                            type="radio"
+                            name="fileType"
+                            value="space"
+                            checked={this.state.fileType === 'space'} readOnly/>
                         <label className="form-check-label" htmlFor="inlineCheckbox1">space</label>
                     </div>
                 </form>

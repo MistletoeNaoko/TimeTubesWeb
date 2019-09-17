@@ -5,7 +5,7 @@ import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 import SelectedTimeSlice from './SelectedTimeSlice';
 
-export default class Feature extends React.Component {
+export default class VisualQuery extends React.Component {
     constructor() {
         super();
         this.state = {
@@ -132,7 +132,7 @@ export default class Feature extends React.Component {
                             type="radio"
                             name="queryMode"
                             value="QBE"
-                            checked={this.state.queryMode === 'QBE'}/>
+                            checked={this.state.queryMode === 'QBE'} readOnly/>
                         <label className="form-check-label" htmlFor="QBE">Query-by-example</label>
                     </div>
                     <div className="form-check form-check-inline">
@@ -140,7 +140,7 @@ export default class Feature extends React.Component {
                             type="radio"
                             name="queryMode"
                             value="QBS"
-                            checked={this.state.queryMode === 'QBS'}/>
+                            checked={this.state.queryMode === 'QBS'} readOnly/>
                         <label className="form-check-label" htmlFor="QBS">Query-by-sketch</label>
                     </div>
                 </form>
@@ -158,7 +158,7 @@ export default class Feature extends React.Component {
                             type="radio"
                             name="selector"
                             value="select"
-                            checked={this.state.selector}/>
+                            checked={this.state.selector} readOnly/>
                         <label className="form-check-label" htmlFor="pen">Select</label>
                     </div>
                     <div className="form-check form-check-inline">
@@ -166,7 +166,7 @@ export default class Feature extends React.Component {
                             type="radio"
                             name="selector"
                             value="Deselect"
-                            checked={!this.state.selector}/>
+                            checked={!this.state.selector} readOnly/>
                         <label className="form-check-label" htmlFor="eraser">Deselect</label>
                     </div>
                 </form>
