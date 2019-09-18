@@ -9,10 +9,11 @@ export default class QueryBySketch extends React.Component{
     }
 
     componentDidMount() {
-        this.setUpCanvas();
+        this.initCanvas();
+        this.initSketchMenu();
     }
 
-    setUpCanvas() {
+    initCanvas() {
         // this.canvas = document.getElementById('QBSSketchPad');
         // console.log(document.getElementById('QBSSketchPad'), d3.select('#QBSSketchPad').node());
         // paper.setup(this.canvas);
@@ -65,10 +66,15 @@ export default class QueryBySketch extends React.Component{
         this.tool.onMouseUp = this.CanvasOnMouseUp().bind(this);
     }
 
+    initSketchMenu() {
+
+    }
+
     CanvasOnMouseDown() {
         return function (event) {
             if (this.path) {
-                this.path.selected = false;
+                // this.path.selected = false;
+                this.path.remove();
             }
 
             this.path = new paper.Path({
@@ -107,6 +113,8 @@ export default class QueryBySketch extends React.Component{
         return (
             <div id='QBSQuerying'>
                 <div id='QBSCanvasArea'>
+                </div>
+                <div id='QBSSketchMenuArea'>
                 </div>
                 {/*<label id='QBSYAxis'*/}
                        {/*style={{*/}
