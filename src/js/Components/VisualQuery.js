@@ -4,6 +4,7 @@ import * as FeatureAction from '../Actions/FeatureAction';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 import SelectedTimeSlice from './SelectedTimeSlice';
+import QueryBySketch from './QueryBySketch';
 
 export default class VisualQuery extends React.Component {
     constructor() {
@@ -210,13 +211,21 @@ export default class VisualQuery extends React.Component {
         );
     }
 
+    QBSSelection() {
+        return (
+            <div className='featureElem' id='QBSArea'>
+                <QueryBySketch/>
+            </div>
+        );
+    }
+
     selectionDetail() {
         let selectedTimeSlice;
         if (this.state.source >= 0) {
             selectedTimeSlice = <SelectedTimeSlice sourceId={this.state.source}/>;
         }
         return (
-            <div className='featureElem'>
+            <div className='featureElem' style={{position: 'relative'}}>
                 <h5>Selection Detail</h5>
                 <span id='selectedInterval'></span>
                 <div id='selectedIntervalViewArea'>
@@ -232,7 +241,7 @@ export default class VisualQuery extends React.Component {
         if (this.state.queryMode === 'QBE') {
             queryDefinition = this.QBESelection();
         } else if (this.state.queryMode === 'QBS') {
-
+            queryDefinition = this.QBSSelection();
         }
 
         return (
