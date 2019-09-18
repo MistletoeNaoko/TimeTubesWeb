@@ -111,7 +111,8 @@ export default class VisualQuery extends React.Component {
         });
         sourceList.unshift(<option value='default' key='default'>Select a source of the visual query</option>)
         return (
-            <div className='featureElem'>
+            <div className='featureElem'
+                 style={{display: (this.state.queryMode === 'QBE') ? 'block': 'none'}}>
                 <h5>Source</h5>
                 <select
                     className="custom-select custom-select-sm"
@@ -153,7 +154,7 @@ export default class VisualQuery extends React.Component {
         return (
             <div className='featureElem'>
                 <h5>Selection</h5>
-                <form id='selector featureRow' onChange={this.switchSelector.bind(this)}>
+                <form className='selector featureRow' onChange={this.switchSelector.bind(this)}>
                     <div className="form-check form-check-inline">
                         <input
                             type="radio"
@@ -212,16 +213,26 @@ export default class VisualQuery extends React.Component {
     }
 
     QBSSelection() {
+        let lookupList = [];
+        let dataList = DataStore.getAllData();
+        dataList.forEach(function (e) {
+           lookupList.push(e.data.lookup);
+        });
         return (
             <div className='featureElem' id='QBSArea'>
-                <QueryBySketch/>
+                <QueryBySketch
+                    id={this.state.source}
+                    xItem={'z'}
+                    yItem={'V'}
+                    lookup={lookupList}/>
             </div>
         );
     }
 
     selectionDetail() {
         let selectedTimeSlice;
-        if (this.state.source >= 0) {
+        // when the mode is QBS, selectedTimeSlice view is not needed to be shown
+        if (this.state.source >= 0 && this.state.queryMode === 'QBE') {
             selectedTimeSlice = <SelectedTimeSlice sourceId={this.state.source}/>;
         }
         return (
@@ -246,22 +257,8 @@ export default class VisualQuery extends React.Component {
 
         return (
             <div id='featureArea' className='controllersElem'>
-                {/*<div className="custom-control custom-switch featureElem">*/}
-                    {/*<input*/}
-                        {/*type="checkbox"*/}
-                        {/*className="custom-control-input"*/}
-                        {/*id="switchVisualQuery"*/}
-                        {/*checked={visualQueryStatus}*/}
-                        {/*disabled={!featureStatus}*/}
-                        {/*onClick={this.switchVisualQuery.bind(this)}/>*/}
-                        {/*<label*/}
-                            {/*className="custom-control-label"*/}
-                            {/*htmlFor="switchVisualQuery">*/}
-                            {/*Visual query*/}
-                        {/*</label>*/}
-                {/*</div>*/}
-                {this.extractionSource()}
                 {this.queryModes()}
+                {this.extractionSource()}
                 {queryDefinition}
                 {this.selectionDetail()}
             </div>
