@@ -33,7 +33,8 @@
     "webpack-dev-server": "^3.8.1"
   },
   "scripts": {
-    "build": "webpack",
+    "dev": "webpack --mode development",
+    "build": "webpack --mode production",
     "start": "webpack-dev-server --content-base src --inline --hot",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
