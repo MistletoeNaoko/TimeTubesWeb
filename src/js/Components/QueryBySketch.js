@@ -112,6 +112,14 @@ export default class QueryBySketch extends React.Component{
                     <input
                         type="radio"
                         name="QBSSelector"
+                        value="addPoint"
+                        checked={this.state.selector === 'addPoint'} readOnly/>
+                    <label className="form-check-label" htmlFor="addPoint">Add points</label>
+                </div>
+                <div className="form-check form-check-inline">
+                    <input
+                        type="radio"
+                        name="QBSSelector"
                         value="eraser"
                         checked={this.state.selector === 'eraser'} readOnly/>
                     <label className="form-check-label" htmlFor="eraser">Eraser</label>
@@ -136,33 +144,53 @@ export default class QueryBySketch extends React.Component{
 
     CanvasOnMouseDown() {
         return function (event) {
-            if (this.state.selector === 'pen') {
-                if (this.path) {
-                    this.path.remove();
-                }
+            let hitResult;
+            switch (this.state.selector) {
+                case 'pen':
+                    if (this.path) {
+                        this.path.remove();
+                    }
 
-                this.path = new paper.Path({
-                    segments: [event.point],
-                    strokeColor: 'black',
-                    strokeWidth: 5
-                });
-            } else if (this.state.selector === 'controlPoint') {
-                // Hit test on path for handles:
-                var hitResult = this.path.hitTest(event.point, { handles: true, tolerance: 4 });
-                if (hitResult) {
-                    if (hitResult.type == 'handle-in') {
-                        this.selectedHandle = hitResult.segment.handleIn;
-                    } else if (hitResult.type == 'handle-out') {
-                        this.selectedHandle = hitResult.segment.handleOut;
-                    }
-                }
-                // if no handles were hit, hit test on points (segments)
-                if (this.selectedHandle == null) {
-                    hitResult = this.path.hitTest(event.point, { segments: true, tolerance: 4 });
+                    this.path = new paper.Path({
+                        segments: [event.point],
+                        strokeColor: 'black',
+                        strokeWidth: 5
+                    });
+                    break;
+                case 'addPoint':
+                    hitResult = null;
+                    hitResult = this.path.hitTest(event.point, {fill: true, stroke: true, tolerance: 5});
                     if (hitResult) {
-                        this.selectedPoint = hitResult.segment;
+                        let curve = hitResult.location.curve;
+                        this.path.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y))
                     }
-                }
+                    break;
+                case 'eraser':
+                    hitResult = null;
+                    hitResult = this.path.hitTest(event.point, {segments: true, tolerance: 5});
+                    if (hitResult) {
+                        this.path.removeSegment(hitResult.segment.index);
+                    }
+                    break;
+                case 'controlPoint':
+                    hitResult = null;
+                    // Hit test on path for handles:
+                    hitResult = this.path.hitTest(event.point, {handles: true, tolerance: 5});
+                    if (hitResult) {
+                        if (hitResult.type == 'handle-in') {
+                            this.selectedHandle = hitResult.segment.handleIn;
+                        } else if (hitResult.type == 'handle-out') {
+                            this.selectedHandle = hitResult.segment.handleOut;
+                        }
+                    }
+                    // if no handles were hit, hit test on points (segments)
+                    if (this.selectedHandle == null) {
+                        hitResult = this.path.hitTest(event.point, {segments: true, tolerance: 5});
+                        if (hitResult) {
+                            this.selectedPoint = hitResult.segment;
+                        }
+                    }
+                    break;
             }
         }
     }
@@ -279,7 +307,7 @@ export default class QueryBySketch extends React.Component{
         this.setState({
             selector: selectedSelector
         });
-        if (selectedSelector === 'controlPoint') {
+        if (selectedSelector !== 'pen') {
             this.path.fullySelected = true;
         }
     }
