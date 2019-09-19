@@ -27,7 +27,8 @@ export default class QueryBySketch extends React.Component{
             xItemonPanel: props.xItem,
             yItemonPanel: props.yItem,
             lookup: lookupList,
-            size: 0
+            size: 0,
+            selector: 'pen'
         }
         this.path;
     }
@@ -87,6 +88,7 @@ export default class QueryBySketch extends React.Component{
             .on('click', this.CanvasYLabelOnClick().bind(this));
 
         this.tool = new paper.Tool();
+        this.tool.onMouseMove = this.CanvasOnMouseMove().bind(this);
         this.tool.onMouseDown = this.CanvasOnMouseDown().bind(this);
         this.tool.onMouseDrag = this.CanvasOnMouseDrag().bind(this);
         this.tool.onMouseUp = this.CanvasOnMouseUp().bind(this);
@@ -94,61 +96,80 @@ export default class QueryBySketch extends React.Component{
 
     initSketchMenu() {
         return (
-            <form className='selector featureRow'>
+            <form className='selector featureRow' onChange={this.switchSelector.bind(this)}>
                 <div className="form-check form-check-inline">
                     <input
                         type="radio"
                         name="QBSSelector"
-                        value="pen" readOnly/>
+                        value="pen"
+                        checked={this.state.selector === 'pen'} readOnly/>
                     <label className="form-check-label" htmlFor="pen">Pen</label>
                 </div>
                 <div className="form-check form-check-inline">
                     <input
                         type="radio"
                         name="QBSSelector"
-                        value="eraser" readOnly/>
+                        value="eraser"
+                        checked={this.state.selector === 'eraser'} readOnly/>
                     <label className="form-check-label" htmlFor="eraser">Eraser</label>
                 </div>
                 <div className="form-check form-check-inline">
                     <input
                         type="radio"
                         name="QBSSelector"
-                        value="controlPoint" readOnly/>
+                        value="controlPoint"
+                        checked={this.state.selector === 'controlPoint'} readOnly/>
                     <label className="form-check-label" htmlFor="controlPoint">Control point</label>
                 </div>
             </form>
         );
     }
+    
+    CanvasOnMouseMove() {
+        return function (event) {
+
+        }
+    }
 
     CanvasOnMouseDown() {
         return function (event) {
-            if (this.path) {
-                // this.path.selected = false;
-                this.path.remove();
-            }
+            if (this.state.selector === 'pen') {
+                if (this.path) {
+                    this.path.remove();
+                }
 
-            this.path = new paper.Path({
-                segments: [event.point],
-                strokeColor: 'black',
-                fullySelected: true
-            });
+                this.path = new paper.Path({
+                    segments: [event.point],
+                    strokeColor: 'black',
+                    strokeWidth: 5
+                });
+            } else if (this.state.selector === 'controlPoint') {
+                this.path.selected = false;
+                let hitResult = paper.project.hitTest(event.point);
+                if (hitResult && hitResult.location) {
+                    let curve = hitResult.location.curve;
+                    curve.selected = true;
+                }
+            }
         }
     }
 
     CanvasOnMouseDrag() {
         return function (event) {
-            this.path.add(event.point);
+            if (this.state.selector === 'pen') {
+                this.path.add(event.point);
+            }
         }
     }
 
     CanvasOnMouseUp() {
         return function (event) {
-            let segmentCount = this.path.segments.length;
+            if (this.state.selector === 'pen') {
+                let segmentCount = this.path.segments.length;
+                this.path.simplify(10);
+            }
 
-            this.path.simplify(10);
-
-            this.path.fullySelected = true;
-            console.log(this.path)
+            // this.path.fullySelected = true;
         }
     }
 
@@ -228,6 +249,13 @@ export default class QueryBySketch extends React.Component{
             .transition()
             .duration(50)
             .style('visibility', 'hidden');
+    }
+
+    switchSelector() {
+        let selectedSelector = $('input[name=QBSSelector]:checked').val();
+        this.setState({
+            selector: selectedSelector
+        });
     }
 
     axisSelectionPanel() {
