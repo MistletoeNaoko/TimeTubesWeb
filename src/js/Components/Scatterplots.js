@@ -105,6 +105,7 @@ export default class Scatterplots extends React.Component{
             .attr('id', 'scatterplotsSVG_' + this.SPID)
             .attr('class', 'scatterplot scatterplots' + this.id + ' ' + this.divID);
         this.xScale = d3.scaleLinear();
+        this.xScaleTmp = this.xScale;
         this.xAxis = this.sp.append("g")
             .attr("class", "x_axis " + this.divID);
         this.xAxisText = d3.selectAll('g.x_axis.' + this.divID)
@@ -113,6 +114,7 @@ export default class Scatterplots extends React.Component{
             .attr('fill', 'black')
             .attr('text-anchor', 'middle');
         this.yScale = d3.scaleLinear();
+        this.yScaleTmp = this.yScale;
         this.yAxis = this.sp.append("g")
             .attr("class", "y_axis "+ this.divID)
             .attr("transform", "translate(" + this.margin.left + ',' + this.margin.top + ")");
@@ -216,6 +218,7 @@ export default class Scatterplots extends React.Component{
             .domain(this.xMinMax)
             .nice()
             .range([0, width]);
+        this.xScaleTmp = this.xScale;
         this.xMinMax = this.xScale.domain();
 
         this.xLabel = d3.axisBottom(this.xScale)
@@ -238,6 +241,7 @@ export default class Scatterplots extends React.Component{
             .domain(this.yMinMax)
             .nice()
             .range([height, 0]);
+        this.yScaleTmp = this.yScale;
         this.yMinMax = this.yScale.domain();
         this.yLabel = d3.axisLeft(this.yScale)
             .ticks(5)
@@ -366,6 +370,8 @@ export default class Scatterplots extends React.Component{
 
             let new_xScale = d3.event.transform.rescaleX(this.xScale);
             let new_yScale = d3.event.transform.rescaleY(this.yScale);
+            this.xScaleTmp = new_xScale;
+            this.yScaleTmp = new_yScale;
             this.xMinMax = new_xScale.domain();
             this.yMinMax = new_yScale.domain();
             // update axes
@@ -414,13 +420,14 @@ export default class Scatterplots extends React.Component{
             // }
         }
         function brushed() {
-            let s = d3.event.selection || this.xScale.range;
-            let xRange = s.map(this.xScale.invert, this.xScale);
+            let s = d3.event.selection || this.xScaleTmp.range;
+            let xRange = s.map(this.xScaleTmp.invert, this.xScaleTmp);
             this.selectedPeriod = xRange;
         }
         function brushedEnd() {
             if (FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id) {
                 FeatureAction.selectPeriodfromSP(this.selectedPeriod);
+                this.highlightSelectedTimePeriod();
             }
         }
         function spMouseOver(d) {
@@ -700,6 +707,18 @@ export default class Scatterplots extends React.Component{
             .call(this.xLabel.scale(this.xScale));
         this.yAxis
             .call(this.yLabel.scale(this.yScale));
+    }
+
+    highlightSelectedTimePeriod() {
+        // change the color of plots in the selectedTimePeriod
+        let period = this.selectedPeriod;
+        this.points
+            .attr('stroke', 'dimgray');
+        this.points
+            .select(function (d) {
+                return (period[0] <= d.z && d.z <= period[1]) ? this: null;
+            })
+            .attr('stroke', 'red');
     }
 
     onClickXAxisDone(e) {
