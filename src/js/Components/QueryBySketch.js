@@ -30,7 +30,10 @@ export default class QueryBySketch extends React.Component{
             size: 0,
             selector: 'pen'
         }
-        this.path;
+        this.path = null;
+        this.selectedCurve = null;
+        this.selectedHandle = null;
+        this.selectedPoint = null;
     }
 
     componentDidMount() {
@@ -144,11 +147,21 @@ export default class QueryBySketch extends React.Component{
                     strokeWidth: 5
                 });
             } else if (this.state.selector === 'controlPoint') {
-                this.path.selected = false;
-                let hitResult = paper.project.hitTest(event.point);
-                if (hitResult && hitResult.location) {
-                    let curve = hitResult.location.curve;
-                    curve.selected = true;
+                // Hit test on path for handles:
+                var hitResult = this.path.hitTest(event.point, { handles: true, tolerance: 4 });
+                if (hitResult) {
+                    if (hitResult.type == 'handle-in') {
+                        this.selectedHandle = hitResult.segment.handleIn;
+                    } else if (hitResult.type == 'handle-out') {
+                        this.selectedHandle = hitResult.segment.handleOut;
+                    }
+                }
+                // if no handles were hit, hit test on points (segments)
+                if (this.selectedHandle == null) {
+                    hitResult = this.path.hitTest(event.point, { segments: true, tolerance: 4 });
+                    if (hitResult) {
+                        this.selectedPoint = hitResult.segment;
+                    }
                 }
             }
         }
@@ -158,6 +171,15 @@ export default class QueryBySketch extends React.Component{
         return function (event) {
             if (this.state.selector === 'pen') {
                 this.path.add(event.point);
+            } else if (this.state.selector === 'controlPoint') {
+                if (this.selectedHandle) {
+                    this.selectedHandle.x += event.delta.x;
+                    this.selectedHandle.y += event.delta.y;
+                }
+                if (this.selectedPoint) {
+                    this.selectedPoint.point.x += event.delta.x;
+                    this.selectedPoint.point.y += event.delta.y;
+                }
             }
         }
     }
@@ -167,9 +189,10 @@ export default class QueryBySketch extends React.Component{
             if (this.state.selector === 'pen') {
                 let segmentCount = this.path.segments.length;
                 this.path.simplify(10);
+            } else if (this.state.selector === 'controlPoint') {
+                this.selectedHandle = null;
+                this.selectedPoint = null;
             }
-
-            // this.path.fullySelected = true;
         }
     }
 
@@ -256,6 +279,9 @@ export default class QueryBySketch extends React.Component{
         this.setState({
             selector: selectedSelector
         });
+        if (selectedSelector === 'controlPoint') {
+            this.path.fullySelected = true;
+        }
     }
 
     axisSelectionPanel() {
