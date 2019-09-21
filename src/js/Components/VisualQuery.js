@@ -279,16 +279,19 @@ export default class VisualQuery extends React.Component {
         if (this.state.source >= 0 && this.state.queryMode === 'QBE') {
             selectedTimeSlice = <SelectedTimeSlice sourceId={this.state.source}/>;
         }
-        return (
-            <div className='featureElem' style={{position: 'relative'}}>
-                <h5>Selection Detail</h5>
-                <span id='selectedInterval'></span>
-                <div id='selectedIntervalViewArea'>
-                    {selectedTimeSlice}
-                    {/*<SelectedTimeSlice sourceId={this.state.source} selectedInterval={this.state.selectedInterval}/>*/}
+        let selectionDetail;
+        if (this.state.queryMode === 'QBE') {
+            selectionDetail = (
+                <div className='featureElem' style={{position: 'relative'}}>
+                    <h5>Selection Detail</h5>
+                    <span id='selectedInterval'></span>
+                    <div id='selectedIntervalViewArea'>
+                        {selectedTimeSlice}
+                    </div>
                 </div>
-            </div>
-        );
+            );
+        }
+        return selectionDetail;
     }
 
     render() {
