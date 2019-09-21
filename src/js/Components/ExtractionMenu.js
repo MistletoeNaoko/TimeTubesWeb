@@ -45,7 +45,10 @@ export default class ExtractionMenu extends React.Component {
             );
         });
         return (
-            <div id='extractionMenu'>
+            <div
+                id='extractionMenu'
+                className='featureColumn'
+                style={{overflow: 'auto'}}>
                 <div id='extractionMainMenu'>
                     <div id='targetDatasetsList' className='controllersElem'>
                         <h5>Target datasets</h5>

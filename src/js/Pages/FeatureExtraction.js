@@ -36,19 +36,24 @@ export default class FeatureExtraction extends React.Component{
 
     render() {
         let QBESource;
+        if (this.state.queryMode === 'QBE') {
+            QBESource = <ExtractionSource/>;
+        }
         return (
-            <div className='contents' id='mainFeatureArea'>
+            <div
+                className='contents'
+                id='mainFeatureArea'
+                style={{overflow: 'auto', display: 'flex'}}>
                 <ExtractionMenu/>
-                {/*{QBESource}*/}
-                <div id='QBESource'
-                     className='controllersElem'
-                    style={{
-                        float: 'left',
-                        width: '30%',
-                        height: '100vh',
-                        display: (this.state.queryMode === 'QBE') ? 'block': 'none'}}>
-                    <ExtractionSource/>
-                </div>
+                {QBESource}
+                {/*<div id='QBESource'*/}
+                     {/*className='controllersElem'*/}
+                     {/*style={{*/}
+                         {/*float: 'left',*/}
+                         {/*width: '30%',*/}
+                         {/*display: (this.state.queryMode === 'QBE') ? 'block': 'none'}}>*/}
+                    {/*<ExtractionSource/>*/}
+                {/*</div>*/}
                 <ExtractionResults/>
             </div>
         );

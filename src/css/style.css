@@ -2,6 +2,7 @@ html,
 body {
     height: 100%;
 }
+
 h5 {
     font-size: 0.9rem;
     color: #6c757d;
@@ -51,6 +52,10 @@ g.x_axis line, g.y_axis line{
 
 .indentedRadio {
     margin-left: 1rem;
+}
+
+.featureColumn {
+    min-height: 100vh;
 }
 
 /*#Controllers {*/
@@ -254,13 +259,11 @@ label.menuLabel {
 #extractionMenu {
     float: left;
     width: 30%;
-    height: 100vh;
 }
 
 #extractionResults {
     float: right;
     width: 70%;
-    height: 100vh;
     background-color: #DFD7CA;
 }
 
@@ -272,11 +275,6 @@ label.menuLabel {
 .row {
     margin-left: 0px;
     margin-right: 0px;
-}
-
-html,
-body {
-    height: 100%;
 }
 
 #featureArea {

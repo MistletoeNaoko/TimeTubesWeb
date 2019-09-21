@@ -82,7 +82,9 @@ export default class ExtractionSource extends React.Component {
         });
         return (
             <div
-                id='QBESourceArea'>
+                id='QBESource'
+                className='controllersElem featureColumn'
+                style={{float: 'left', width: '30%'}}>
                 <div id='QBESourceTT'>
                 </div>
                 <div id='QBESourceSP'>
