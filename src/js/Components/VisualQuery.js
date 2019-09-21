@@ -104,6 +104,15 @@ export default class VisualQuery extends React.Component {
         // new react component
     }
 
+    updateIgnoredVariables() {
+        let checked = $('input[name=QBEIgnored]:checked');
+        let ignored = [];
+        for (let i = 0; i < checked.length; i++) {
+            ignored.push(checked[i].value);
+        }
+        FeatureAction.setIgnoredVariables(ignored);
+    }
+
     extractionSource() {
         let idFile = DataStore.getAllIdsFileNames();
         let sourceList = idFile.map((data) => {
@@ -151,6 +160,37 @@ export default class VisualQuery extends React.Component {
     }
 
     QBESelection() {
+        let items = [];
+        if (this.state.source >= 0) {
+            let lookup = DataStore.getData(Number(this.state.source)).data.lookup;
+            for (let key in lookup) {
+                let label = '';
+                if (lookup[key].length > 1) {
+                    label = lookup[key].join(',');
+                } else {
+                    label = lookup[key];
+                }
+                if (key !== 'z') {
+                    items.push(
+                        <div className="form-check"
+                             key={key}>
+                            <input
+                                className="form-check-input"
+                                type="checkbox"
+                                name='QBEIgnored'
+                                value={key}
+                                id={"QBEIgnored_" + key}
+                            />
+                                <label
+                                    className="form-check-label"
+                                    htmlFor={"QBEIgnored_" + key}>
+                                    {label}
+                                </label>
+                        </div>
+                    );
+                }
+            }
+        }
         return (
             <div className='featureElem'>
                 <h5>Selection</h5>
@@ -208,6 +248,10 @@ export default class VisualQuery extends React.Component {
                         Selection by drag
                     </label>
                 </div>
+                <h6>Ignored variables</h6>
+                <form id='QBEIgnoredVariables' onChange={this.updateIgnoredVariables.bind(this)}>
+                    {items}
+                </form>
             </div>
         );
     }

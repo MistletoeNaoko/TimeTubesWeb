@@ -923,7 +923,9 @@ export default class TimeTubes extends React.Component{
                 shade: {value: true},
                 texture: {value: this.texture},
                 minmaxH: {value: new THREE.Vector2(this.data.meta.min.H, this.data.meta.max.H)},
-                minmaxV: {value: new THREE.Vector2(this.data.meta.min.V, this.data.meta.max.V)}
+                minmaxV: {value: new THREE.Vector2(this.data.meta.min.V, this.data.meta.max.V)},
+                flagH: {value: true},
+                flagV: {value: true}
             },
             side: THREE.DoubleSide,
             transparent: true,

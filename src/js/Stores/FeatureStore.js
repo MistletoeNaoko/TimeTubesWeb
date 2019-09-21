@@ -48,6 +48,9 @@ class FeatureStore extends EventEmitter {
             case 'SELECT_PERIOD_FROM_SP':
                 this.selectPeriodfromSP(action.period);
                 break;
+            case 'SET_IGNORED_VARIALES':
+                this.setIgnoredVariables(action.varList);
+                break;
             default:
         }
     }
@@ -158,6 +161,10 @@ class FeatureStore extends EventEmitter {
     selectPeriodfromSP(period) {
         this.selectedPeriod = period;
         this.emit('selectPeriodfromSP');
+    }
+
+    setIgnoredVariables(varList) {
+        this.emit('setIgnoredVariables', varList);
     }
 
     setTexture(texture) {

@@ -55,14 +55,22 @@
         uniform bool shade;
         uniform vec2 minmaxH;
         uniform vec2 minmaxV;
+        uniform bool flagH;
+        uniform bool flagV;
         #include <clipping_planes_pars_fragment>
         void main()
         {
             #include <clipping_planes_fragment>
             vec3 lightDirection = normalize(lightPosition - vWorldPosition);
             vec2 T;
-            T.x = (vColor.x - minmaxH.x) / (minmaxH.y - minmaxH.x);
-            T.y = (vColor.y - minmaxV.x) / (minmaxV.y - minmaxV.x);
+            if (flagH)
+                T.x = (vColor.x - minmaxH.x) / (minmaxH.y - minmaxH.x);
+            else
+                T.x = 0.5;
+            if (flagV)
+                T.y = (vColor.y - minmaxV.x) / (minmaxV.y - minmaxV.x);
+            else
+                T.y = 0.5;
             vec4 resultColor = texture2D(texture, T);
             float c = max(0.0, dot(vNormal, lightDirection)) * 0.3;
             float opacity = vColor.z;//1.0 / float(tubeNum);//vPositionx;//vWorldPosition.x;//1.0 / float(TUBE_NUM);

@@ -36,3 +36,7 @@ export function selectPeriodfromSP(period) {
 export function switchQueryMode(mode) {
     dispatcher.dispatch({type: 'SWITCH_QUERY_MODE', mode});
 }
+
+export function setIgnoredVariables(varList) {
+    dispatcher.dispatch({type: 'SET_IGNORED_VARIALES', varList});
+}

@@ -14,6 +14,7 @@ export default class SelectedTimeSlice extends React.Component {
         this.texture = TimeTubesStore.getTexture();
         this.segment = TimeTubesStore.getSegment();
         this.division = TimeTubesStore.getDivision();
+        this.ignoredVariables = [];
     }
 
     render() {
@@ -53,6 +54,11 @@ export default class SelectedTimeSlice extends React.Component {
         FeatureStore.on('selectTimeInterval', (id, value) => {
             this.selectedPeriod = FeatureStore.getSelectedPeriod();
             this.updateTimePeriod();
+        });
+        FeatureStore.on('setIgnoredVariables', (varList) => {
+            this.ignoredVariables = varList;
+            console.log('ignore', varList);
+            this.redrawTube();
         });
     }
 
@@ -165,7 +171,9 @@ export default class SelectedTimeSlice extends React.Component {
                 shade: {value: false},
                 texture: {value: texture},
                 minmaxH: {value: new THREE.Vector2(this.data.data.meta.min.H, this.data.data.meta.max.H)},
-                minmaxV: {value: new THREE.Vector2(this.data.data.meta.min.V, this.data.data.meta.max.V)}
+                minmaxV: {value: new THREE.Vector2(this.data.data.meta.min.V, this.data.data.meta.max.V)},
+                flagH: {value: true},
+                flagV: {value: true}
             },
             side: THREE.DoubleSide,
             transparent: true,
@@ -234,7 +242,7 @@ export default class SelectedTimeSlice extends React.Component {
         this.renderer.render(this.scene, this.camera);
     }
 
-    updateTimePeriod() {
+    extractTubeAttributes() {
         let attributes = FeatureStore.getTubeAttributes(Number(this.sourceId));
         // let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
         let firstIdx = (Math.ceil(this.selectedPeriod[0] - this.data.data.meta.min.z) * this.division * this.segment);
@@ -247,10 +255,59 @@ export default class SelectedTimeSlice extends React.Component {
             pos[i * 3 + 2] -= minPos;
             col[i * 3 + 2] = 1;
         }
+        return {pos: pos, col: col, indices: attributes.indices.slice(0, ((lastIdx - firstIdx) / this.segment - 1) * (this.segment - 1) * 3 * 2)};
+    }
+
+    updateTimePeriod() {
+        let attributes = this.extractTubeAttributes();
         this.drawSelectedTube(
-            pos,
-            col,
-            attributes.indices.slice(0, ((lastIdx - firstIdx) / this.segment - 1) * (this.segment - 1) * 3 * 2)
+            attributes.pos,
+            attributes.col,
+            attributes.indices
         );
+    }
+
+    redrawTube() {
+        let ignoredX = this.ignoredVariables.indexOf('x'),
+            ignoredY = this.ignoredVariables.indexOf('y'),
+            ignoredRX = this.ignoredVariables.indexOf('r_x'),
+            ignoredRY = this.ignoredVariables.indexOf('r_y'),
+            ignoredH = this.ignoredVariables.indexOf('H'),
+            ignoredV = this.ignoredVariables.indexOf('V');
+        // if any ignored variables on positions (x, y, r_x, r_y) are set, recompute position attribute
+        let minJD = this.data.data.meta.min.z;
+        let maxJD = this.data.data.meta.max.z;
+        let range = this.data.data.meta.range;
+        let divNum = this.division * Math.ceil(maxJD - minJD);
+        let delTime = (maxJD - minJD) / divNum;
+        let divNumPol = Math.ceil((this.data.data.splines.position.getPoint(1).z - this.data.data.splines.position.getPoint(0).z) / delTime);
+        let divNumPho = Math.ceil((this.data.data.splines.color.getPoint(1).z - this.data.data.splines.color.getPoint(0).z) / delTime);
+        let cen = this.data.data.splines.position.getSpacedPoints(divNumPol);
+        let rad = this.data.data.splines.radius.getSpacedPoints(divNumPol);
+        let col = this.data.data.splines.color.getSpacedPoints(divNumPho);
+        let del = Math.PI * 2 / (this.segment - 1);
+        let minIdx = Math.ceil((this.selectedPeriod[0] - minJD) / delTime);
+        let maxIdx = Math.ceil((this.selectedPeriod[1] - minJD) / delTime);
+        let vertices = [], colors = [];
+        let deg, cenX, cenY, radX, radY;
+        for (let i = minIdx; i <= maxIdx; i++) {
+            cenX = (ignoredX >= 0) ? 0 : cen[i].x;
+            cenY = (ignoredY >= 0) ? 0 : cen[i].y;
+            radX = (ignoredRX >= 0) ? 1 / range : rad[i].x;
+            radY = (ignoredRY >= 0) ? 1 / range : rad[i].y;
+            for (let j = 0; j < this.segment; j++) {
+                deg = del * j;
+                vertices.push((cenX * range + radX * range * Math.cos(deg)) * -1);
+                vertices.push(cenY * range + radY * range * Math.sin(deg));
+                vertices.push(cen[i].z - this.selectedPeriod[0]);
+            }
+        }
+        // if any ignored variables on colors (H, V) are set, pass a flag as a uniform
+        this.tube.material.uniforms.flagH.value = (ignoredH >= 0)? false: true;
+        this.tube.material.uniforms.flagV.value = (ignoredV >= 0)? false: true;
+        this.tube.geometry.attributes.position.needsUpdate = true;
+        this.tube.geometry.attributes.position = new THREE.BufferAttribute(new Float32Array(vertices), 3);
+        this.tube.geometry.computeVertexNormals();
+        this.renderer.render(this.scene, this.camera);
     }
 }
