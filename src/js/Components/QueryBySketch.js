@@ -31,6 +31,8 @@ export default class QueryBySketch extends React.Component{
             selector: 'pen'
         }
         this.path = null;
+        this.pathWidth = null;
+        this.timeStamps = [];
         this.selectedCurve = null;
         this.selectedHandle = null;
         this.selectedPoint = null;
@@ -91,6 +93,7 @@ export default class QueryBySketch extends React.Component{
             .on('click', this.CanvasYLabelOnClick().bind(this));
 
         this.tool = new paper.Tool();
+        this.tool.minDistance = 15;
         this.tool.onMouseMove = this.CanvasOnMouseMove().bind(this);
         this.tool.onMouseDown = this.CanvasOnMouseDown().bind(this);
         this.tool.onMouseDrag = this.CanvasOnMouseDrag().bind(this);
@@ -138,8 +141,9 @@ export default class QueryBySketch extends React.Component{
     
     CanvasOnMouseMove() {
         return function (event) {
-
+            // get timestamps: event.event.timeStamp (ms)
         }
+
     }
 
     CanvasOnMouseDown() {
@@ -150,12 +154,20 @@ export default class QueryBySketch extends React.Component{
                     if (this.path) {
                         this.path.remove();
                     }
+                    if (this.pathWidth) {
+                        this.pathWidth.remove();
+                    }
+                    this.timeStamps = [];
 
+                    this.pathWidth = new paper.Path();
                     this.path = new paper.Path({
                         segments: [event.point],
                         strokeColor: 'black',
                         strokeWidth: 5
                     });
+                    this.pathWidth.fillColor = '#29ABE0';
+                    this.pathWidth.add(event.point);
+                    this.timeStamps.push(event.event.timeStamp);
                     break;
                 case 'addPoint':
                     hitResult = null;
@@ -199,6 +211,18 @@ export default class QueryBySketch extends React.Component{
         return function (event) {
             if (this.state.selector === 'pen') {
                 this.path.add(event.point);
+                let deltaT = event.event.timeStamp - this.timeStamps[this.timeStamps.length - 1];
+                this.timeStamps.push(event.event.timeStamp);
+                let deltaX = event.delta.x, deltaY = event.delta.y;
+                let l = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                let step = event.delta;
+                step.angle += 90;
+                let t = deltaT / 1000 * 30 + 5 / 2;
+                let top = {x: event.middlePoint.x + t / l * step.x, y: event.middlePoint.y + t / l * step.y};
+                let bottom = {x: event.middlePoint.x - t / l * step.x, y: event.middlePoint.y - t / l * step.y};
+                this.pathWidth.add(top);
+                this.pathWidth.insert(0, bottom);
+                this.pathWidth.smooth();
             } else if (this.state.selector === 'controlPoint') {
                 if (this.selectedHandle) {
                     this.selectedHandle.x += event.delta.x;
@@ -215,8 +239,13 @@ export default class QueryBySketch extends React.Component{
     CanvasOnMouseUp() {
         return function (event) {
             if (this.state.selector === 'pen') {
-                let segmentCount = this.path.segments.length;
+                // let segmentCount = this.path.segments.length;
                 this.path.simplify(10);
+
+                this.pathWidth.add(event.point);
+                this.pathWidth.closed = true;
+                this.pathWidth.smooth();
+                this.pathWidth.simplify(100);
             } else if (this.state.selector === 'controlPoint') {
                 this.selectedHandle = null;
                 this.selectedPoint = null;
