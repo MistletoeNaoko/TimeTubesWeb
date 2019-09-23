@@ -135,6 +135,14 @@ export default class QueryBySketch extends React.Component{
                         checked={this.state.selector === 'controlPoint'} readOnly/>
                     <label className="form-check-label" htmlFor="controlPoint">Control point</label>
                 </div>
+                <div className="form-check form-check-inline">
+                    <input
+                        type="radio"
+                        name="QBSSelector"
+                        value="controlWidth"
+                        checked={this.state.selector === 'controlWidth'} readOnly/>
+                    <label className="form-check-label" htmlFor="controlWidth">Control width</label>
+                </div>
             </form>
         );
     }
@@ -149,6 +157,7 @@ export default class QueryBySketch extends React.Component{
     CanvasOnMouseDown() {
         return function (event) {
             let hitResult;
+            let hitResultWidth;
             switch (this.state.selector) {
                 case 'pen':
                     if (this.path) {
@@ -159,29 +168,44 @@ export default class QueryBySketch extends React.Component{
                     }
                     this.timeStamps = [];
 
-                    this.pathWidth = new paper.Path();
+                    this.pathWidth = new paper.Path({
+                        segments: [event.point],
+                        strokeColor: '#325D88',
+                        strokeWidth: 1,
+                        fillColor: '#29ABE0',
+                        opacity: 0.5
+                    });
                     this.path = new paper.Path({
                         segments: [event.point],
                         strokeColor: 'black',
                         strokeWidth: 5
                     });
-                    this.pathWidth.fillColor = '#29ABE0';
-                    this.pathWidth.add(event.point);
                     this.timeStamps.push(event.event.timeStamp);
                     break;
                 case 'addPoint':
                     hitResult = null;
                     hitResult = this.path.hitTest(event.point, {fill: true, stroke: true, tolerance: 5});
+                    hitResultWidth = null;
+                    hitResultWidth = this.pathWidth.hitTest(event.point, {stroke: true, tolerance: 5});
                     if (hitResult) {
+                        console.log(hitResult)
                         let curve = hitResult.location.curve;
                         this.path.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y))
+                    } else if (hitResultWidth) {
+                        console.log(hitResultWidth)
+                        let curve = hitResultWidth.location.curve;
+                        this.pathWidth.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y));
                     }
                     break;
                 case 'eraser':
                     hitResult = null;
                     hitResult = this.path.hitTest(event.point, {segments: true, tolerance: 5});
+                    hitResultWidth = null;
+                    hitResultWidth = this.pathWidth.hitTest(event.point, {segments: true, tolerance: 5});
                     if (hitResult) {
                         this.path.removeSegment(hitResult.segment.index);
+                    } else if (hitResultWidth) {
+                        this.pathWidth.removeSegment(hitResultWidth.segment.index);
                     }
                     break;
                 case 'controlPoint':
@@ -189,9 +213,9 @@ export default class QueryBySketch extends React.Component{
                     // Hit test on path for handles:
                     hitResult = this.path.hitTest(event.point, {handles: true, tolerance: 5});
                     if (hitResult) {
-                        if (hitResult.type == 'handle-in') {
+                        if (hitResult.type === 'handle-in') {
                             this.selectedHandle = hitResult.segment.handleIn;
-                        } else if (hitResult.type == 'handle-out') {
+                        } else if (hitResult.type === 'handle-out') {
                             this.selectedHandle = hitResult.segment.handleOut;
                         }
                     }
@@ -203,52 +227,88 @@ export default class QueryBySketch extends React.Component{
                         }
                     }
                     break;
+                case 'controlWidth':
+                    hitResult = null;
+
+                    hitResult = this.pathWidth.hitTest(event.point, {handles: true, tolerance: 5});
+                    if (hitResult) {
+                        if (hitResult.type === 'handle-in') {
+                            this.selectedHandle = hitResult.segment.handleIn;
+                        } else if (hitResult.type === 'handle-out') {
+                            this.selectedHandle = hitResult.segment.handleOut;
+                        }
+                    }
+                    if (this.selectedHandle == null) {
+                        hitResult = this.pathWidth.hitTest(event.point, {segments: true, tolerance: 5});
+                        if (hitResult) {
+                            this.selectedPoint = hitResult.segment;
+                        }
+                    }
+                    break;
             }
         }
     }
 
     CanvasOnMouseDrag() {
         return function (event) {
-            if (this.state.selector === 'pen') {
-                this.path.add(event.point);
-                let deltaT = event.event.timeStamp - this.timeStamps[this.timeStamps.length - 1];
-                this.timeStamps.push(event.event.timeStamp);
-                let deltaX = event.delta.x, deltaY = event.delta.y;
-                let l = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                let step = event.delta;
-                step.angle += 90;
-                let t = deltaT / 1000 * 30 + 5 / 2;
-                let top = {x: event.middlePoint.x + t / l * step.x, y: event.middlePoint.y + t / l * step.y};
-                let bottom = {x: event.middlePoint.x - t / l * step.x, y: event.middlePoint.y - t / l * step.y};
-                this.pathWidth.add(top);
-                this.pathWidth.insert(0, bottom);
-                this.pathWidth.smooth();
-            } else if (this.state.selector === 'controlPoint') {
-                if (this.selectedHandle) {
-                    this.selectedHandle.x += event.delta.x;
-                    this.selectedHandle.y += event.delta.y;
-                }
-                if (this.selectedPoint) {
-                    this.selectedPoint.point.x += event.delta.x;
-                    this.selectedPoint.point.y += event.delta.y;
-                }
+            switch (this.state.selector) {
+                case 'pen':
+                    this.path.add(event.point);
+                    let deltaT = event.event.timeStamp - this.timeStamps[this.timeStamps.length - 1];
+                    this.timeStamps.push(event.event.timeStamp);
+                    let deltaX = event.delta.x, deltaY = event.delta.y;
+                    let l = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    let step = event.delta;
+                    step.angle += 90;
+                    let t = deltaT / 1000 * 30 + 5 / 2;
+                    let top = {x: event.middlePoint.x + t / l * step.x, y: event.middlePoint.y + t / l * step.y};
+                    let bottom = {x: event.middlePoint.x - t / l * step.x, y: event.middlePoint.y - t / l * step.y};
+                    this.pathWidth.add(top);
+                    this.pathWidth.insert(0, bottom);
+                    this.pathWidth.smooth();
+                    break;
+                case 'controlPoint':
+                    if (this.selectedHandle) {
+                        this.selectedHandle.x += event.delta.x;
+                        this.selectedHandle.y += event.delta.y;
+                    }
+                    if (this.selectedPoint) {
+                        this.selectedPoint.point.x += event.delta.x;
+                        this.selectedPoint.point.y += event.delta.y;
+                    }
+                    break;
+                case 'controlWidth':
+                    if (this.selectedHandle) {
+                        this.selectedHandle.x += event.delta.x;
+                        this.selectedHandle.y += event.delta.y;
+                    }
+                    if (this.selectedPoint) {
+                        this.selectedPoint.point.x += event.delta.x;
+                        this.selectedPoint.point.y += event.delta.y;
+                    }
+                    break;
             }
         }
     }
 
     CanvasOnMouseUp() {
         return function (event) {
-            if (this.state.selector === 'pen') {
-                // let segmentCount = this.path.segments.length;
-                this.path.simplify(10);
-
-                this.pathWidth.add(event.point);
-                this.pathWidth.closed = true;
-                this.pathWidth.smooth();
-                this.pathWidth.simplify(100);
-            } else if (this.state.selector === 'controlPoint') {
-                this.selectedHandle = null;
-                this.selectedPoint = null;
+            switch (this.state.selector) {
+                case 'pen':
+                    this.path.simplify(10);
+                    this.pathWidth.add(event.point);
+                    this.pathWidth.closed = true;
+                    this.pathWidth.smooth();
+                    this.pathWidth.simplify(50);
+                    break;
+                case 'controlPoint':
+                    this.selectedHandle = null;
+                    this.selectedPoint = null;
+                    break;
+                case 'controlWidth':
+                    this.selectedHandle = null;
+                    this.selectedPoint = null;
+                    break;
             }
         }
     }
@@ -336,8 +396,15 @@ export default class QueryBySketch extends React.Component{
         this.setState({
             selector: selectedSelector
         });
-        if (selectedSelector !== 'pen') {
+        if (selectedSelector !== 'pen' && selectedSelector !== 'controlWidth') {
             this.path.fullySelected = true;
+        }
+        if (selectedSelector !== 'pen' && selectedSelector !== 'controlPoint') {
+            this.pathWidth.fullySelected = true;
+        }
+        if (selectedSelector === 'pen') {
+            this.path.fullySelected = false;
+            this.pathWidth.fullySelected = false;
         }
     }
 
