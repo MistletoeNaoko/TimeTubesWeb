@@ -364,8 +364,8 @@ export default class TimeTubes extends React.Component{
     }
 
     renderScene() {
-        if (this.renderer) this.renderer.render(this.scene, this.camera);
         if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
+        if (this.renderer) this.renderer.render(this.scene, this.camera);
     }
 
     addControls() {
