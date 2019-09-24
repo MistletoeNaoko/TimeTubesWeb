@@ -40,7 +40,7 @@ export default class QueryBySketch extends React.Component{
 
     componentDidMount() {
         this.initCanvas();
-        this.initSketchMenu();
+        // this.initSketchMenu();
     }
 
     initCanvas() {
@@ -102,48 +102,51 @@ export default class QueryBySketch extends React.Component{
 
     initSketchMenu() {
         return (
-            <form className='selector featureRow' onChange={this.switchSelector.bind(this)}>
-                <div className="form-check form-check-inline">
-                    <input
-                        type="radio"
-                        name="QBSSelector"
-                        value="pen"
-                        checked={this.state.selector === 'pen'} readOnly/>
-                    <label className="form-check-label" htmlFor="pen">Pen</label>
-                </div>
-                <div className="form-check form-check-inline">
-                    <input
-                        type="radio"
-                        name="QBSSelector"
-                        value="addPoint"
-                        checked={this.state.selector === 'addPoint'} readOnly/>
-                    <label className="form-check-label" htmlFor="addPoint">Add points</label>
-                </div>
-                <div className="form-check form-check-inline">
-                    <input
-                        type="radio"
-                        name="QBSSelector"
-                        value="eraser"
-                        checked={this.state.selector === 'eraser'} readOnly/>
-                    <label className="form-check-label" htmlFor="eraser">Eraser</label>
-                </div>
-                <div className="form-check form-check-inline">
-                    <input
-                        type="radio"
-                        name="QBSSelector"
-                        value="controlPoint"
-                        checked={this.state.selector === 'controlPoint'} readOnly/>
-                    <label className="form-check-label" htmlFor="controlPoint">Control point</label>
-                </div>
-                <div className="form-check form-check-inline">
-                    <input
-                        type="radio"
-                        name="QBSSelector"
-                        value="controlWidth"
-                        checked={this.state.selector === 'controlWidth'} readOnly/>
-                    <label className="form-check-label" htmlFor="controlWidth">Control width</label>
-                </div>
-            </form>
+            <div id='QBSSelectorMenu'>
+                <h5>Selection</h5>
+                <form className='selector featureRow' onChange={this.switchSelector.bind(this)}>
+                    <div className="form-check form-check-inline">
+                        <input
+                            type="radio"
+                            name="QBSSelector"
+                            value="pen"
+                            checked={this.state.selector === 'pen'} readOnly/>
+                        <label className="form-check-label" htmlFor="pen">Pen</label>
+                    </div>
+                    <div className="form-check form-check-inline">
+                        <input
+                            type="radio"
+                            name="QBSSelector"
+                            value="addPoint"
+                            checked={this.state.selector === 'addPoint'} readOnly/>
+                        <label className="form-check-label" htmlFor="addPoint">Add points</label>
+                    </div>
+                    <div className="form-check form-check-inline">
+                        <input
+                            type="radio"
+                            name="QBSSelector"
+                            value="eraser"
+                            checked={this.state.selector === 'eraser'} readOnly/>
+                        <label className="form-check-label" htmlFor="eraser">Eraser</label>
+                    </div>
+                    <div className="form-check form-check-inline">
+                        <input
+                            type="radio"
+                            name="QBSSelector"
+                            value="controlPoint"
+                            checked={this.state.selector === 'controlPoint'} readOnly/>
+                        <label className="form-check-label" htmlFor="controlPoint">Control point</label>
+                    </div>
+                    <div className="form-check form-check-inline">
+                        <input
+                            type="radio"
+                            name="QBSSelector"
+                            value="controlWidth"
+                            checked={this.state.selector === 'controlWidth'} readOnly/>
+                        <label className="form-check-label" htmlFor="controlWidth">Control width</label>
+                    </div>
+                </form>
+            </div>
         );
     }
     
@@ -296,10 +299,9 @@ export default class QueryBySketch extends React.Component{
             switch (this.state.selector) {
                 case 'pen':
                     this.path.simplify(10);
-                    this.pathWidth.add(event.point);
                     this.pathWidth.closed = true;
-                    this.pathWidth.smooth();
                     this.pathWidth.simplify(50);
+                    this.pathWidth.add(event.point);
                     break;
                 case 'controlPoint':
                     this.selectedHandle = null;
