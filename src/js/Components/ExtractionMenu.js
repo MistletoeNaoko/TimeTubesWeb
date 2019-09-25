@@ -26,6 +26,15 @@ export default class ExtractionMenu extends React.Component {
         FeatureAction.switchQueryMode('AE'); // automatic extraction
     }
 
+    updateTargets() {
+        let selectedTargets = $('input[name=targetList]:checked');
+        let targetIdList = [];
+        for (let i = 0; i < selectedTargets.length; i++) {
+            targetIdList.push(Number(selectedTargets[i].value));
+        }
+        FeatureAction.updateTarget(targetIdList);
+    }
+
     render() {
         const idFile = DataStore.getAllIdsFileNames();
         const targetList = idFile.map((data) => {
@@ -37,11 +46,12 @@ export default class ExtractionMenu extends React.Component {
                     <input
                         className="form-check-input"
                         type="checkbox"
+                        name='targetList'
                         id={"checkboxTarget" + data.id}
                         value={data.id}
                         key={data.id}/>
                     {data.name}
-                    </label>
+                </label>
             );
         });
         return (
@@ -52,7 +62,9 @@ export default class ExtractionMenu extends React.Component {
                 <div id='extractionMainMenu'>
                     <div id='targetDatasetsList' className='controllersElem'>
                         <h5>Target datasets</h5>
-                        {targetList}
+                        <form onChange={this.updateTargets.bind(this)}>
+                            {targetList}
+                        </form>
                     </div>
                     <ul className="nav nav-tabs">
                         <li className="nav-item">
