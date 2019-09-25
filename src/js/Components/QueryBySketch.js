@@ -32,6 +32,7 @@ export default class QueryBySketch extends React.Component{
         }
         this.path = null;
         this.pathWidth = null;
+        this.penSizeCircle = null;
         this.timeStamps = [];
         this.selectedCurve = null;
         this.selectedHandle = null;
@@ -98,6 +99,8 @@ export default class QueryBySketch extends React.Component{
         this.tool.onMouseDown = this.CanvasOnMouseDown().bind(this);
         this.tool.onMouseDrag = this.CanvasOnMouseDrag().bind(this);
         this.tool.onMouseUp = this.CanvasOnMouseUp().bind(this);
+
+        // paper.view.onFrame = this.CanvasOnFrame().bind(this);
     }
 
     initSketchMenu() {
@@ -149,10 +152,14 @@ export default class QueryBySketch extends React.Component{
             </div>
         );
     }
+
+    // CanvasOnFrame() {
+    //     return function (event) {
+    //     }
+    // }
     
     CanvasOnMouseMove() {
         return function (event) {
-            // get timestamps: event.event.timeStamp (ms)
         }
 
     }
@@ -169,6 +176,9 @@ export default class QueryBySketch extends React.Component{
                     if (this.pathWidth) {
                         this.pathWidth.remove();
                     }
+                    if (this.penSizeCircle) {
+                        this.penSizeCircle.remove();
+                    }
                     this.timeStamps = [];
 
                     this.pathWidth = new paper.Path({
@@ -183,6 +193,8 @@ export default class QueryBySketch extends React.Component{
                         strokeColor: 'black',
                         strokeWidth: 5
                     });
+                    this.penSizeCircle = new paper.Path.Circle(event.point, 2.5);
+                    this.penSizeCircle.strokeColor = '#325D88';
                     this.timeStamps.push(event.event.timeStamp);
                     break;
                 case 'addPoint':
@@ -191,11 +203,9 @@ export default class QueryBySketch extends React.Component{
                     hitResultWidth = null;
                     hitResultWidth = this.pathWidth.hitTest(event.point, {stroke: true, tolerance: 5});
                     if (hitResult) {
-                        console.log(hitResult)
                         let curve = hitResult.location.curve;
                         this.path.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y))
                     } else if (hitResultWidth) {
-                        console.log(hitResultWidth)
                         let curve = hitResultWidth.location.curve;
                         this.pathWidth.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y));
                     }
@@ -269,6 +279,10 @@ export default class QueryBySketch extends React.Component{
                     this.pathWidth.add(top);
                     this.pathWidth.insert(0, bottom);
                     this.pathWidth.smooth();
+                    this.penSizeCircle.remove();
+                    this.penSizeCircle = new paper.Path.Circle(event.point, t);
+                    this.penSizeCircle.strokeColor = '#325D88';
+                    console.log('drag', event.event.timeStamp)
                     break;
                 case 'controlPoint':
                     if (this.selectedHandle) {
@@ -299,9 +313,12 @@ export default class QueryBySketch extends React.Component{
             switch (this.state.selector) {
                 case 'pen':
                     this.path.simplify(10);
-                    this.pathWidth.closed = true;
-                    this.pathWidth.simplify(50);
                     this.pathWidth.add(event.point);
+                    this.pathWidth.closed = true;
+                    this.pathWidth.smooth();
+                    // this.pathWidth.simplify(50);
+                    this.penSizeCircle.remove();
+                    this.penSizeCircle = null;
                     break;
                 case 'controlPoint':
                     this.selectedHandle = null;
