@@ -1,6 +1,8 @@
 import React from 'react';
 import paper from 'paper';
 import * as d3 from 'd3';
+import FeatureStore from '../Stores/FeatureStore';
+import DataStore from '../Stores/DataStore';
 
 export default class QueryBySketch extends React.Component{
     constructor(props) {
@@ -28,7 +30,9 @@ export default class QueryBySketch extends React.Component{
             yItemonPanel: props.yItem,
             lookup: lookupList,
             size: 0,
-            selector: 'pen'
+            selector: 'pen',
+            popover: true,
+            assignVariables: false
         }
         this.path = null;
         this.pathWidth = null;
@@ -101,56 +105,6 @@ export default class QueryBySketch extends React.Component{
         this.tool.onMouseUp = this.CanvasOnMouseUp().bind(this);
 
         paper.view.onFrame = this.CanvasOnFrame().bind(this);
-    }
-
-    initSketchMenu() {
-        return (
-            <div id='QBSSelectorMenu'>
-                <h5>Selection</h5>
-                <form className='selector featureRow' onChange={this.switchSelector.bind(this)}>
-                    <div className="form-check form-check-inline">
-                        <input
-                            type="radio"
-                            name="QBSSelector"
-                            value="pen"
-                            checked={this.state.selector === 'pen'} readOnly/>
-                        <label className="form-check-label" htmlFor="pen">Pen</label>
-                    </div>
-                    <div className="form-check form-check-inline">
-                        <input
-                            type="radio"
-                            name="QBSSelector"
-                            value="addPoint"
-                            checked={this.state.selector === 'addPoint'} readOnly/>
-                        <label className="form-check-label" htmlFor="addPoint">Add points</label>
-                    </div>
-                    <div className="form-check form-check-inline">
-                        <input
-                            type="radio"
-                            name="QBSSelector"
-                            value="eraser"
-                            checked={this.state.selector === 'eraser'} readOnly/>
-                        <label className="form-check-label" htmlFor="eraser">Eraser</label>
-                    </div>
-                    <div className="form-check form-check-inline">
-                        <input
-                            type="radio"
-                            name="QBSSelector"
-                            value="controlPoint"
-                            checked={this.state.selector === 'controlPoint'} readOnly/>
-                        <label className="form-check-label" htmlFor="controlPoint">Control point</label>
-                    </div>
-                    <div className="form-check form-check-inline">
-                        <input
-                            type="radio"
-                            name="QBSSelector"
-                            value="controlWidth"
-                            checked={this.state.selector === 'controlWidth'} readOnly/>
-                        <label className="form-check-label" htmlFor="controlWidth">Control width</label>
-                    </div>
-                </form>
-            </div>
-        );
     }
 
     CanvasOnFrame() {
@@ -444,6 +398,23 @@ export default class QueryBySketch extends React.Component{
         }
     }
 
+    switchVariableAssignment() {
+        let switched = !this.state.assignVariables;
+        this.setState({
+            assignVariables: switched
+        });
+    }
+
+    removeAllAsignment() {
+
+    }
+
+    selectControlPoint() {
+        this.setState({
+            popover: !this.state.popover
+        });
+    }
+
     axisSelectionPanel() {
         let xItems = [], yItems = [];
         for (let key in this.state.lookup) {
@@ -556,6 +527,175 @@ export default class QueryBySketch extends React.Component{
         return {x: xPanel, y: yPanel};
     }
 
+    sketchMenu() {
+        return (
+            <div id='QBSSelectorMenu' className='featureElem'>
+                <h5>Selection</h5>
+                <form className='selector featureRow' onChange={this.switchSelector.bind(this)}>
+                    <div className="form-check form-check-inline">
+                        <input
+                            type="radio"
+                            name="QBSSelector"
+                            value="pen"
+                            checked={this.state.selector === 'pen'} readOnly/>
+                        <label className="form-check-label" htmlFor="pen">Pen</label>
+                    </div>
+                    <div className="form-check form-check-inline">
+                        <input
+                            type="radio"
+                            name="QBSSelector"
+                            value="addPoint"
+                            checked={this.state.selector === 'addPoint'} readOnly/>
+                        <label className="form-check-label" htmlFor="addPoint">Add points</label>
+                    </div>
+                    <div className="form-check form-check-inline">
+                        <input
+                            type="radio"
+                            name="QBSSelector"
+                            value="eraser"
+                            checked={this.state.selector === 'eraser'} readOnly/>
+                        <label className="form-check-label" htmlFor="eraser">Eraser</label>
+                    </div>
+                    <div className="form-check form-check-inline">
+                        <input
+                            type="radio"
+                            name="QBSSelector"
+                            value="controlPoint"
+                            checked={this.state.selector === 'controlPoint'} readOnly/>
+                        <label className="form-check-label" htmlFor="controlPoint">Control point</label>
+                    </div>
+                    <div className="form-check form-check-inline">
+                        <input
+                            type="radio"
+                            name="QBSSelector"
+                            value="controlWidth"
+                            checked={this.state.selector === 'controlWidth'} readOnly/>
+                        <label className="form-check-label" htmlFor="controlWidth">Control width</label>
+                    </div>
+                </form>
+            </div>
+        );
+    }
+
+    sketchOptions() {
+        return (
+            <div id='QBSSketchOptions' className='featureElem'>
+                <h5>Options</h5>
+                {this.assignVariables()}
+            </div>
+        );
+    }
+
+    assignVariables() {
+        return (
+            <div id='variableAssignment'>
+                <h6>Assign variables to the sketch</h6>
+                <div className='form-group'>
+                    <div className="custom-control custom-switch">
+                        <input type="checkbox" className="custom-control-input" id="variableAssignmentSwitch" onChange={this.switchVariableAssignment.bind(this)} checked={this.state.assignVariables}/>
+                        <label className="custom-control-label" htmlFor="variableAssignmentSwitch">Assign variables</label>
+                    </div>
+                    <button type="button" className="btn btn-primary btn-sm" id='removeAllAssignment' onClick={this.removeAllAsignment.bind(this)}>Remove all assignment</button>
+                </div>
+            </div>
+        );
+    }
+
+    setValueAssignmentSlider(id, min, max) {
+        let Aslider = $('#' + id);
+        let sliderMin = $('#' + id + 'Min');
+        let sliderMax = $('#' + id + 'Max');
+        Aslider.slider({
+            range: true,
+            min: 0,
+            max: 100,
+            values: [ 0, 100 ],
+            slide: function (event, ui) {
+                sliderMin.css('display', 'initial');
+                sliderMax.css('display', 'initial');
+                let minVal = ui.values[0] * (max - min) + min;
+                let maxVal = ui.values[1] * (max - min) + min;
+                if (Math.log10(Math.abs(minVal)) < -2 && minVal !== 0) {
+                    minVal = minVal.toExponential(0);
+                } else {
+                    minVal = minVal.toFixed(2);
+                }
+                if (Math.log10(Math.abs(maxVal)) < -2 && maxVal !== 0) {
+                    maxVal = maxVal.toExponential(0);
+                } else {
+                    maxVal = maxVal.toFixed(2);
+                }
+                sliderMin.val(minVal);
+                sliderMax.val(maxVal);
+                let minPos = -8 + 150 * ui.values[0] / 100;
+                let maxPos = - 8 + 150 - 150 * ui.values[1] / 100;
+                sliderMin.css('left', minPos + 'px');
+                sliderMax.css('right', maxPos + 'px');
+            },
+            stop: function () {
+                sliderMin.css('display', 'none');
+                sliderMax.css('display', 'none');
+            }
+        });
+        sliderMin.val(Aslider.slider('values', 0));
+        sliderMax.val(Aslider.slider('values', 1));
+    }
+
+    controlPointPopover() {
+        let counter = 0;
+        let items = [];
+        for (let key in this.state.lookup) {
+            let label = '';
+            if (this.state.lookup[key].length > 1) {
+                label = this.state.lookup[key].join(',');
+            } else {
+                label = this.state.lookup[key][0];
+            }
+            if (label.indexOf('JD') < 0) {
+                let sliderId = 'slider_' + key;
+                items.push(
+                    <div id={'assignVariable_' + key} className='row align-items-center' key={label}>
+                        <div className='form-check col-4' style={{paddingLeft: '0px'}}>
+                            <input
+                                type='checkbox'
+                                name='assignedVariableList'
+                                value={key}/>
+                            <label
+                                className="form-check-label"
+                                key={label}>
+                                {label}
+                            </label>
+                        </div>
+                        <div className='col' id={sliderId} style={{width: '150px'}}>
+                            <output id={sliderId + "Max"} style={{bottom: '1.3rem', zIndex: 100 + counter}}></output>
+                            <output id={sliderId + "Min"} style={{bottom: '1.3rem', zIndex: 150 + counter}}></output>
+                        </div>
+                    </div>
+                );
+                let minList = [], maxList = [];
+                let targetList = FeatureStore.getTarget();
+                for (let i = 0; i < targetList.length; i++) {
+                    minList.push(DataStore.getData(targetList[i]).data.meta.min[key]);
+                    maxList.push(DataStore.getData(targetList[i]).data.meta.max[key]);
+                }
+                this.setValueAssignmentSlider(sliderId, Math.min(minList), Math.max(maxList));
+            }
+            counter++;
+        }
+        return (
+            <div
+                id='controlPointPopover'
+                className='popover bs-popover-right'
+                style={{position: 'absolute', opacity: '0.75', display: (this.state.popover)? 'block': 'none'}}>
+                <div className='arrow' style={{top: '10px'}}>
+                </div>
+                <div className='popover-body container'>
+                    {items}
+                </div>
+            </div>
+        )
+    }
+
     render() {
         let axisSelection = this.axisSelectionPanel();
         return (
@@ -563,9 +703,11 @@ export default class QueryBySketch extends React.Component{
                 <div id='QBSCanvasArea'>
                     {axisSelection.x}
                     {axisSelection.y}
+                    {this.controlPointPopover()}
                 </div>
                 <div id='QBSSketchMenuArea'>
-                    {this.initSketchMenu()}
+                    {this.sketchMenu()}
+                    {this.sketchOptions()}
                 </div>
                 {/*<label id='QBSYAxis'*/}
                        {/*style={{*/}
