@@ -221,7 +221,7 @@ export default class VisualQuery extends React.Component {
                             id='selectTimeIntervalInput'/>
                         <span style={{marginLeft: '0.3rem'}}>days</span>
                     </div>
-                    <button className="btn btn-secondary btn-sm"
+                    <button className="btn btn-primary btn-sm"
                             type="button"
                             id='selectTimeIntervalBtn'
                             style={{right: '0'}}
@@ -229,7 +229,7 @@ export default class VisualQuery extends React.Component {
                 </div>
                 <button
                     id='resetSelectionBtn'
-                    className='btn btn-secondary btn-sm featureRow'
+                    className='btn btn-primary btn-sm featureRow'
                     onClick={this.resetSelection.bind(this)}>
                     Deselect all
                 </button>
