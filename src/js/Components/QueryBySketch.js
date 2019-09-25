@@ -100,7 +100,7 @@ export default class QueryBySketch extends React.Component{
         this.tool.onMouseDrag = this.CanvasOnMouseDrag().bind(this);
         this.tool.onMouseUp = this.CanvasOnMouseUp().bind(this);
 
-        // paper.view.onFrame = this.CanvasOnFrame().bind(this);
+        paper.view.onFrame = this.CanvasOnFrame().bind(this);
     }
 
     initSketchMenu() {
@@ -153,10 +153,19 @@ export default class QueryBySketch extends React.Component{
         );
     }
 
-    // CanvasOnFrame() {
-    //     return function (event) {
-    //     }
-    // }
+    CanvasOnFrame() {
+        return function (event) {
+            if (this.penSizeCircle) {
+                let center = this.penSizeCircle.position;
+                let now = Date.now();
+                let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
+                let t = deltaT / 1000 * 30 + 5 / 2;
+                this.penSizeCircle.remove();
+                this.penSizeCircle = new paper.Path.Circle(center, t);
+                this.penSizeCircle.strokeColor = '#325D88';
+            }
+        }
+    }
     
     CanvasOnMouseMove() {
         return function (event) {
@@ -195,7 +204,7 @@ export default class QueryBySketch extends React.Component{
                     });
                     this.penSizeCircle = new paper.Path.Circle(event.point, 2.5);
                     this.penSizeCircle.strokeColor = '#325D88';
-                    this.timeStamps.push(event.event.timeStamp);
+                    this.timeStamps.push(Date.now());//event.event.timeStamp);
                     break;
                 case 'addPoint':
                     hitResult = null;
@@ -267,22 +276,22 @@ export default class QueryBySketch extends React.Component{
             switch (this.state.selector) {
                 case 'pen':
                     this.path.add(event.point);
-                    let deltaT = event.event.timeStamp - this.timeStamps[this.timeStamps.length - 1];
-                    this.timeStamps.push(event.event.timeStamp);
+                    let now = Date.now();
+                    let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
+                    this.timeStamps.push(now);
+                    let t = deltaT / 1000 * 30 + 5 / 2;
                     let deltaX = event.delta.x, deltaY = event.delta.y;
                     let l = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
                     let step = event.delta;
                     step.angle += 90;
-                    let t = deltaT / 1000 * 30 + 5 / 2;
                     let top = {x: event.middlePoint.x + t / l * step.x, y: event.middlePoint.y + t / l * step.y};
                     let bottom = {x: event.middlePoint.x - t / l * step.x, y: event.middlePoint.y - t / l * step.y};
                     this.pathWidth.add(top);
                     this.pathWidth.insert(0, bottom);
                     this.pathWidth.smooth();
                     this.penSizeCircle.remove();
-                    this.penSizeCircle = new paper.Path.Circle(event.point, t);
+                    this.penSizeCircle = new paper.Path.Circle(event.point, 2.5);
                     this.penSizeCircle.strokeColor = '#325D88';
-                    console.log('drag', event.event.timeStamp)
                     break;
                 case 'controlPoint':
                     if (this.selectedHandle) {
@@ -313,10 +322,18 @@ export default class QueryBySketch extends React.Component{
             switch (this.state.selector) {
                 case 'pen':
                     this.path.simplify(10);
-                    this.pathWidth.add(event.point);
-                    this.pathWidth.closed = true;
+
+                    let now = Date.now();
+                    let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
+                    this.timeStamps.push(now);
+                    let t = deltaT / 1000 * 30 + 5 / 2;
+                    let top = {x: event.point.x, y: event.point.y + t / 2};
+                    let bottom = {x: event.point.x, y: event.point.y - t / 2};
+                    this.pathWidth.add(top);
+                    this.pathWidth.insert(0, bottom);
                     this.pathWidth.smooth();
-                    // this.pathWidth.simplify(50);
+                    this.pathWidth.simplify(50);
+                    this.pathWidth.closed = true;
                     this.penSizeCircle.remove();
                     this.penSizeCircle = null;
                     break;
