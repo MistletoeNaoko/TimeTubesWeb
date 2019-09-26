@@ -31,9 +31,10 @@ export default class QueryBySketch extends React.Component{
             lookup: lookupList,
             size: 0,
             selector: 'pen',
-            popover: true,
+            popover: false,
             assignVariables: false
         }
+        this.sketching = false;
         this.path = null;
         this.pathWidth = null;
         this.penSizeCircle = null;
@@ -109,7 +110,7 @@ export default class QueryBySketch extends React.Component{
 
     CanvasOnFrame() {
         return function (event) {
-            if (this.penSizeCircle) {
+            if (this.sketching && this.penSizeCircle) {
                 let center = this.penSizeCircle.position;
                 let now = Date.now();
                 let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
@@ -131,174 +132,259 @@ export default class QueryBySketch extends React.Component{
         return function (event) {
             let hitResult;
             let hitResultWidth;
-            switch (this.state.selector) {
-                case 'pen':
-                    if (this.path) {
-                        this.path.remove();
-                    }
-                    if (this.pathWidth) {
-                        this.pathWidth.remove();
-                    }
-                    if (this.penSizeCircle) {
-                        this.penSizeCircle.remove();
-                    }
-                    this.timeStamps = [];
+            if (this.state.assignVariables) {
+                hitResult = null;
+                hitResult = this.path.hitTest(event.point, {fill: true, stroke: true, tolerance: 5});
+                if (hitResult) {
+                    this.setState({
+                        popover: true
+                    });
+                    let popover = $('#controlPointPopover');
+                    let popoverArrow = $('#controlPointPopoverArrow');
+                    let arrowWidth = 16, arrowHeight = 8;
+                    let popoverWidth = popover.width() + arrowHeight,
+                        popoverHeight = popover.height() + arrowHeight;
+                    let placement = null, position;
+                    let arrowPos = {}; // top, bottom, left, right
+                    let spaceRight = this.state.size - event.point.x,
+                        spaceLeft = event.point.x,
+                        spaceTop = event.point.y,
+                        spaceBottom = this.state.size - event.point.y;
 
-                    this.pathWidth = new paper.Path({
-                        segments: [event.point],
-                        strokeColor: '#325D88',
-                        strokeWidth: 1,
-                        fillColor: '#29ABE0',
-                        opacity: 0.5
-                    });
-                    this.path = new paper.Path({
-                        segments: [event.point],
-                        strokeColor: 'black',
-                        strokeWidth: 5
-                    });
-                    this.penSizeCircle = new paper.Path.Circle(event.point, 2.5);
-                    this.penSizeCircle.strokeColor = '#325D88';
-                    this.timeStamps.push(Date.now());//event.event.timeStamp);
-                    break;
-                case 'addPoint':
-                    hitResult = null;
-                    hitResult = this.path.hitTest(event.point, {fill: true, stroke: true, tolerance: 5});
-                    hitResultWidth = null;
-                    hitResultWidth = this.pathWidth.hitTest(event.point, {stroke: true, tolerance: 5});
-                    if (hitResult) {
-                        let curve = hitResult.location.curve;
-                        this.path.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y))
-                    } else if (hitResultWidth) {
-                        let curve = hitResultWidth.location.curve;
-                        this.pathWidth.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y));
+                    if (spaceRight >= popoverWidth) {
+                        // place on the right
+                        placement = 'right';
+                        popover.attr('class', 'popover bs-popover-' + placement);
+                        popoverWidth = popover.outerWidth(true);
+                        popoverHeight = popover.outerHeight(true);
+                        position = {x: event.point.x, y: event.point.y - popoverHeight / 2};
+                        arrowPos = {top: (popoverHeight / 2 - arrowWidth) + 'px'};
+                    } else if (spaceLeft >= popoverWidth) {
+                        // place on the left
+                        placement = 'left';
+                        popover.attr('class', 'popover bs-popover-' + placement);
+                        popoverWidth = popover.outerWidth(true);
+                        popoverHeight = popover.outerHeight(true);
+                        position = {x: event.point.x - popoverWidth, y: event.point.y - popoverHeight / 2};
+                        arrowPos = {top: (popoverHeight / 2 - arrowWidth) + 'px'};
+                    } else if (spaceTop >= popoverHeight) {
+                        // place on the top
+                        placement = 'top';
+                        popover.attr('class', 'popover bs-popover-' + placement);
+                        popoverWidth = popover.outerWidth(true);
+                        popoverHeight = popover.outerHeight(true);
+                        position = {x: event.point.x - popoverWidth / 2, y: event.point.y - popoverHeight};
+                        arrowPos = {left: (popoverWidth / 2 - arrowWidth) + 'px'};
+                    } else if (spaceBottom >= popoverHeight) {
+                        // place on the bottom
+                        placement = 'bottom';
+                        popover.attr('class', 'popover bs-popover-' + placement);
+                        popoverWidth = popover.outerWidth(true);
+                        popoverHeight = popover.outerHeight(true);
+                        position = {x: event.point.x - popoverWidth / 2, y: event.point.y};
+                        arrowPos = {left: (popoverWidth / 2 - arrowWidth) + 'px'};
+                    } else {
+
                     }
-                    break;
-                case 'eraser':
-                    hitResult = null;
-                    hitResult = this.path.hitTest(event.point, {segments: true, tolerance: 5});
-                    hitResultWidth = null;
-                    hitResultWidth = this.pathWidth.hitTest(event.point, {segments: true, tolerance: 5});
-                    if (hitResult) {
-                        this.path.removeSegment(hitResult.segment.index);
-                    } else if (hitResultWidth) {
-                        this.pathWidth.removeSegment(hitResultWidth.segment.index);
+
+                    if (position.x < 0) {
+                        position.x = 0;
+                        arrowPos = {left: (event.point.x - arrowWidth) + 'px'};
+                    } else if (position.x > this.state.size - popoverWidth) {
+                        position.x = this.state.size - popoverWidth;
+                        arrowPos = {left: (this.state.size - event.point.x - arrowWidth) + 'px'};
                     }
-                    break;
-                case 'controlPoint':
-                    hitResult = null;
-                    // Hit test on path for handles:
-                    hitResult = this.path.hitTest(event.point, {handles: true, tolerance: 5});
-                    if (hitResult) {
-                        if (hitResult.type === 'handle-in') {
-                            this.selectedHandle = hitResult.segment.handleIn;
-                        } else if (hitResult.type === 'handle-out') {
-                            this.selectedHandle = hitResult.segment.handleOut;
+
+                    if (position.y < 0) {
+                        position.y = 0;
+                        arrowPos = {top: (event.point.y - arrowWidth) + 'px'};
+                    } else if (position.y > this.state.size - popoverHeight) {
+                        position.y = this.state.size - popoverHeight;
+                        arrowPos = {top: (popoverHeight - (this.state.size - event.point.y) - arrowWidth) + 'px'};
+                    }
+
+                    popover.css({left: position.x + 'px', top: position.y + 'px'});
+                    popoverArrow.css({top: '', left: ''});
+                    popoverArrow.css(arrowPos);
+                }
+            } else {
+                switch (this.state.selector) {
+                    case 'pen':
+                        this.sketching = true;
+                        if (this.path) {
+                            this.path.remove();
                         }
-                    }
-                    // if no handles were hit, hit test on points (segments)
-                    if (this.selectedHandle == null) {
+                        if (this.pathWidth) {
+                            this.pathWidth.remove();
+                        }
+                        if (this.penSizeCircle) {
+                            this.penSizeCircle.remove();
+                        }
+                        this.timeStamps = [];
+
+                        this.pathWidth = new paper.Path({
+                            segments: [event.point],
+                            strokeColor: '#325D88',
+                            strokeWidth: 1,
+                            fillColor: '#29ABE0',
+                            opacity: 0.5
+                        });
+                        this.path = new paper.Path({
+                            segments: [event.point],
+                            strokeColor: 'black',
+                            strokeWidth: 5
+                        });
+                        this.penSizeCircle = new paper.Path.Circle(event.point, 2.5);
+                        this.penSizeCircle.strokeColor = '#325D88';
+                        this.timeStamps.push(Date.now());//event.event.timeStamp);
+                        break;
+                    case 'addPoint':
+                        hitResult = null;
+                        hitResult = this.path.hitTest(event.point, {fill: true, stroke: true, tolerance: 5});
+                        hitResultWidth = null;
+                        hitResultWidth = this.pathWidth.hitTest(event.point, {stroke: true, tolerance: 5});
+                        if (hitResult) {
+                            let curve = hitResult.location.curve;
+                            this.path.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y))
+                        } else if (hitResultWidth) {
+                            let curve = hitResultWidth.location.curve;
+                            this.pathWidth.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y));
+                        }
+                        break;
+                    case 'eraser':
+                        hitResult = null;
                         hitResult = this.path.hitTest(event.point, {segments: true, tolerance: 5});
+                        hitResultWidth = null;
+                        hitResultWidth = this.pathWidth.hitTest(event.point, {segments: true, tolerance: 5});
                         if (hitResult) {
-                            this.selectedPoint = hitResult.segment;
+                            this.path.removeSegment(hitResult.segment.index);
+                        } else if (hitResultWidth) {
+                            this.pathWidth.removeSegment(hitResultWidth.segment.index);
                         }
-                    }
-                    break;
-                case 'controlWidth':
-                    hitResult = null;
+                        break;
+                    case 'controlPoint':
+                        hitResult = null;
+                        // Hit test on path for handles:
+                        hitResult = this.path.hitTest(event.point, {handles: true, tolerance: 5});
+                        if (hitResult) {
+                            if (hitResult.type === 'handle-in') {
+                                this.selectedHandle = hitResult.segment.handleIn;
+                            } else if (hitResult.type === 'handle-out') {
+                                this.selectedHandle = hitResult.segment.handleOut;
+                            }
+                        }
+                        // if no handles were hit, hit test on points (segments)
+                        if (this.selectedHandle == null) {
+                            hitResult = this.path.hitTest(event.point, {segments: true, tolerance: 5});
+                            if (hitResult) {
+                                this.selectedPoint = hitResult.segment;
+                            }
+                        }
+                        break;
+                    case 'controlWidth':
+                        hitResult = null;
 
-                    hitResult = this.pathWidth.hitTest(event.point, {handles: true, tolerance: 5});
-                    if (hitResult) {
-                        if (hitResult.type === 'handle-in') {
-                            this.selectedHandle = hitResult.segment.handleIn;
-                        } else if (hitResult.type === 'handle-out') {
-                            this.selectedHandle = hitResult.segment.handleOut;
-                        }
-                    }
-                    if (this.selectedHandle == null) {
-                        hitResult = this.pathWidth.hitTest(event.point, {segments: true, tolerance: 5});
+                        hitResult = this.pathWidth.hitTest(event.point, {handles: true, tolerance: 5});
                         if (hitResult) {
-                            this.selectedPoint = hitResult.segment;
+                            if (hitResult.type === 'handle-in') {
+                                this.selectedHandle = hitResult.segment.handleIn;
+                            } else if (hitResult.type === 'handle-out') {
+                                this.selectedHandle = hitResult.segment.handleOut;
+                            }
                         }
-                    }
-                    break;
+                        if (this.selectedHandle == null) {
+                            hitResult = this.pathWidth.hitTest(event.point, {segments: true, tolerance: 5});
+                            if (hitResult) {
+                                this.selectedPoint = hitResult.segment;
+                            }
+                        }
+                        break;
+                }
             }
         }
     }
 
     CanvasOnMouseDrag() {
         return function (event) {
-            switch (this.state.selector) {
-                case 'pen':
-                    this.path.add(event.point);
-                    let now = Date.now();
-                    let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
-                    this.timeStamps.push(now);
-                    let t = deltaT / 1000 * 30 + 5 / 2;
-                    let deltaX = event.delta.x, deltaY = event.delta.y;
-                    let l = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                    let step = event.delta;
-                    step.angle += 90;
-                    let top = {x: event.middlePoint.x + t / l * step.x, y: event.middlePoint.y + t / l * step.y};
-                    let bottom = {x: event.middlePoint.x - t / l * step.x, y: event.middlePoint.y - t / l * step.y};
-                    this.pathWidth.add(top);
-                    this.pathWidth.insert(0, bottom);
-                    this.pathWidth.smooth();
-                    this.penSizeCircle.remove();
-                    this.penSizeCircle = new paper.Path.Circle(event.point, 2.5);
-                    this.penSizeCircle.strokeColor = '#325D88';
-                    break;
-                case 'controlPoint':
-                    if (this.selectedHandle) {
-                        this.selectedHandle.x += event.delta.x;
-                        this.selectedHandle.y += event.delta.y;
-                    }
-                    if (this.selectedPoint) {
-                        this.selectedPoint.point.x += event.delta.x;
-                        this.selectedPoint.point.y += event.delta.y;
-                    }
-                    break;
-                case 'controlWidth':
-                    if (this.selectedHandle) {
-                        this.selectedHandle.x += event.delta.x;
-                        this.selectedHandle.y += event.delta.y;
-                    }
-                    if (this.selectedPoint) {
-                        this.selectedPoint.point.x += event.delta.x;
-                        this.selectedPoint.point.y += event.delta.y;
-                    }
-                    break;
+            if (!this.state.assignVariables) {
+                switch (this.state.selector) {
+                    case 'pen':
+                        this.path.add(event.point);
+                        let now = Date.now();
+                        let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
+                        this.timeStamps.push(now);
+                        let t = deltaT / 1000 * 30 + 5 / 2;
+                        let deltaX = event.delta.x, deltaY = event.delta.y;
+                        let l = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                        let step = event.delta;
+                        step.angle += 90;
+                        let top = {x: event.middlePoint.x + t / l * step.x, y: event.middlePoint.y + t / l * step.y};
+                        let bottom = {x: event.middlePoint.x - t / l * step.x, y: event.middlePoint.y - t / l * step.y};
+                        this.pathWidth.add(top);
+                        this.pathWidth.insert(0, bottom);
+                        this.pathWidth.smooth();
+                        this.penSizeCircle.remove();
+                        this.penSizeCircle = new paper.Path.Circle(event.point, 2.5);
+                        this.penSizeCircle.strokeColor = '#325D88';
+                        break;
+                    case 'controlPoint':
+                        if (this.selectedHandle) {
+                            this.selectedHandle.x += event.delta.x;
+                            this.selectedHandle.y += event.delta.y;
+                        }
+                        if (this.selectedPoint) {
+                            this.selectedPoint.point.x += event.delta.x;
+                            this.selectedPoint.point.y += event.delta.y;
+                        }
+                        break;
+                    case 'controlWidth':
+                        if (this.selectedHandle) {
+                            this.selectedHandle.x += event.delta.x;
+                            this.selectedHandle.y += event.delta.y;
+                        }
+                        if (this.selectedPoint) {
+                            this.selectedPoint.point.x += event.delta.x;
+                            this.selectedPoint.point.y += event.delta.y;
+                        }
+                        break;
+                }
             }
         }
     }
 
     CanvasOnMouseUp() {
         return function (event) {
-            switch (this.state.selector) {
-                case 'pen':
-                    this.path.simplify(10);
+            if (!this.state.assignVariables) {
+                switch (this.state.selector) {
+                    case 'pen':
+                        this.path.simplify(10);
 
-                    let now = Date.now();
-                    let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
-                    this.timeStamps.push(now);
-                    let t = deltaT / 1000 * 30 + 5 / 2;
-                    let top = {x: event.point.x, y: event.point.y + t / 2};
-                    let bottom = {x: event.point.x, y: event.point.y - t / 2};
-                    this.pathWidth.add(top);
-                    this.pathWidth.insert(0, bottom);
-                    this.pathWidth.smooth();
-                    this.pathWidth.simplify(50);
-                    this.pathWidth.closed = true;
-                    this.penSizeCircle.remove();
-                    this.penSizeCircle = null;
-                    break;
-                case 'controlPoint':
-                    this.selectedHandle = null;
-                    this.selectedPoint = null;
-                    break;
-                case 'controlWidth':
-                    this.selectedHandle = null;
-                    this.selectedPoint = null;
-                    break;
+                        let now = Date.now();
+                        let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
+                        this.timeStamps.push(now);
+                        let t = deltaT / 1000 * 30 + 5 / 2;
+                        let top = {x: event.point.x, y: event.point.y + t / 2};
+                        let bottom = {x: event.point.x, y: event.point.y - t / 2};
+                        this.pathWidth.add(top);
+                        this.pathWidth.insert(0, bottom);
+                        this.pathWidth.smooth();
+                        this.pathWidth.simplify(50);
+                        this.pathWidth.closed = true;
+
+                        this.penSizeCircle.remove();
+                        this.penSizeCircle = null;
+
+                        this.sketching = false;
+                        break;
+                    case 'controlPoint':
+                        this.selectedHandle = null;
+                        this.selectedPoint = null;
+                        break;
+                    case 'controlWidth':
+                        this.selectedHandle = null;
+                        this.selectedPoint = null;
+                        break;
+                }
             }
         }
     }
@@ -388,8 +474,10 @@ export default class QueryBySketch extends React.Component{
         });
         if (selectedSelector !== 'pen' && selectedSelector !== 'controlWidth') {
             this.path.fullySelected = true;
+            this.pathWidth.fullySelected = false;
         }
         if (selectedSelector !== 'pen' && selectedSelector !== 'controlPoint') {
+            this.path.fullySelected = false;
             this.pathWidth.fullySelected = true;
         }
         if (selectedSelector === 'pen') {
@@ -403,6 +491,13 @@ export default class QueryBySketch extends React.Component{
         this.setState({
             assignVariables: switched
         });
+        console.log(switched, this.path)
+        if (switched && this.path) {
+            this.path.fullySelected = true;
+            if (this.pathWidth) {
+                this.pathWidth.fullySelected = false;
+            }
+        }
     }
 
     removeAllAsignment() {
@@ -685,9 +780,9 @@ export default class QueryBySketch extends React.Component{
         return (
             <div
                 id='controlPointPopover'
-                className='popover bs-popover-right'
-                style={{position: 'absolute', opacity: '0.75', display: (this.state.popover)? 'block': 'none'}}>
-                <div className='arrow' style={{top: '10px'}}>
+                className='popover'// bs-popover-right'
+                style={{position: 'absolute', opacity: '0.85', display: (this.state.popover)? 'block': 'none'}}>
+                <div id='controlPointPopoverArrow' className='arrow'>
                 </div>
                 <div className='popover-body container'>
                     {items}
