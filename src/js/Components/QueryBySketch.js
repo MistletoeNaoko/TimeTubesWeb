@@ -28,8 +28,8 @@ export default class QueryBySketch extends React.Component{
             yItem: props.yItem,
             xItemonPanel: props.xItem,
             yItemonPanel: props.yItem,
-            lookup: lookupList,
             size: 0,
+            lookup: lookupList,
             selector: 'pen',
             popover: false,
             assignVariables: false
@@ -38,10 +38,11 @@ export default class QueryBySketch extends React.Component{
         this.path = null;
         this.pathWidth = null;
         this.penSizeCircle = null;
+        this.highlightedPoint = null;
         this.timeStamps = [];
-        this.selectedCurve = null;
         this.selectedHandle = null;
         this.selectedPoint = null;
+        this.controlPoints = [];
     }
 
     componentDidMount() {
@@ -134,8 +135,18 @@ export default class QueryBySketch extends React.Component{
             let hitResultWidth;
             if (this.state.assignVariables) {
                 hitResult = null;
-                hitResult = this.path.hitTest(event.point, {fill: true, stroke: true, tolerance: 5});
+                hitResult = this.path.hitTest(event.point, {segments: true, tolerance: 5});
                 if (hitResult) {
+                    // highlight the clicked point
+                    if (this.highlightedPoint) {
+                        this.highlightedPoint.remove();
+                    }
+                    this.highlightedPoint = new paper.Path.Circle({
+                        center: hitResult.point,
+                        radius: 5,
+                        fillColor: '#d23430'
+                    });
+
                     this.setState({
                         popover: true
                     });
@@ -146,10 +157,10 @@ export default class QueryBySketch extends React.Component{
                         popoverHeight = popover.height() + arrowHeight;
                     let placement = null, position;
                     let arrowPos = {}; // top, bottom, left, right
-                    let spaceRight = this.state.size - event.point.x,
-                        spaceLeft = event.point.x,
-                        spaceTop = event.point.y,
-                        spaceBottom = this.state.size - event.point.y;
+                    let spaceRight = this.state.size - hitResult.point.x,
+                        spaceLeft = hitResult.point.x,
+                        spaceTop = hitResult.point.y,
+                        spaceBottom = this.state.size - hitResult.point.y;
 
                     if (spaceRight >= popoverWidth) {
                         // place on the right
@@ -157,7 +168,7 @@ export default class QueryBySketch extends React.Component{
                         popover.attr('class', 'popover bs-popover-' + placement);
                         popoverWidth = popover.outerWidth(true);
                         popoverHeight = popover.outerHeight(true);
-                        position = {x: event.point.x, y: event.point.y - popoverHeight / 2};
+                        position = {x: hitResult.point.x, y: hitResult.point.y - popoverHeight / 2};
                         arrowPos = {top: (popoverHeight / 2 - arrowWidth) + 'px'};
                     } else if (spaceLeft >= popoverWidth) {
                         // place on the left
@@ -165,7 +176,7 @@ export default class QueryBySketch extends React.Component{
                         popover.attr('class', 'popover bs-popover-' + placement);
                         popoverWidth = popover.outerWidth(true);
                         popoverHeight = popover.outerHeight(true);
-                        position = {x: event.point.x - popoverWidth, y: event.point.y - popoverHeight / 2};
+                        position = {x: hitResult.point.x - popoverWidth, y: hitResult.point.y - popoverHeight / 2};
                         arrowPos = {top: (popoverHeight / 2 - arrowWidth) + 'px'};
                     } else if (spaceTop >= popoverHeight) {
                         // place on the top
@@ -173,7 +184,7 @@ export default class QueryBySketch extends React.Component{
                         popover.attr('class', 'popover bs-popover-' + placement);
                         popoverWidth = popover.outerWidth(true);
                         popoverHeight = popover.outerHeight(true);
-                        position = {x: event.point.x - popoverWidth / 2, y: event.point.y - popoverHeight};
+                        position = {x: hitResult.point.x - popoverWidth / 2, y: hitResult.point.y - popoverHeight};
                         arrowPos = {left: (popoverWidth / 2 - arrowWidth) + 'px'};
                     } else if (spaceBottom >= popoverHeight) {
                         // place on the bottom
@@ -181,7 +192,7 @@ export default class QueryBySketch extends React.Component{
                         popover.attr('class', 'popover bs-popover-' + placement);
                         popoverWidth = popover.outerWidth(true);
                         popoverHeight = popover.outerHeight(true);
-                        position = {x: event.point.x - popoverWidth / 2, y: event.point.y};
+                        position = {x: hitResult.point.x - popoverWidth / 2, y: hitResult.point.y};
                         arrowPos = {left: (popoverWidth / 2 - arrowWidth) + 'px'};
                     } else {
 
@@ -189,18 +200,18 @@ export default class QueryBySketch extends React.Component{
 
                     if (position.x < 0) {
                         position.x = 0;
-                        arrowPos = {left: (event.point.x - arrowWidth) + 'px'};
+                        arrowPos = {left: (hitResult.point.x - arrowWidth) + 'px'};
                     } else if (position.x > this.state.size - popoverWidth) {
                         position.x = this.state.size - popoverWidth;
-                        arrowPos = {left: (this.state.size - event.point.x - arrowWidth) + 'px'};
+                        arrowPos = {left: (this.state.size - hitResult.point.x - arrowWidth) + 'px'};
                     }
 
                     if (position.y < 0) {
                         position.y = 0;
-                        arrowPos = {top: (event.point.y - arrowWidth) + 'px'};
+                        arrowPos = {top: (hitResult.point.y - arrowWidth) + 'px'};
                     } else if (position.y > this.state.size - popoverHeight) {
                         position.y = this.state.size - popoverHeight;
-                        arrowPos = {top: (popoverHeight - (this.state.size - event.point.y) - arrowWidth) + 'px'};
+                        arrowPos = {top: (popoverHeight - (this.state.size - hitResult.point.y) - arrowWidth) + 'px'};
                     }
 
                     popover.css({left: position.x + 'px', top: position.y + 'px'});
@@ -245,7 +256,15 @@ export default class QueryBySketch extends React.Component{
                         hitResultWidth = this.pathWidth.hitTest(event.point, {stroke: true, tolerance: 5});
                         if (hitResult) {
                             let curve = hitResult.location.curve;
-                            this.path.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y))
+                            this.path.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y));
+                            let variableList = {};
+                            for (let key in this.state.lookup) {
+                                variableList[key] = [];
+                            }
+                            this.controlPoints.splice(curve.segment2.index, 0, {
+                                position: {x: event.point.x, y: event.point.x},
+                                assignedVariables: variableList
+                            });
                         } else if (hitResultWidth) {
                             let curve = hitResultWidth.location.curve;
                             this.pathWidth.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y));
@@ -258,6 +277,7 @@ export default class QueryBySketch extends React.Component{
                         hitResultWidth = this.pathWidth.hitTest(event.point, {segments: true, tolerance: 5});
                         if (hitResult) {
                             this.path.removeSegment(hitResult.segment.index);
+                            this.controlPoints.splice(hitResult.segment.index, 1);
                         } else if (hitResultWidth) {
                             this.pathWidth.removeSegment(hitResultWidth.segment.index);
                         }
@@ -335,6 +355,7 @@ export default class QueryBySketch extends React.Component{
                         if (this.selectedPoint) {
                             this.selectedPoint.point.x += event.delta.x;
                             this.selectedPoint.point.y += event.delta.y;
+                            this.controlPoints[this.selectedPoint.index].position = {x: this.selectedPoint.point.x + event.delta.x, y: this.selectedPoint.point.y + event.delta.y};
                         }
                         break;
                     case 'controlWidth':
@@ -358,7 +379,16 @@ export default class QueryBySketch extends React.Component{
                 switch (this.state.selector) {
                     case 'pen':
                         this.path.simplify(10);
-
+                        let variableList = {};
+                        for (let key in this.state.lookup) {
+                            variableList[key] = [];
+                        }
+                        this.path.segments.forEach(function (e) {
+                            this.controlPoints.push({
+                                position: {x: e.point.x, y: e.point.y},
+                                assignedVariables: variableList
+                            });
+                        }.bind(this));
                         let now = Date.now();
                         let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
                         this.timeStamps.push(now);
@@ -472,18 +502,7 @@ export default class QueryBySketch extends React.Component{
         this.setState({
             selector: selectedSelector
         });
-        if (selectedSelector !== 'pen' && selectedSelector !== 'controlWidth') {
-            this.path.fullySelected = true;
-            this.pathWidth.fullySelected = false;
-        }
-        if (selectedSelector !== 'pen' && selectedSelector !== 'controlPoint') {
-            this.path.fullySelected = false;
-            this.pathWidth.fullySelected = true;
-        }
-        if (selectedSelector === 'pen') {
-            this.path.fullySelected = false;
-            this.pathWidth.fullySelected = false;
-        }
+        this.updateSelectedStatus(selectedSelector);
     }
 
     switchVariableAssignment() {
@@ -491,12 +510,35 @@ export default class QueryBySketch extends React.Component{
         this.setState({
             assignVariables: switched
         });
-        console.log(switched, this.path)
         if (switched && this.path) {
             this.path.fullySelected = true;
             if (this.pathWidth) {
                 this.pathWidth.fullySelected = false;
             }
+        } else if (!switched) {
+            this.setState({
+                popover: false
+            });
+            if (this.highlightedPoint) {
+                this.highlightedPoint.remove();
+            }
+            this.updateSelectedStatus(this.state.selector);
+        }
+    }
+
+    updateSelectedStatus(selectedSelector) {
+        if (selectedSelector === 'addPoint' || selectedSelector === 'eraser') {
+            if (this.path) this.path.fullySelected = true;
+            if (this.pathWidth) this.pathWidth.fullySelected = true;
+        } else if (selectedSelector === 'controlPoint') {
+            if (this.path) this.path.fullySelected = true;
+            if (this.pathWidth) this.pathWidth.fullySelected = false;
+        } else if (selectedSelector === 'controlWidth') {
+            if (this.path) this.path.fullySelected = false;
+            if (this.pathWidth) this.pathWidth.fullySelected = true;
+        } else if (selectedSelector === 'pen') {
+            if (this.path) this.path.fullySelected = false;
+            if (this.pathWidth) this.pathWidth.fullySelected = false;
         }
     }
 
@@ -697,11 +739,12 @@ export default class QueryBySketch extends React.Component{
     }
 
     setValueAssignmentSlider(id, min, max) {
-        let Aslider = $('#' + id);
+        let slider = $('#' + id);
         let sliderMin = $('#' + id + 'Min');
         let sliderMax = $('#' + id + 'Max');
-        Aslider.slider({
+        slider.slider({
             range: true,
+            disabled: true,
             min: 0,
             max: 100,
             values: [ 0, 100 ],
@@ -732,8 +775,8 @@ export default class QueryBySketch extends React.Component{
                 sliderMax.css('display', 'none');
             }
         });
-        sliderMin.val(Aslider.slider('values', 0));
-        sliderMax.val(Aslider.slider('values', 1));
+        sliderMin.val(slider.slider('values', 0));
+        sliderMax.val(slider.slider('values', 1));
     }
 
     controlPointPopover() {
