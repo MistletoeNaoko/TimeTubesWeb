@@ -98,15 +98,28 @@ export default class Details extends React.Component{
             slide: function (event, ui) {
                 vMin.css('display', 'initial');
                 vMax.css('display', 'initial');
-                vMin.val(ui.values[0]);
-                vMax.val(ui.values[1]);
+                let data = DataStore.getData(id);
+                let vMinValue = data.data.meta.min.V, vMaxValue = data.data.meta.max.V;
+                let minVal = ui.values[0] / 100 * (vMaxValue - vMinValue) + vMinValue;
+                let maxVal = ui.values[1] / 100 * (vMaxValue - vMinValue) + vMinValue;
+                if (Math.log10(Math.abs(minVal)) < -2 && minVal !== 0) {
+                    minVal = minVal.toExponential(1);
+                } else {
+                    minVal = minVal.toFixed(2);
+                }
+                if (Math.log10(Math.abs(maxVal)) < -2 && maxVal !== 0) {
+                    maxVal = maxVal.toExponential(1);
+                } else {
+                    maxVal = maxVal.toFixed(2);
+                }
+                vMin.val(minVal);
+                vMax.val(maxVal);
                 let min = value.slider("option", "min");
                 let range = value.slider("option", "max") - min;
                 let minPos = -10 + 150 * (ui.values[0] - min) / range;
                 let maxPos = -10 + 150 - 150 * (ui.values[1] - min) / range;
                 vMin.css('bottom', minPos + 'px');
                 vMax.css('top', maxPos + 'px');
-                let data = DataStore.getData(id);
                 let rangeValue = data.data.meta.max.V - data.data.meta.min.V;
                 TimeTubesAction.updateMinMaxV(id, ui.values[0] / 100 * rangeValue + data.data.meta.min.V, ui.values[1] / 100 * rangeValue + data.data.meta.min.V);
             },
@@ -132,13 +145,26 @@ export default class Details extends React.Component{
             slide: function (event, ui) {
                 hMin.css('display', 'initial');
                 hMax.css('display', 'initial');
-                hMin.val(ui.values[0]);
-                hMax.val(ui.values[1]);
+                let data = DataStore.getData(id);
+                let hMinValue = data.data.meta.min.H, hMaxValue = data.data.meta.max.H;
+                let minVal = ui.values[0] / 100 * (hMaxValue - hMinValue) + hMinValue;
+                let maxVal = ui.values[1] / 100 * (hMaxValue - hMinValue) + hMinValue;
+                if (Math.log10(Math.abs(minVal)) < -2 && minVal !== 0) {
+                    minVal = minVal.toExponential(1);
+                } else {
+                    minVal = minVal.toFixed(2);
+                }
+                if (Math.log10(Math.abs(maxVal)) < -2 && maxVal !== 0) {
+                    maxVal = maxVal.toExponential(1);
+                } else {
+                    maxVal = maxVal.toFixed(2);
+                }
+                hMin.val(minVal);
+                hMax.val(maxVal);
                 let minPos = -8 + 150 * ui.values[0] / 100;
                 let maxPos = - 8 + 150 - 150 * ui.values[1] / 100;
                 hMin.css('left', minPos + 'px');
                 hMax.css('right', maxPos + 'px');
-                let data = DataStore.getData(id);
                 let rangeValue = data.data.meta.max.H - data.data.meta.min.H;
                 TimeTubesAction.updateMinMaxH(id, ui.values[0] / 100 * rangeValue + data.data.meta.min.H, ui.values[1] / 100 * rangeValue + data.data.meta.min.H);
             },
