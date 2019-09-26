@@ -613,15 +613,15 @@ export default class QueryBySketch extends React.Component{
             slide: function (event, ui) {
                 sliderMin.css('display', 'initial');
                 sliderMax.css('display', 'initial');
-                let minVal = ui.values[0] * (max - min) + min;
-                let maxVal = ui.values[1] * (max - min) + min;
+                let minVal = ui.values[0] / 100 * (max - min) + min;
+                let maxVal = ui.values[1] / 100 * (max - min) + min;
                 if (Math.log10(Math.abs(minVal)) < -2 && minVal !== 0) {
-                    minVal = minVal.toExponential(0);
+                    minVal = minVal.toExponential(1);
                 } else {
                     minVal = minVal.toFixed(2);
                 }
                 if (Math.log10(Math.abs(maxVal)) < -2 && maxVal !== 0) {
-                    maxVal = maxVal.toExponential(0);
+                    maxVal = maxVal.toExponential(1);
                 } else {
                     maxVal = maxVal.toFixed(2);
                 }
