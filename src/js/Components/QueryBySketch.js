@@ -8,6 +8,7 @@ export default class QueryBySketch extends React.Component{
     constructor(props) {
         super();
         // make a complete lookup table for x/y axis selection of the sketch pad
+        // props.lookup is a collection of lookups from all data
         let lookupList = {};
         props.lookup.forEach(function (e) {
            for (let key in e) {
@@ -22,6 +23,20 @@ export default class QueryBySketch extends React.Component{
                }
            }
         });
+        let targets = FeatureStore.getTarget();
+        let minList = {}, maxList = {};
+        let minTmp = [], maxTmp = [];
+        for (let key in lookupList) {
+            minTmp = [];
+            maxTmp = [];
+            for (let i = 0; i < targets.length; i++) {
+                minTmp.push(DataStore.getData(targets[i]).data.meta.min[key]);
+                maxTmp.push(DataStore.getData(targets[i]).data.meta.max[key]);
+            }
+            minList[key] = minTmp;
+            maxList[key] = maxTmp;
+        }
+
         this.margin = {"bottom": 20, "left": 20 };
         this.state = {
             xItem: props.xItem,
@@ -32,17 +47,43 @@ export default class QueryBySketch extends React.Component{
             lookup: lookupList,
             selector: 'pen',
             popover: false,
-            assignVariables: false
+            assignVariables: false,
+            targetList: targets,
+            minList: minList,
+            maxList: maxList
         }
         this.sketching = false;
         this.path = null;
         this.pathWidth = null;
         this.penSizeCircle = null;
         this.highlightedPoint = null;
+        this.highlightedPointIdx = -1;
         this.timeStamps = [];
         this.selectedHandle = null;
         this.selectedPoint = null;
         this.controlPoints = [];
+
+        FeatureStore.on('updateTarget', () => {
+            let targets = FeatureStore.getTarget();
+
+            let minList = {}, maxList = {};
+            let minTmp = [], maxTmp = [];
+            for (let key in this.state.lookup) {
+                minTmp = [];
+                maxTmp = [];
+                for (let i = 0; i < targets.length; i++) {
+                    minTmp.push(DataStore.getData(targets[i]).data.meta.min[key]);
+                    maxTmp.push(DataStore.getData(targets[i]).data.meta.max[key]);
+                }
+                minList[key] = minTmp;
+                maxList[key] = maxTmp;
+            }
+            this.setState({
+                targerList: targets,
+                minList: minList,
+                maxList: maxList
+            });
+        });
     }
 
     componentDidMount() {
@@ -137,6 +178,7 @@ export default class QueryBySketch extends React.Component{
                 hitResult = null;
                 hitResult = this.path.hitTest(event.point, {segments: true, tolerance: 5});
                 if (hitResult) {
+                    this.highlightedPointIdx = hitResult.segment.index;
                     // highlight the clicked point
                     if (this.highlightedPoint) {
                         this.highlightedPoint.remove();
@@ -147,6 +189,7 @@ export default class QueryBySketch extends React.Component{
                         fillColor: '#d23430'
                     });
 
+                    // set up the popover
                     this.setState({
                         popover: true
                     });
@@ -217,6 +260,23 @@ export default class QueryBySketch extends React.Component{
                     popover.css({left: position.x + 'px', top: position.y + 'px'});
                     popoverArrow.css({top: '', left: ''});
                     popoverArrow.css(arrowPos);
+
+                    for (let key in this.controlPoints[this.highlightedPointIdx].assignedVariables) {
+                        if (this.controlPoints[this.highlightedPointIdx].assignedVariables[key].length <= 0) {
+                            $('#valueAssignmentCheckbox_' + key).prop('checked', false);
+                            $('#slider_' + key).slider('option', 'values', [0, 0]);
+                            $('#slider_' + key).slider('option', 'disabled', true);
+                        } else {
+                            $('#valueAssignmentCheckbox_' + key).prop('checked', true);
+                            let min = Math.min(this.state.minList[key]);
+                            let max = Math.max(this.state.maxList[key]);
+                            $('#slider_' + key).slider('option', 'values', [
+                                (this.controlPoints[this.highlightedPointIdx].assignedVariables[key][0] - min) / (max - min) * 100,
+                                (this.controlPoints[this.highlightedPointIdx].assignedVariables[key][1] - min) / (max - min) * 100
+                                ]);
+                            $('#slider_' + key).slider('option', 'disabled', false);
+                        }
+                    }
                 }
             } else {
                 switch (this.state.selector) {
@@ -257,14 +317,13 @@ export default class QueryBySketch extends React.Component{
                         if (hitResult) {
                             let curve = hitResult.location.curve;
                             this.path.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y));
-                            let variableList = {};
-                            for (let key in this.state.lookup) {
-                                variableList[key] = [];
-                            }
                             this.controlPoints.splice(curve.segment2.index, 0, {
                                 position: {x: event.point.x, y: event.point.x},
-                                assignedVariables: variableList
+                                assignedVariables: {}
                             });
+                            for (let key in this.state.lookup) {
+                                this.controlPoints[curve.segment2.index].assignedVariables[key] = [];
+                            }
                         } else if (hitResultWidth) {
                             let curve = hitResultWidth.location.curve;
                             this.pathWidth.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y));
@@ -379,15 +438,14 @@ export default class QueryBySketch extends React.Component{
                 switch (this.state.selector) {
                     case 'pen':
                         this.path.simplify(10);
-                        let variableList = {};
-                        for (let key in this.state.lookup) {
-                            variableList[key] = [];
-                        }
                         this.path.segments.forEach(function (e) {
                             this.controlPoints.push({
                                 position: {x: e.point.x, y: e.point.y},
-                                assignedVariables: variableList
+                                assignedVariables: {}
                             });
+                            for (let key in this.state.lookup) {
+                                this.controlPoints[this.controlPoints.length - 1].assignedVariables[key] = [];
+                            }
                         }.bind(this));
                         let now = Date.now();
                         let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
@@ -638,7 +696,7 @@ export default class QueryBySketch extends React.Component{
                         {xItems}
                     </form>
                 </div>
-                <button className="btn btn-secondary btn-sm"
+                <button className="btn btn-primary btn-sm"
                         id={'changeXAxisBtn_SketchPad'}
                         onClick={this.changeXAxis.bind(this)}>Done</button>
             </div>
@@ -656,7 +714,7 @@ export default class QueryBySketch extends React.Component{
                         {yItems}
                     </form>
                 </div>
-                <button className="btn btn-secondary btn-sm"
+                <button className="btn btn-primary btn-sm"
                         id={'changeXAxisBtn_SketchPad'}
                         onClick={this.changeYAxis.bind(this)}>Done</button>
             </div>
@@ -738,13 +796,36 @@ export default class QueryBySketch extends React.Component{
         );
     }
 
+    onClickValueAssignmentCheckbox(e) {
+        let value = e.target.value;
+        let checked = e.target.checked;
+        $('#slider_' + value).slider('option', 'disabled', !checked);
+    }
+
+    onClickValueAssignmentDone() {
+        this.setState({
+            popover: false
+        });
+        let checked = $('input[name=assignedVariableList]:checked');
+        let current = this.controlPoints[this.highlightedPointIdx].assignedVariables;
+        for (let i = 0; i < checked.length; i++) {
+            let value = checked[i].value;
+            let min = Math.min(this.state.minList[value]);
+            let max = Math.max(this.state.maxList[value]);
+            let values = $('#slider_' + checked[i].value).slider('option', 'values');
+            this.controlPoints[this.highlightedPointIdx].assignedVariables[value] = [min + (max - min) * values[0] / 100, min + (max - min) * values[1] / 100];
+        }
+        // this.controlPoints[this.highlightedPointIdx].assignedVariables = current;
+    }
+
     setValueAssignmentSlider(id, min, max) {
         let slider = $('#' + id);
         let sliderMin = $('#' + id + 'Min');
         let sliderMax = $('#' + id + 'Max');
+        let key = id.slice('_')[1];
         slider.slider({
             range: true,
-            disabled: true,
+            disabled: true,//!$('#valueAssignmentCheckbox_' + key).prop('checked'),
             min: 0,
             max: 100,
             values: [ 0, 100 ],
@@ -793,9 +874,11 @@ export default class QueryBySketch extends React.Component{
                 let sliderId = 'slider_' + key;
                 items.push(
                     <div id={'assignVariable_' + key} className='row align-items-center' key={label}>
-                        <div className='form-check col-4' style={{paddingLeft: '0px'}}>
+                        <div className='form-check col-4' style={{paddingLeft: '0px'}}
+                             onChange={this.onClickValueAssignmentCheckbox.bind(this)}>
                             <input
                                 type='checkbox'
+                                id={'valueAssignmentCheckbox_' + key}
                                 name='assignedVariableList'
                                 value={key}/>
                             <label
@@ -810,13 +893,7 @@ export default class QueryBySketch extends React.Component{
                         </div>
                     </div>
                 );
-                let minList = [], maxList = [];
-                let targetList = FeatureStore.getTarget();
-                for (let i = 0; i < targetList.length; i++) {
-                    minList.push(DataStore.getData(targetList[i]).data.meta.min[key]);
-                    maxList.push(DataStore.getData(targetList[i]).data.meta.max[key]);
-                }
-                this.setValueAssignmentSlider(sliderId, Math.min(minList), Math.max(maxList));
+                this.setValueAssignmentSlider(sliderId, Math.min(this.state.minList[key]), Math.max(this.state.maxList[key]));
             }
             counter++;
         }
@@ -824,12 +901,23 @@ export default class QueryBySketch extends React.Component{
             <div
                 id='controlPointPopover'
                 className='popover'// bs-popover-right'
-                style={{position: 'absolute', opacity: '0.85', display: (this.state.popover)? 'block': 'none'}}>
+                style={{
+                    position: 'absolute',
+                    opacity: '0.85',
+                    display: (this.state.popover)? 'block': 'none',
+                    padding: '0.5rem 0.8rem'}}>
                 <div id='controlPointPopoverArrow' className='arrow'>
                 </div>
-                <div className='popover-body container'>
+                <form
+                    className='container'
+                    name='assignVariablesForm'
+                    style={{paddingRight: '0px', paddingLeft: '0px', marginBottom: '0.2rem'}}>
                     {items}
-                </div>
+                </form>
+                <button className="btn btn-primary btn-sm"
+                        id={'valueAssignmentDoneBtn'}
+                        style={{float: 'right'}}
+                        onClick={this.onClickValueAssignmentDone.bind(this)}>Done</button>
             </div>
         )
     }
