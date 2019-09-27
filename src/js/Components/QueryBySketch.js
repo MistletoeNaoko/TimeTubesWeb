@@ -36,8 +36,6 @@ export default class QueryBySketch extends React.Component{
             minList[key] = minTmp;
             maxList[key] = maxTmp;
         }
-
-        this.margin = {"bottom": 20, "left": 20 };
         this.state = {
             xItem: props.xItem,
             yItem: props.yItem,
@@ -52,6 +50,7 @@ export default class QueryBySketch extends React.Component{
             minList: minList,
             maxList: maxList
         }
+        this.margin = {"bottom": 20, "left": 20 };
         this.sketching = false;
         this.path = null;
         this.pathWidth = null;
@@ -92,7 +91,9 @@ export default class QueryBySketch extends React.Component{
     }
 
     initCanvas() {
-        let outerSize = $('#QBSQuerying').width();
+        let paddingLeft = Number($('#featureArea').css('padding-left').replace('px', '')),
+            paddingRight = Number($('#featureArea').css('padding-right').replace('px', ''));
+        let outerSize = Math.floor($('#mainFeatureArea').width() * 0.3 - paddingLeft - paddingRight);
         this.setState({
             size: outerSize
         });
@@ -100,8 +101,8 @@ export default class QueryBySketch extends React.Component{
             .style('position', 'relative')
             .style('padding-bottom', outerSize + 'px');
         this.canvas = parentArea.append('canvas')
-            .attr('width', outerSize + 'px')
-            .attr('height', outerSize + 'px')
+            .attr('width', outerSize + 'px !important')
+            .attr('height', outerSize + 'px !important')
             .attr('id', 'QBSSketchPad')
             .style('position', 'absolute')
             .style('border', '1px solid lightgray');
