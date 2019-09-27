@@ -813,7 +813,7 @@ export default class Scatterplots extends React.Component{
                             {xItems}
                         </form>
                     </div>
-                    <button className="btn btn-secondary btn-sm"
+                    <button className="btn btn-primary btn-sm"
                             id={'changeXAxisBtn_' + this.SPID}
                             onClick={this.onClickXAxisDone.bind(this)}>Done</button>
                 </div>
@@ -827,7 +827,7 @@ export default class Scatterplots extends React.Component{
                             {yItems}
                         </form>
                     </div>
-                    <button className="btn btn-secondary btn-sm"
+                    <button className="btn btn-primary btn-sm"
                             id={'changeYAxisBtn_' + this.SPID}
                             onClick={this.onClickYAxisDone.bind(this)}>Done</button>
                 </div>
