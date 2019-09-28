@@ -269,8 +269,8 @@ export default class QueryBySketch extends React.Component{
                             $('#slider_' + key).slider('option', 'disabled', true);
                         } else {
                             $('#valueAssignmentCheckbox_' + key).prop('checked', true);
-                            let min = Math.min(this.state.minList[key]);
-                            let max = Math.max(this.state.maxList[key]);
+                            let min = Math.min.apply(null, this.state.minList[key]);
+                            let max = Math.max.apply(null, this.state.maxList[key]);
                             $('#slider_' + key).slider('option', 'values', [
                                 (this.controlPoints[this.highlightedPointIdx].assignedVariables[key][0] - min) / (max - min) * 100,
                                 (this.controlPoints[this.highlightedPointIdx].assignedVariables[key][1] - min) / (max - min) * 100
@@ -820,8 +820,8 @@ export default class QueryBySketch extends React.Component{
         let current = this.controlPoints[this.highlightedPointIdx].assignedVariables;
         for (let i = 0; i < checked.length; i++) {
             let value = checked[i].value;
-            let min = Math.min(this.state.minList[value]);
-            let max = Math.max(this.state.maxList[value]);
+            let min = Math.min.apply(null, this.state.minList[value]);
+            let max = Math.max.apply(null, this.state.maxList[value]);
             let values = $('#slider_' + checked[i].value).slider('option', 'values');
             this.controlPoints[this.highlightedPointIdx].assignedVariables[value] = [min + (max - min) * values[0] / 100, min + (max - min) * values[1] / 100];
             label += this.state.lookup[value] + ', ';
@@ -916,7 +916,7 @@ export default class QueryBySketch extends React.Component{
                         </div>
                     </div>
                 );
-                this.setValueAssignmentSlider(sliderId, Math.min(this.state.minList[key]), Math.max(this.state.maxList[key]));
+                this.setValueAssignmentSlider(sliderId, Math.min.apply(null, this.state.minList[key]), Math.max.apply(null, this.state.maxList[key]));
             }
             counter++;
         }
