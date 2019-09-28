@@ -292,6 +292,12 @@ export default class QueryBySketch extends React.Component{
                         if (this.penSizeCircle) {
                             this.penSizeCircle.remove();
                         }
+                        for (let i = 0; i < this.controlPoints.length; i++) {
+                            if (this.controlPoints[i].label) {
+                                this.controlPoints[i].label.remove();
+                            }
+                        }
+                        this.controlPoints = [];
                         this.timeStamps = [];
 
                         this.pathWidth = new paper.Path({
@@ -320,7 +326,8 @@ export default class QueryBySketch extends React.Component{
                             this.path.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y));
                             this.controlPoints.splice(curve.segment2.index, 0, {
                                 position: {x: event.point.x, y: event.point.x},
-                                assignedVariables: {}
+                                assignedVariables: {},
+                                label: null
                             });
                             for (let key in this.state.lookup) {
                                 this.controlPoints[curve.segment2.index].assignedVariables[key] = [];
@@ -442,7 +449,8 @@ export default class QueryBySketch extends React.Component{
                         this.path.segments.forEach(function (e) {
                             this.controlPoints.push({
                                 position: {x: e.point.x, y: e.point.y},
-                                assignedVariables: {}
+                                assignedVariables: {},
+                                label: null
                             });
                             for (let key in this.state.lookup) {
                                 this.controlPoints[this.controlPoints.length - 1].assignedVariables[key] = [];
@@ -808,6 +816,7 @@ export default class QueryBySketch extends React.Component{
             popover: false
         });
         let checked = $('input[name=assignedVariableList]:checked');
+        let label ='';
         let current = this.controlPoints[this.highlightedPointIdx].assignedVariables;
         for (let i = 0; i < checked.length; i++) {
             let value = checked[i].value;
@@ -815,8 +824,21 @@ export default class QueryBySketch extends React.Component{
             let max = Math.max(this.state.maxList[value]);
             let values = $('#slider_' + checked[i].value).slider('option', 'values');
             this.controlPoints[this.highlightedPointIdx].assignedVariables[value] = [min + (max - min) * values[0] / 100, min + (max - min) * values[1] / 100];
+            label += this.state.lookup[value] + ', ';
+            // show labels of the name of thechecked variables around the highlighted point
         }
-        // this.controlPoints[this.highlightedPointIdx].assignedVariables = current;
+        // ToDo: Move text not to overlap on the stroke
+        if (this.controlPoints[this.highlightedPointIdx].label) {
+            this.controlPoints[this.highlightedPointIdx].label.remove();
+        }
+        this.controlPoints[this.highlightedPointIdx].label = new paper.PointText({
+            position: {x: this.controlPoints[this.highlightedPointIdx].position.x, y: this.controlPoints[this.highlightedPointIdx].position.y - 10},
+            fillColor: 'black',
+            justification: 'center',
+            fontSize: 8
+        });
+        label = label.slice(0, -2);
+        this.controlPoints[this.highlightedPointIdx].label.content = label;
     }
 
     setValueAssignmentSlider(id, min, max) {
