@@ -350,6 +350,7 @@ export default class QueryBySketch extends React.Component{
                         }
                         break;
                     case 'controlPoint':
+                        this.tool.minDistance = 1;
                         hitResult = null;
                         // Hit test on path for handles:
                         hitResult = this.path.hitTest(event.point, {handles: true, tolerance: 5});
@@ -369,6 +370,7 @@ export default class QueryBySketch extends React.Component{
                         }
                         break;
                     case 'controlWidth':
+                        this.tool.minDistance = 1;
                         hitResult = null;
 
                         hitResult = this.pathWidth.hitTest(event.point, {handles: true, tolerance: 5});
@@ -482,6 +484,7 @@ export default class QueryBySketch extends React.Component{
                         this.selectedPoint = null;
                         break;
                 }
+                this.tool.minDistance = 15;
             }
         }
     }
