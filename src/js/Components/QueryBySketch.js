@@ -734,7 +734,15 @@ export default class QueryBySketch extends React.Component{
     }
 
     removeAllAsignment() {
-
+        for (let i = 0; i < this.controlPoints.length; i++) {
+            for (let key in this.controlPoints[i].assignedVariables) {
+                this.controlPoints[i].assignedVariables[key] = [];
+            }
+            if (this.controlPoints[i].label) {
+                this.controlPoints[i].label.remove();
+                this.controlPoints[i].label = null;
+            }
+        }
     }
 
     selectControlPoint() {
@@ -979,7 +987,7 @@ export default class QueryBySketch extends React.Component{
         }
         this.controlPoints[this.highlightedPointIdx].label = new paper.PointText({
             position: {x: this.controlPoints[this.highlightedPointIdx].position.x, y: this.controlPoints[this.highlightedPointIdx].position.y - 10},
-            fillColor: 'black',
+            fillColor: '#7b7971',
             justification: 'center',
             fontSize: 8
         });
