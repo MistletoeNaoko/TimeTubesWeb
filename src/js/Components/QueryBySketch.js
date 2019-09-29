@@ -118,11 +118,32 @@ export default class QueryBySketch extends React.Component{
         this.xAxisText = this.xAxis
             .append('text')
             .attr('class', 'axisLabel')
+            .attr('id', 'sketchPadXLabel')
             .attr('fill', 'black')
             .attr('text-anchor', 'middle')
             .style('font-size', '0.7rem')
             .text(this.state.lookup[this.state.xItem])
             .on('click', this.CanvasXLabelOnClick().bind(this));
+        this.xMinValueText = parentArea
+            .append('g')
+            .style('position', 'absolute')
+            .attr('class', 'axisLabel')
+            .attr('id', 'sketchPadXMin')
+            .attr('text-anchor', 'left')
+            .style('font-size', '0.5rem')
+            .style('left', this.margin.left + 'px')
+            .style('bottom', '0.5rem')
+            .text(Math.min.apply(null, this.state.minList[this.state.xItem]));
+        this.xMaxValueText = parentArea
+            .append('g')
+            .style('position', 'absolute')
+            .attr('class', 'axisLabel')
+            .attr('id', 'sketchPadXMax')
+            .attr('text-anchor', 'right')
+            .style('font-size', '0.5rem')
+            .style('right', this.margin.left + 'px')
+            .style('bottom', '0.5rem')
+            .text(Math.max.apply(null, this.state.maxList[this.state.xItem]));
 
         this.yAxis = parentArea
             .append('g')
@@ -140,6 +161,26 @@ export default class QueryBySketch extends React.Component{
             .style('font-size', '0.7rem')
             .text(this.state.lookup[this.state.yItem])
             .on('click', this.CanvasYLabelOnClick().bind(this));
+        this.yMinValueText = parentArea
+            .append('g')
+            .style('position', 'absolute')
+            .attr('class', 'axisLabel')
+            .attr('id', 'sketchPadYMin')
+            .attr('text-anchor', 'left')
+            .style('font-size', '0.5rem')
+            .style('left', this.margin.left / 2 + 'px')
+            .style('bottom', '1rem')
+            .text(Math.min.apply(null, this.state.minList[this.state.yItem]));
+        this.yMaxValueText = parentArea
+            .append('g')
+            .style('position', 'absolute')
+            .attr('class', 'axisLabel')
+            .attr('id', 'sketchPadYMax')
+            .attr('text-anchor', 'right')
+            .style('font-size', '0.5rem')
+            .style('left', this.margin.left / 2 + 'px')
+            .style('top', '0.5rem')
+            .text(Math.max.apply(null, this.state.maxList[this.state.yItem]));
 
         this.tool = new paper.Tool();
         this.tool.minDistance = 15;
@@ -491,6 +532,9 @@ export default class QueryBySketch extends React.Component{
 
     CanvasXLabelOnClick() {
         return function () {
+            let value = this.state.xItemonPanel;
+            this.setValueSlider('sketchPadXRangeSlider', Math.min.apply(null, this.state.minList[value]), Math.max.apply(null, this.state.maxList[value]));
+            $('#sketchPadXRangeSlider').slider('option', 'disabled', false);
             let panel = d3.select('#changeXAxisPanel_SketchPad');
             if (panel.style('visibility') === 'visible') {
                 panel
@@ -512,6 +556,9 @@ export default class QueryBySketch extends React.Component{
 
     CanvasYLabelOnClick() {
         return function () {
+            let value = this.state.yItemonPanel;
+            this.setValueSlider('sketchPadYRangeSlider', Math.min.apply(null, this.state.minList[value]), Math.max.apply(null, this.state.maxList[value]));
+            $('#sketchPadYRangeSlider').slider('option', 'disabled', false);
             let panel = d3.select('#changeYAxisPanel_SketchPad');
             if (panel.style('visibility') === 'visible') {
                 panel
@@ -532,11 +579,15 @@ export default class QueryBySketch extends React.Component{
     }
 
     onSelectXItem(e) {
-        this.setState({xItemonPanel: e.target.value});
+        let value = e.target.value;
+        this.setState({xItemonPanel: value});
+        this.setValueSlider('sketchPadXRangeSlider', Math.min.apply(null, this.state.minList[value]), Math.max.apply(null, this.state.maxList[value]));
     }
 
     onSelectYItem(e) {
-        this.setState({yItemonPanel: e.target.value});
+        let value = e.target.value;
+        this.setState({yItemonPanel: value});
+        this.setValueSlider('sketchPadYRangeSlider', Math.min.apply(null, this.state.minList[value]), Math.max.apply(null, this.state.maxList[value]));
     }
 
     changeXAxis() {
@@ -546,6 +597,29 @@ export default class QueryBySketch extends React.Component{
         if (this.xAxisText) {
             this.xAxisText
                 .text(this.state.lookup[this.state.xItemonPanel]);
+        }
+        let min = Math.min.apply(null, this.state.minList[this.state.xItemonPanel]),
+            max = Math.max.apply(null, this.state.maxList[this.state.xItemonPanel]);
+        let sliderRange = $('#sketchPadXRangeSlider').slider('option', 'values');
+        let minVal = sliderRange[0] / 100 * (max - min) + min,
+            maxVal = sliderRange[1] / 100 * (max - min) + min;
+        if (Math.log10(Math.abs(minVal)) < -2 && minVal !== 0) {
+            minVal = minVal.toExponential(1);
+        } else {
+            minVal = minVal.toFixed(2);
+        }
+        if (Math.log10(Math.abs(maxVal)) < -2 && maxVal !== 0) {
+            maxVal = maxVal.toExponential(1);
+        } else {
+            maxVal = maxVal.toFixed(2);
+        }
+        if (this.xMinValueText) {
+            this.xMinValueText
+                .text(minVal);
+        }
+        if (this.xMaxValueText) {
+            this.xMaxValueText
+                .text(maxVal);
         }
         d3.select('#changeXAxisPanel_SketchPad')
             .transition()
@@ -560,6 +634,29 @@ export default class QueryBySketch extends React.Component{
         if (this.yAxisText) {
             this.yAxisText
                 .text(this.state.lookup[this.state.yItemonPanel]);
+        }
+        let min = Math.min.apply(null, this.state.minList[this.state.yItemonPanel]),
+            max = Math.max.apply(null, this.state.maxList[this.state.yItemonPanel]);
+        let sliderRange = $('#sketchPadYRangeSlider').slider('option', 'values');
+        let minVal = sliderRange[0] / 100 * (max - min) + min,
+            maxVal = sliderRange[1] / 100 * (max - min) + min;
+        if (Math.log10(Math.abs(minVal)) < -2 && minVal !== 0) {
+            minVal = minVal.toExponential(1);
+        } else {
+            minVal = minVal.toFixed(2);
+        }
+        if (Math.log10(Math.abs(maxVal)) < -2 && maxVal !== 0) {
+            maxVal = maxVal.toExponential(1);
+        } else {
+            maxVal = maxVal.toFixed(2);
+        }
+        if (this.yMinValueText) {
+            this.yMinValueText
+                .text(minVal);
+        }
+        if (this.yMaxValueText) {
+            this.yMaxValueText
+                .text(maxVal);
         }
         d3.select('#changeYAxisPanel_SketchPad')
             .transition()
@@ -633,7 +730,10 @@ export default class QueryBySketch extends React.Component{
             }
             if (label.indexOf('JD') < 0) {
                 xItems.push(
-                    <div className='form-check' key={label}>
+                    <div
+                        className='form-check'
+                        key={label}
+                        style={{paddingLeft: '0px'}}>
                         <input
                             type='radio'
                             name='selectXAxis_SketchPad'
@@ -648,7 +748,10 @@ export default class QueryBySketch extends React.Component{
                     </div>
                 );
                 yItems.push(
-                    <div className='form-check' key={label}>
+                    <div
+                        className='form-check'
+                        key={label}
+                        style={{paddingLeft: '0px'}}>
                         <input
                             type='radio'
                             name='selectYAxis_SketchPad'
@@ -664,7 +767,10 @@ export default class QueryBySketch extends React.Component{
                 );
             } else {
                 xItems.unshift(
-                    <div className='form-check' key={label}>
+                    <div
+                        className='form-check'
+                        key={label}
+                        style={{paddingLeft: '0px'}}>
                         <input
                             type='radio'
                             name='selectXAxis_SketchPad'
@@ -679,7 +785,10 @@ export default class QueryBySketch extends React.Component{
                     </div>
                 );
                 yItems.unshift(
-                    <div className='form-check' key={label}>
+                    <div
+                        className='form-check'
+                        key={label}
+                        style={{paddingLeft: '0px'}}>
                         <input
                             type='radio'
                             name='selectYAxis_SketchPad'
@@ -703,14 +812,19 @@ export default class QueryBySketch extends React.Component{
                 <h6>Change x axis</h6>
                 <div
                     id='changeXAxisItem_SketchPad'
-                    style={{float: 'left', textAlign: 'left'}}>
+                    style={{textAlign: 'left'}}>
                     <form id='changeXAxisForm_SketchPad'>
                         {xItems}
                     </form>
+                    <div className='featureElem' id='sketchPadXRangeSlider' style={{width: '150px'}}>
+                        <output id={'sketchPadXRangeSliderMax'} style={{bottom: '1.3rem', zIndex: 200}}></output>
+                        <output id={'sketchPadXRangeSliderMin'} style={{bottom: '1.3rem', zIndex: 201}}></output>
+                    </div>
+                    <button className="btn btn-primary btn-sm"
+                            id={'changeXAxisBtn_SketchPad'}
+                            style={{float: 'right'}}
+                            onClick={this.changeXAxis.bind(this)}>Done</button>
                 </div>
-                <button className="btn btn-primary btn-sm"
-                        id={'changeXAxisBtn_SketchPad'}
-                        onClick={this.changeXAxis.bind(this)}>Done</button>
             </div>
         );
         let yPanel = (
@@ -721,13 +835,18 @@ export default class QueryBySketch extends React.Component{
                 <h6>Change y axis</h6>
                 <div
                     id='changeYAxisItem_SketchPad'
-                    style={{float: 'left', textAlign: 'left'}}>
+                    style={{textAlign: 'left'}}>
                     <form id='changeYAxisForm_SketchPad'>
                         {yItems}
                     </form>
                 </div>
+                <div className='featureElem' id='sketchPadYRangeSlider' style={{width: '150px'}}>
+                    <output id={'sketchPadYRangeSliderMax'} style={{bottom: '1.3rem', zIndex: 200}}></output>
+                    <output id={'sketchPadYRangeSliderMin'} style={{bottom: '1.3rem', zIndex: 201}}></output>
+                </div>
                 <button className="btn btn-primary btn-sm"
                         id={'changeXAxisBtn_SketchPad'}
+                        style={{float: 'right'}}
                         onClick={this.changeYAxis.bind(this)}>Done</button>
             </div>
         );
@@ -844,7 +963,7 @@ export default class QueryBySketch extends React.Component{
         this.controlPoints[this.highlightedPointIdx].label.content = label;
     }
 
-    setValueAssignmentSlider(id, min, max) {
+    setValueSlider(id, min, max) {
         let slider = $('#' + id);
         let sliderMin = $('#' + id + 'Min');
         let sliderMax = $('#' + id + 'Max');
@@ -919,7 +1038,7 @@ export default class QueryBySketch extends React.Component{
                         </div>
                     </div>
                 );
-                this.setValueAssignmentSlider(sliderId, Math.min.apply(null, this.state.minList[key]), Math.max.apply(null, this.state.maxList[key]));
+                this.setValueSlider(sliderId, Math.min.apply(null, this.state.minList[key]), Math.max.apply(null, this.state.maxList[key]));
             }
             counter++;
         }
