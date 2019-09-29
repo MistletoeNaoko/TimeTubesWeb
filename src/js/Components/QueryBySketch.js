@@ -90,6 +90,16 @@ export default class QueryBySketch extends React.Component{
         // this.initSketchMenu();
     }
 
+    formatValue(value) {
+        let result;
+        if (Math.log10(Math.abs(value)) < -2 && value !== 0) {
+            result = value.toExponential(1);
+        } else {
+            result = value.toFixed(2);
+        }
+        return result;
+    }
+
     initCanvas() {
         let paddingLeft = Number($('#featureArea').css('padding-left').replace('px', '')),
             paddingRight = Number($('#featureArea').css('padding-right').replace('px', ''));
@@ -124,6 +134,12 @@ export default class QueryBySketch extends React.Component{
             .style('font-size', '0.7rem')
             .text(this.state.lookup[this.state.xItem])
             .on('click', this.CanvasXLabelOnClick().bind(this));
+        let xMin = Math.min.apply(null, this.state.minList[this.state.xItem]),
+            xMax = Math.max.apply(null, this.state.maxList[this.state.xItem]);
+        if (this.state.xItem === 'z') {
+            xMax = xMax - xMin;
+            xMin = 0;
+        }
         this.xMinValueText = parentArea
             .append('g')
             .style('position', 'absolute')
@@ -133,7 +149,7 @@ export default class QueryBySketch extends React.Component{
             .style('font-size', '0.5rem')
             .style('left', this.margin.left + 'px')
             .style('bottom', '0.5rem')
-            .text(Math.min.apply(null, this.state.minList[this.state.xItem]));
+            .text(this.formatValue(xMin));
         this.xMaxValueText = parentArea
             .append('g')
             .style('position', 'absolute')
@@ -143,7 +159,7 @@ export default class QueryBySketch extends React.Component{
             .style('font-size', '0.5rem')
             .style('right', this.margin.left + 'px')
             .style('bottom', '0.5rem')
-            .text(Math.max.apply(null, this.state.maxList[this.state.xItem]));
+            .text(this.formatValue(xMax));
 
         this.yAxis = parentArea
             .append('g')
@@ -161,6 +177,12 @@ export default class QueryBySketch extends React.Component{
             .style('font-size', '0.7rem')
             .text(this.state.lookup[this.state.yItem])
             .on('click', this.CanvasYLabelOnClick().bind(this));
+        let yMin = Math.min.apply(null, this.state.minList[this.state.yItem]),
+            yMax = Math.max.apply(null, this.state.maxList[this.state.yItem]);
+        if (this.state.yItem === 'z') {
+            yMax = yMax - Min;
+            yMin = 0;
+        }
         this.yMinValueText = parentArea
             .append('g')
             .style('position', 'absolute')
@@ -170,7 +192,7 @@ export default class QueryBySketch extends React.Component{
             .style('font-size', '0.5rem')
             .style('left', this.margin.left / 2 + 'px')
             .style('bottom', '1rem')
-            .text(Math.min.apply(null, this.state.minList[this.state.yItem]));
+            .text(this.formatValue(yMin));
         this.yMaxValueText = parentArea
             .append('g')
             .style('position', 'absolute')
@@ -180,7 +202,7 @@ export default class QueryBySketch extends React.Component{
             .style('font-size', '0.5rem')
             .style('left', this.margin.left / 2 + 'px')
             .style('top', '0.5rem')
-            .text(Math.max.apply(null, this.state.maxList[this.state.yItem]));
+            .text(this.formatValue(yMax));
 
         this.tool = new paper.Tool();
         this.tool.minDistance = 15;
@@ -533,7 +555,14 @@ export default class QueryBySketch extends React.Component{
     CanvasXLabelOnClick() {
         return function () {
             let value = this.state.xItemonPanel;
-            this.setValueSlider('sketchPadXRangeSlider', Math.min.apply(null, this.state.minList[value]), Math.max.apply(null, this.state.maxList[value]));
+            let minVal = Math.min.apply(null, this.state.minList[value]),
+                maxVal = Math.max.apply(null, this.state.maxList[value]);
+            if (value === 'z') {
+                maxVal = maxVal - minVal;
+                minVal = 0;
+            }
+
+            this.setValueSlider('sketchPadXRangeSlider', minVal, maxVal);
             $('#sketchPadXRangeSlider').slider('option', 'disabled', false);
             let panel = d3.select('#changeXAxisPanel_SketchPad');
             if (panel.style('visibility') === 'visible') {
@@ -557,7 +586,14 @@ export default class QueryBySketch extends React.Component{
     CanvasYLabelOnClick() {
         return function () {
             let value = this.state.yItemonPanel;
-            this.setValueSlider('sketchPadYRangeSlider', Math.min.apply(null, this.state.minList[value]), Math.max.apply(null, this.state.maxList[value]));
+            let minVal = Math.min.apply(null, this.state.minList[value]),
+                maxVal = Math.max.apply(null, this.state.maxList[value]);
+            if (value === 'z') {
+                maxVal = maxVal - minVal;
+                minVal = 0;
+            }
+
+            this.setValueSlider('sketchPadYRangeSlider', minVal, maxVal);
             $('#sketchPadYRangeSlider').slider('option', 'disabled', false);
             let panel = d3.select('#changeYAxisPanel_SketchPad');
             if (panel.style('visibility') === 'visible') {
@@ -600,26 +636,20 @@ export default class QueryBySketch extends React.Component{
         }
         let min = Math.min.apply(null, this.state.minList[this.state.xItemonPanel]),
             max = Math.max.apply(null, this.state.maxList[this.state.xItemonPanel]);
+        if (this.state.xItemonPanel === 'z') {
+            max = max - min;
+            min = 0;
+        }
         let sliderRange = $('#sketchPadXRangeSlider').slider('option', 'values');
         let minVal = sliderRange[0] / 100 * (max - min) + min,
             maxVal = sliderRange[1] / 100 * (max - min) + min;
-        if (Math.log10(Math.abs(minVal)) < -2 && minVal !== 0) {
-            minVal = minVal.toExponential(1);
-        } else {
-            minVal = minVal.toFixed(2);
-        }
-        if (Math.log10(Math.abs(maxVal)) < -2 && maxVal !== 0) {
-            maxVal = maxVal.toExponential(1);
-        } else {
-            maxVal = maxVal.toFixed(2);
-        }
         if (this.xMinValueText) {
             this.xMinValueText
-                .text(minVal);
+                .text(this.formatValue(minVal));
         }
         if (this.xMaxValueText) {
             this.xMaxValueText
-                .text(maxVal);
+                .text(this.formatValue(maxVal));
         }
         d3.select('#changeXAxisPanel_SketchPad')
             .transition()
@@ -637,26 +667,20 @@ export default class QueryBySketch extends React.Component{
         }
         let min = Math.min.apply(null, this.state.minList[this.state.yItemonPanel]),
             max = Math.max.apply(null, this.state.maxList[this.state.yItemonPanel]);
+        if (this.state.yItemonPanel === 'z') {
+            max = max - min;
+            min = 0;
+        }
         let sliderRange = $('#sketchPadYRangeSlider').slider('option', 'values');
         let minVal = sliderRange[0] / 100 * (max - min) + min,
             maxVal = sliderRange[1] / 100 * (max - min) + min;
-        if (Math.log10(Math.abs(minVal)) < -2 && minVal !== 0) {
-            minVal = minVal.toExponential(1);
-        } else {
-            minVal = minVal.toFixed(2);
-        }
-        if (Math.log10(Math.abs(maxVal)) < -2 && maxVal !== 0) {
-            maxVal = maxVal.toExponential(1);
-        } else {
-            maxVal = maxVal.toFixed(2);
-        }
         if (this.yMinValueText) {
             this.yMinValueText
-                .text(minVal);
+                .text(this.formatValue(minVal));
         }
         if (this.yMaxValueText) {
             this.yMaxValueText
-                .text(maxVal);
+                .text(this.formatValue(maxVal));
         }
         d3.select('#changeYAxisPanel_SketchPad')
             .transition()
@@ -979,23 +1003,13 @@ export default class QueryBySketch extends React.Component{
                 sliderMax.css('display', 'initial');
                 let minVal = ui.values[0] / 100 * (max - min) + min;
                 let maxVal = ui.values[1] / 100 * (max - min) + min;
-                if (Math.log10(Math.abs(minVal)) < -2 && minVal !== 0) {
-                    minVal = minVal.toExponential(1);
-                } else {
-                    minVal = minVal.toFixed(2);
-                }
-                if (Math.log10(Math.abs(maxVal)) < -2 && maxVal !== 0) {
-                    maxVal = maxVal.toExponential(1);
-                } else {
-                    maxVal = maxVal.toFixed(2);
-                }
-                sliderMin.val(minVal);
-                sliderMax.val(maxVal);
+                sliderMin.val(this.formatValue(minVal));
+                sliderMax.val(this.formatValue(maxVal));
                 let minPos = -8 + 150 * ui.values[0] / 100;
                 let maxPos = - 8 + 150 - 150 * ui.values[1] / 100;
                 sliderMin.css('left', minPos + 'px');
                 sliderMax.css('right', maxPos + 'px');
-            },
+            }.bind(this),
             stop: function () {
                 sliderMin.css('display', 'none');
                 sliderMax.css('display', 'none');
