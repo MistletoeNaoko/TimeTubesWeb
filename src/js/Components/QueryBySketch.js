@@ -51,13 +51,19 @@ export default class QueryBySketch extends React.Component{
             maxList: maxList
         }
         this.margin = {"bottom": 20, "left": 20 };
+        this.curveSegment = 10;
         this.sketching = false;
         this.path = null;
         this.pathWidth = null;
+        this.pathUpper = null;
+        this.pathLower = null;
+        this.radiuses = null;
+        this.segPoints = [];
         this.penSizeCircle = null;
         this.highlightedPoint = null;
         this.highlightedPointIdx = -1;
         this.timeStamps = [];
+        this.selectedIdx = -1;
         this.selectedHandle = null;
         this.selectedPoint = null;
         this.controlPoints = [];
@@ -206,7 +212,6 @@ export default class QueryBySketch extends React.Component{
 
         this.tool = new paper.Tool();
         this.tool.minDistance = 15;
-        this.tool.onMouseMove = this.CanvasOnMouseMove().bind(this);
         this.tool.onMouseDown = this.CanvasOnMouseDown().bind(this);
         this.tool.onMouseDrag = this.CanvasOnMouseDrag().bind(this);
         this.tool.onMouseUp = this.CanvasOnMouseUp().bind(this);
@@ -226,12 +231,6 @@ export default class QueryBySketch extends React.Component{
                 this.penSizeCircle.strokeColor = '#325D88';
             }
         }
-    }
-    
-    CanvasOnMouseMove() {
-        return function (event) {
-        }
-
     }
 
     CanvasOnMouseDown() {
@@ -363,6 +362,8 @@ export default class QueryBySketch extends React.Component{
                         this.controlPoints = [];
                         this.timeStamps = [];
 
+                        this.radiuses = [];
+                        this.radiuses.push(0);
                         this.pathWidth = new paper.Path({
                             segments: [event.point],
                             strokeColor: '#325D88',
@@ -377,7 +378,7 @@ export default class QueryBySketch extends React.Component{
                         });
                         this.penSizeCircle = new paper.Path.Circle(event.point, 2.5);
                         this.penSizeCircle.strokeColor = '#325D88';
-                        this.timeStamps.push(Date.now());//event.event.timeStamp);
+                        this.timeStamps.push(Date.now());
                         break;
                     case 'addPoint':
                         hitResult = null;
@@ -414,10 +415,12 @@ export default class QueryBySketch extends React.Component{
                         break;
                     case 'controlPoint':
                         this.tool.minDistance = 1;
+                        this.selectedIdx = -1;
                         hitResult = null;
                         // Hit test on path for handles:
                         hitResult = this.path.hitTest(event.point, {handles: true, tolerance: 5});
                         if (hitResult) {
+                            this.selectedIdx = hitResult.segment.index;
                             if (hitResult.type === 'handle-in') {
                                 this.selectedHandle = hitResult.segment.handleIn;
                             } else if (hitResult.type === 'handle-out') {
@@ -428,6 +431,7 @@ export default class QueryBySketch extends React.Component{
                         if (this.selectedHandle == null) {
                             hitResult = this.path.hitTest(event.point, {segments: true, tolerance: 5});
                             if (hitResult) {
+                                this.selectedIdx = hitResult.segment.index;
                                 this.selectedPoint = hitResult.segment;
                             }
                         }
@@ -475,6 +479,7 @@ export default class QueryBySketch extends React.Component{
                         this.pathWidth.add(top);
                         this.pathWidth.insert(0, bottom);
                         this.pathWidth.smooth();
+                        this.radiuses.push(t);
                         this.penSizeCircle.remove();
                         this.penSizeCircle = new paper.Path.Circle(event.point, 2.5);
                         this.penSizeCircle.strokeColor = '#325D88';
@@ -487,8 +492,116 @@ export default class QueryBySketch extends React.Component{
                         if (this.selectedPoint) {
                             this.selectedPoint.point.x += event.delta.x;
                             this.selectedPoint.point.y += event.delta.y;
-                            this.controlPoints[this.selectedPoint.index].position = {x: this.selectedPoint.point.x + event.delta.x, y: this.selectedPoint.point.y + event.delta.y};
+                            this.controlPoints[this.selectedIdx].position = {
+                                x: this.selectedPoint.point.x + event.delta.x,
+                                y: this.selectedPoint.point.y + event.delta.y
+                            };
                         }
+                        if (this.selectedIdx > 0 && this.selectedIdx < this.path.segments.length - 1) {
+                            // move the curves both before and after the point
+                            let curveLen = 0;
+                            // the length of the path from the starting point to the point just before the selected point
+                            for (let i = 0; i < this.selectedIdx - 1; i++) {
+                                curveLen += this.path.curves[i].length;
+                            }
+                            let r0 = this.radiuses[this.selectedIdx - 1],
+                                r1 = this.radiuses[this.selectedIdx],
+                                r2 = this.radiuses[this.selectedIdx + 1];
+                            // change the one before the point
+                            let currentCurveLen = this.path.curves[this.selectedIdx - 1].length;
+                            for (let i = 1; i < this.curveSegment; i++) {
+                                let rj = (r1 - r0) * i / this.curveSegment + r0;
+                                let p = this.path.getPointAt(curveLen + currentCurveLen / this.curveSegment * i);
+                                let delta;
+                                let idx = (this.selectedIdx - 1) * this.curveSegment + i;
+                                let p0 = this.segPoints[idx - 1];
+                                delta = new paper.Point(p.x - p0.x, p.y - p0.y);
+                                let lDelta = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+                                delta.angle += 90;
+                                this.segPoints[idx] = p;
+                                this.pathUpper[idx] = {x: p.x + rj / lDelta * delta.x, y: p.y + rj / lDelta * delta.y};
+                                this.pathLower[idx] = {x: p.x - rj / lDelta * delta.x, y: p.y - rj / lDelta * delta.y};
+                            }
+                            curveLen += currentCurveLen;
+                            // change the one after the point
+                            currentCurveLen = this.path.curves[this.selectedIdx].length;
+                            for (let i = 0; i < this.curveSegment; i++) {
+                                let rj = (r2 - r1) * i / this.curveSegment + r1;
+                                let p = this.path.getPointAt(curveLen + currentCurveLen / this.curveSegment * i);
+                                let delta;
+                                let idx = this.selectedIdx * this.curveSegment + i;
+                                let p0 = this.segPoints[idx - 1];
+                                delta = new paper.Point(p.x - p0.x, p.y - p0.y);
+                                let lDelta = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+                                delta.angle += 90;
+                                this.segPoints[idx] = p;
+                                this.pathUpper[idx] = {x: p.x + rj / lDelta * delta.x, y: p.y + rj / lDelta * delta.y};
+                                this.pathLower[idx] = {x: p.x - rj / lDelta * delta.x, y: p.y - rj / lDelta * delta.y};
+                            }
+                        } else if (this.selectedIdx === 0) {
+                            // move the curve after the point
+                            let r0 = this.radiuses[0],
+                                r1 = this.radiuses[1];
+                            let currentCurveLen = this.path.curves[0].length;
+                            for (let i = 0; i < this.curveSegment; i++) {
+                                let rj = (r1 - r0) * i / this.curveSegment + r0;
+                                let p = this.path.getPointAt(currentCurveLen / this.curveSegment * i);
+                                let delta;
+                                if (i === 0) {
+                                    delta = new paper.Point(this.path.segments[0].handleOut.x, this.path.segments[0].handleOut.y);
+                                } else {
+                                    let p0 = this.segPoints[i - 1];
+                                    delta = new paper.Point(p.x - p0.x, p.y - p0.y);
+                                }
+                                let lDelta = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+                                delta.angle += 90;
+                                this.segPoints[i] = p;
+                                this.pathUpper[i] = {x: p.x + rj / lDelta * delta.x, y: p.y + rj / lDelta * delta.y};
+                                this.pathLower[i] = {x: p.x - rj / lDelta * delta.x, y: p.y - rj / lDelta * delta.y};
+                            }
+                        } else if (this.selectedIdx === this.path.segments.length - 1) {
+                            let curveLen = 0;
+                            // the length of the path from the starting point to the point just before the selected point
+                            for (let i = 0; i < this.selectedIdx - 1; i++) {
+                                curveLen += this.path.curves[i].length;
+                            }
+                            // move the curve before the point
+                            let r0 = this.radiuses[this.selectedIdx - 1],
+                                r1 = this.radiuses[this.selectedIdx];
+                            // change the one before the point
+                            let currentCurveLen = this.path.curves[this.selectedIdx - 1].length;
+                            for (let i = 1; i <= this.curveSegment; i++) {
+                                let rj = (r1 - r0) * i / this.curveSegment + r0;
+                                let p;
+                                if (i !== this.curveSegment) {
+                                    p = this.path.getPointAt(curveLen + currentCurveLen / this.curveSegment * i);
+                                } else {
+                                    p = this.path.segments[this.path.segments.length - 1].point;
+                                }
+                                let delta;
+                                let idx = (this.selectedIdx - 1) * this.curveSegment + i;
+                                let p0 = this.segPoints[idx - 1];
+                                delta = new paper.Point(p.x - p0.x, p.y - p0.y);
+                                let lDelta = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+                                delta.angle += 90;
+                                this.segPoints[idx] = p;
+                                this.pathUpper[idx] = {x: p.x + rj / lDelta * delta.x, y: p.y + rj / lDelta * delta.y};
+                                this.pathLower[idx] = {x: p.x - rj / lDelta * delta.x, y: p.y - rj / lDelta * delta.y};
+                            }
+                        }
+                        let reversedLower = this.pathLower.slice().reverse();
+                        let mergedPoints = this.pathUpper.concat(reversedLower);
+
+                        this.pathWidth.remove();
+                        this.pathWidth = new paper.Path({
+                            segments: mergedPoints,
+                            strokeColor: '#325D88',
+                            strokeWidth: 1,
+                            fillColor: '#29ABE0',
+                            opacity: 0.5,
+                            closed: true
+                        });
+                        this.pathWidth.smooth();
                         break;
                     case 'controlWidth':
                         if (this.selectedHandle) {
@@ -510,6 +623,12 @@ export default class QueryBySketch extends React.Component{
             if (!this.state.assignVariables) {
                 switch (this.state.selector) {
                     case 'pen':
+                        let reverse = false;
+                        this.path.add(event.point);
+                        let segments = this.path.segments.slice(0, this.path.segments.length);
+                        if (segments[segments.length - 2].point.x > segments[segments.length - 1].point.x) {
+                            reverse = true;
+                        }
                         this.path.simplify(10);
                         this.path.segments.forEach(function (e) {
                             this.controlPoints.push({
@@ -525,13 +644,90 @@ export default class QueryBySketch extends React.Component{
                         let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
                         this.timeStamps.push(now);
                         let t = deltaT / 1000 * 30 + 5 / 2;
-                        let top = {x: event.point.x, y: event.point.y + t / 2};
-                        let bottom = {x: event.point.x, y: event.point.y - t / 2};
-                        this.pathWidth.add(top);
-                        this.pathWidth.insert(0, bottom);
+                        this.radiuses.push(t);
+
+                        // remove the temporal width path
+                        this.pathWidth.remove();
+
+                        // simplificationDeg should be odd (- - * + +: * is the value of the point)
+                        let simplificationDeg = segments.length / this.path.segments.length;
+                        simplificationDeg = (Math.floor(simplificationDeg) % 2 === 1)? Math.floor(simplificationDeg): Math.ceil(simplificationDeg);
+
+                        // get the radius value of each point on the simplified path
+                        let idxOriginal = 0, idxSimple = 0;
+                        let radiusesSimple = [];
+                        while (idxOriginal < segments.length && idxSimple < this.path.segments.length) {
+                            if (segments[idxOriginal].point.x === this.path.segments[idxSimple].point.x
+                                && segments[idxOriginal].point.y === this.path.segments[idxSimple].point.y) {
+                                let radTmp = 0, count = 0;
+                                let startIdx = idxOriginal - Math.floor(simplificationDeg / 2);
+                                let endIdx = idxOriginal + Math.floor(simplificationDeg / 2);
+                                startIdx = Math.max(0, startIdx);
+                                endIdx = Math.min(segments.length - 1, endIdx);
+                                for (let i = startIdx; i <= endIdx; i++) {
+                                    radTmp += this.radiuses[i];
+                                    count++;
+                                }
+                                radTmp /= count;
+                                radiusesSimple.push(radTmp);
+                                idxOriginal++;
+                                idxSimple++;
+                                continue;
+                            }
+                            idxOriginal++;
+                        }
+                        this.radiuses = radiusesSimple;
+
+                        // compute the upper/lower points of the simplified curve
+                        this.segPoints = [];
+                        let upperPoints = [], lowerPoints = [];
+                        let curveLen = 0;
+                        for (let i = 0; i < this.path.curves.length; i++) {
+                            let r0 = this.radiuses[i],
+                                r1 = this.radiuses[i + 1];
+                            let currentCurveLen = this.path.curves[i].length;
+                            for (let j = 0; j < this.curveSegment; j++) {
+                                let rj = (r1 - r0) * j / this.curveSegment + r0;
+                                let p = this.path.getPointAt(curveLen + currentCurveLen / this.curveSegment * j);
+                                let delta;
+                                if (j === 0) {
+                                    delta = new paper.Point(this.path.segments[i].handleOut.x, this.path.segments[i].handleOut.y);
+                                } else {
+                                    let p0 = this.segPoints[this.segPoints.length - 1];
+                                    delta = new paper.Point(p.x - p0.x, p.y - p0.y);
+                                }
+                                let lDelta = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+                                delta.angle += 90;
+                                this.segPoints.push(p);
+                                upperPoints.push({x: p.x + rj / lDelta * delta.x, y: p.y + rj / lDelta * delta.y});
+                                lowerPoints.push({x: p.x - rj / lDelta * delta.x, y: p.y - rj / lDelta * delta.y});
+                            }
+                            curveLen += currentCurveLen;
+                        }
+                        // add the last point of the path
+                        let rj = this.radiuses[this.radiuses.length - 1];
+                        let p = this.path.segments[this.path.segments.length - 1].point;
+                        let p0 = this.segPoints[this.segPoints.length - 1];
+                        let delta = new paper.Point(p.x - p0.x, p.y - p0.y);
+                        let lDelta = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+                        delta.angle += 90;
+                        this.segPoints.push(p);
+                        upperPoints.push({x: p.x + rj / lDelta * delta.x, y: p.y + rj / lDelta * delta.y});
+                        lowerPoints.push({x: p.x - rj / lDelta * delta.x, y: p.y - rj / lDelta * delta.y});
+                        this.pathUpper = upperPoints;
+                        this.pathLower = lowerPoints;
+                        let reversedLower = lowerPoints.slice().reverse();
+                        let mergedPoints = upperPoints.concat(reversedLower);
+                        this.pathWidth = new paper.Path({
+                            segments: mergedPoints,
+                            strokeColor: '#325D88',
+                            strokeWidth: 1,
+                            fillColor: '#29ABE0',
+                            opacity: 0.5,
+                            closed: true
+                        });
                         this.pathWidth.smooth();
-                        this.pathWidth.simplify(50);
-                        this.pathWidth.closed = true;
+                        this.pathWidth.sendToBack();
 
                         this.penSizeCircle.remove();
                         this.penSizeCircle = null;
