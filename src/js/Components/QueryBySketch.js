@@ -383,23 +383,36 @@ export default class QueryBySketch extends React.Component{
                     case 'addPoint':
                         hitResult = null;
                         hitResult = this.path.hitTest(event.point, {fill: true, stroke: true, tolerance: 5});
-                        hitResultWidth = null;
-                        hitResultWidth = this.pathWidth.hitTest(event.point, {stroke: true, tolerance: 5});
+                        // hitResultWidth = null;
+                        // hitResultWidth = this.pathWidth.hitTest(event.point, {stroke: true, tolerance: 5});
                         if (hitResult) {
                             let curve = hitResult.location.curve;
-                            this.path.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y));
+                            let originalCurveLen = curve.length;
+                            this.path.insert(curve.segment2.index, hitResult.point);
                             this.controlPoints.splice(curve.segment2.index, 0, {
-                                position: {x: event.point.x, y: event.point.x},
+                                position: {x: hitResult.point.x, y: hitResult.point.x},
                                 assignedVariables: {},
                                 label: null
                             });
                             for (let key in this.state.lookup) {
                                 this.controlPoints[curve.segment2.index].assignedVariables[key] = [];
                             }
-                        } else if (hitResultWidth) {
-                            let curve = hitResultWidth.location.curve;
-                            this.pathWidth.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y));
-                        }
+                            // add radiuses, segPoints, pathUpper, pathLower
+                            let offset = this.path.getOffsetOf(hitResult.point);
+                            let curveLen = 0;
+                            for (let i = 0; i < curve.segment1.index; i++) {
+                                curveLen += this.path.curves[i].length;
+                            }
+                            let r0 = this.radiuses[curve.segment1.index],
+                                r2 = this.radiuses[curve.segment2.index];
+                            let r1 = (r2 - r0) * curve.length / originalCurveLen + r0;
+                            this.radiuses.splice(curve.segment2.index, 0, r1);
+                            this.pathWidth.remove();
+                            this.drawPathWidth();
+                        }// else if (hitResultWidth) {
+                        //     let curve = hitResultWidth.location.curve;
+                        //     this.pathWidth.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y));
+                        // }
                         break;
                     case 'eraser':
                         hitResult = null;
@@ -409,9 +422,12 @@ export default class QueryBySketch extends React.Component{
                         if (hitResult) {
                             this.path.removeSegment(hitResult.segment.index);
                             this.controlPoints.splice(hitResult.segment.index, 1);
-                        } else if (hitResultWidth) {
-                            this.pathWidth.removeSegment(hitResultWidth.segment.index);
-                        }
+                            this.radiuses.splice(hitResult.segment.index, 1);
+                            this.pathWidth.remove();
+                            this.drawPathWidth();
+                        }// else if (hitResultWidth) {
+                        //    this.pathWidth.removeSegment(hitResultWidth.segment.index);
+                        //}
                         break;
                     case 'controlPoint':
                         this.tool.minDistance = 1;
@@ -602,6 +618,7 @@ export default class QueryBySketch extends React.Component{
                             closed: true
                         });
                         this.pathWidth.smooth();
+                        this.pathWidth.sendToBack();
                         break;
                     case 'controlWidth':
                         if (this.selectedHandle) {
@@ -679,55 +696,56 @@ export default class QueryBySketch extends React.Component{
                         this.radiuses = radiusesSimple;
 
                         // compute the upper/lower points of the simplified curve
-                        this.segPoints = [];
-                        let upperPoints = [], lowerPoints = [];
-                        let curveLen = 0;
-                        for (let i = 0; i < this.path.curves.length; i++) {
-                            let r0 = this.radiuses[i],
-                                r1 = this.radiuses[i + 1];
-                            let currentCurveLen = this.path.curves[i].length;
-                            for (let j = 0; j < this.curveSegment; j++) {
-                                let rj = (r1 - r0) * j / this.curveSegment + r0;
-                                let p = this.path.getPointAt(curveLen + currentCurveLen / this.curveSegment * j);
-                                let delta;
-                                if (j === 0) {
-                                    delta = new paper.Point(this.path.segments[i].handleOut.x, this.path.segments[i].handleOut.y);
-                                } else {
-                                    let p0 = this.segPoints[this.segPoints.length - 1];
-                                    delta = new paper.Point(p.x - p0.x, p.y - p0.y);
-                                }
-                                let lDelta = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
-                                delta.angle += 90;
-                                this.segPoints.push(p);
-                                upperPoints.push({x: p.x + rj / lDelta * delta.x, y: p.y + rj / lDelta * delta.y});
-                                lowerPoints.push({x: p.x - rj / lDelta * delta.x, y: p.y - rj / lDelta * delta.y});
-                            }
-                            curveLen += currentCurveLen;
-                        }
-                        // add the last point of the path
-                        let rj = this.radiuses[this.radiuses.length - 1];
-                        let p = this.path.segments[this.path.segments.length - 1].point;
-                        let p0 = this.segPoints[this.segPoints.length - 1];
-                        let delta = new paper.Point(p.x - p0.x, p.y - p0.y);
-                        let lDelta = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
-                        delta.angle += 90;
-                        this.segPoints.push(p);
-                        upperPoints.push({x: p.x + rj / lDelta * delta.x, y: p.y + rj / lDelta * delta.y});
-                        lowerPoints.push({x: p.x - rj / lDelta * delta.x, y: p.y - rj / lDelta * delta.y});
-                        this.pathUpper = upperPoints;
-                        this.pathLower = lowerPoints;
-                        let reversedLower = lowerPoints.slice().reverse();
-                        let mergedPoints = upperPoints.concat(reversedLower);
-                        this.pathWidth = new paper.Path({
-                            segments: mergedPoints,
-                            strokeColor: '#325D88',
-                            strokeWidth: 1,
-                            fillColor: '#29ABE0',
-                            opacity: 0.5,
-                            closed: true
-                        });
-                        this.pathWidth.smooth();
-                        this.pathWidth.sendToBack();
+                        this.drawPathWidth();
+                        // this.segPoints = [];
+                        // let upperPoints = [], lowerPoints = [];
+                        // let curveLen = 0;
+                        // for (let i = 0; i < this.path.curves.length; i++) {
+                        //     let r0 = this.radiuses[i],
+                        //         r1 = this.radiuses[i + 1];
+                        //     let currentCurveLen = this.path.curves[i].length;
+                        //     for (let j = 0; j < this.curveSegment; j++) {
+                        //         let rj = (r1 - r0) * j / this.curveSegment + r0;
+                        //         let p = this.path.getPointAt(curveLen + currentCurveLen / this.curveSegment * j);
+                        //         let delta;
+                        //         if (j === 0) {
+                        //             delta = new paper.Point(this.path.segments[i].handleOut.x, this.path.segments[i].handleOut.y);
+                        //         } else {
+                        //             let p0 = this.segPoints[this.segPoints.length - 1];
+                        //             delta = new paper.Point(p.x - p0.x, p.y - p0.y);
+                        //         }
+                        //         let lDelta = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+                        //         delta.angle += 90;
+                        //         this.segPoints.push(p);
+                        //         upperPoints.push({x: p.x + rj / lDelta * delta.x, y: p.y + rj / lDelta * delta.y});
+                        //         lowerPoints.push({x: p.x - rj / lDelta * delta.x, y: p.y - rj / lDelta * delta.y});
+                        //     }
+                        //     curveLen += currentCurveLen;
+                        // }
+                        // // add the last point of the path
+                        // let rj = this.radiuses[this.radiuses.length - 1];
+                        // let p = this.path.segments[this.path.segments.length - 1].point;
+                        // let p0 = this.segPoints[this.segPoints.length - 1];
+                        // let delta = new paper.Point(p.x - p0.x, p.y - p0.y);
+                        // let lDelta = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+                        // delta.angle += 90;
+                        // this.segPoints.push(p);
+                        // upperPoints.push({x: p.x + rj / lDelta * delta.x, y: p.y + rj / lDelta * delta.y});
+                        // lowerPoints.push({x: p.x - rj / lDelta * delta.x, y: p.y - rj / lDelta * delta.y});
+                        // this.pathUpper = upperPoints;
+                        // this.pathLower = lowerPoints;
+                        // let reversedLower = lowerPoints.slice().reverse();
+                        // let mergedPoints = upperPoints.concat(reversedLower);
+                        // this.pathWidth = new paper.Path({
+                        //     segments: mergedPoints,
+                        //     strokeColor: '#325D88',
+                        //     strokeWidth: 1,
+                        //     fillColor: '#29ABE0',
+                        //     opacity: 0.5,
+                        //     closed: true
+                        // });
+                        // this.pathWidth.smooth();
+                        // this.pathWidth.sendToBack();
 
                         this.penSizeCircle.remove();
                         this.penSizeCircle = null;
@@ -746,6 +764,59 @@ export default class QueryBySketch extends React.Component{
                 this.tool.minDistance = 15;
             }
         }
+    }
+
+    drawPathWidth() {
+        // compute the upper/lower points of the simplified curve
+        this.segPoints = [];
+        let upperPoints = [], lowerPoints = [];
+        let curveLen = 0;
+        for (let i = 0; i < this.path.curves.length; i++) {
+            let r0 = this.radiuses[i],
+                r1 = this.radiuses[i + 1];
+            let currentCurveLen = this.path.curves[i].length;
+            for (let j = 0; j < this.curveSegment; j++) {
+                let rj = (r1 - r0) * j / this.curveSegment + r0;
+                let p = this.path.getPointAt(curveLen + currentCurveLen / this.curveSegment * j);
+                let delta;
+                if (j === 0 && this.path.segments[i].handleOut.x !== 0 && this.path.segments[i].handleOut.y !== 0) {
+                    delta = new paper.Point(this.path.segments[i].handleOut.x, this.path.segments[i].handleOut.y);
+                } else {
+                    let p0 = this.segPoints[this.segPoints.length - 1];
+                    delta = new paper.Point(p.x - p0.x, p.y - p0.y);
+                }
+                let lDelta = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+                delta.angle += 90;
+                this.segPoints.push(p);
+                upperPoints.push({x: p.x + rj / lDelta * delta.x, y: p.y + rj / lDelta * delta.y});
+                lowerPoints.push({x: p.x - rj / lDelta * delta.x, y: p.y - rj / lDelta * delta.y});
+            }
+            curveLen += currentCurveLen;
+        }
+        // add the last point of the path
+        let rj = this.radiuses[this.radiuses.length - 1];
+        let p = this.path.segments[this.path.segments.length - 1].point;
+        let p0 = this.segPoints[this.segPoints.length - 1];
+        let delta = new paper.Point(p.x - p0.x, p.y - p0.y);
+        let lDelta = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
+        delta.angle += 90;
+        this.segPoints.push(p);
+        upperPoints.push({x: p.x + rj / lDelta * delta.x, y: p.y + rj / lDelta * delta.y});
+        lowerPoints.push({x: p.x - rj / lDelta * delta.x, y: p.y - rj / lDelta * delta.y});
+        this.pathUpper = upperPoints;
+        this.pathLower = lowerPoints;
+        let reversedLower = lowerPoints.slice().reverse();
+        let mergedPoints = upperPoints.concat(reversedLower);
+        this.pathWidth = new paper.Path({
+            segments: mergedPoints,
+            strokeColor: '#325D88',
+            strokeWidth: 1,
+            fillColor: '#29ABE0',
+            opacity: 0.5,
+            closed: true
+        });
+        this.pathWidth.smooth();
+        this.pathWidth.sendToBack();
     }
 
     CanvasXLabelOnClick() {
@@ -916,7 +987,7 @@ export default class QueryBySketch extends React.Component{
     updateSelectedStatus(selectedSelector) {
         if (selectedSelector === 'addPoint' || selectedSelector === 'eraser') {
             if (this.path) this.path.fullySelected = true;
-            if (this.pathWidth) this.pathWidth.fullySelected = true;
+            // if (this.pathWidth) this.pathWidth.fullySelected = true;
         } else if (selectedSelector === 'controlPoint') {
             if (this.path) this.path.fullySelected = true;
             if (this.pathWidth) this.pathWidth.fullySelected = false;
