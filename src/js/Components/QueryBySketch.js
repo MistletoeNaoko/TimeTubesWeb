@@ -236,7 +236,6 @@ export default class QueryBySketch extends React.Component{
     CanvasOnMouseDown() {
         return function (event) {
             let hitResult;
-            let hitResultWidth;
             if (this.state.assignVariables) {
                 hitResult = null;
                 hitResult = this.path.hitTest(event.point, {segments: true, tolerance: 5});
@@ -383,8 +382,6 @@ export default class QueryBySketch extends React.Component{
                     case 'addPoint':
                         hitResult = null;
                         hitResult = this.path.hitTest(event.point, {fill: true, stroke: true, tolerance: 5});
-                        // hitResultWidth = null;
-                        // hitResultWidth = this.pathWidth.hitTest(event.point, {stroke: true, tolerance: 5});
                         if (hitResult) {
                             let curve = hitResult.location.curve;
                             let originalCurveLen = curve.length;
@@ -409,10 +406,7 @@ export default class QueryBySketch extends React.Component{
                             this.radiuses.splice(curve.segment2.index, 0, r1);
                             this.pathWidth.remove();
                             this.drawPathWidth();
-                        }// else if (hitResultWidth) {
-                        //     let curve = hitResultWidth.location.curve;
-                        //     this.pathWidth.insert(curve.segment2.index, new paper.Point(event.point.x, event.point.y));
-                        // }
+                        }
                         break;
                     case 'eraser':
                         hitResult = null;
@@ -425,13 +419,13 @@ export default class QueryBySketch extends React.Component{
                             this.radiuses.splice(hitResult.segment.index, 1);
                             this.pathWidth.remove();
                             this.drawPathWidth();
-                        }// else if (hitResultWidth) {
-                        //    this.pathWidth.removeSegment(hitResultWidth.segment.index);
-                        //}
+                        }
                         break;
                     case 'controlPoint':
                         this.tool.minDistance = 1;
                         this.selectedIdx = -1;
+                        this.selectedHandle = null;
+                        this.selectedPoint = null;
                         hitResult = null;
                         // Hit test on path for handles:
                         hitResult = this.path.hitTest(event.point, {handles: true, tolerance: 5});
@@ -452,23 +446,16 @@ export default class QueryBySketch extends React.Component{
                             }
                         }
                         break;
-                    case 'controlWidth':
+                    case 'changeWidth':
                         this.tool.minDistance = 1;
+                        this.selectedIdx = -1;
+                        this.selectedPoint = null;
                         hitResult = null;
 
-                        hitResult = this.pathWidth.hitTest(event.point, {handles: true, tolerance: 5});
+                        hitResult = this.path.hitTest(event.point, {segments: true, tolerance: 5});
                         if (hitResult) {
-                            if (hitResult.type === 'handle-in') {
-                                this.selectedHandle = hitResult.segment.handleIn;
-                            } else if (hitResult.type === 'handle-out') {
-                                this.selectedHandle = hitResult.segment.handleOut;
-                            }
-                        }
-                        if (this.selectedHandle == null) {
-                            hitResult = this.pathWidth.hitTest(event.point, {segments: true, tolerance: 5});
-                            if (hitResult) {
-                                this.selectedPoint = hitResult.segment;
-                            }
+                            this.selectedIdx = hitResult.segment.index;
+                            this.selectedPoint = hitResult.segment;
                         }
                         break;
                 }
@@ -620,14 +607,18 @@ export default class QueryBySketch extends React.Component{
                         this.pathWidth.smooth();
                         this.pathWidth.sendToBack();
                         break;
-                    case 'controlWidth':
-                        if (this.selectedHandle) {
-                            this.selectedHandle.x += event.delta.x;
-                            this.selectedHandle.y += event.delta.y;
-                        }
+                    case 'changeWidth':
                         if (this.selectedPoint) {
-                            this.selectedPoint.point.x += event.delta.x;
-                            this.selectedPoint.point.y += event.delta.y;
+                            // this.selectedPoint.point.x += event.delta.x;
+                            // this.selectedPoint.point.y += event.delta.y;
+                            let delX = event.point.x - this.selectedPoint.point.x,
+                                delY = event.point.y - this.selectedPoint.point.y;
+                            let size = Math.sqrt(delX * delX + delY * delY);
+                            if (this.penSizeCircle) {
+                                this.penSizeCircle.remove();
+                            }
+                            this.penSizeCircle = new paper.Path.Circle(this.selectedPoint.point, size);
+                            this.penSizeCircle.strokeColor = '#325D88';
                         }
                         break;
                 }
@@ -756,9 +747,17 @@ export default class QueryBySketch extends React.Component{
                         this.selectedHandle = null;
                         this.selectedPoint = null;
                         break;
-                    case 'controlWidth':
+                    case 'changeWidth':
+                        let delX = this.penSizeCircle.segments[0].point.x - this.selectedPoint.point.x,
+                            delY = this.penSizeCircle.segments[0].point.y - this.selectedPoint.point.y;
+                        let size = Math.sqrt(delX * delX + delY * delY);
+                        this.radiuses[this.selectedIdx] = size;
                         this.selectedHandle = null;
                         this.selectedPoint = null;
+                        this.selectedIdx = -1;
+                        this.pathWidth.remove();
+                        this.drawPathWidth();
+                        this.penSizeCircle.remove();
                         break;
                 }
                 this.tool.minDistance = 15;
@@ -991,9 +990,9 @@ export default class QueryBySketch extends React.Component{
         } else if (selectedSelector === 'controlPoint') {
             if (this.path) this.path.fullySelected = true;
             if (this.pathWidth) this.pathWidth.fullySelected = false;
-        } else if (selectedSelector === 'controlWidth') {
-            if (this.path) this.path.fullySelected = false;
-            if (this.pathWidth) this.pathWidth.fullySelected = true;
+        } else if (selectedSelector === 'changeWidth') {
+            if (this.path) this.path.fullySelected = true;
+            if (this.pathWidth) this.pathWidth.fullySelected = false;
         } else if (selectedSelector === 'pen') {
             if (this.path) this.path.fullySelected = false;
             if (this.pathWidth) this.pathWidth.fullySelected = false;
@@ -1193,9 +1192,9 @@ export default class QueryBySketch extends React.Component{
                         <input
                             type="radio"
                             name="QBSSelector"
-                            value="controlWidth"
-                            checked={this.state.selector === 'controlWidth'} readOnly/>
-                        <label className="form-check-label" htmlFor="controlWidth">Control width</label>
+                            value="changeWidth"
+                            checked={this.state.selector === 'changeWidth'} readOnly/>
+                        <label className="form-check-label" htmlFor="changeWidth">Change width</label>
                     </div>
                 </form>
             </div>
