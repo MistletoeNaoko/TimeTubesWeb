@@ -88,6 +88,21 @@ export default class QueryBySketch extends React.Component{
                 minList: minList,
                 maxList: maxList
             });
+            console.log(minList, Math.min.apply(null, minList[this.state.xItem]), Math.max.apply(null, maxList[this.state.xItem]))
+            let xMin = Math.min.apply(null, minList[this.state.xItem]),
+                xMax = Math.max.apply(null, maxList[this.state.xItem]),
+                yMin = Math.min.apply(null, minList[this.state.yItem]),
+                yMax = Math.max.apply(null, maxList[this.state.yItem]);
+            if (this.state.xItem === 'z') {
+                xMax = xMax - xMin;
+                xMin = 0;
+            }
+            if (this.state.yItem === 'z') {
+                yMax = yMax - yMin;
+                yMin = 0;
+            }
+            this.updateXAxisValue(xMin, xMax);
+            this.updateYAxisValue(yMin, yMax);
         });
     }
 
@@ -892,6 +907,28 @@ export default class QueryBySketch extends React.Component{
         this.setValueSlider('sketchPadYRangeSlider', Math.min.apply(null, this.state.minList[value]), Math.max.apply(null, this.state.maxList[value]));
     }
 
+    updateXAxisValue(min, max) {
+        if (this.xMinValueText) {
+            this.xMinValueText
+                .text(this.formatValue(min));
+        }
+        if (this.xMaxValueText) {
+            this.xMaxValueText
+                .text(this.formatValue(max));
+        }
+    }
+
+    updateYAxisValue(min, max) {
+        if (this.yMinValueText) {
+            this.yMinValueText
+                .text(this.formatValue(min));
+        }
+        if (this.yMaxValueText) {
+            this.yMaxValueText
+                .text(this.formatValue(max));
+        }
+    }
+
     changeXAxis() {
         this.setState({
             xItem: this.state.xItemonPanel
@@ -909,14 +946,7 @@ export default class QueryBySketch extends React.Component{
         let sliderRange = $('#sketchPadXRangeSlider').slider('option', 'values');
         let minVal = sliderRange[0] / 100 * (max - min) + min,
             maxVal = sliderRange[1] / 100 * (max - min) + min;
-        if (this.xMinValueText) {
-            this.xMinValueText
-                .text(this.formatValue(minVal));
-        }
-        if (this.xMaxValueText) {
-            this.xMaxValueText
-                .text(this.formatValue(maxVal));
-        }
+        this.updateXAxisValue(minVal, maxVal);
         d3.select('#changeXAxisPanel_SketchPad')
             .transition()
             .duration(50)
@@ -940,14 +970,7 @@ export default class QueryBySketch extends React.Component{
         let sliderRange = $('#sketchPadYRangeSlider').slider('option', 'values');
         let minVal = sliderRange[0] / 100 * (max - min) + min,
             maxVal = sliderRange[1] / 100 * (max - min) + min;
-        if (this.yMinValueText) {
-            this.yMinValueText
-                .text(this.formatValue(minVal));
-        }
-        if (this.yMaxValueText) {
-            this.yMaxValueText
-                .text(this.formatValue(maxVal));
-        }
+        this.updateYAxisValue(minVal, maxVal);
         d3.select('#changeYAxisPanel_SketchPad')
             .transition()
             .duration(50)
