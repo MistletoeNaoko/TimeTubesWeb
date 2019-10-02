@@ -387,10 +387,10 @@ export default class Controllers extends React.Component{
                 </div>
                 <div className="form-check form-check-inline menuItem">
                 <select
-                    className="form-control"
+                    className="form-control custom-select"
                     id='backgroundList'
                     onChange={this.changeBackground.bind(this)}
-                    style={{fontSize: '0.8rem', height: '1rem'}}>
+                    style={{fontSize: '0.8rem', height: '1.5rem', width: '5rem'}}>
                     <option value='0x000000'>Black</option>
                     <option value='0x3f3f3f'>Gray 75</option>
                     <option value='0x7f7f7f'>Gray 50</option>
