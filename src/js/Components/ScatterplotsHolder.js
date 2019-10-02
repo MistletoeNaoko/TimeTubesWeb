@@ -10,6 +10,7 @@ export default class ScatterplotsHolder extends React.Component{
         this.id = props.id;
         this.data = props.data;
         this.fileName = this.data.name;
+        this.menuHeight = 24;
         this.state = {
             scatterplotsList: [],
             width: props.width,
@@ -55,7 +56,6 @@ export default class ScatterplotsHolder extends React.Component{
         // Scatterplots: main SP elements
         let scatterplots = this.state.scatterplotsList.map((axis, i) => {
             return (
-                <div key={this.id + '_' + i}>
                     <div
                         key={this.id + '_' + i}
                         id={'scatterplots' + this.id + '_' + i}
@@ -67,9 +67,8 @@ export default class ScatterplotsHolder extends React.Component{
                             xItem={axis.x}
                             yItem={axis.y}
                             width={this.props.width}
-                            height={this.props.height}/>
-                    </div>
-                </div>);
+                            height={this.props.height - this.menuHeight}/>
+                    </div>);
         });
         let items = [];
         for (let key in this.data.lookup) {

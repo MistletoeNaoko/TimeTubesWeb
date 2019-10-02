@@ -50,11 +50,11 @@ export default class Visualization extends React.Component{
         let dataNum = DataStore.getDataNum();
         if (dataNum > 0) {
             if (dataNum <= 3) {
-                width = $(window).innerWidth() / dataNum;// * 0.95;
+                width = $(window).width() / dataNum;// * 0.95;
             } else {
-                width = Math.ceil($(window).innerWidth() / 3);
+                width = Math.ceil($(window).width() / 3);
             }
-            let height = $(window).innerHeight() - $('#appHeader').outerHeight() - $('#tubeControllers').outerHeight();
+            let height = $(window).height() - $('#appHeader').outerHeight() - $('#tubeControllers').outerHeight();
             heightTT = Math.ceil(height * 0.6) + 100;
             heightSP = height - heightTT;
         }
@@ -76,7 +76,8 @@ export default class Visualization extends React.Component{
                      className='container'
                      style={{
                          display: 'inline-block',
-                         minWidth: '100%',
+                         maxWidth: '100%',
+                         width: '100vw',
                          padding: 'unset',
                          overflowX: 'scroll',
                          overflowY: 'hidden'}}>
