@@ -85,7 +85,7 @@ class DataStore extends EventEmitter {
 
     getValues(id, zpos) {
         if (id < 0) {
-            return {keys: [], vals: []};
+            return {};
         } else {
             let currentJD = zpos + this.data[id].data.spatial[0].z;
 
@@ -121,9 +121,13 @@ class DataStore extends EventEmitter {
             let col = this.data[id].data.splines.color.getPoint(tCol);
 
             return {
-                //keys: ['JD', 'Q/I', 'E_Q/I', 'U/I', 'E_U/I', 'Flx(V)', 'V-J'],
-                keys: ['z', 'x', 'y', 'r_x', 'r_y', 'V', 'H'],
-                vals: [pos.z, pos.x, err.x, pos.y, err.y, col.y, col.x]
+                z: pos.z,
+                x: pos.x,
+                r_x: err.x,
+                y: pos.y,
+                r_y: err.y,
+                V: col.y,
+                H: col.x
             };
         }
     }

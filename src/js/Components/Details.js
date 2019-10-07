@@ -30,7 +30,7 @@ export default class Details extends React.Component{
                 this.lookup = DataStore.getData(id).data.lookup;
                 this.setState({
                     fileName: DataStore.getFileName(id),
-                    currentVal: DataStore.getValues(0, 0),
+                    currentVal: DataStore.getValues(-1, 0),
                     checked: false
                 });
             }
@@ -465,17 +465,20 @@ export default class Details extends React.Component{
 
     render() {
         let cur = this.state.currentVal;
-        let detailTable = cur.keys.map((key, i) => {
+        let detailTable = [];
+        console.log(cur)
+        for (let key in cur) {
+            console.log(key, cur[key])
             let val;
             if (key === 'z' || key === 'H') {
-                val = cur.vals[i].toFixed(3);
+                val = cur[key].toFixed(3);
             } else if (key === 'V') {
-                val = cur.vals[i].toExponential(2);
+                val = cur[key].toExponential(2);
             } else {
-                val = cur.vals[i].toFixed(4);
+                val = cur[key].toFixed(4);
             }
-            return <tr key={key + '_' + this.id} className='detailTableRow'><td className='detailTableData detailTableVari'>{this.lookup[key]}</td><td className='detailTableData'>{val}</td></tr>;
-        })
+            detailTable.push(<tr key={key + '_' + this.id} className='detailTableRow'><td className='detailTableData detailTableVari'>{this.lookup[key]}</td><td className='detailTableData'>{val}</td></tr>);
+        }
         let viewportWidth = 500; //TODO: get interactively!
         // Z index
         // 10 ~ : check box for files
