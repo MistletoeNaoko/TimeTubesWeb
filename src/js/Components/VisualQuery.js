@@ -5,6 +5,7 @@ import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 import SelectedTimeSlice from './SelectedTimeSlice';
 import QueryBySketch from './QueryBySketch';
+import * as TimeSeriesQuerying from '../lib/TimeSeriesQuerying';
 
 export default class VisualQuery extends React.Component {
     constructor() {
@@ -13,7 +14,6 @@ export default class VisualQuery extends React.Component {
             visualQuery: false,
             dragSelection: true,
             queryMode: FeatureStore.getMode(),
-            QBESource: 'SP',
             selector: true,
             source: -1,
             selectedInterval: []
@@ -58,18 +58,6 @@ export default class VisualQuery extends React.Component {
         FeatureAction.switchQueryMode(selectedQueryMode);
     }
 
-    switchQBESource() {
-        let source = '';
-        if (this.state.QBESource === 'SP') {
-            source = 'TT';
-        } else if (this.state.QBESource === 'TT') {
-            source = 'SP';
-        }
-        this.setState({
-            QBESource: source
-        });
-    }
-
     resetSelection() {
         FeatureAction.resetSelection();
     }
@@ -100,17 +88,18 @@ export default class VisualQuery extends React.Component {
         $('#selectedInterval').text('JD: ' + period[0] + ' - ' + period[1]);
     }
 
-    showSelectedTube() {
-        // new react component
+    updateIgnoredVariables() {
+        let ignored = this.getIgnoredVariables();
+        FeatureAction.setIgnoredVariables(ignored);
     }
 
-    updateIgnoredVariables() {
+    getIgnoredVariables() {
         let checked = $('input[name=QBEIgnored]:checked');
         let ignored = [];
         for (let i = 0; i < checked.length; i++) {
             ignored.push(checked[i].value);
         }
-        FeatureAction.setIgnoredVariables(ignored);
+        return ignored;
     }
 
     extractionSource() {
@@ -310,6 +299,17 @@ export default class VisualQuery extends React.Component {
         switch (this.state.queryMode) {
             case 'QBE':
                 console.log('convert QBE into data');
+                // get source id: this.state.source
+                // get selected time period: FeatureStore.getSelectedPeriod()
+                // get what to ignore: this.getIgnoredVariables
+                let source = Number(this.state.source);
+                let period = FeatureStore.getSelectedPeriod();
+                let ignored = this.getIgnoredVariables();
+                if (source !== NaN) {
+                    // convert a query into an object with arrays (divide time series into equal interval (1day))
+                    let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored);
+                    // compute distance between time slices!
+                }
                 break;
             case 'QBS':
                 console.log('convert QBS into data');
