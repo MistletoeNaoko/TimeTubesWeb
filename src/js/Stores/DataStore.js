@@ -87,7 +87,7 @@ class DataStore extends EventEmitter {
         if (id < 0) {
             return {};
         } else {
-            let currentJD = zpos + this.data[id].data.spatial[0].z;
+            let currentJD = zpos + this.data[id].data.meta.min.z;
 
             let i;
             for (i = 1; i < this.data[id].data.position.length; i++) {
@@ -96,7 +96,9 @@ class DataStore extends EventEmitter {
                 }
             }
             let tPos;
-            if ((currentJD === this.data[id].data.position[this.data[id].data.position.length - 1].z) || (i > this.data[id].data.position.length - 1)) {
+            if ((currentJD === this.data[id].data.meta.min.z) || (i < 0)) {
+                tPos = 0;
+            } else if ((currentJD === this.data[id].data.position[this.data[id].data.position.length - 1].z) || (i > this.data[id].data.position.length - 1)) {
                 tPos = 1;
             } else {
                 tPos = ((i - 1) + (currentJD - this.data[id].data.position[i - 1].z) / (this.data[id].data.position[i].z - this.data[id].data.position[i - 1].z)) / (this.data[id].data.position.length - 1);
