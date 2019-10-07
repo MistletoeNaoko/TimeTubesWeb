@@ -26,7 +26,7 @@ export default class SelectedTimeSlice extends React.Component {
             <div
                 className='TimeTubes'
                 id='selectedTimeSliceView'
-                style={{width: width + 'px', height: height + 'px'}}
+                // style={{width: width + 'px', height: height + 'px'}}
                 ref={mount => {
                     this.mount = mount;
                 }}
@@ -69,8 +69,8 @@ export default class SelectedTimeSlice extends React.Component {
 
     componentDidMount() {
         if (this.sourceId >= 0) {
-            const width = this.mount.clientWidth;
-            const height = this.mount.clientHeight;
+            const width = $('#selectedIntervalViewArea').width();//this.mount.clientWidth;
+            const height = width;//this.mount.clientHeight;
             this.scene = new THREE.Scene();
 
             this.setCameras();

@@ -294,6 +294,29 @@ export default class VisualQuery extends React.Component {
         return selectionDetail;
     }
 
+    matchingControllers() {
+        return (
+            <div className='featureElem' style={{position: 'relative'}}>
+                <h5>Matching</h5>
+                <button className="btn btn-primary btn-sm"
+                        type="button"
+                        id='runMatchingBtn'
+                        onClick={this.runMatching.bind(this)} >Run</button>
+            </div>
+        );
+    }
+
+    runMatching() {
+        switch (this.state.queryMode) {
+            case 'QBE':
+                console.log('convert QBE into data');
+                break;
+            case 'QBS':
+                console.log('convert QBS into data');
+                break;
+        }
+    }
+
     render() {
         let queryDefinition;
         if (this.state.queryMode === 'QBE') {
@@ -308,6 +331,7 @@ export default class VisualQuery extends React.Component {
                 {this.extractionSource()}
                 {queryDefinition}
                 {this.selectionDetail()}
+                {this.matchingControllers()}
             </div>
         );
     }
