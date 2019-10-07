@@ -10,6 +10,7 @@ export default class Details extends React.Component{
     constructor() {
         super();
         this.id = DataStore.getTailID();
+        this.lookup = DataStore.getData(this.id).data.lookup;
         this.state = {
             // id: DataStore.getTailID(),
             fileName: DataStore.getFileName(this.id),
@@ -25,8 +26,9 @@ export default class Details extends React.Component{
         // ToDo: at first file uploading, following 'upload' code cannot catch event emitter
         DataStore.on('upload', (id) => {
             if (this.id === -1) {
+                this.id = id;
+                this.lookup = DataStore.getData(id).data.lookup;
                 this.setState({
-                    id: id,
                     fileName: DataStore.getFileName(id),
                     currentVal: DataStore.getValues(0, 0),
                     checked: false
@@ -463,28 +465,16 @@ export default class Details extends React.Component{
 
     render() {
         let cur = this.state.currentVal;
-        let detail = '';
-        for (let i = 0; i < cur.keys.length; i++) {
-            let val;
-            if (cur.keys[i] === 'JD' || cur.keys[i] === 'V-J') {
-                val = cur.vals[i].toFixed(3);
-            } else if (cur.keys[i] === 'Flx(V)') {
-                val = cur.vals[i].toExponential(2);
-            } else {
-                val = cur.vals[i].toFixed(4);
-            }
-            detail += cur.keys[i] + ': ' + val + '\n';
-        }
         let detailTable = cur.keys.map((key, i) => {
             let val;
-            if (key === 'JD' || key === 'V-J') {
+            if (key === 'z' || key === 'H') {
                 val = cur.vals[i].toFixed(3);
-            } else if (key === 'Flx(V)') {
+            } else if (key === 'V') {
                 val = cur.vals[i].toExponential(2);
             } else {
                 val = cur.vals[i].toFixed(4);
             }
-            return <tr key={key + '_' + this.id} className='detailTableRow'><td className='detailTableData detailTableVari'>{key}</td><td className='detailTableData'>{val}</td></tr>;
+            return <tr key={key + '_' + this.id} className='detailTableRow'><td className='detailTableData detailTableVari'>{this.lookup[key]}</td><td className='detailTableData'>{val}</td></tr>;
         })
         let viewportWidth = 500; //TODO: get interactively!
         // Z index
