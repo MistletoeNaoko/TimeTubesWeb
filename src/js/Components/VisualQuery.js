@@ -410,7 +410,11 @@ export default class VisualQuery extends React.Component {
                             Type of DTW
                         </div>
                         <div className='col'>
-                            <form className="form-check" id='DTWType' onChange={this.switchDTWMode.bind(this)}>
+                            <form
+                                className="form-check"
+                                id='DTWType'
+                                onChange={this.switchDTWMode.bind(this)}
+                                style={{paddingLeft: '0px'}}>
                                 <div className="custom-control custom-radio">
                                     <input type="radio" id="DTWI" name="DTWType" value='DTWI'
                                            checked={(this.state.DTWMode === 'DTWI')? true: false}
@@ -435,7 +439,8 @@ export default class VisualQuery extends React.Component {
                 <button className="btn btn-primary btn-sm"
                         type="button"
                         id='runMatchingBtn'
-                        onClick={this.runMatching.bind(this)} >Run</button>
+                        style={{float: 'right'}}
+                        onClick={this.runMatching.bind(this)}>Run</button>
             </div>
         );
     }
@@ -464,16 +469,22 @@ export default class VisualQuery extends React.Component {
                 console.log('convert QBE into data');
                 // get source id: this.state.source
                 let source = Number(this.state.source);
-                // get selected time period: FeatureStore.getSelectedPeriod()
-                let period = FeatureStore.getSelectedPeriod();
-                // get what to ignore: this.getIgnoredVariables
-                let ignored = this.getIgnoredVariables();
-                if (source !== NaN) {
-                    // convert a query into an object with arrays (divide time series into equal interval (1day))
-                    let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored);
-                    // compute distance between time slices!
-                    let dataArray = DataStore.getDataArray(source, 1);
-                    TimeSeriesQuerying.runMatching(query, dataArray, DTWType, normalization, selectedDist, windowSize, step,[periodMin, periodMax]);
+                // get target ids
+                let targets = FeatureStore.getTarget();
+                if (targets.length > 0) {
+                    // get selected time period: FeatureStore.getSelectedPeriod()
+                    let period = FeatureStore.getSelectedPeriod();
+                    // get what to ignore: this.getIgnoredVariables
+                    let ignored = this.getIgnoredVariables();
+                    if (source !== NaN) {
+                        // convert a query into an object with arrays (divide time series into equal interval (1day))
+                        let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored);
+                        // compute distance between time slices!
+                        // scores of matching with starting JD and period will be returned
+                        let scores = TimeSeriesQuerying.runMatching(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
+                        console.log(scores);
+                        // ToDo: Remove overlapping!!
+                    }
                 }
                 break;
             case 'QBS':

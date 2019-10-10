@@ -26,157 +26,164 @@ export function makeQueryfromQBE(source, period, ignored) {
     return query;
 }
 
-export function runMatching(query, targetData, DTWType, normalization, dist, window, step, period) {
+export function runMatching(query, targets, DTWType, normalization, dist, window, step, period) {
     // make a nomalized query if the user select the normalized option (only think about relative shapes of variations)
     // slide a window and create a target array
     // normalize the target
     // compute DTW distance
     // store the DTW distance with the first time stamp of the time slice and the length of the priod
     // sort the result
-    let minJD = targetData.z[0];
+    let result = [];//, resultLib = [];
     let distFunc;
     switch (dist) {
         case 'Euclidean':
             distFunc = EuclideanDist;
             break;
     }
-
     if (normalization) {
         query = normalizeTimeSeries(query);
     }
-    let result = [];//, resultLib = [];
-    switch (DTWType) {
-        case 'DTWI':
-            if (window > 0) {
-                // compute dtw every time (time consuming :(
-                let i = 0;
-                while (i < targetData.arrayLength - period[0]) {
-                    let dtws = [];
-                    for (let j = period[0]; j <= period[1]; j++) {
-                        if (i + j > targetData.arrayLength - 1) break;
-                        let dtwSum = 0;
+    for (let targetId = 0; targetId < targets.length; targetId++) {
+        let targetData = DataStore.getDataArray(targets[targetId], 1);
+        let minJD = targetData.z[0];
+
+        switch (DTWType) {
+            case 'DTWI':
+                if (window > 0) {
+                    // compute dtw every time (time consuming :(
+                    let i = 0;
+                    while (i < targetData.arrayLength - period[0]) {
+                        let dtws = [];
+                        for (let j = period[0]; j <= period[1]; j++) {
+                            if (i + j > targetData.arrayLength - 1) break;
+                            let dtwSum = 0;
+                            for (let key in query) {
+                                if (Array.isArray(targetData[key]) && key !== 'z') {
+                                    let target = targetData[key].slice(i, i + j);
+                                    if (normalization) {
+                                        target = normalizeTimeSeries(target);
+                                    }
+                                    let dtw = DTW(query[key], target, window, distFunc);
+                                    dtwSum += dtw;
+                                }
+                            }
+                            dtws.push(dtwSum);
+                        }
+                        let minIdx = 0;
+                        let minVal = Infinity;
+                        for (let j = 0; j < dtws.length; j++) {
+                            if (dtws[j] < minVal) {
+                                minVal = dtws[j];
+                                minIdx = j;
+                            }
+                        }
+                        result.push([targetId, i + minJD, period[0] + minIdx, minVal]);
+                        i += step;
+                    }
+                } else {
+                    // If there are no restriction on window size (simpleDTW), use fast computing
+                    let i = 0;
+                    while (i < targetData.arrayLength - period[0]) {
+                        let dtws = [];
+                        let maxLen = (i + period[1] < targetData.arrayLength - 1) ? period[1] : targetData.arrayLength - i;
                         for (let key in query) {
                             if (Array.isArray(targetData[key]) && key !== 'z') {
-                                let target = targetData[key].slice(i, i + j);
+                                let target = targetData[key].slice(i, i + maxLen);
                                 if (normalization) {
                                     target = normalizeTimeSeries(target);
                                 }
-                                let dtw = DTW(query[key], target, window, distFunc);
-                                dtwSum += dtw;
+                                let dtw = DTWSimple(query[key], target, distFunc, maxLen - period[0] + 1);
+                                dtws.push(dtw);
                             }
                         }
-                        dtws.push(dtwSum);
-                    }
-                    let minIdx = 0;
-                    let minVal = Infinity;
-                    for (let j = 0; j < dtws.length; j++) {
-                        if (dtws[j] < minVal) {
-                            minVal = dtws[j];
-                            minIdx = j;
+                        // Choose a collection of dtw which minimize the sum
+                        let minIdx = 0;
+                        let minVal = Infinity;
+                        for (let j = 0; j < dtws[0].length; j++) {
+                            let sum = 0;
+                            for (let k = 0; k < dtws.length; k++) {
+                                sum += dtws[k][j];
+                            }
+                            if (sum < minVal) {
+                                minVal = sum;
+                                minIdx = j;
+                            }
                         }
+                        // result is a collection of [start JD, the length of period, dtw value]
+                        result.push([targetId, i + minJD, period[0] + minIdx, minVal]);
+                        i += step;
                     }
-                    result.push([i + minJD, period[0] + minIdx, minVal]);
-                    i += step;
                 }
-            } else {
-                // If there are no restriction on window size (simpleDTW), use fast computing
-                let i = 0;
-                while (i < targetData.arrayLength - period[0]) {
-                    let dtws = [];
-                    let maxLen = (i + period[1] < targetData.arrayLength - 1)? period[1]: targetData.arrayLength - i;
-                    for (let key in query) {
-                        if (Array.isArray(targetData[key]) && key !== 'z') {
-                            let target = targetData[key].slice(i, i + maxLen);
+                break;
+            case 'DTWD':
+                let keys = [];
+                for (let key in query) {
+                    if (Array.isArray(query[key]) && key !== 'z') {
+                        keys.push(key);
+                    }
+                }
+                if (window > 0) {
+                    // use DTW
+                    let i = 0;
+                    while (i < targetData.arrayLength - period[0]) {
+                        let dtws = [];
+                        for (let j = period[0]; j <= period[1]; j++) {
+                            if (i + j > targetData.arrayLength - 1) break;
+                            let target = {};
+                            keys.forEach(function (key) {
+                                target[key] = targetData[key].slice(i, i + j);
+                            });
+                            target.arrayLength = j;
                             if (normalization) {
                                 target = normalizeTimeSeries(target);
                             }
-                            let dtw = DTWSimple(query[key], target, distFunc, maxLen - period[0] + 1);
-                            dtws.push(dtw);
+                            dtws.push(DTWMD(query, target, window, keys, distFunc));
                         }
+                        let minIdx = 0;
+                        let minVal = Infinity;
+                        for (let j = 0; j < dtws.length; j++) {
+                            if (dtws[j] < minVal) {
+                                minVal = dtws[j];
+                                minIdx = j;
+                            }
+                        }
+                        result.push([targetId, i + minJD, period[0] + minIdx, minVal]);
+                        i += step;
                     }
-                    // Choose a collection of dtw which minimize the sum
-                    let minIdx = 0;
-                    let minVal = Infinity;
-                    for (let j = 0; j < dtws[0].length; j++) {
-                        let sum = 0;
-                        for (let k = 0; k < dtws.length; k++) {
-                            sum += dtws[k][j];
-                        }
-                        if (sum < minVal) {
-                            minVal = sum;
-                            minIdx = j;
-                        }
-                    }
-                    // result is a collection of [start JD, the length of period, dtw value]
-                    result.push([i + minJD, period[0] + minIdx, minVal]);
-                    i += step;
-                }
-            }
-            break;
-        case 'DTWD':
-            let keys = [];
-            for (let key in query) {
-                if (Array.isArray(query[key]) && key !== 'z') {
-                    keys.push(key);
-                }
-            }
-            if (window > 0) {
-                // use DTW
-                let i = 0;
-                while (i < targetData.arrayLength - period[0]) {
-                    let dtws = [];
-                    for (let j = period[0]; j <= period[1]; j++) {
-                        if (i + j > targetData.arrayLength - 1) break;
+                } else {
+                    // use DTWSimple
+                    let i = 0;
+                    while (i < targetData.arrayLength - period[0]) {
                         let target = {};
+                        let maxLen = (i + period[1] < targetData.arrayLength - 1) ? period[1] : targetData.arrayLength - i;
                         keys.forEach(function (key) {
-                            target[key] = targetData[key].slice(i, i + j);
+                            target[key] = targetData[key].slice(i, i + maxLen);
                         });
-                        target.arrayLength = j;
+                        target.arrayLength = maxLen;
                         if (normalization) {
                             target = normalizeTimeSeries(target);
                         }
-                        dtws.push(DTWMD(query, target, window, keys, distFunc));
-                    }
-                    let minIdx = 0;
-                    let minVal = Infinity;
-                    for (let j = 0; j < dtws.length; j++) {
-                        if (dtws[j] < minVal) {
-                            minVal = dtws[j];
-                            minIdx = j;
+                        let dtws = DTWSimpleMD(query, target, keys, distFunc, maxLen - period[0] + 1);
+                        let minIdx = 0;
+                        let minVal = Infinity;
+                        for (let j = 0; j < dtws.length; j++) {
+                            if (dtws[j] < minVal) {
+                                minVal = dtws[j];
+                                minIdx = j;
+                            }
                         }
+                        result.push([targetId, i + minJD, period[0] + minIdx, minVal]);
+                        i += step;
                     }
-                    result.push([i + minJD, period[0] + minIdx, minVal]);
-                    i += step;
                 }
-            } else {
-                // use DTWSimple
-                let i = 0;
-                while (i < targetData.arrayLength - period[0]) {
-                    let target = {};
-                    let maxLen = (i + period[1] < targetData.arrayLength - 1)? period[1]: targetData.arrayLength - i;
-                    keys.forEach(function(key) {
-                        target[key] = targetData[key].slice(i, i + maxLen);
-                    });
-                    target.arrayLength = maxLen;
-                    if (normalization) {
-                        target = normalizeTimeSeries(target);
-                    }
-                    let dtws = DTWSimpleMD(query, target, keys, distFunc, maxLen - period[0] + 1);
-                    let minIdx = 0;
-                    let minVal = Infinity;
-                    for (let j = 0; j < dtws.length; j++) {
-                        if (dtws[j] < minVal) {
-                            minVal = dtws[j];
-                            minIdx = j;
-                        }
-                    }
-                    result.push([i + minJD, period[0] + minIdx, minVal]);
-                    i += step;
-                }
-            }
-            break;
+                break;
+        }
     }
-    console.log(result);//, resultLib);
+    // result stores [id, JD, period, dtw distance]
+    result.sort(function (a, b) {
+        return a[3] - b[3];
+    });
+    return result;
 }
 
 function normalizeTimeSeries(data) {
