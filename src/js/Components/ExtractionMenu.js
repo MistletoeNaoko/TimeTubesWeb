@@ -61,7 +61,7 @@ export default class ExtractionMenu extends React.Component {
                 style={{overflow: 'auto'}}>
                 <div id='extractionMainMenu'>
                     <div id='targetDatasetsList' className='controllersElem'>
-                        <h5>Target datasets</h5>
+                        <h5>Target</h5>
                         <form onChange={this.updateTargets.bind(this)}>
                             {targetList}
                         </form>

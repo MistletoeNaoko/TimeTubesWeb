@@ -88,7 +88,6 @@ export default class QueryBySketch extends React.Component{
                 minList: minList,
                 maxList: maxList
             });
-            console.log(minList, Math.min.apply(null, minList[this.state.xItem]), Math.max.apply(null, maxList[this.state.xItem]))
             let xMin = Math.min.apply(null, minList[this.state.xItem]),
                 xMax = Math.max.apply(null, maxList[this.state.xItem]),
                 yMin = Math.min.apply(null, minList[this.state.yItem]),

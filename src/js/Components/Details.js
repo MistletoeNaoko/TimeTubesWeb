@@ -466,9 +466,7 @@ export default class Details extends React.Component{
     render() {
         let cur = this.state.currentVal;
         let detailTable = [];
-        console.log(cur)
         for (let key in cur) {
-            console.log(key, cur[key])
             let val;
             if (key === 'z' || key === 'H') {
                 val = cur[key].toFixed(3);

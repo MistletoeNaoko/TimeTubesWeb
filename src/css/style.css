@@ -76,6 +76,10 @@ g.x_axis line, g.y_axis line{
     height: 2rem;
 }
 
+.form-group {
+    margin-bottom: 0.2rem;
+}
+
 .scatterplotsViewports {
     display:block;
 }
@@ -168,6 +172,10 @@ label.menuLabel {
 
 .detailTable {
     border-collapse:  collapse;
+}
+
+.matchingOption {
+    margin-bottom: 0.5rem;
 }
 
 /* tr, td */

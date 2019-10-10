@@ -16,7 +16,8 @@ export default class VisualQuery extends React.Component {
             queryMode: FeatureStore.getMode(),
             selector: true,
             source: -1,
-            selectedInterval: []
+            selectedInterval: [],
+            DTWMode: 'DTWD'
         };
     }
 
@@ -31,6 +32,7 @@ export default class VisualQuery extends React.Component {
             this.setState({
                 source: FeatureStore.getSource()
             });
+            $('#stepSizeOfSlidingWindow').val('5');
         });
         FeatureStore.on('switchQueryMode', (mode) => {
             this.setState({
@@ -44,6 +46,7 @@ export default class VisualQuery extends React.Component {
     }
 
     switchSelector() {
+        console.log('switch selector')
         this.setState({selector: !this.state.selector});
         FeatureAction.switchSelector();
     }
@@ -56,6 +59,14 @@ export default class VisualQuery extends React.Component {
     switchQueryMode(obj) {
         let selectedQueryMode = $('input[name=queryMode]:checked').val();
         FeatureAction.switchQueryMode(selectedQueryMode);
+    }
+
+    switchDTWMode() {
+        let selectedDTWMode = $('input[name=DTWType]:checked').val();
+        console.log(selectedDTWMode);
+        this.setState({
+            DTWMode: selectedDTWMode
+        });
     }
 
     resetSelection() {
@@ -86,6 +97,8 @@ export default class VisualQuery extends React.Component {
             selectedInterval: period
         });
         $('#selectedInterval').text('JD: ' + period[0] + ' - ' + period[1]);
+        $('#targetLengthMin').val(Math.floor(period[1]) - Math.ceil(period[0]));
+        $('#targetLengthMax').val(Math.floor(period[1]) - Math.ceil(period[0]));
     }
 
     updateIgnoredVariables() {
@@ -107,7 +120,7 @@ export default class VisualQuery extends React.Component {
         let sourceList = idFile.map((data) => {
             return <option value={data.id} key={data.id}>{data.name}</option>;
         });
-        sourceList.unshift(<option value='default' key='default'>Select a source of the visual query</option>)
+        sourceList.unshift(<option value='default' key='default'>Select a source</option>)
         return (
             <div className='featureElem'
                  style={{display: (this.state.queryMode === 'QBE') ? 'block': 'none'}}>
@@ -115,6 +128,7 @@ export default class VisualQuery extends React.Component {
                 <select
                     className="custom-select custom-select-sm"
                     id='sourceList'
+                    style={{width: '40%'}}
                     onChange={this.updateSource.bind(this)}>
                         {sourceList}
                 </select>
@@ -126,22 +140,28 @@ export default class VisualQuery extends React.Component {
         return (
             <div className='featureElem'>
                 <h5>Query mode</h5>
-                <form id='queryMode' onChange={this.switchQueryMode.bind(this)}>
-                    <div className="form-check form-check-inline">
+                <form className="form-check form-check-inline" id='queryMode' onChange={this.switchQueryMode.bind(this)}>
+                    <div className="custom-control custom-radio">
                         <input
                             type="radio"
+                            id="QBE"
                             name="queryMode"
+                            className="custom-control-input"
                             value="QBE"
                             checked={this.state.queryMode === 'QBE'} readOnly/>
-                        <label className="form-check-label" htmlFor="QBE">Query-by-example</label>
+                            <label className="custom-control-label" htmlFor="QBE">Query-by-example</label>
                     </div>
-                    <div className="form-check form-check-inline">
+                    <div
+                        className="custom-control custom-radio"
+                        style={{marginLeft: '0.5rem'}}>
                         <input
                             type="radio"
+                            id="QBS"
                             name="queryMode"
+                            className="custom-control-input"
                             value="QBS"
                             checked={this.state.queryMode === 'QBS'} readOnly/>
-                        <label className="form-check-label" htmlFor="QBS">Query-by-sketch</label>
+                            <label className="custom-control-label" htmlFor="QBS">Query-by-sketch</label>
                     </div>
                 </form>
             </div>
@@ -149,58 +169,52 @@ export default class VisualQuery extends React.Component {
     }
 
     QBESelection() {
-        let items = [];
-        if (this.state.source >= 0) {
-            let lookup = DataStore.getData(Number(this.state.source)).data.lookup;
-            for (let key in lookup) {
-                let label = '';
-                if (lookup[key].length > 1) {
-                    label = lookup[key].join(',');
-                } else {
-                    label = lookup[key];
-                }
-                if (key !== 'z') {
-                    items.push(
-                        <div className="form-check"
-                             key={key}>
-                            <input
-                                className="form-check-input"
-                                type="checkbox"
-                                name='QBEIgnored'
-                                value={key}
-                                id={"QBEIgnored_" + key}
-                            />
-                                <label
-                                    className="form-check-label"
-                                    htmlFor={"QBEIgnored_" + key}>
-                                    {label}
-                                </label>
-                        </div>
-                    );
-                }
-            }
-        }
         return (
             <div className='featureElem'>
                 <h5>Selection</h5>
-                <form className='selector featureRow' onChange={this.switchSelector.bind(this)}>
-                    <div className="form-check form-check-inline">
+                <form className="form-check form-check-inline selector featureRow"
+                      id='QBESelector' onChange={this.switchSelector.bind(this)}>
+                    <div className="custom-control custom-radio">
                         <input
                             type="radio"
-                            name="selector"
-                            value="select"
+                            id='QBESelect'
+                            name="QBESelector"
+                            className="custom-control-input"
+                            value="Select"
                             checked={this.state.selector} readOnly/>
-                        <label className="form-check-label" htmlFor="pen">Select</label>
+                        <label className="custom-control-label" htmlFor="QBESelect">Select</label>
                     </div>
-                    <div className="form-check form-check-inline">
+                    <div
+                        className="custom-control custom-radio"
+                        style={{marginLeft: '0.5rem'}}>
                         <input
                             type="radio"
-                            name="selector"
+                            id='QBEDeselect'
+                            name="QBESelector"
+                            className="custom-control-input"
                             value="Deselect"
                             checked={!this.state.selector} readOnly/>
-                        <label className="form-check-label" htmlFor="eraser">Deselect</label>
+                        <label className="custom-control-label" htmlFor="QBEDeselect">Deselect</label>
                     </div>
                 </form>
+                {/*<form className='selector featureRow' onChange={this.switchSelector.bind(this)}>*/}
+                    {/*<div className="form-check form-check-inline">*/}
+                        {/*<input*/}
+                            {/*type="radio"*/}
+                            {/*name="selector"*/}
+                            {/*value="select"*/}
+                            {/*checked={this.state.selector} readOnly/>*/}
+                        {/*<label className="form-check-label" htmlFor="select">Select</label>*/}
+                    {/*</div>*/}
+                    {/*<div className="form-check form-check-inline">*/}
+                        {/*<input*/}
+                            {/*type="radio"*/}
+                            {/*name="selector"*/}
+                            {/*value="Deselect"*/}
+                            {/*checked={!this.state.selector} readOnly/>*/}
+                        {/*<label className="form-check-label" htmlFor="eraser">Deselect</label>*/}
+                    {/*</div>*/}
+                {/*</form>*/}
                 <div id='selectTimeInterval' className='form-row featureRow'>
                     <div className="input-group input-group-sm" style={{width: '10rem', marginRight: '1.5rem'}}>
                         <span style={{marginRight: '0.3rem'}}>Select</span>
@@ -216,14 +230,7 @@ export default class VisualQuery extends React.Component {
                             style={{right: '0'}}
                             onClick={this.selectTimeInterval.bind(this)} >Select</button>
                 </div>
-                <button
-                    id='resetSelectionBtn'
-                    className='btn btn-primary btn-sm featureRow'
-                    onClick={this.resetSelection.bind(this)}>
-                    Deselect all
-                </button>
-                <h6>Options</h6>
-                <div className="form-check form-check-inline">
+                <div className="form-check">
                     <input
                         className="form-check-input"
                         type="checkbox"
@@ -237,10 +244,12 @@ export default class VisualQuery extends React.Component {
                         Selection by drag
                     </label>
                 </div>
-                <h6>Ignored variables</h6>
-                <form id='QBEIgnoredVariables' onChange={this.updateIgnoredVariables.bind(this)}>
-                    {items}
-                </form>
+                <button
+                    id='resetSelectionBtn'
+                    className='btn btn-primary btn-sm featureRow'
+                    onClick={this.resetSelection.bind(this)}>
+                    Deselect all
+                </button>
             </div>
         );
     }
@@ -284,9 +293,145 @@ export default class VisualQuery extends React.Component {
     }
 
     matchingControllers() {
+        let items = [];
+        if (this.state.source >= 0) {
+            let lookup = DataStore.getData(Number(this.state.source)).data.lookup;
+            for (let key in lookup) {
+                let label = '';
+                if (lookup[key].length > 1) {
+                    label = lookup[key].join(',');
+                } else {
+                    label = lookup[key];
+                }
+                if (key !== 'z') {
+                    items.push(
+                        <div className="form-check form-check-inline"
+                             key={key}>
+                            <input
+                                className="form-check-input"
+                                type="checkbox"
+                                name='QBEIgnored'
+                                value={key}
+                                id={"QBEIgnored_" + key}
+                            />
+                            <label
+                                className="form-check-label"
+                                htmlFor={"QBEIgnored_" + key}>
+                                {label}
+                            </label>
+                        </div>
+                    );
+                }
+            }
+        }
         return (
             <div className='featureElem' style={{position: 'relative'}}>
                 <h5>Matching</h5>
+                <h6>Ignored variables</h6>
+                <form id='QBEIgnoredVariables' onChange={this.updateIgnoredVariables.bind(this)}>
+                    {items}
+                </form>
+                <h6>Options</h6>
+                <div className='container'
+                     style={{paddingRight: '0px', paddingLeft: '0px', marginBottom: '0.2rem'}}>
+                    <div className='row matchingOption'
+                         style={{paddingLeft: '15px', paddingRight: '15px'}}>
+                        <div className="custom-control custom-switch">
+                            <input type="checkbox" className="custom-control-input" id="QBENormalizeSwitch"/>
+                            <label className="custom-control-label" htmlFor="QBENormalizeSwitch">Normalize</label>
+                        </div>
+                    </div>
+                    <div className="row matchingOption">
+                        <div className='col-4'>
+                            Distance metric
+                        </div>
+                        <div className='col'>
+                            <select className="custom-select custom-select-sm" id='distanceMetric'>
+                                <option value="Euclidean">Euclidean</option>
+                                <option value="Manhattan">Manhattan</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="row matchingOption">
+                        <div className='col-4'>
+                            Warping window size
+                        </div>
+                        <div className='col form-inline'>
+                            <input className="form-control form-control-sm"
+                                   type="text"
+                                   placeholder="window size"
+                                   id="warpingWindowSize"
+                                   style={{width: '40%', marginRight: '0.5rem'}}/>
+                            <label className="col-form-label col-form-label-sm"> days</label>
+                        </div>
+                    </div>
+                    <div className="row matchingOption">
+                        <div className='col-4'>
+                            Length of the target time series
+                        </div>
+                        <div className='col form-inline'>
+                            <input className="form-control form-control-sm"
+                                   type="text"
+                                   placeholder="min"
+                                   id="targetLengthMin"
+                                   style={{width: '20%', marginRight: '0.5rem'}}/>
+                            ~
+                            <input className="form-control form-control-sm"
+                                   type="text"
+                                   placeholder="max"
+                                   id="targetLengthMax"
+                                   style={{width: '20%', marginRight: '0.5rem', marginLeft: '0.5rem'}}/>
+                            <label className="col-form-label col-form-label-sm"> days</label>
+                        </div>
+                    </div>
+                    <div className="row matchingOption">
+                        <div className='col-4'>
+                            Step size of sliding window
+                        </div>
+                        <div className='col form-inline'>
+                            <input className="form-control form-control-sm"
+                                   type="text"
+                                   placeholder="step size"
+                                   id="stepSizeOfSlidingWindow"
+                                   style={{width: '40%', marginRight: '0.5rem'}}/>
+                            <label className="col-form-label col-form-label-sm"> days</label>
+                        </div>
+                    </div>
+                    <div className="row matchingOption">
+                        <div className='col-4'>
+                            Restrictions
+                        </div>
+                        <div className='col'>
+                            Restriction checkboxes here
+                        </div>
+                    </div>
+                    <div className="row matchingOption">
+                        <div className='col-4'>
+                            Type of DTW
+                        </div>
+                        <div className='col'>
+                            <form className="form-check" id='DTWType' onChange={this.switchDTWMode.bind(this)}>
+                                <div className="custom-control custom-radio">
+                                    <input type="radio" id="DTWI" name="DTWType" value='DTWI'
+                                           checked={(this.state.DTWMode === 'DTWI')? true: false}
+                                           className="custom-control-input" readOnly/>
+                                    <label className="custom-control-label" htmlFor="DTWI">
+                                        DTW<sub>I</sub>
+                                    </label>
+                                </div>
+                                <div className="custom-control custom-radio">
+                                    <input type="radio" id="DTWD" name="DTWType" value='DTWD'
+                                           checked={(this.state.DTWMode === 'DTWD')? true: false}
+                                           className="custom-control-input" readOnly/>
+                                    <label className="custom-control-label" htmlFor="DTWD">
+                                        DTW<sub>D</sub>
+                                    </label>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
                 <button className="btn btn-primary btn-sm"
                         type="button"
                         id='runMatchingBtn'
@@ -296,19 +441,40 @@ export default class VisualQuery extends React.Component {
     }
 
     runMatching() {
+        // normalize
+        let normalization = $('#QBENormalizeSwitch').prop('checked');
+        // distance metric
+        let distList = document.getElementById('distanceMetric');
+        let selectedIdx = distList.selectedIndex;
+        let selectedDist = distList.options[selectedIdx].value;
+        // window size
+        let windowSize = $('#warpingWindowSize').val();
+        windowSize = (windowSize === '')? 0: Number(windowSize);
+        // period length
+        let periodMin = $('#targetLengthMin').val(), periodMax = $('#targetLengthMax').val();
+        periodMin = (periodMin === '')? 0: Number(periodMin);
+        periodMax = (periodMax === '')? 0: Number(periodMax);
+        // step size
+        let step = $('#stepSizeOfSlidingWindow').val();
+        step = (step === '')? 1: Number(step);
+        let DTWType = $('input[name=DTWType]:checked').val();
+        // console.log(normalization, selectedDist, windowSize, periodMin, periodMax);
+        // TimeSeriesQuerying.testDTW();
         switch (this.state.queryMode) {
             case 'QBE':
                 console.log('convert QBE into data');
                 // get source id: this.state.source
-                // get selected time period: FeatureStore.getSelectedPeriod()
-                // get what to ignore: this.getIgnoredVariables
                 let source = Number(this.state.source);
+                // get selected time period: FeatureStore.getSelectedPeriod()
                 let period = FeatureStore.getSelectedPeriod();
+                // get what to ignore: this.getIgnoredVariables
                 let ignored = this.getIgnoredVariables();
                 if (source !== NaN) {
                     // convert a query into an object with arrays (divide time series into equal interval (1day))
                     let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored);
                     // compute distance between time slices!
+                    let dataArray = DataStore.getDataArray(source, 1);
+                    TimeSeriesQuerying.runMatching(query, dataArray, DTWType, normalization, selectedDist, windowSize, step,[periodMin, periodMax]);
                 }
                 break;
             case 'QBS':

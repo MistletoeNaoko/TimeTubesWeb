@@ -160,7 +160,7 @@ class FeatureStore extends EventEmitter {
 
     selectPeriodfromSP(period) {
         this.selectedPeriod = period;
-        this.emit('selectPeriodfromSP');
+        this.emit('updateSelectedPeriod');
     }
 
     setIgnoredVariables(varList) {

@@ -71,6 +71,25 @@ class DataStore extends EventEmitter {
         return this.data[id];
     }
 
+    getDataArray(id, interval) {
+        let result = {};
+        for (let key in this.data[id].data.lookup) {
+            result[key] = [];
+        }
+        let minJD = this.data[id].data.meta.min.z;
+        let start = Math.ceil(this.data[id].data.meta.min.z),
+            end = Math.floor(this.data[id].data.meta.max.z);
+        for (let i = start; i <= end; i += interval) {
+            let values = this.getValues(id, i - minJD);
+            for (let key in values) {
+                result[key].push(values[key]);
+            }
+            result.z[result.z.length - 1] = i;
+        }
+        result['arrayLength'] = end - start + 1;
+        return result;
+    }
+
     getDataNum() {
         return this.data.length;
     }
