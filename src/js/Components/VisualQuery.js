@@ -96,7 +96,7 @@ export default class VisualQuery extends React.Component {
         this.setState({
             selectedInterval: period
         });
-        $('#selectedInterval').text('JD: ' + period[0] + ' - ' + period[1]);
+        $('#selectedInterval').text('JD: ' + period[0].toFixed(3) + ' - ' + period[1].toFixed(3));
         $('#targetLengthMin').val(Math.floor(period[1]) - Math.ceil(period[0]));
         $('#targetLengthMax').val(Math.floor(period[1]) - Math.ceil(period[0]));
     }
@@ -458,7 +458,6 @@ export default class VisualQuery extends React.Component {
         let step = $('#stepSizeOfSlidingWindow').val();
         step = (step === '')? 1: Number(step);
         let DTWType = $('input[name=DTWType]:checked').val();
-        // console.log(normalization, selectedDist, windowSize, periodMin, periodMax);
         // TimeSeriesQuerying.testDTW();
         switch (this.state.queryMode) {
             case 'QBE':
