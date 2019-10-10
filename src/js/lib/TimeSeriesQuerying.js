@@ -108,19 +108,40 @@ export function runMatching(query, targetData, DTWType, normalization, dist, win
             }
             break;
         case 'DTWD':
+            let keys = [];
+            for (let key in query) {
+                if (Array.isArray(query[key]) && key !== 'z') {
+                    keys.push(key);
+                }
+            }
             if (window > 0) {
                 // use DTW
                 let i = 0;
-
+                while (i < targetData.arrayLength - period[0]) {
+                    let dtws = [];
+                    for (let j = period[0]; j <= period[1]; j++) {
+                        if (i + j > targetData.arrayLength - 1) break;
+                        let target = {};
+                        keys.forEach(function (key) {
+                            target[key] = targetData[key].slice(i, i + j);
+                        });
+                        target.arrayLength = j;
+                        dtws.push(DTWMD(query, target, window, keys, distFunc));
+                    }
+                    let minIdx = 0;
+                    let minVal = Infinity;
+                    for (let j = 0; j < dtws.length; j++) {
+                        if (dtws[j] < minVal) {
+                            minVal = dtws[j];
+                            minIdx = j;
+                        }
+                    }
+                    result.push([i + minJD, period[0] + minIdx, minVal]);
+                    i += step;
+                }
             } else {
                 // use DTWSimple
                 let i = 0;
-                let keys = [];
-                for (let key in query) {
-                    if (Array.isArray(query[key]) && key !== 'z') {
-                        keys.push(key);
-                    }
-                }
                 while (i < targetData.arrayLength - period[0]) {
                     let target = {};
                     let maxLen = (i + period[1] < targetData.arrayLength - 1)? period[1]: targetData.arrayLength - i;
@@ -282,6 +303,47 @@ export function DTW(s, t, w, distFunc) {
         }
     }
     return dist[s.length - 1][t.length - 1];
+}
+
+export function DTWMD(s, t, w, keys, distFunc) {
+    let dist = [];
+    w = Math.max(w, Math.abs(s.arrayLength - t.arrayLength));
+    for (let i = 0; i < s.arrayLength; i++) {
+        dist[i] = [];
+        for (let j = 0; j < t.arrayLength; j++) {
+            dist[i][j] = Infinity;
+        }
+    }
+
+    dist[0][0] = 0;
+    for (let i = 1; i < s.arrayLength; i++) {
+        let start = Math.max(1, i - w),
+            end = Math.min(t.arrayLength, i + w);
+        for (let j = start; j < end; j++) {
+            dist[i][j] = 0;
+        }
+    }
+
+    for (let i = 1; i < s.arrayLength; i++) {
+        let start = Math.max(1, i - w),
+            end = Math.min(t.arrayLength, i + w);
+        let sValues = [];
+        keys.forEach(function (key) {
+            sValues.push(s[key][i]);
+        });
+        for (let j = start; j < end; j++) {
+            let tValues = [];
+            keys.forEach(function (key) {
+                tValues.push(t[key][j]);
+            });
+            dist[i][j] = distFunc(sValues, tValues) + Math.min(
+                dist[i - 1][j],     // insertion
+                dist[i][j - 1],     // deletion
+                dist[i - 1][j - 1]  // match
+            );
+        }
+    }
+    return dist[s.arrayLength - 1][t.arrayLength - 1];
 }
 
 function EuclideanDist(x, y) {
