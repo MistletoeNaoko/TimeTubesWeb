@@ -58,6 +58,9 @@ export function runMatching(query, targetData, DTWType, normalization, dist, win
                         for (let key in query) {
                             if (Array.isArray(targetData[key]) && key !== 'z') {
                                 let target = targetData[key].slice(i, i + j);
+                                if (normalization) {
+                                    target = normalizeTimeSeries(target);
+                                }
                                 let dtw = DTW(query[key], target, window, distFunc);
                                 dtwSum += dtw;
                             }
@@ -84,6 +87,9 @@ export function runMatching(query, targetData, DTWType, normalization, dist, win
                     for (let key in query) {
                         if (Array.isArray(targetData[key]) && key !== 'z') {
                             let target = targetData[key].slice(i, i + maxLen);
+                            if (normalization) {
+                                target = normalizeTimeSeries(target);
+                            }
                             let dtw = DTWSimple(query[key], target, distFunc, maxLen - period[0] + 1);
                             dtws.push(dtw);
                         }
@@ -126,6 +132,9 @@ export function runMatching(query, targetData, DTWType, normalization, dist, win
                             target[key] = targetData[key].slice(i, i + j);
                         });
                         target.arrayLength = j;
+                        if (normalization) {
+                            target = normalizeTimeSeries(target);
+                        }
                         dtws.push(DTWMD(query, target, window, keys, distFunc));
                     }
                     let minIdx = 0;
@@ -149,6 +158,9 @@ export function runMatching(query, targetData, DTWType, normalization, dist, win
                         target[key] = targetData[key].slice(i, i + maxLen);
                     });
                     target.arrayLength = maxLen;
+                    if (normalization) {
+                        target = normalizeTimeSeries(target);
+                    }
                     let dtws = DTWSimpleMD(query, target, keys, distFunc, maxLen - period[0] + 1);
                     let minIdx = 0;
                     let minVal = Infinity;
@@ -170,12 +182,16 @@ export function runMatching(query, targetData, DTWType, normalization, dist, win
 function normalizeTimeSeries(data) {
     let result = {};
     for (let key in data) {
-        let min = Math.min.apply(null, data[key]),
-            max = Math.max.apply(null, data[key]);
-        let tmp = data[key].map(function(num) {
-            return (num - min) / (max - min);
-        });
-        result[key] = tmp;
+        if (Array.isArray(data[key])) {
+            let min = Math.min.apply(null, data[key]),
+                max = Math.max.apply(null, data[key]);
+            let tmp = data[key].map(function (num) {
+                return (num - min) / (max - min);
+            });
+            result[key] = tmp;
+        } else {
+            result[key] = data[key];
+        }
     }
     return result;
 }
