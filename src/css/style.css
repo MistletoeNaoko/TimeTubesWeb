@@ -18,6 +18,17 @@ input[type=radio] {
     margin-right: .3125rem;
 }
 
+output {
+    position: absolute;
+    display: none;
+    background-color: #fff;
+    opacity: 0.8;
+    border-radius: 3px;
+    color: #777;
+    font-size: .8em;
+    text-align: center;
+}
+
 g.x_axis path, g.y_axis path {
     stroke: lightgray;
     stroke-width: 1px;
@@ -56,24 +67,6 @@ g.x_axis line, g.y_axis line{
 
 .featureColumn {
     min-height: 100vh;
-}
-
-/*#Controllers {*/
-    /*background: #f8f9fa;*/
-    /*font-size: 0.8rem;*/
-    /*padding: 0.5rem 0px 1rem 0px;*/
-    /*!*width: 16%;*!*/
-    /*width: 250px;*/
-    /*float: left;*/
-/*}*/
-
-#scatterplotsArea {
-    padding: 0px;
-    margin: 0px;
-}
-
-#tubeControllers {
-    height: 2rem;
 }
 
 .form-group {
@@ -136,16 +129,6 @@ g.x_axis line, g.y_axis line{
     border-color: dimgray;
 }
 
-output {
-    position: absolute;
-    display: none;
-    background-color: #fff;
-    opacity: 0.8;
-    border-radius: 3px;
-    color: #777;
-    font-size: .8em;
-    text-align: center;
-}
 label.menuLabel {
     padding: 0px;
     margin-bottom: 0px;
@@ -157,17 +140,6 @@ label.menuLabel {
 .form-check-input.menuCheck {
     margin-right: 0px;
     margin-left: 0px;
-}
-#TimeTubesMenu ul {
-    padding-left: 1rem;
-    padding-right: 1rem;
-}
-#TimeTubesMenu ul+ul {
-    border-left:1px solid white;
-}
-
-#detailValueArea {
-    background-color: rgba(0, 0, 0, 0.5);
 }
 
 .detailTable {
@@ -206,18 +178,6 @@ label.menuLabel {
     /*min-width: 100%;*/
 }
 
-#TimeTubesViewports {
-    overflow-x: scroll;
-    overflow-y: hidden;
-    /*width: 100%;*/
-    float: left;
-}
-
-#scatterplotsArea {
-    overflow-x: scroll;
-    overflow-y: hidden;
-}
-
 .collapseBtn {
     position: absolute;
     font-size: 0.8rem;
@@ -229,17 +189,6 @@ label.menuLabel {
     background-color: #f8f9fa;
     border-style: none;
     /*transform: rotate(90deg);*/
-}
-
-#collapseSidebar {
-    float: left;
-    z-index: 1010;
-}
-
-#collapseFeature {
-    float: right;
-    right: 0px;
-    z-index: 1020;
 }
 
 .controllersOnView {
@@ -256,25 +205,6 @@ label.menuLabel {
     height: 100vh;
 }
 
-#Feature {
-    width: 100%;
-    height: 100vh;
-    background: #f8f9fa;
-    float: right;
-    padding: 0.5rem 0px 1rem 0px;
-}
-
-#extractionMenu {
-    float: left;
-    width: 30%;
-}
-
-#extractionResults {
-    float: right;
-    width: 70%;
-    background-color: #DFD7CA;
-}
-
 .contents{
     flex: 1;
     width: 100%;
@@ -283,10 +213,6 @@ label.menuLabel {
 .row {
     margin-left: 0px;
     margin-right: 0px;
-}
-
-#featureArea {
-    font-size: 0.8rem;
 }
 
 .custom-input {
@@ -312,4 +238,81 @@ label.menuLabel {
 .selectedLine {
     cursor: pointer;
     stroke: magenta;
+}
+
+/*#Controllers {*/
+    /*background: #f8f9fa;*/
+    /*font-size: 0.8rem;*/
+    /*padding: 0.5rem 0px 1rem 0px;*/
+    /*!*width: 16%;*!*/
+    /*width: 250px;*/
+    /*float: left;*/
+/*}*/
+
+#scatterplotsArea {
+    padding: 0px;
+    margin: 0px;
+}
+
+#tubeControllers {
+    height: 2rem;
+}
+
+#TimeTubesMenu ul {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+#TimeTubesMenu ul+ul {
+    border-left:1px solid white;
+}
+
+#detailValueArea {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+#TimeTubesViewports {
+    overflow-x: scroll;
+    overflow-y: hidden;
+    /*width: 100%;*/
+    float: left;
+}
+
+#scatterplotsArea {
+    overflow-x: scroll;
+    overflow-y: hidden;
+}
+
+#collapseSidebar {
+    float: left;
+    z-index: 1010;
+}
+
+#collapseFeature {
+    float: right;
+    right: 0px;
+    z-index: 1020;
+}
+
+#Feature {
+    width: 100%;
+    height: 100vh;
+    background: #f8f9fa;
+    float: right;
+    padding: 0.5rem 0px 1rem 0px;
+}
+
+#extractionMenu {
+    float: left;
+    width: 30%;
+}
+
+#extractionResults {
+    float: right;
+    width: 70%;
+    background-color: #DFD7CA;
+}
+
+#featureArea {
+    font-size: 0.8rem;
 }
