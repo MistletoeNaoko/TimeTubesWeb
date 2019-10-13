@@ -15,6 +15,10 @@ class AppStore extends EventEmitter {
         }
     }
 
+    getMenu() {
+        return this.menu;
+    }
+
     selectMenu(menu) {
         this.menu = menu;
         this.emit('selectMenu', menu);

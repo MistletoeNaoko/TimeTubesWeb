@@ -180,9 +180,6 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
         }
     }
     // result stores [id, JD, period, dtw distance]
-    result.sort(function (a, b) {
-        return a[3] - b[3];
-    });
     return result;
 }
 

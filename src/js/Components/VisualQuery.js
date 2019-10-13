@@ -463,7 +463,6 @@ export default class VisualQuery extends React.Component {
         let step = $('#stepSizeOfSlidingWindow').val();
         step = (step === '')? 1: Number(step);
         let DTWType = $('input[name=DTWType]:checked').val();
-        // TimeSeriesQuerying.testDTW();
         switch (this.state.queryMode) {
             case 'QBE':
                 console.log('convert QBE into data');
@@ -481,9 +480,11 @@ export default class VisualQuery extends React.Component {
                         let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored);
                         // compute distance between time slices!
                         // scores of matching with starting JD and period will be returned
+                        // result stores [id, JD, period, dtw distance] (not sorted)
                         let scores = TimeSeriesQuerying.runMatching(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
-                        console.log(scores);
-                        // ToDo: Remove overlapping!!
+                        // console.log(scores);
+                        // TODO: Remove overlapping!!
+                        FeatureAction.setExtractionResults(scores);
                     }
                 }
                 break;

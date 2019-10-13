@@ -12,12 +12,14 @@ import BufferGeometryUtils from '../lib/BufferGeometryUtils';
 import OrbitControls from "three-orbitcontrols";
 import TextSprite from 'three.textsprite';
 import EventListener from 'react-event-listener';
+import { resolve } from 'url';
 
 export default class TimeTubes extends React.Component{
     constructor(props) {
         super();
         this.id = props.id;
         this.data = props.data;
+        this.canvas;
         this.cameraProp = TimeTubesStore.getCameraProp(props.id);
         this.tubeNum = 16;
         this.segment = 16;
@@ -228,10 +230,37 @@ export default class TimeTubes extends React.Component{
                 this.updateCamera();
             }
         });
-        TimeTubesStore.on('updateOpacity', (id, opt) => {
+        TimeTubesStore.on('moveTubeGroup', (id, pos) => {
             if (id === this.id) {
-                this.opacityCurve = TimeTubesStore.getOpacityCurve(opt);
-                this.updateOpacity(opt);
+                this.tubeGroup = pos;
+            }
+        });
+        TimeTubesStore.on('takeSnapshot', (id, pos, far) => {
+            if (id === this.id) {
+                // new Promise((resolve, reject) => {
+                //     setTimeout(() => {
+                        this.tubeGroup.position.z = pos;
+                        // this.camera.far = far;
+                        // this.camera.updateProjectionMatrix();
+                        this.renderer.render(this.scene, this.camera);
+                //         resolve();
+                //     }, 100);
+                // })
+                // .then(() => {
+                //     return new Promise(() => {
+                //         this.renderer.render(this.scene, this.camera);
+                //         resolve();
+                //     });
+                // })
+                // .then(() => {
+                //     let image = new Image();
+                //     image.src = this.canvas.toDataURL();
+                //     window.document.body.appendChild(image);
+                // });
+                // // get snapshot
+                // let image = new Image();
+                // image.src = this.renderer.domElement.toDataURL();
+                // window.document.body.appendChild(image);
             }
         });
         FeatureStore.on('switchQueryMode', (mode) => {
@@ -292,12 +321,13 @@ export default class TimeTubes extends React.Component{
 
         this.setCameras(width, height);
 
-        this.renderer = new THREE.WebGLRenderer(); //{ antialias: true }
+        this.renderer = new THREE.WebGLRenderer({preserveDrawingBuffer: true}); //{ antialias: true }
         this.renderer.setClearColor("#000000");
         this.renderer.setSize(width, height);
         this.renderer.localClippingEnabled = true;
         this.renderer.domElement.id = 'TimeTubes_viewport_' + this.id;
         this.renderer.domElement.className = 'TimeTubes_viewport';
+        this.canvas = this.renderer.domElement;
         this.initQBEView();
 
         // assign a canvas with the name of 'TimeTubes_viewport_ + this.id' to div element

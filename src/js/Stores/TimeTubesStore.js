@@ -161,6 +161,8 @@ class TimeTubesStore extends EventEmitter{
             case 'UPDATE_OPACITY':
                 this.updateOpacity(action.id, action.opt);
                 break;
+            case 'TAKE_SNAPSHOT':
+                this.takeSnapshot(action.id, action.pos, action.far);
             default:
         }
     }
@@ -426,6 +428,10 @@ class TimeTubesStore extends EventEmitter{
 
     updateOpacity(id, opt) {
         this.emit('updateOpacity', id, opt);
+    }
+
+    takeSnapshot(id, pos, far) {
+        this.emit('takeSnapshot', id, pos, far);
     }
 }
 

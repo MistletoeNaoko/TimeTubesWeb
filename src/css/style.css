@@ -40,6 +40,11 @@ g.x_axis line, g.y_axis line{
     shape-rendering: crispEdges;
 }
 
+label.menuLabel {
+    padding: 0px;
+    margin-bottom: 0px;
+}
+
 .axisLabel {
     color: #3E3F3A;
 }
@@ -129,10 +134,6 @@ g.x_axis line, g.y_axis line{
     border-color: dimgray;
 }
 
-label.menuLabel {
-    padding: 0px;
-    margin-bottom: 0px;
-}
 .form-check-inline.menuItem {
     margin-right: 0px;
     padding-left: 0.5rem;
@@ -240,6 +241,24 @@ label.menuLabel {
     stroke: magenta;
 }
 
+.resultElem {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
+
+.resultSummary {
+    width: 160px;
+    height: 310px;
+    padding: 5px;
+    float: left;
+    background-color: #fff;
+}
+
+.resultSummaryCanvas {
+    width: 150px;
+    /* height: 150px; */
+}
+
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
@@ -316,3 +335,4 @@ label.menuLabel {
 #featureArea {
     font-size: 0.8rem;
 }
+

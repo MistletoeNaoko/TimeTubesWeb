@@ -14,6 +14,7 @@ class FeatureStore extends EventEmitter {
         this.dragSelection = true;
         this.tubeAttributes = [];
         this.selectedPeriod = [-1, -1];
+        this.extractionResults = [];
     }
 
     handleActions(action) {
@@ -51,6 +52,9 @@ class FeatureStore extends EventEmitter {
             case 'SET_IGNORED_VARIALES':
                 this.setIgnoredVariables(action.varList);
                 break;
+            case 'SET_EXTRACTION_RESULTS':
+                this.setExtractionResults(action.results);
+                break;
             default:
         }
     }
@@ -87,6 +91,9 @@ class FeatureStore extends EventEmitter {
         return this.tubeAttributes[id];
     }
 
+    getExtractionResults() {
+        return this.extractionResults;
+    }
 
     updateSource(id) {
         this.source = id;
@@ -165,6 +172,11 @@ class FeatureStore extends EventEmitter {
 
     setIgnoredVariables(varList) {
         this.emit('setIgnoredVariables', varList);
+    }
+
+    setExtractionResults(results) {
+        this.extractionResults = results;
+        this.emit('setExtractionResults');
     }
 
     setTexture(texture) {

@@ -1,7 +1,7 @@
 import dispatcher from '../Dispatcher/dispatcher';
 
 export function updateCamera(id, cameraProp) {
-    // 非同期処理のためにsetTimeoutが必要？
+    // TODO: seems to need setTimeout in order to avoid dispatch in the middle of a dispatch
     setTimeout(function() {
         dispatcher.dispatch({type: 'UPDATE_CAMERA', id, cameraProp});
     }, 1);
@@ -109,4 +109,8 @@ export function updateOpacity(id, opt) {
 
 export function uploadTubeAttributes(id, position, color, indices) {
     dispatcher.dispatch({type: 'UPLOAD_TUBE_ATTRIBUTES', id, position, color, indices});
+}
+
+export function takeSnapshot(id, pos, far) {
+    dispatcher.dispatch({type: 'TAKE_SNAPSHOT', id, pos, far});
 }
