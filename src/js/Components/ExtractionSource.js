@@ -53,6 +53,21 @@ export default class ExtractionSource extends React.Component {
             .html(content);
     }
 
+    toggleSourcePanel() {
+        let current = $('#QBESourceMain').css('display');
+        if (current === 'block') {
+            $('#QBESourceMain').css('display', 'none');//toggle();
+            $('#QBESource').css('width', '0%');
+            $('#extractionResults').css('width', '70%');
+            $('#collapseSourcePanel').text('Open');
+        } else if (current === 'none') {
+            $('#QBESourceMain').css('display', 'block');
+            $('#QBESource').css('width', '30%');
+            $('#extractionResults').css('width', '40%');
+            $('#collapseSourcePanel').text('Close');
+        }
+    }
+
     render() {
         // draw scatterplots for lightcurve whenever a new file is uploaded
         // let size = $('#QBESource').outerWidth(true) - Number($('#QBESource').css('padding-left').replace('px', '')) * 2;
@@ -84,12 +99,21 @@ export default class ExtractionSource extends React.Component {
             <div
                 id='QBESource'
                 className='controllersElem featureColumn'
-                style={{float: 'left', width: '30%'}}>
-                <div id='QBESourceTT'>
+                style={{float: 'left', width: '30%', position: 'relative'}}>
+                <div id='QBESourceMain' style={{display: 'block'}}>
+                    <div id='QBESourceTT'>
+                    </div>
+                    <div id='QBESourceSP'>
+                        {scatterplots}
+                    </div>
                 </div>
-                <div id='QBESourceSP'>
-                    {scatterplots}
-                </div>
+                <button
+                    id='collapseSourcePanel'
+                    className="btn btn-primary btn-sm"
+                    style={{width: '4rem', height: '1.5rem',position: 'absolute', top: '0px', right: '-4rem'}}
+                    onClick={this.toggleSourcePanel.bind(this)}>
+                        Close
+                </button>
             </div>
         );
     }

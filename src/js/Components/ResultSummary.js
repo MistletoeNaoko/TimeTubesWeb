@@ -66,7 +66,7 @@ export default class ResultSummary extends React.Component {
                     <label>Distance</label>
                 </div>
                 <div className='col'>
-                    {this.distance.toFixed(2)}
+                    {this.distance.toFixed(3)}
                 </div>
             </div>
         );

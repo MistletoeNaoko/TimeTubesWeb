@@ -93,10 +93,7 @@ label.menuLabel {
 }
 
 .controllersElem {
-    padding-left: 15px;
-    padding-right: 15px;
-    margin-top: 15px;
-    margin-bottom: 15px;
+    padding: 15px;
 }
 
 .btn {
@@ -247,16 +244,18 @@ label.menuLabel {
 }
 
 .resultSummary {
-    width: 160px;
-    height: 310px;
-    padding: 5px;
+    width: 164px;
+    /* height: 310px; */
+    padding: 5px 7px;
     float: left;
     background-color: #fff;
+    border: 1px solid rgba(223, 215, 202, 0.75);
+    border-radius: 5px;
 }
 
 .resultSummaryCanvas {
     width: 150px;
-    /* height: 150px; */
+    height: 150px;
 }
 
 /*#Controllers {*/
@@ -336,3 +335,10 @@ label.menuLabel {
     font-size: 0.8rem;
 }
 
+#collapseSourcePanel{
+    position: relative;
+    top: 20px;
+    right: 20px;
+    width: 40px;
+    height: 40px;
+}

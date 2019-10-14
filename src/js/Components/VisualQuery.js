@@ -197,24 +197,6 @@ export default class VisualQuery extends React.Component {
                         <label className="custom-control-label" htmlFor="QBEDeselect">Deselect</label>
                     </div>
                 </form>
-                {/*<form className='selector featureRow' onChange={this.switchSelector.bind(this)}>*/}
-                    {/*<div className="form-check form-check-inline">*/}
-                        {/*<input*/}
-                            {/*type="radio"*/}
-                            {/*name="selector"*/}
-                            {/*value="select"*/}
-                            {/*checked={this.state.selector} readOnly/>*/}
-                        {/*<label className="form-check-label" htmlFor="select">Select</label>*/}
-                    {/*</div>*/}
-                    {/*<div className="form-check form-check-inline">*/}
-                        {/*<input*/}
-                            {/*type="radio"*/}
-                            {/*name="selector"*/}
-                            {/*value="Deselect"*/}
-                            {/*checked={!this.state.selector} readOnly/>*/}
-                        {/*<label className="form-check-label" htmlFor="eraser">Deselect</label>*/}
-                    {/*</div>*/}
-                {/*</form>*/}
                 <div id='selectTimeInterval' className='form-row featureRow'>
                     <div className="input-group input-group-sm" style={{width: '10rem', marginRight: '1.5rem'}}>
                         <span style={{marginRight: '0.3rem'}}>Select</span>
