@@ -15,6 +15,7 @@ class FeatureStore extends EventEmitter {
         this.tubeAttributes = [];
         this.selectedPeriod = [-1, -1];
         this.extractionResults = [];
+        this.ignored = [];
     }
 
     handleActions(action) {
@@ -53,7 +54,7 @@ class FeatureStore extends EventEmitter {
                 this.setIgnoredVariables(action.varList);
                 break;
             case 'SET_EXTRACTION_RESULTS':
-                this.setExtractionResults(action.results);
+                this.setExtractionResults(action.results, action.ignored);
                 break;
             default:
         }
@@ -93,6 +94,10 @@ class FeatureStore extends EventEmitter {
 
     getExtractionResults() {
         return this.extractionResults;
+    }
+
+    getIgnored() {
+        return this.ignored;
     }
 
     updateSource(id) {
@@ -174,8 +179,9 @@ class FeatureStore extends EventEmitter {
         this.emit('setIgnoredVariables', varList);
     }
 
-    setExtractionResults(results) {
+    setExtractionResults(results, ignored) {
         this.extractionResults = results;
+        this.ignored = ignored;
         this.emit('setExtractionResults');
     }
 

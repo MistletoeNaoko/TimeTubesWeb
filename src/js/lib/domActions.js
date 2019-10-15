@@ -29,3 +29,12 @@ export function toggleExtractionDetailPanel() {
         $('#collapseResultDetailPanel').text('Close');
     }
 }
+
+export function getIgnoredVariables() {
+    let checked = $('input[name=QBEIgnored]:checked');
+    let ignored = [];
+    for (let i = 0; i < checked.length; i++) {
+        ignored.push(checked[i].value);
+    }
+    return ignored;
+}

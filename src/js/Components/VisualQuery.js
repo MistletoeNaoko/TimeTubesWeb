@@ -6,6 +6,7 @@ import FeatureStore from '../Stores/FeatureStore';
 import SelectedTimeSlice from './SelectedTimeSlice';
 import QueryBySketch from './QueryBySketch';
 import * as TimeSeriesQuerying from '../lib/TimeSeriesQuerying';
+import * as domActions from '../lib/domActions';
 
 export default class VisualQuery extends React.Component {
     constructor() {
@@ -102,17 +103,8 @@ export default class VisualQuery extends React.Component {
     }
 
     updateIgnoredVariables() {
-        let ignored = this.getIgnoredVariables();
+        let ignored = domActions.getIgnoredVariables();
         FeatureAction.setIgnoredVariables(ignored);
-    }
-
-    getIgnoredVariables() {
-        let checked = $('input[name=QBEIgnored]:checked');
-        let ignored = [];
-        for (let i = 0; i < checked.length; i++) {
-            ignored.push(checked[i].value);
-        }
-        return ignored;
     }
 
     extractionSource() {
@@ -456,7 +448,7 @@ export default class VisualQuery extends React.Component {
                     // get selected time period: FeatureStore.getSelectedPeriod()
                     let period = FeatureStore.getSelectedPeriod();
                     // get what to ignore: this.getIgnoredVariables
-                    let ignored = this.getIgnoredVariables();
+                    let ignored = domActions.getIgnoredVariables();
                     if (source !== NaN) {
                         // convert a query into an object with arrays (divide time series into equal interval (1day))
                         let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored);
@@ -466,7 +458,7 @@ export default class VisualQuery extends React.Component {
                         let scores = TimeSeriesQuerying.runMatching(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
                         // console.log(scores);
                         // TODO: Remove overlapping!!
-                        FeatureAction.setExtractionResults(scores);
+                        FeatureAction.setExtractionResults(scores, ignored);
                     }
                 }
                 break;

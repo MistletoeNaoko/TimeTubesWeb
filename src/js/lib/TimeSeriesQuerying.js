@@ -1,5 +1,4 @@
 import DataStore from '../Stores/DataStore';
-import DynamicTimeWarping from 'dynamic-time-warping';
 
 export function makeQueryfromQBE(source, period, ignored) {
     let roundedPeriod = [Math.floor(period[0]), Math.ceil(period[1])];
@@ -198,22 +197,6 @@ function normalizeTimeSeries(data) {
         }
     }
     return result;
-}
-
-export function testDTW() {
-    var distFunc = function( a, b ) {
-        return Math.abs( a - b );
-    };
-    // case 1: 108 [ 9, 93, 15, 19, 24 ], [ 31, 97, 81, 82, 39 ]
-    // case 2: 35
-    let src = [71, 73, 75, 80, 80, 80, 78, 76, 75, 73, 71, 71, 71, 73, 75, 76, 76, 68, 76, 76, 75, 73, 71, 70, 70, 69, 68, 68, 72, 74, 78, 79, 80, 80, 78];
-    let tgt = [69, 69, 73, 75, 79, 80, 79, 78, 76, 73, 72, 71, 70, 70, 69, 69, 69, 71, 73, 75, 76, 76, 76, 76, 76, 75, 73, 71, 70, 70, 71, 73, 75, 80, 80, 80, 78];
-    // case 3: 9
-    // let src = [1, 2, 5, 4, 3, 7];
-    // let tgt = [2, 3, 2, 1, 3, 4];
-    let dtw = new DynamicTimeWarping(src, tgt, distFunc);
-    console.log(dtw.getDistance(), dtw.getPath(), dtw.getDistance() / dtw.getPath().length);
-    console.log(DTW(src, tgt,  tgt.length));
 }
 
 export function DTWSimple(s, t, distFunc, period) {

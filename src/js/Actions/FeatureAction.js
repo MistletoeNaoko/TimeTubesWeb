@@ -41,6 +41,6 @@ export function setIgnoredVariables(varList) {
     dispatcher.dispatch({type: 'SET_IGNORED_VARIALES', varList});
 }
 
-export function setExtractionResults(results) {
-    dispatcher.dispatch({type: 'SET_EXTRACTION_RESULTS', results});
+export function setExtractionResults(results, ignored) {
+    dispatcher.dispatch({type: 'SET_EXTRACTION_RESULTS', results, ignored});
 }

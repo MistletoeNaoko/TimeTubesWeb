@@ -45,6 +45,15 @@ label.menuLabel {
     margin-bottom: 0px;
 }
 
+table#extractionDetailInfoTable {
+    margin: 0.5rem 0px;
+}
+
+table#extractionDetailInfoTable td {
+    border: 1px solid #DFD7CA;
+    padding: 2px 4px;
+}
+
 .axisLabel {
     color: #3E3F3A;
 }
@@ -348,4 +357,10 @@ label.menuLabel {
     border: 1px solid #DFD7CA;
     border-radius: 5px;
     padding: 0.5rem 1rem;
+}
+
+#extractionDetailSP {
+    overflow-x: hidden;
+    overflow-y: scroll;
+    width: 100%;
 }

@@ -93,6 +93,19 @@ export default class ResultSummary extends React.Component {
             0, 0,
             300, 150
         );
+        $('#extractionDetailPeriodValue').text(this.period[0] + ' - ' + this.period[1]);
+        $('#extractionDetailDistanceValue').text(this.distance.toFixed(3));
+        let ignored = FeatureStore.getIgnored();
+        let lookup = DataStore.getData(this.id).data.lookup;
+        let ignoredList = '';
+        for (let key in lookup) {
+            if (ignored.indexOf(key) < 0 && key !== 'z') {
+                ignoredList += lookup[key] + ', ';
+            }
+        }
+        ignoredList = ignoredList.slice(0, ignoredList.length - 2);
+        $('#extractionDetailVariableValue').text(ignoredList);
+        $('#extractionDetailSP').height(size);
     }
 
     render() {

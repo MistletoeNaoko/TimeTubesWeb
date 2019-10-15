@@ -210,6 +210,11 @@ export default class ExtractionResults extends React.Component {
         );
     }
 
+    showTT() {
+        // switch tab from feature to visualization
+        // move a tube to the JD and change far value of the camera
+    }
+
     render() {
         let results;
         if (AppStore.getMenu() === 'feature' && this.state.results.length > 0) {
@@ -238,12 +243,36 @@ export default class ExtractionResults extends React.Component {
                                 <div 
                                     className='col-3'
                                     id='extractionDetailInfo'>
-                                    Detail inforrmation is here
+                                    <table
+                                        id='extractionDetailInfoTable'
+                                        style={{width: '100%'}}>
+                                        <tbody>
+                                            <tr id='extractionDetailPeriod'>
+                                                <td>Period (JD)</td>
+                                                <td id='extractionDetailPeriodValue'></td>
+                                            </tr>
+                                            <tr id='extractionDetailDistance'>
+                                                <td>Distance</td>
+                                                <td id='extractionDetailDistanceValue'></td>
+                                            </tr>
+                                            <tr id='extractionDetailVariable'>
+                                                <td>Variables</td>
+                                                <td id='extractionDetailVariableValue'></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <button
+                                        className='btn btn-primary btn-sm'
+                                        type="button"
+                                        id='showTTBtn'
+                                        style={{float: 'right'}}
+                                        onClick={this.showTT.bind(this)}>
+                                        Show TimeTubes
+                                    </button>
                                 </div>
-                                <div 
+                                <div
                                     className='col'
                                     id='extractionDetailSP'>
-                                    SPs are here
                                 </div>
                             </div>
                         </div>
