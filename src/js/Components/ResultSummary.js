@@ -1,4 +1,5 @@
 import React from 'react';
+import * as domActions from '../lib/domActions';
 import FeatureStore from '../Stores/FeatureStore';
 import DataStore from '../Stores/DataStore';
 
@@ -17,7 +18,6 @@ export default class ResultSummary extends React.Component {
         // append image to the imageHolder
         let canvas = document.getElementById('resultSummary_' + this.rank);
         let ctx = canvas.getContext('2d');
-        console.log(canvas);
         let size = Math.min(this.thumbnail.height, this.thumbnail.width);
         let px = this.thumbnail.width / 2 - size / 2,
             py = this.thumbnail.height / 2 - size / 2;
@@ -39,7 +39,7 @@ export default class ResultSummary extends React.Component {
 
     showThumbnail() {
         return (
-            <canvas 
+            <canvas
                 id={'resultSummary_' + this.rank}
                 className='resultSummaryCanvas'>
             </canvas>
@@ -72,9 +72,32 @@ export default class ResultSummary extends React.Component {
         );
     }
 
+    showDetails() {
+        if ($('#resultDetailArea').css('display') === 'none') {
+            domActions.toggleExtractionDetailPanel();
+        }
+        let canvas = document.getElementById('detailThumbnailCanvas');
+        let size = $('#extractionDetailThumbnail').width();
+        $('#detailThumbnailCanvas').width(size);
+        $('#detailThumbnailCanvas').height(size);
+        let ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, size, size);
+        let square = Math.min(this.thumbnail.height, this.thumbnail.width);
+        let px = this.thumbnail.width / 2 - square / 2,
+            py = this.thumbnail.height / 2 - square / 2;
+        // TODO: the size of the image is converted into 300 * 150
+        ctx.drawImage(
+            this.thumbnail,
+            px, py,
+            square, square,
+            0, 0,
+            300, 150
+        );
+    }
+
     render() {
         return (
-            <div className='resultSummary'>
+            <div className='resultSummary' onClick={this.showDetails.bind(this)}>
                 {this.showFileName()}
                 {this.showThumbnail()}
                 <div

@@ -328,7 +328,7 @@ label.menuLabel {
 #extractionResults {
     float: right;
     width: 70%;
-    background-color: #DFD7CA;
+    background-color: #F8F5F0;
 }
 
 #featureArea {
@@ -341,4 +341,11 @@ label.menuLabel {
     right: 20px;
     width: 40px;
     height: 40px;
+}
+
+#resultDetailArea {
+    background-color: #fff;
+    border: 1px solid #DFD7CA;
+    border-radius: 5px;
+    padding: 0.5rem 1rem;
 }

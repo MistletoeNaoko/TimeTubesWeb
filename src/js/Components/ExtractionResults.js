@@ -1,5 +1,6 @@
 import React from 'react';
 import ResultSummary from './ResultSummary';
+import * as domActions from '../lib/domActions';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import FeatureStore from '../Stores/FeatureStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
@@ -21,6 +22,7 @@ export default class ExtractionResults extends React.Component {
             this.setState({
                 results: results
             });
+            domActions.toggleSourcePanel();
             // this.showResults();
         });
     }
@@ -221,8 +223,37 @@ export default class ExtractionResults extends React.Component {
                     {this.topKResults()}
                 </div>
                 <div id='mainResultArea'>
-                    <div id='resultDetailArea'>
-                        Result detail area
+                    <div id='resultDetail' style={{position: 'relative', height: '1.5rem', marginBottom: '0px'}}>
+                        <div 
+                            id='resultDetailArea'
+                            className='container'
+                            style={{display: 'none'}}>
+                            <div className='row'>
+                                <div 
+                                    className='col-3'
+                                    id='extractionDetailThumbnail'>
+                                    <canvas
+                                        id='detailThumbnailCanvas'></canvas>
+                                </div>
+                                <div 
+                                    className='col-3'
+                                    id='extractionDetailInfo'>
+                                    Detail inforrmation is here
+                                </div>
+                                <div 
+                                    className='col'
+                                    id='extractionDetailSP'>
+                                    SPs are here
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            id='collapseResultDetailPanel'
+                            className="btn btn-primary btn-sm"
+                            style={{width: '4rem', height: '1.5rem',position: 'absolute', right: '0.5rem'}}
+                            onClick={domActions.toggleExtractionDetailPanel}>
+                            Open
+                        </button>
                     </div>
                     <div id='resultsArea'>
                         {results}

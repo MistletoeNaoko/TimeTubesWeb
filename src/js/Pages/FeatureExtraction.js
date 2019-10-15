@@ -43,7 +43,7 @@ export default class FeatureExtraction extends React.Component{
             <div
                 className='contents'
                 id='mainFeatureArea'
-                style={{overflow: 'auto', display: 'flex'}}>
+                style={{display: 'flex'}}>{/* overflow: 'auto',  */}
                 <ExtractionMenu/>
                 {QBESource}
                 {/*<div id='QBESource'*/}
