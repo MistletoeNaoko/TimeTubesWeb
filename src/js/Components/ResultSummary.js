@@ -1,5 +1,6 @@
 import React from 'react';
 import * as domActions from '../lib/domActions';
+import * as FeatureAction from '../Actions/FeatureAction';
 import FeatureStore from '../Stores/FeatureStore';
 import DataStore from '../Stores/DataStore';
 
@@ -105,7 +106,12 @@ export default class ResultSummary extends React.Component {
         }
         ignoredList = ignoredList.slice(0, ignoredList.length - 2);
         $('#extractionDetailVariableValue').text(ignoredList);
-        $('#extractionDetailSP').height(size);
+        $('#extractionDetailLC').height(size);
+
+        // set up a line chart for comparison between query and time slice
+        let width = $('#extractionDetailLC').width();
+        let height = 200;
+        FeatureAction.updateSelectedResult(this.id, this.period, width, height);
     }
 
     render() {

@@ -1,20 +1,25 @@
 import React from 'react';
+import ReactDOM from "react-dom";
 import ResultSummary from './ResultSummary';
+import LineChart from './LineChart';
 import * as domActions from '../lib/domActions';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import FeatureStore from '../Stores/FeatureStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import DataStore from '../Stores/DataStore';
 import AppStore from '../Stores/AppStore';
-import { resolve } from 'url';
 
 export default class ExtractionResults extends React.Component {
     constructor(props) {
         super();
 
         // this.results = [];
+        this.LCWidth = 300;
+        this.LCHeight = 200;
         this.state = {
-            results: []
+            results: [], 
+            LC: [],
+            selected: {}
         };
 
         FeatureStore.on('setExtractionResults', () => {
@@ -25,6 +30,23 @@ export default class ExtractionResults extends React.Component {
             domActions.toggleSourcePanel();
             // this.showResults();
         });
+        FeatureStore.on('showLineCharts', (LC) => {
+            // remove all previous LCs
+            console.log('showLineChart', LC);
+            this.setState({
+                LC: LC
+            });
+        });
+        FeatureStore.on('updateSelectedResult', (id, period, width, height) => {
+            this.LCWidth = width;
+            this.LCHeight = height;
+            this.setState({
+                selected: {
+                    id: id,
+                    period: period
+                }
+            });
+        })
     }
 
     componentDidMount() {
@@ -220,6 +242,28 @@ export default class ExtractionResults extends React.Component {
         if (AppStore.getMenu() === 'feature' && this.state.results.length > 0) {
             results = this.showResults();
         }
+        let lineCharts = [];
+        if (Object.keys(this.state.selected).length > 0) {
+            let query = FeatureStore.getQuery();
+            let targetData = DataStore.getDataArray(this.state.selected.id, 1);
+            let timeSlice = {};
+            let minIdx = targetData.z.indexOf(this.state.selected.period[0]),
+                maxIdx = targetData.z.indexOf(this.state.selected.period[1]);
+            for (let key in query) {
+                if (Array.isArray(targetData[key]) && key !== 'z') {
+                    timeSlice[key] = targetData[key].slice(minIdx, maxIdx + 1);
+                    lineCharts.push(
+                        <LineChart
+                            key={key}
+                            id={this.state.selected.id}
+                            item={key}
+                            query={query[key]}
+                            target={timeSlice[key]}
+                            width={this.LCWidth}
+                            height={this.LCHeight}/>);
+                }
+            }
+        }
         return (
             <div id='extractionResults' className='resultElem'>
                 <div id='resultMenus' style={{overflow: 'hidden'}}>
@@ -272,7 +316,8 @@ export default class ExtractionResults extends React.Component {
                                 </div>
                                 <div
                                     className='col'
-                                    id='extractionDetailSP'>
+                                    id='extractionDetailLC'>
+                                    {lineCharts}
                                 </div>
                             </div>
                         </div>

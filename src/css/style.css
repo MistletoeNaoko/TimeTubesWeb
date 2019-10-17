@@ -359,7 +359,7 @@ table#extractionDetailInfoTable td {
     padding: 0.5rem 1rem;
 }
 
-#extractionDetailSP {
+#extractionDetailLC {
     overflow-x: hidden;
     overflow-y: scroll;
     width: 100%;

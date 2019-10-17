@@ -15,6 +15,7 @@ class FeatureStore extends EventEmitter {
         this.tubeAttributes = [];
         this.selectedPeriod = [-1, -1];
         this.extractionResults = [];
+        this.query = {};
         this.ignored = [];
     }
 
@@ -54,7 +55,13 @@ class FeatureStore extends EventEmitter {
                 this.setIgnoredVariables(action.varList);
                 break;
             case 'SET_EXTRACTION_RESULTS':
-                this.setExtractionResults(action.results, action.ignored);
+                this.setExtractionResults(action.results, action.query, action.ignored);
+                break;
+            case 'SHOW_LINE_CHARTS':
+                this.showLineCharts(action.LC);
+                break;
+            case 'UPDATE_SELECTED_RESULT':
+                this.updateSelectedResult(action.id, action.period, action.width, action.height);
                 break;
             default:
         }
@@ -98,6 +105,10 @@ class FeatureStore extends EventEmitter {
 
     getIgnored() {
         return this.ignored;
+    }
+
+    getQuery() {
+        return this.query;
     }
 
     updateSource(id) {
@@ -179,8 +190,9 @@ class FeatureStore extends EventEmitter {
         this.emit('setIgnoredVariables', varList);
     }
 
-    setExtractionResults(results, ignored) {
+    setExtractionResults(results, query, ignored) {
         this.extractionResults = results;
+        this.query = query;
         this.ignored = ignored;
         this.emit('setExtractionResults');
     }
@@ -188,6 +200,14 @@ class FeatureStore extends EventEmitter {
     setTexture(texture) {
         this.texture = texture;
         this.emit('setTexture');
+    }
+
+    showLineCharts(LC) {
+        this.emit('showLineCharts', LC);
+    }
+
+    updateSelectedResult(id, period, width, height) {
+        this.emit('updateSelectedResult', id, period, width, height);
     }
 }
 

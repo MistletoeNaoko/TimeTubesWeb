@@ -1,5 +1,6 @@
 import React from 'react';
 import * as d3 from 'd3';
+import {tickFormatting} from '../lib/2DGraphLib';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import * as FeatureAction from '../Actions/FeatureAction';
 import DataStore from '../Stores/DataStore';
@@ -328,13 +329,6 @@ export default class Scatterplots extends React.Component{
                 .on('dblclick', spDblClick);
         }
 
-        function tickFormatting(d) {
-            let result = d;
-            if (Math.log10(Math.abs(d)) < -2 && d !== 0) {
-                result = d.toExponential(0);
-            }
-            return result;
-        }
         function zoomed() {
             // create new scale ojects based on event
             // let lineHPos, lineVPos;

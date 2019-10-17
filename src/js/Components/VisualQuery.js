@@ -458,7 +458,7 @@ export default class VisualQuery extends React.Component {
                         let scores = TimeSeriesQuerying.runMatching(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
                         // console.log(scores);
                         // TODO: Remove overlapping!!
-                        FeatureAction.setExtractionResults(scores, ignored);
+                        FeatureAction.setExtractionResults(scores, query, ignored);
                     }
                 }
                 break;

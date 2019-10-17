@@ -41,6 +41,14 @@ export function setIgnoredVariables(varList) {
     dispatcher.dispatch({type: 'SET_IGNORED_VARIALES', varList});
 }
 
-export function setExtractionResults(results, ignored) {
-    dispatcher.dispatch({type: 'SET_EXTRACTION_RESULTS', results, ignored});
+export function setExtractionResults(results, query, ignored) {
+    dispatcher.dispatch({type: 'SET_EXTRACTION_RESULTS', results, query, ignored});
+}
+
+export function showLineCharts(LC) {
+    dispatcher.dispatch({type: 'SHOW_LINE_CHARTS', LC});
+}
+
+export function updateSelectedResult(id, period, width, height) {
+    dispatcher.dispatch({type: 'UPDATE_SELECTED_RESULT', id, period, width, height});
 }
