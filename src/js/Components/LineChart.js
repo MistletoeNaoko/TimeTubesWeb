@@ -2,13 +2,15 @@ import React from 'react';
 import * as d3 from 'd3';
 import {tickFormatting} from '../lib/2DGraphLib';
 import FeatureStore from '../Stores/FeatureStore';
+import DataStore from '../Stores/DataStore';
 
 export default class LineChart extends React.Component {
     constructor(props) {
         super();
-        this.margin = { "top": 10, "bottom": 30, "right": 30, "left": 60 };
+        this.margin = { "top": 30, "bottom": 30, "right": 30, "left": 60 };
         this.id = props.id;
         this.item = props.item;
+        this.itemName = DataStore.getData(this.id).data.lookup[this.item];
         this.query = props.query;
         this.target = props.target;
         this.yMinMax = [
@@ -43,6 +45,15 @@ export default class LineChart extends React.Component {
             .attr('class', 'lineChart')
             .attr('width', this.state.width)
             .attr('height', this.state.height);
+
+        this.graphName = this.svg
+            .append('text')
+            .attr('x', this.margin.left + width / 2)
+            .attr('y', this.margin.top)
+            .attr('text-anchor', 'middle')
+            .style('fill', 'black')
+            .style('font-size', '0.8rem')
+            .text(this.itemName);
 
         this.xScale = d3.scaleLinear()
             .domain([0, Math.max(this.query.length, this.target.length)])

@@ -183,17 +183,28 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
 }
 
 function normalizeTimeSeries(data) {
-    let result = {};
-    for (let key in data) {
-        if (Array.isArray(data[key])) {
-            let min = Math.min.apply(null, data[key]),
-                max = Math.max.apply(null, data[key]);
-            let tmp = data[key].map(function (num) {
-                return (num - min) / (max - min);
-            });
-            result[key] = tmp;
-        } else {
-            result[key] = data[key];
+    // array or object
+    let result;
+    if (Array.isArray(data)) {
+        result = [];
+        let min = Math.min.apply(null, data),
+            max = Math.max.apply(null, data);
+        for (let i = 0; i < data.length; i++) {
+            result.push((data[i] - min) / (max - min));
+        }
+    } else if (typeof(data) === 'object') {
+        result = {};
+        for (let key in data) {
+            if (Array.isArray(data[key])) {
+                let min = Math.min.apply(null, data[key]),
+                    max = Math.max.apply(null, data[key]);
+                let tmp = data[key].map(function (num) {
+                    return (num - min) / (max - min);
+                });
+                result[key] = tmp;
+            } else {
+                result[key] = data[key];
+            }
         }
     }
     return result;

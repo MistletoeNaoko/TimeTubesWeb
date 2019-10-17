@@ -237,6 +237,17 @@ export default class ExtractionResults extends React.Component {
         // move a tube to the JD and change far value of the camera
     }
 
+    showLegendOfLC() {
+        return (
+            <svg id='lineChartLegend' height='20px' width='20rem'>
+                <line x1='0' y1='12' x2='40' y2='12' style={{stroke: '#80b139', strokeWidth: 3}}/>
+                <text x='50px' y='15px' fill='black' fontSize='0.8rem'>Query</text>
+                <line x1='100' y1='12' x2='140' y2='12' style={{stroke: '#f26418', strokeWidth: 3}}/>
+                <text x='150px' y='15px' fill='black' fontSize='0.8rem'>Result</text>
+            </svg>
+        );
+    }
+
     render() {
         let results;
         if (AppStore.getMenu() === 'feature' && this.state.results.length > 0) {
@@ -317,6 +328,7 @@ export default class ExtractionResults extends React.Component {
                                 <div
                                     className='col'
                                     id='extractionDetailLC'>
+                                    {this.showLegendOfLC()}
                                     {lineCharts}
                                 </div>
                             </div>
