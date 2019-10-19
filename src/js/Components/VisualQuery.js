@@ -552,9 +552,12 @@ export default class VisualQuery extends React.Component {
                             let result = results[i];
                             TimeTubesAction.takeSnapshot(result[0], result[1] - minJDs[String(result[0])], result[2]);
 
+                            let imageHeight = canvas[String(result[0])].height,
+                                imageWidth = canvas[String(result[0])].width;
                             let image = new Image();
                             image.src = canvas[String(result[0])].toDataURL();
-
+                            image.height = imageHeight;
+                            image.width = imageWidth;
                             ReactDOM.render(<ResultSummary
                                 key={i}
                                 id={result[0]}

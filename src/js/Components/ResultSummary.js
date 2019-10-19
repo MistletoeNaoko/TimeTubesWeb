@@ -31,12 +31,14 @@ export default class ResultSummary extends React.Component {
         let size = Math.min(this.thumbnail.height, this.thumbnail.width);
         let px = this.thumbnail.width / 2 - size / 2,
             py = this.thumbnail.height / 2 - size / 2;
-        ctx.drawImage(
-            this.thumbnail,
-            px, py,
-            size, size,
-            0, 0,
-            300, 150);// why 300? the width of canvas seems to be 300px
+        this.thumbnail.onload = function() {
+            ctx.drawImage(
+                this.thumbnail,
+                px, py,
+                size, size,
+                0, 0,
+                300, 150);// why 300? the width of canvas seems to be 300px
+        }.bind(this);
     }
 
     showFileName() {
