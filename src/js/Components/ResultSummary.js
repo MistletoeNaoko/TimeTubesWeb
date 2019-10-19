@@ -13,6 +13,15 @@ export default class ResultSummary extends React.Component {
         this.period = props.period;
         this.distance = props.distance;
         this.rank = props.rank;
+        this.query = props.query;
+        this.ignored = props.ignored;
+        this.lookup = DataStore.getData(this.id).data.lookup;
+        this.variables = [];
+        for (let key in this.lookup) {
+            if (this.ignored.indexOf(key) < 0 && key !== 'z') {
+                this.variables.push(key);
+            }
+        }
     }
 
     componentDidMount() {
@@ -99,10 +108,8 @@ export default class ResultSummary extends React.Component {
         let ignored = FeatureStore.getIgnored();
         let lookup = DataStore.getData(this.id).data.lookup;
         let ignoredList = '';
-        for (let key in lookup) {
-            if (ignored.indexOf(key) < 0 && key !== 'z') {
-                ignoredList += lookup[key] + ', ';
-            }
+        for (let i = 0; i < this.variables.length; i++) {
+            ignoredList += this.lookup[this.variables[i]] + ', ';
         }
         ignoredList = ignoredList.slice(0, ignoredList.length - 2);
         $('#extractionDetailVariableValue').text(ignoredList);
@@ -111,7 +118,7 @@ export default class ResultSummary extends React.Component {
         // set up a line chart for comparison between query and time slice
         let width = $('#extractionDetailLC').width();
         let height = 200;
-        FeatureAction.updateSelectedResult(this.id, this.period, width, height);
+        FeatureAction.updateSelectedResult(this.query, this.id, this.period, width, height);
     }
 
     render() {

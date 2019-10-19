@@ -1,10 +1,14 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import * as THREE from 'three';
 import * as FeatureAction from '../Actions/FeatureAction';
+import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
+import TimeTubesStore from '../Stores/TimeTubesStore';
 import SelectedTimeSlice from './SelectedTimeSlice';
 import QueryBySketch from './QueryBySketch';
+import ResultSummary from './ResultSummary';
 import * as TimeSeriesQuerying from '../lib/TimeSeriesQuerying';
 import * as domActions from '../lib/domActions';
 
@@ -64,7 +68,6 @@ export default class VisualQuery extends React.Component {
 
     switchDTWMode() {
         let selectedDTWMode = $('input[name=DTWType]:checked').val();
-        console.log(selectedDTWMode);
         this.setState({
             DTWMode: selectedDTWMode
         });
@@ -439,7 +442,6 @@ export default class VisualQuery extends React.Component {
         let DTWType = $('input[name=DTWType]:checked').val();
         switch (this.state.queryMode) {
             case 'QBE':
-                console.log('convert QBE into data');
                 // get source id: this.state.source
                 let source = Number(this.state.source);
                 // get target ids
@@ -455,10 +457,114 @@ export default class VisualQuery extends React.Component {
                         // compute distance between time slices!
                         // scores of matching with starting JD and period will be returned
                         // result stores [id, JD, period, dtw distance] (not sorted)
-                        let scores = TimeSeriesQuerying.runMatching(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
-                        // console.log(scores);
+                        let results = TimeSeriesQuerying.runMatching(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
                         // TODO: Remove overlapping!!
-                        FeatureAction.setExtractionResults(scores, query, ignored);
+                        // FeatureAction.setExtractionResults(results, query, ignored);
+
+                        // close the source panel
+                        if ($('#QBESourceMain').css('display') !== 'none') {
+                            domActions.toggleSourcePanel();
+                        }
+                        // get the options for showing results
+                        // order of the results
+                        let resultOrderList = document.getElementById('resultOrderList');
+                        let selectedIdx = resultOrderList.selectedIndex;
+                        let resultOrder = resultOrderList.options[selectedIdx].value;
+                        // k value
+                        let kValue = $('#topKResults').val();
+                        // distance threshold
+                        let distTh = $('#distanceThreshold').val();
+
+                        // filter results according to the input options
+                        // sort results
+                        switch(resultOrder) {
+                            case 'distance':
+                                results.sort(function (a, b) {
+                                    return a[3] - b[3];
+                                });
+                                break;
+                            case 'timeStamp':
+                                results.sort(function (a, b) {
+                                    let diff = a[1] - b[1];
+                                    if (diff === 0) {
+                                        diff = a[0] - b[0];
+                                    }
+                                    return diff;
+                                });
+                                break;
+                            case 'data':
+                                results.sort(function (a, b) {
+                                    let diff = a[0] - b[0];
+                                    if (diff === 0) {
+                                        diff = a[3] - b[3];
+                                    }
+                                    return diff;
+                                });
+                                break;
+                        }
+
+                        // filter out results with distance higher than threshold
+                        if (distTh !== '') {
+                            results = results.filter(function(result) {
+                                return (result[3] < distTh)? true: false;
+                            });
+                        }
+                        // show only top k results
+                        if (kValue !== '') {
+                            results = results.slice(0, kValue);
+                        }
+                        // get a snapshot of the time slice
+                        // step 1: store the current status of the camera
+                        let targetList = FeatureStore.getTarget();
+                        let currentCamera = {},
+                            minJDs = {},
+                            canvas = {};
+                        for (let i = 0; i < targetList.length; i++) {
+                            currentCamera[String(targetList[i])] = TimeTubesStore.getCameraProp(targetList[i]);
+                            minJDs[String(targetList[i])] = DataStore.getData(targetList[i]).data.meta.min.z;
+                            canvas[String(targetList[i])] = document.getElementById('TimeTubes_viewport_' + targetList[i]);
+                            // step 2: reset camera position
+                            let aspect = currentCamera[String(targetList[i])].aspect;
+                            TimeTubesAction.updateCamera(targetList[i], {
+                                xpos: 0,
+                                ypos: 0,
+                                zpos: 50,
+                                fov: 45,
+                                far: 2000,
+                                depth: 0,
+                                aspect: aspect,
+                                zoom: 1,
+                                type: 'Perspective'
+                            });
+                        }
+                        let summaries = [];
+                        let domnode = document.getElementById('resultsArea');
+                        // if there are previous results on the result panel, remove all
+                        while (domnode.firstChild) {
+                            ReactDOM.unmountComponentAtNode(domnode.firstChild);
+                            domnode.removeChild(domnode.firstChild);
+                        }
+                        for (let i = 0; i < results.length; i++) {
+                            // add a holder for React component to allow unmount react components
+                            let divElem = document.createElement('div');
+                            divElem.id = 'resultSummaryHolder_' + i;
+                            domnode.appendChild(divElem);
+                            let result = results[i];
+                            TimeTubesAction.takeSnapshot(result[0], result[1] - minJDs[String(result[0])], result[2]);
+
+                            let image = new Image();
+                            image.src = canvas[String(result[0])].toDataURL();
+
+                            ReactDOM.render(<ResultSummary
+                                key={i}
+                                id={result[0]}
+                                thumbnail={image}
+                                period={[result[1], result[1] + result[2]]}
+                                distance={result[3]}
+                                rank={i}
+                                query={query}
+                                ignored={ignored}/>, divElem);
+                        }
                     }
                 }
                 break;

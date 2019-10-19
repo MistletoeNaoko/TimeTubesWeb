@@ -135,7 +135,6 @@ export default class LineChart extends React.Component {
     }
 
     changeLineChart() {
-        console.log('changeLineChart')
         this.xScale
             .domain([0, Math.max(this.query.length, this.target.length)])
             .nice();

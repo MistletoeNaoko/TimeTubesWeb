@@ -19,6 +19,7 @@ export default class ExtractionResults extends React.Component {
         this.state = {
             results: [], 
             LC: [],
+            query: {},
             selected: {}
         };
 
@@ -27,33 +28,40 @@ export default class ExtractionResults extends React.Component {
             this.setState({
                 results: results
             });
-            domActions.toggleSourcePanel();
-            // this.showResults();
+            if ($('#QBESourceMain').css('display') !== 'none') {
+                domActions.toggleSourcePanel();
+            }
+            this.showResults(results);
         });
         FeatureStore.on('showLineCharts', (LC) => {
             // remove all previous LCs
-            console.log('showLineChart', LC);
             this.setState({
                 LC: LC
             });
         });
-        FeatureStore.on('updateSelectedResult', (id, period, width, height) => {
+        FeatureStore.on('updateSelectedResult', (query, id, period, width, height) => {
             this.LCWidth = width;
             this.LCHeight = height;
             this.setState({
+                query: query,
                 selected: {
                     id: id,
                     period: period
                 }
             });
-        })
+        });
+        FeatureStore.on('clearResults', () => {
+            this.setState({
+                results: []
+            });
+        });
     }
 
     componentDidMount() {
         $('#topKResults').val(20);
     }
 
-    showResults() {
+    showResults(results) {
         // get the options for showing results
         // order of the results
         let resultOrderList = document.getElementById('resultOrderList');
@@ -65,7 +73,6 @@ export default class ExtractionResults extends React.Component {
         let distTh = $('#distanceThreshold').val();
 
         // filter results according to the input options
-        let results = this.state.results;
         // sort results
         switch(resultOrder) {
             case 'distance':
@@ -126,8 +133,9 @@ export default class ExtractionResults extends React.Component {
                 type: 'Perspective'
             });
         }
-        console.log(results);
         let summaries = [];
+        let domnode = document.getElementById('resultsArea');
+        console.log(results, domnode);
         for (let i = 0; i < results.length; i++) {
             // result: [id, JD, period, dtw distance]
             // step 3: move the camera to the start point
@@ -156,15 +164,23 @@ export default class ExtractionResults extends React.Component {
 
             let image = new Image();
             image.src = canvas[String(result[0])].toDataURL();
-            summaries.push(<ResultSummary
+            // summaries.push(<ResultSummary
+            //     key={i}
+            //     id={result[0]}
+            //     thumbnail={image}
+            //     period={[result[1], result[1] + result[2]]}
+            //     distance={result[3]}
+            //     rank={i}/>);
+            console.log('showresults', result);
+            ReactDOM.render(<ResultSummary
                 key={i}
                 id={result[0]}
                 thumbnail={image}
                 period={[result[1], result[1] + result[2]]}
                 distance={result[3]}
-                rank={i}/>);
+                rank={i}/>, domnode);
         }
-        return summaries;
+        // return summaries;
     }
 
     updateOrder() {
@@ -249,26 +265,25 @@ export default class ExtractionResults extends React.Component {
     }
 
     render() {
-        let results;
-        if (AppStore.getMenu() === 'feature' && this.state.results.length > 0) {
-            results = this.showResults();
-        }
+        // let results;
+        // if (AppStore.getMenu() === 'feature' && this.state.results.length > 0) {
+        //     results = this.showResults();
+        // }
         let lineCharts = [];
         if (Object.keys(this.state.selected).length > 0) {
-            let query = FeatureStore.getQuery();
             let targetData = DataStore.getDataArray(this.state.selected.id, 1);
             let timeSlice = {};
             let minIdx = targetData.z.indexOf(this.state.selected.period[0]),
                 maxIdx = targetData.z.indexOf(this.state.selected.period[1]);
-            for (let key in query) {
-                if (Array.isArray(targetData[key]) && key !== 'z') {
+            for (let key in this.state.query) {
+                if (Array.isArray(this.state.query[key]) && Array.isArray(targetData[key]) && key !== 'z') {
                     timeSlice[key] = targetData[key].slice(minIdx, maxIdx + 1);
                     lineCharts.push(
                         <LineChart
                             key={key}
                             id={this.state.selected.id}
                             item={key}
-                            query={query[key]}
+                            query={this.state.query[key]}
                             target={timeSlice[key]}
                             width={this.LCWidth}
                             height={this.LCHeight}/>);
@@ -342,7 +357,7 @@ export default class ExtractionResults extends React.Component {
                         </button>
                     </div>
                     <div id='resultsArea'>
-                        {results}
+                        {/*{results}*/}
                     </div>
                 </div>
             </div>
