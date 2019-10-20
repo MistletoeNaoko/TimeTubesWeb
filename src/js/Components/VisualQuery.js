@@ -517,10 +517,12 @@ export default class VisualQuery extends React.Component {
                         // step 1: store the current status of the camera
                         let targetList = FeatureStore.getTarget();
                         let currentCamera = {},
+                            currentPos = {},
                             minJDs = {},
                             canvas = {};
                         for (let i = 0; i < targetList.length; i++) {
                             currentCamera[String(targetList[i])] = TimeTubesStore.getCameraProp(targetList[i]);
+                            currentPos[String(targetList[i])] = TimeTubesStore.getFocused(targetList[i]);
                             minJDs[String(targetList[i])] = DataStore.getData(targetList[i]).data.meta.min.z;
                             canvas[String(targetList[i])] = document.getElementById('TimeTubes_viewport_' + targetList[i]);
                             // step 2: reset camera position
@@ -567,6 +569,10 @@ export default class VisualQuery extends React.Component {
                                 rank={i}
                                 query={query}
                                 ignored={ignored}/>, divElem);
+                        }
+                        // recover camara status
+                        for (let i = 0; i < targetList.length; i++) {
+                            TimeTubesAction.recoverTube(targetList[i], currentCamera[String(targetList[i])], currentPos[String(targetList[i])]);
                         }
                     }
                 }

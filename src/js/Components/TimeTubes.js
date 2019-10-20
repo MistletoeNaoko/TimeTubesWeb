@@ -90,9 +90,11 @@ export default class TimeTubes extends React.Component{
             this.cameraProp = TimeTubesStore.getCameraProp(this.id);
             this.updateCamera();
         });
-        TimeTubesStore.on('change', () => {
-            this.cameraProp = TimeTubesStore.getCameraProp(this.id);
-            this.updateCamera();
+        TimeTubesStore.on('updateCamera', (id) => {
+            if (id === this.id) {
+                this.cameraProp = TimeTubesStore.getCameraProp(this.id);
+                this.updateCamera();
+            }
         });
         TimeTubesStore.on('reset', () => {
             this.cameraProp = TimeTubesStore.getCameraProp(this.id);
@@ -237,30 +239,15 @@ export default class TimeTubes extends React.Component{
         });
         TimeTubesStore.on('takeSnapshot', (id, pos, far) => {
             if (id === this.id) {
-                // new Promise((resolve, reject) => {
-                //     setTimeout(() => {
-                        this.tubeGroup.position.z = pos;
-                        // this.camera.far = far;
-                        // this.camera.updateProjectionMatrix();
-                        this.renderer.render(this.scene, this.camera);
-                //         resolve();
-                //     }, 100);
-                // })
-                // .then(() => {
-                //     return new Promise(() => {
-                //         this.renderer.render(this.scene, this.camera);
-                //         resolve();
-                //     });
-                // })
-                // .then(() => {
-                //     let image = new Image();
-                //     image.src = this.canvas.toDataURL();
-                //     window.document.body.appendChild(image);
-                // });
-                // // get snapshot
-                // let image = new Image();
-                // image.src = this.renderer.domElement.toDataURL();
-                // window.document.body.appendChild(image);
+                this.tubeGroup.position.z = pos;
+                this.renderer.render(this.scene, this.camera);
+            }
+        });
+        TimeTubesStore.on('recoverTube', (id, cameraProp, tubePos) => {
+            if (id === this.id) {
+                this.cameraProp = TimeTubesStore.getCameraProp(this.id);;
+                this.tubeGroup.position.z = tubePos;
+                this.updateCamera();
             }
         });
         FeatureStore.on('switchQueryMode', (mode) => {

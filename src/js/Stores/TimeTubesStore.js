@@ -163,6 +163,10 @@ class TimeTubesStore extends EventEmitter{
                 break;
             case 'TAKE_SNAPSHOT':
                 this.takeSnapshot(action.id, action.pos, action.far);
+                break;
+            case 'RECOVER_TUBE':
+                this.recoverTube(action.id, action.cameraProp, action.tubePos);
+                break;
             default:
         }
     }
@@ -295,7 +299,7 @@ class TimeTubesStore extends EventEmitter{
         for (let key in cameraProp) {
             this.cameraProp[id][key] = cameraProp[key];
         }
-        this.emit('change');
+        this.emit('updateCamera', id);
     }
 
     resetCamera(id) {
@@ -432,6 +436,14 @@ class TimeTubesStore extends EventEmitter{
 
     takeSnapshot(id, pos, far) {
         this.emit('takeSnapshot', id, pos, far);
+    }
+
+    recoverTube(id, cameraProp, tubePos) {
+        for (let key in cameraProp) {
+            this.cameraProp[id][key] = cameraProp[key];
+        }
+        this.focused[id] = tubePos;
+        this.emit('recoverTube', id, cameraProp, tubePos);
     }
 }
 

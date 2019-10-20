@@ -114,3 +114,7 @@ export function uploadTubeAttributes(id, position, color, indices) {
 export function takeSnapshot(id, pos, far) {
     dispatcher.dispatch({type: 'TAKE_SNAPSHOT', id, pos, far});
 }
+
+export function recoverTube(id, cameraProp, tubePos) {
+    dispatcher.dispatch({type: 'RECOVER_TUBE', id, cameraProp, tubePos});
+}
