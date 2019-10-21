@@ -94,6 +94,7 @@ export default class TimeTubes extends React.Component{
             if (id === this.id) {
                 this.cameraProp = TimeTubesStore.getCameraProp(this.id);
                 this.updateCamera();
+                this.resetCamera();
             }
         });
         TimeTubesStore.on('reset', () => {
