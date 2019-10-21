@@ -19,7 +19,6 @@ export default class ExtractionResults extends React.Component {
         this.state = {
             results: [], 
             LC: [],
-            query: {},
             selected: {}
         };
 
@@ -39,11 +38,10 @@ export default class ExtractionResults extends React.Component {
                 LC: LC
             });
         });
-        FeatureStore.on('updateSelectedResult', (query, id, period, width, height) => {
+        FeatureStore.on('updateSelectedResult', (id, period, width, height) => {
             this.LCWidth = width;
             this.LCHeight = height;
             this.setState({
-                query: query,
                 selected: {
                     id: id,
                     period: period
@@ -275,15 +273,16 @@ export default class ExtractionResults extends React.Component {
             let timeSlice = {};
             let minIdx = targetData.z.indexOf(this.state.selected.period[0]),
                 maxIdx = targetData.z.indexOf(this.state.selected.period[1]);
-            for (let key in this.state.query) {
-                if (Array.isArray(this.state.query[key]) && Array.isArray(targetData[key]) && key !== 'z') {
+            let query = FeatureStore.getQuery();
+            for (let key in query) {
+                if (Array.isArray(query[key]) && Array.isArray(targetData[key]) && key !== 'z') {
                     timeSlice[key] = targetData[key].slice(minIdx, maxIdx + 1);
                     lineCharts.push(
                         <LineChart
                             key={key}
                             id={this.state.selected.id}
                             item={key}
-                            query={this.state.query[key]}
+                            query={query[key]}
                             target={timeSlice[key]}
                             width={this.LCWidth}
                             height={this.LCHeight}/>);

@@ -61,7 +61,7 @@ class FeatureStore extends EventEmitter {
                 this.showLineCharts(action.LC);
                 break;
             case 'UPDATE_SELECTED_RESULT':
-                this.updateSelectedResult(action.query, action.id, action.period, action.width, action.height);
+                this.updateSelectedResult(action.id, action.period, action.width, action.height);
                 break;
             case 'CLEAR_RESULTS':
                 this.emit('clearResults');
@@ -196,7 +196,7 @@ class FeatureStore extends EventEmitter {
         this.extractionResults = results;
         this.query = query;
         this.ignored = ignored;
-        this.emit('setExtractionResults');
+        // this.emit('setExtractionResults');
     }
 
     setTexture(texture) {
@@ -208,8 +208,8 @@ class FeatureStore extends EventEmitter {
         this.emit('showLineCharts', LC);
     }
 
-    updateSelectedResult(query, id, period, width, height) {
-        this.emit('updateSelectedResult', query, id, period, width, height);
+    updateSelectedResult(id, period, width, height) {
+        this.emit('updateSelectedResult', id, period, width, height);
     }
 }
 

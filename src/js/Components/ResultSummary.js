@@ -13,8 +13,7 @@ export default class ResultSummary extends React.Component {
         this.period = props.period;
         this.distance = props.distance;
         this.rank = props.rank;
-        this.query = props.query;
-        this.ignored = props.ignored;
+        this.ignored = FeatureStore.getIgnored();
         this.lookup = DataStore.getData(this.id).data.lookup;
         this.variables = [];
         for (let key in this.lookup) {
@@ -120,7 +119,7 @@ export default class ResultSummary extends React.Component {
         // set up a line chart for comparison between query and time slice
         let width = $('#extractionDetailLC').width();
         let height = 200;
-        FeatureAction.updateSelectedResult(this.query, this.id, this.period, width, height);
+        FeatureAction.updateSelectedResult(this.id, this.period, width, height);
     }
 
     render() {

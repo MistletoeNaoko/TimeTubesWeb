@@ -459,7 +459,7 @@ export default class VisualQuery extends React.Component {
                         // result stores [id, JD, period, dtw distance] (not sorted)
                         let results = TimeSeriesQuerying.runMatching(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
                         // TODO: Remove overlapping!!
-                        // FeatureAction.setExtractionResults(results, query, ignored);
+                        FeatureAction.setExtractionResults(results, query, ignored);
 
                         // close the source panel
                         if ($('#QBESourceMain').css('display') !== 'none') {
@@ -566,9 +566,7 @@ export default class VisualQuery extends React.Component {
                                 thumbnail={image}
                                 period={[result[1], result[1] + result[2]]}
                                 distance={result[3]}
-                                rank={i}
-                                query={query}
-                                ignored={ignored}/>, divElem);
+                                rank={i}/>, divElem);
                         }
                         // recover camara status
                         for (let i = 0; i < targetList.length; i++) {
