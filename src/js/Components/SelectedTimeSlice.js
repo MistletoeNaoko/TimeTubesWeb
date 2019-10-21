@@ -290,7 +290,7 @@ export default class SelectedTimeSlice extends React.Component {
         let maxIdx = Math.ceil((this.selectedPeriod[1] - minJD) / delTime);
         let vertices = [], colors = [];
         let deg, cenX, cenY, radX, radY;
-        for (let i = minIdx; i <= maxIdx; i++) {
+        for (let i = minIdx; i <= maxIdx + 1; i++) {
             cenX = (ignoredX >= 0) ? 0 : cen[i].x;
             cenY = (ignoredY >= 0) ? 0 : cen[i].y;
             radX = (ignoredRX >= 0) ? 1 / range : rad[i].x;

@@ -255,7 +255,7 @@ export default class ExtractionResults extends React.Component {
 
     showLegendOfLC() {
         return (
-            <svg id='lineChartLegend' height='20px' width='20rem'>
+            <svg id='lineChartLegend' height='20px' width='300px'>
                 <line x1='0' y1='12' x2='40' y2='12' style={{stroke: '#80b139', strokeWidth: 3}}/>
                 <text x='50px' y='15px' fill='black' fontSize='0.8rem'>Query</text>
                 <line x1='100' y1='12' x2='140' y2='12' style={{stroke: '#f26418', strokeWidth: 3}}/>
