@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import ResultSummary from './ResultSummary';
 import LineChart from './LineChart';
 import * as domActions from '../lib/domActions';
+import * as TimeSeriesQuerying from '../lib/TimeSeriesQuerying';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import FeatureStore from '../Stores/FeatureStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
@@ -30,7 +31,6 @@ export default class ExtractionResults extends React.Component {
             if ($('#QBESourceMain').css('display') !== 'none') {
                 domActions.toggleSourcePanel();
             }
-            this.showResults(results);
         });
         FeatureStore.on('showLineCharts', (LC) => {
             // remove all previous LCs
@@ -59,138 +59,19 @@ export default class ExtractionResults extends React.Component {
         $('#topKResults').val(20);
     }
 
-    showResults(results) {
-        // get the options for showing results
-        // order of the results
-        let resultOrderList = document.getElementById('resultOrderList');
-        let selectedIdx = resultOrderList.selectedIndex;
-        let resultOrder = resultOrderList.options[selectedIdx].value;
-        // k value
-        let kValue = $('#topKResults').val();
-        // distance threshold
-        let distTh = $('#distanceThreshold').val();
-
-        // filter results according to the input options
-        // sort results
-        switch(resultOrder) {
-            case 'distance':
-                results.sort(function (a, b) {
-                    return a[3] - b[3];
-                });
-                break;
-            case 'timeStamp':
-                results.sort(function (a, b) {
-                    let diff = a[1] - b[1];
-                    if (diff === 0) {
-                        diff = a[0] - b[0];
-                    }
-                    return diff;
-                });
-                break;
-            case 'data':
-                results.sort(function (a, b) {
-                    let diff = a[0] - b[0];
-                    if (diff === 0) {
-                        diff = a[3] - b[3];
-                    }
-                    return diff;
-                });
-                break;
-        }
-        // filter out results with distance higher than threshold
-        if (distTh !== '') {
-            results = results.filter(function(result) {
-                return (result[3] < distTh)? true: false;
-            });
-        }
-        // show only top k results
-        if (kValue !== '') {
-            results = results.slice(0, kValue);
-        }
-        // get a snapshot of the time slice
-        // step 1: store the current status of the camera
-        let targetList = FeatureStore.getTarget();
-        let currentCamera = {},
-            minJDs = {},
-            canvas = {};
-        for (let i = 0; i < targetList.length; i++) {
-            currentCamera[String(targetList[i])] = TimeTubesStore.getCameraProp(targetList[i]);
-            minJDs[String(targetList[i])] = DataStore.getData(targetList[i]).data.meta.min.z;
-            canvas[String(targetList[i])] = document.getElementById('TimeTubes_viewport_' + targetList[i]);
-            // step 2: reset camera position
-            let aspect = currentCamera[String(targetList[i])].aspect;
-            TimeTubesAction.updateCamera(targetList[i], {
-                xpos: 0,
-                ypos: 0,
-                zpos: 50,
-                fov: 45,
-                far: 2000,
-                depth: 0,
-                aspect: aspect,
-                zoom: 1,
-                type: 'Perspective'
-            });
-        }
-        let summaries = [];
-        let domnode = document.getElementById('resultsArea');
-        console.log(results, domnode);
-        for (let i = 0; i < results.length; i++) {
-            // result: [id, JD, period, dtw distance]
-            // step 3: move the camera to the start point
-            // step 4: set camera far
-
-            let result = results[i];
-            TimeTubesAction.takeSnapshot(result[0], result[1] - minJDs[String(result[0])], result[2]);
-            // new Promise((resolve, reject) => {
-            //     let result = results[i];
-            //     TimeTubesAction.takeSnapshot(result[0], result[1] - minJDs[String(result[0])], result[2]);
-            //     resolve(i + 1);
-            // });
-            // new Promise((resolve, reject) => {
-            //     setTimeout(() => {
-            //         TimeTubesAction.takeSnapshot(result[0], result[1] - minJDs[String(result[0])], result[2]);
-            //         resolve(1);
-            //     }, 100);
-            // })
-            // .then(() => {
-            //     console.log('show snapshots')
-            //     let canvas = document.getElementById('TimeTubes_viewport_' + result[0]);
-            //     let image = new Image();
-            //     image.src = canvas.toDataURL();
-            //     window.document.body.appendChild(image);
-            // })
-
-            let image = new Image();
-            image.src = canvas[String(result[0])].toDataURL();
-            // summaries.push(<ResultSummary
-            //     key={i}
-            //     id={result[0]}
-            //     thumbnail={image}
-            //     period={[result[1], result[1] + result[2]]}
-            //     distance={result[3]}
-            //     rank={i}/>);
-            console.log('showresults', result);
-            ReactDOM.render(<ResultSummary
-                key={i}
-                id={result[0]}
-                thumbnail={image}
-                period={[result[1], result[1] + result[2]]}
-                distance={result[3]}
-                rank={i}/>, domnode);
-        }
-        // return summaries;
-    }
-
     updateOrder() {
         console.log('update order');
+        TimeSeriesQuerying.showExtractionResults();
     }
 
     updateKValue() {
         console.log('update k value');
+        TimeSeriesQuerying.showExtractionResults();
     }
 
     updateDistanceThreshold() {
-        console.log('distance threshold')
+        console.log('distance threshold');
+        TimeSeriesQuerying.showExtractionResults();
     }
 
     orderOfResults() {
@@ -263,10 +144,6 @@ export default class ExtractionResults extends React.Component {
     }
 
     render() {
-        // let results;
-        // if (AppStore.getMenu() === 'feature' && this.state.results.length > 0) {
-        //     results = this.showResults();
-        // }
         let lineCharts = [];
         if (Object.keys(this.state.selected).length > 0) {
             let targetData = DataStore.getDataArray(this.state.selected.id, 1);
