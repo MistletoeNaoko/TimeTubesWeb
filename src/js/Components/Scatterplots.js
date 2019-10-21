@@ -37,7 +37,7 @@ export default class Scatterplots extends React.Component{
             xItemonPanel: props.xItem,
             yItemonPanel: props.yItem,
             width: props.width,
-            height: props.height
+            height: Math.max(props.height, 200)
         };
     }
 
@@ -186,7 +186,7 @@ export default class Scatterplots extends React.Component{
         let divID = this.divID;
         let margin = this.margin;
         let data = this.data;
-        let outerWidth = this.props.width, outerHeight = this.props.height;
+        let outerWidth = this.props.width, outerHeight = Math.max(this.props.height, 200);
         let width = outerWidth - this.margin.left - this.margin.right;
         let height = outerHeight - this.margin.top - this.margin.bottom;
         let xItem = this.state.xItem, yItem = this.state.yItem;
@@ -606,6 +606,7 @@ export default class Scatterplots extends React.Component{
     }
 
     updateCurrentPos(zpos) {
+        let currentHeight = this.sp.attr('height');
         if (this.state.xItem === 'z') {
             let new_xScale = d3.scaleLinear()
                 .domain([this.xMinMax[0], this.xMinMax[1]])
@@ -623,7 +624,7 @@ export default class Scatterplots extends React.Component{
         } else if (this.state.yItem === 'z') {
             let new_yScale = d3.scaleLinear()
                 .domain([this.yMinMax[0], this.yMinMax[1]])
-                .range([0, this.props.height - this.margin.top - this.margin.bottom]);
+                .range([0, currentHeight - this.margin.top - this.margin.bottom]);
             let JD = zpos + this.data.data.spatial[0].z;
             // this.lineH = d3.selectAll('.currentLineH.' + this.divID + '.scatterplots' + this.id);
             // let currentLineV = d3.selectAll('.currentLineV.' + this.divID + '.scatterplots' + this.id);
