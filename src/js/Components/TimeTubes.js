@@ -255,6 +255,7 @@ export default class TimeTubes extends React.Component{
             if (id === this.id) {
                 this.resetCamera();
                 this.tubeGroup.position.z = TimeTubesStore.getFocused(id);
+                //TODO: not set far value but add a new clipping plane
                 this.cameraProp = TimeTubesStore.getCameraProp(this.id);
                 this.updateCamera();
             }
