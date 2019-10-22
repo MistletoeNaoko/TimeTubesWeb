@@ -70,7 +70,8 @@ export default class Details extends React.Component{
             max: 100,
             slide: function( event, ui ) {
                 val.css('display', 'initial');
-                val.val(ui.value);
+                // subtract initial position of the camera
+                val.val(ui.value - 50);
                 let min = $( "#farSlider_" + id ).slider('option', 'min');
                 let range = $( "#farSlider_" + id ).slider('option', 'max') - min;
                 let pos = -10 + $( '#farSlider_' + id ).width() * (ui.value - min) / range;
@@ -342,6 +343,7 @@ export default class Details extends React.Component{
             case 'hidden':
                 $('#changeFar_' + this.id).css('left', leftPos.left);
                 $('#changeFar_' + this.id).css('visibility', 'visible');
+                $("#farSlider_" + this.id).slider('option', 'value', TimeTubesStore.getCameraProp(this.id).far);
                 break;
         }
     }

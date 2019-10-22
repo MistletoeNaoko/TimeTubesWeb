@@ -5,6 +5,7 @@ import LineChart from './LineChart';
 import * as domActions from '../lib/domActions';
 import * as TimeSeriesQuerying from '../lib/TimeSeriesQuerying';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
+import * as AppAction from '../Actions/AppAction';
 import FeatureStore from '../Stores/FeatureStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import DataStore from '../Stores/DataStore';
@@ -129,7 +130,10 @@ export default class ExtractionResults extends React.Component {
 
     showTT() {
         // switch tab from feature to visualization
+        AppAction.selectMenu('visualization');
         // move a tube to the JD and change far value of the camera
+        // pass this.state.selected.id & this.state.selected.period
+        TimeTubesAction.showTimeTubesOfTimeSlice(this.state.selected.id, this.state.selected.period);
     }
 
     showLegendOfLC() {
@@ -196,6 +200,10 @@ export default class ExtractionResults extends React.Component {
                                             <tr id='extractionDetailPeriod'>
                                                 <td>Period (JD)</td>
                                                 <td id='extractionDetailPeriodValue'></td>
+                                            </tr>
+                                            <tr id='extractionDetailLength'>
+                                                <td>Length</td>
+                                                <td id='extractionDetailLengthValue'></td>
                                             </tr>
                                             <tr id='extractionDetailDistance'>
                                                 <td>Distance</td>

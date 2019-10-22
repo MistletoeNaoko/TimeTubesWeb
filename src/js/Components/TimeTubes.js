@@ -246,8 +246,16 @@ export default class TimeTubes extends React.Component{
         });
         TimeTubesStore.on('recoverTube', (id, cameraProp, tubePos) => {
             if (id === this.id) {
-                this.cameraProp = TimeTubesStore.getCameraProp(this.id);;
+                this.cameraProp = TimeTubesStore.getCameraProp(this.id);
                 this.tubeGroup.position.z = tubePos;
+                this.updateCamera();
+            }
+        });
+        TimeTubesStore.on('showTimeTubesOfTimeSlice', (id) => {
+            if (id === this.id) {
+                this.resetCamera();
+                this.tubeGroup.position.z = TimeTubesStore.getFocused(id);
+                this.cameraProp = TimeTubesStore.getCameraProp(this.id);
                 this.updateCamera();
             }
         });

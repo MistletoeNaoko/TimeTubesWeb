@@ -105,6 +105,7 @@ export default class ResultSummary extends React.Component {
             300, 150
         );
         $('#extractionDetailPeriodValue').text(this.period[0] + ' - ' + this.period[1]);
+        $('#extractionDetailLengthValue').text((this.period[1] - this.period[0]) + ' days');
         $('#extractionDetailDistanceValue').text(this.distance.toFixed(3));
         let ignored = FeatureStore.getIgnored();
         let lookup = DataStore.getData(this.id).data.lookup;

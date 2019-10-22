@@ -1,6 +1,7 @@
 import {EventEmitter} from 'events';
 import dispatcher from "../Dispatcher/dispatcher";
 import * as THREE from "three";
+import DataStore from './DataStore';
 
 const opacityDistSet = {
     Default: [
@@ -167,6 +168,8 @@ class TimeTubesStore extends EventEmitter{
             case 'RECOVER_TUBE':
                 this.recoverTube(action.id, action.cameraProp, action.tubePos);
                 break;
+            case 'SHOW_TIMETUBES_OF_TIME_SLICE':
+                this.showTimeTubesofTimeSlice(action.id, action.period);
             default:
         }
     }
@@ -444,6 +447,12 @@ class TimeTubesStore extends EventEmitter{
         }
         this.focused[id] = tubePos;
         this.emit('recoverTube', id, cameraProp, tubePos);
+    }
+
+    showTimeTubesofTimeSlice(id, period) {
+        this.cameraProp[id].far = period[1] - period[0] + 50;
+        this.focused[id] = period[0] - DataStore.getData(id).data.meta.min.z;
+        this.emit('showTimeTubesOfTimeSlice', id);
     }
 }
 

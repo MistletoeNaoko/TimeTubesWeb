@@ -290,7 +290,7 @@ export default class SelectedTimeSlice extends React.Component {
         let maxIdx = Math.ceil((this.selectedPeriod[1] - minJD) / delTime);
         let vertices = [], colors = [];
         let deg, cenX, cenY, radX, radY;
-        for (let i = minIdx; i <= maxIdx + 1; i++) {
+        for (let i = minIdx; i < maxIdx; i++) {
             cenX = (ignoredX >= 0) ? 0 : cen[i].x;
             cenY = (ignoredY >= 0) ? 0 : cen[i].y;
             radX = (ignoredRX >= 0) ? 1 / range : rad[i].x;
@@ -302,6 +302,7 @@ export default class SelectedTimeSlice extends React.Component {
                 vertices.push(cen[i].z - this.selectedPeriod[0]);
             }
         }
+        // console.log(this.tube.geometry.attributes, vertices)
         // if any ignored variables on colors (H, V) are set, pass a flag as a uniform
         this.tube.material.uniforms.flagH.value = (ignoredH >= 0)? false: true;
         this.tube.material.uniforms.flagV.value = (ignoredV >= 0)? false: true;
