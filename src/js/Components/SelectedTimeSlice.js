@@ -223,6 +223,7 @@ export default class SelectedTimeSlice extends React.Component {
         this.tube.geometry.attributes.normal = new THREE.BufferAttribute(new Float32Array(pos.length), 1);
         this.tube.geometry.index = new THREE.BufferAttribute(new Uint32Array(indices), 1);
         this.tube.geometry.computeVertexNormals();
+        console.log(this.tube.geometry.attributes)
         this.renderer.render(this.scene, this.camera);
     }
 
@@ -287,10 +288,11 @@ export default class SelectedTimeSlice extends React.Component {
         let col = this.data.data.splines.color.getSpacedPoints(divNumPho);
         let del = Math.PI * 2 / (this.segment - 1);
         let minIdx = Math.ceil((this.selectedPeriod[0] - minJD) / delTime);
+        let attrSize = this.tube.geometry.attributes.position.length / 3 / this.segment;
         let maxIdx = Math.ceil((this.selectedPeriod[1] - minJD) / delTime);
         let vertices = [], colors = [];
         let deg, cenX, cenY, radX, radY;
-        for (let i = minIdx; i < maxIdx; i++) {
+        for (let i = minIdx; i < minIdx + attrSize; i++) {//i <= maxIdx; i++) {
             cenX = (ignoredX >= 0) ? 0 : cen[i].x;
             cenY = (ignoredY >= 0) ? 0 : cen[i].y;
             radX = (ignoredRX >= 0) ? 1 / range : rad[i].x;
@@ -308,6 +310,7 @@ export default class SelectedTimeSlice extends React.Component {
         this.tube.material.uniforms.flagV.value = (ignoredV >= 0)? false: true;
         this.tube.geometry.attributes.position.needsUpdate = true;
         this.tube.geometry.attributes.position = new THREE.BufferAttribute(new Float32Array(vertices), 3);
+        console.log(this.tube.geometry.attributes);
         this.tube.geometry.computeVertexNormals();
         this.renderer.render(this.scene, this.camera);
     }
