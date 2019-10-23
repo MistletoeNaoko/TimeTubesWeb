@@ -111,6 +111,7 @@ export default class QueryBySketch extends React.Component{
     }
 
     formatValue(value) {
+        value = Number(value);
         let result;
         if (Math.log10(Math.abs(value)) < -2 && value !== 0) {
             result = value.toExponential(1);
@@ -1227,9 +1228,45 @@ export default class QueryBySketch extends React.Component{
         return (
             <div id='QBSSketchOptions' className='featureElem'>
                 <h5>Options</h5>
+                {this.definePeriodOfQuery()}
                 {this.assignVariables()}
             </div>
         );
+    }
+
+    definePeriodOfQuery() {
+        return (
+            <div>
+                <h6>The length of time of the sketch</h6>
+                <div className="form-inline">
+                    <input className="form-control form-control-sm"
+                           type="text"
+                           placeholder="Length of time"
+                           id="periodOfSketchQuery"
+                           style={{width: '40%', marginRight: '0.5rem'}}
+                           onChange={this.updateTimeLength.bind(this)}/>
+                    <label className="col-form-label col-form-label-sm" htmlFor="periodOfSketchQuery">days</label>
+                </div>
+            </div>
+        );
+    }
+
+    updateTimeLength() {
+        let val = $('#periodOfSketchQuery').val();
+        if (val !== '') {
+            val = Number(val);
+            let canvasSize = $('#QBSSketchPad').width();
+            // TODO: Decide the axis range from the most left and right point of the sketch
+            if (this.state.xItem === 'z') {
+                let minX = this.controlPoints[0].position.x,
+                    maxX = this.controlPoints[this.controlPoints.length - 1].position.x;
+                this.updateXAxisValue(0, this.formatValue(val / (maxX - minX) * canvasSize));
+            } else if (this.state.yItem === 'z') {
+                let minY = this.controlPoints[0].position.y,
+                    maxY = this.controlPoints[this.controlPoints.length - 1].position.y;
+                this.updateYAxisValue(0, this.formatValue(val / (maxY - minY) * canvasSize));
+            }
+        }
     }
 
     assignVariables() {
