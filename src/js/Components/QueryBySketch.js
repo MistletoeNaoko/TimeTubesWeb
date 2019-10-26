@@ -1509,27 +1509,6 @@ export default class QueryBySketch extends React.Component{
                 <div id='QBSSketchMenuArea'>
                     {this.sketchOptions()}
                 </div>
-                {/*<label id='QBSYAxis'*/}
-                       {/*style={{*/}
-                           {/*fontSize: '0.8rem',*/}
-                           {/*height: '30px',*/}
-                           {/*width: width,*/}
-                           {/*textAlign: 'center',*/}
-                           {/*transform: 'rotate(-90deg) translate(' + -width / 2 + 'px, ' + (-height / 2 + 30 / 2) + 'px)',*/}
-                           {/*float: 'left'}}*/}
-                       {/*onClick={this.changeYAxis.bind(this)}>y</label>*/}
-                {/*<canvas id='QBSSketchPad'*/}
-                        {/*style={{*/}
-                            {/*width: width - 30,*/}
-                            {/*height: height,*/}
-                            {/*float: 'right'}}></canvas>*/}
-                {/*<div style={{clear: 'both'}}></div>*/}
-                {/*<label id='QBSXAxis'*/}
-                       {/*style={{*/}
-                           {/*fontSize: '0.8rem',*/}
-                           {/*width: width,*/}
-                           {/*textAlign: 'center'}}*/}
-                       {/*onClick={this.changeXAxis.bind(this)}>x</label>*/}
             </div>
         );
     }
