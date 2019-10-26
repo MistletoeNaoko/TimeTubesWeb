@@ -704,55 +704,6 @@ export default class QueryBySketch extends React.Component{
 
                         // compute the upper/lower points of the simplified curve
                         this.drawPathWidth();
-                        // this.segPoints = [];
-                        // let upperPoints = [], lowerPoints = [];
-                        // let curveLen = 0;
-                        // for (let i = 0; i < this.path.curves.length; i++) {
-                        //     let r0 = this.radiuses[i],
-                        //         r1 = this.radiuses[i + 1];
-                        //     let currentCurveLen = this.path.curves[i].length;
-                        //     for (let j = 0; j < this.curveSegment; j++) {
-                        //         let rj = (r1 - r0) * j / this.curveSegment + r0;
-                        //         let p = this.path.getPointAt(curveLen + currentCurveLen / this.curveSegment * j);
-                        //         let delta;
-                        //         if (j === 0) {
-                        //             delta = new paper.Point(this.path.segments[i].handleOut.x, this.path.segments[i].handleOut.y);
-                        //         } else {
-                        //             let p0 = this.segPoints[this.segPoints.length - 1];
-                        //             delta = new paper.Point(p.x - p0.x, p.y - p0.y);
-                        //         }
-                        //         let lDelta = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
-                        //         delta.angle += 90;
-                        //         this.segPoints.push(p);
-                        //         upperPoints.push({x: p.x + rj / lDelta * delta.x, y: p.y + rj / lDelta * delta.y});
-                        //         lowerPoints.push({x: p.x - rj / lDelta * delta.x, y: p.y - rj / lDelta * delta.y});
-                        //     }
-                        //     curveLen += currentCurveLen;
-                        // }
-                        // // add the last point of the path
-                        // let rj = this.radiuses[this.radiuses.length - 1];
-                        // let p = this.path.segments[this.path.segments.length - 1].point;
-                        // let p0 = this.segPoints[this.segPoints.length - 1];
-                        // let delta = new paper.Point(p.x - p0.x, p.y - p0.y);
-                        // let lDelta = Math.sqrt(delta.x * delta.x + delta.y * delta.y);
-                        // delta.angle += 90;
-                        // this.segPoints.push(p);
-                        // upperPoints.push({x: p.x + rj / lDelta * delta.x, y: p.y + rj / lDelta * delta.y});
-                        // lowerPoints.push({x: p.x - rj / lDelta * delta.x, y: p.y - rj / lDelta * delta.y});
-                        // this.pathUpper = upperPoints;
-                        // this.pathLower = lowerPoints;
-                        // let reversedLower = lowerPoints.slice().reverse();
-                        // let mergedPoints = upperPoints.concat(reversedLower);
-                        // this.pathWidth = new paper.Path({
-                        //     segments: mergedPoints,
-                        //     strokeColor: '#325D88',
-                        //     strokeWidth: 1,
-                        //     fillColor: '#29ABE0',
-                        //     opacity: 0.5,
-                        //     closed: true
-                        // });
-                        // this.pathWidth.smooth();
-                        // this.pathWidth.sendToBack();
 
                         this.penSizeCircle.remove();
                         this.penSizeCircle = null;
