@@ -319,18 +319,21 @@ export default class VisualQuery extends React.Component {
                         </div>
                     </div>
                     <div className="row matchingOption">
-                        <div className='col-4'>
+                        <div className='col-5'>
                             Distance metric
                         </div>
                         <div className='col'>
-                            <select className="custom-select custom-select-sm" id='distanceMetric'>
+                            <select
+                                className="custom-select custom-select-sm"
+                                id='distanceMetric'
+                                style={{width: '40%'}}>
                                 <option value="Euclidean">Euclidean</option>
                                 <option value="Manhattan">Manhattan</option>
                             </select>
                         </div>
                     </div>
                     <div className="row matchingOption">
-                        <div className='col-4'>
+                        <div className='col-5'>
                             Warping window size
                         </div>
                         <div className='col form-inline'>
@@ -343,7 +346,7 @@ export default class VisualQuery extends React.Component {
                         </div>
                     </div>
                     <div className="row matchingOption">
-                        <div className='col-4'>
+                        <div className='col-5'>
                             Length of the target time series
                         </div>
                         <div className='col form-inline'>
@@ -362,7 +365,7 @@ export default class VisualQuery extends React.Component {
                         </div>
                     </div>
                     <div className="row matchingOption">
-                        <div className='col-4'>
+                        <div className='col-5'>
                             Step size of sliding window
                         </div>
                         <div className='col form-inline'>
@@ -375,7 +378,7 @@ export default class VisualQuery extends React.Component {
                         </div>
                     </div>
                     <div className="row matchingOption">
-                        <div className='col-4'>
+                        <div className='col-5'>
                             Restrictions
                         </div>
                         <div className='col'>
@@ -383,7 +386,7 @@ export default class VisualQuery extends React.Component {
                         </div>
                     </div>
                     <div className="row matchingOption">
-                        <div className='col-4'>
+                        <div className='col-5'>
                             Type of DTW
                         </div>
                         <div className='col'>

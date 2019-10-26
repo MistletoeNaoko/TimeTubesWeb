@@ -48,7 +48,8 @@ export default class QueryBySketch extends React.Component{
             assignVariables: false,
             targetList: targets,
             minList: minList,
-            maxList: maxList
+            maxList: maxList,
+            detectWidth: true
         }
         this.margin = {"bottom": 20, "left": 20 };
         this.curveSegment = 10;
@@ -1228,15 +1229,96 @@ export default class QueryBySketch extends React.Component{
         return (
             <div id='QBSSketchOptions' className='featureElem'>
                 <h5>Options</h5>
+                {this.sketchWidthControl()}
                 {this.definePeriodOfQuery()}
                 {this.assignVariables()}
             </div>
         );
     }
 
+    sketchWidthControl() {
+        let items = [];
+        for (let key in this.state.lookup) {
+            let label = '';
+            if (this.state.lookup[key].length > 1) {
+                label = this.state.lookup[key].join(',');
+            } else {
+                label = this.state.lookup[key];
+            }
+            if (label.indexOf('JD') < 0) {
+                items.push(
+                    <option key={key} value={key}>{label}</option>
+                );
+            }
+        }
+        return (
+            <div
+                id='sketchWidthControl'
+                className='container'
+                style={{paddingRight: '0px', paddingLeft: '0px', marginBottom: '0.2rem'}}>
+                <h6>Variable assigned to the sketch width</h6>
+                <div className="row matchingOption"
+                     style={{paddingLeft: '15px', paddingRight: '15px'}}>
+                    <div className="custom-control custom-switch">
+                        <input
+                            type="checkbox"
+                            className="custom-control-input"
+                            id="widthDetectionSwitch"
+                            checked={this.state.detectWidth}
+                            onChange={this.updateWidthDetection.bind(this)}/>
+                            <label className="custom-control-label" htmlFor="widthDetectionSwitch">Detect width</label>
+                    </div>
+                </div>
+                <div className="row">
+                    <div className='col-5'>
+                        Variable assigned to width
+                    </div>
+                    <div className='col'>
+                        <select
+                            className="custom-select custom-select-sm"
+                            id='widthVariables'
+                            style={{width: '40%'}}
+                            disabled={!this.state.detectWidth}
+                            onChange={this.updateWidthVariable()}>
+                            {items}
+                        </select>
+                    </div>
+                </div>
+                <div className="row">
+                    <div className='col-5'>
+                        Value range
+                    </div>
+                    <div className='col'>
+                        <div className='featureElem' id='sketchWidthSlider' style={{width: '150px'}}>
+                            <output id={'sketchWidthSliderMax'} style={{bottom: '1.3rem', zIndex: 200}}></output>
+                            <output id={'sketchWidthSliderMin'} style={{bottom: '1.3rem', zIndex: 201}}></output>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    updateWidthDetection() {
+        let state = this.state.detectWidth;
+        this.setState({
+            detectWidth: !state
+        });
+    }
+
+    updateWidthVariable() {
+        let variableList = document.getElementById('widthVariables');
+        if (variableList) {
+            let selectedIdx = variableList.selectedIndex;
+            let selectedVal = variableList.options[selectedIdx].value;
+            this.setValueSlider('sketchWidthSlider', Math.min.apply(null, this.state.minList[selectedVal]), Math.max.apply(null, this.state.maxList[selectedVal]));
+            $('#sketchWidthSlider').slider('option', 'disabled', !this.state.detectWidth);
+        }
+    }
+
     definePeriodOfQuery() {
         return (
-            <div>
+            <div id='timeLengthOfSketch'>
                 <h6>The length of time of the sketch</h6>
                 <div className="form-inline">
                     <input className="form-control form-control-sm"
@@ -1418,13 +1500,13 @@ export default class QueryBySketch extends React.Component{
         let axisSelection = this.axisSelectionPanel();
         return (
             <div id='QBSQuerying'>
+                {this.sketchMenu()}
                 <div id='QBSCanvasArea'>
                     {axisSelection.x}
                     {axisSelection.y}
                     {this.controlPointPopover()}
                 </div>
                 <div id='QBSSketchMenuArea'>
-                    {this.sketchMenu()}
                     {this.sketchOptions()}
                 </div>
                 {/*<label id='QBSYAxis'*/}
