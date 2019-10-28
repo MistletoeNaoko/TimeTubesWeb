@@ -340,7 +340,21 @@ export default class QueryBySketch extends React.Component{
                     for (let key in this.controlPoints[this.highlightedPointIdx].assignedVariables) {
                         if (this.controlPoints[this.highlightedPointIdx].assignedVariables[key].length <= 0) {
                             // if no variables are assigned yet
-                            if (key !== this.widthVar) {
+                            if (key === this.state.xItem) {
+                                // show x value
+                                $('#valueAssignmentCheckbox_' + key).prop('disabled', true);
+                                $('#slider_' + key).css('display', 'none');
+                                let valueRange = [Number($('#sketchPadXMin').text()), Number($('#sketchPadXMax').text())];
+                                $('#widthValue_' + key).css('display', 'block');
+                                $('#widthValue_' + key).text(this.formatValue((valueRange[1] - valueRange[0]) / this.state.size * (this.state.size - this.controlPoints[this.highlightedPointIdx].position.x) + valueRange[0]));
+                            } else if (key === this.state.yItem) {
+                                // show y value
+                                $('#valueAssignmentCheckbox_' + key).prop('disabled', true);
+                                $('#slider_' + key).css('display', 'none');
+                                let valueRange = [Number($('#sketchPadYMin').text()), Number($('#sketchPadYMax').text())];
+                                $('#widthValue_' + key).css('display', 'block');
+                                $('#widthValue_' + key).text(this.formatValue((valueRange[1] - valueRange[0]) / this.state.size * (this.state.size - this.controlPoints[this.highlightedPointIdx].position.y) + valueRange[0]));
+                            } else if (key !== this.widthVar) {
                                 // show a slider
                                 $('#valueAssignmentCheckbox_' + key).prop('checked', false);
                                 $('#valueAssignmentCheckbox_' + key).prop('disabled', false);
@@ -365,7 +379,21 @@ export default class QueryBySketch extends React.Component{
                             }
                         } else {
                             // if some variables are already assigned
-                            if (key !== this.widthVar) {
+                            if (key === this.state.xItem) {
+                                // show x value
+                                $('#valueAssignmentCheckbox_' + key).prop('disabled', true);
+                                $('#slider_' + key).css('display', 'none');
+                                let valueRange = [Number($('#sketchPadXMin').text()), Number($('#sketchPadXMax').text())];
+                                $('#widthValue_' + key).css('display', 'block');
+                                $('#widthValue_' + key).text(this.formatValue((valueRange[1] - valueRange[0]) / this.state.size * (this.state.size - this.controlPoints[this.highlightedPointIdx].position.x) + valueRange[0]));
+                            } else if (key === this.state.yItem) {
+                                // show y value
+                                $('#valueAssignmentCheckbox_' + key).prop('disabled', true);
+                                $('#slider_' + key).css('display', 'none');
+                                let valueRange = [Number($('#sketchPadYMin').text()), Number($('#sketchPadYMax').text())];
+                                $('#widthValue_' + key).css('display', 'block');
+                                $('#widthValue_' + key).text(this.formatValue((valueRange[1] - valueRange[0]) / this.state.size * (this.state.size - this.controlPoints[this.highlightedPointIdx].position.y) + valueRange[0]));
+                            } else if (key !== this.widthVar) {
                                 // show a slider
                                 $('#valueAssignmentCheckbox_' + key).prop('checked', true);
                                 $('#valueAssignmentCheckbox_' + key).prop('disabled', false);
