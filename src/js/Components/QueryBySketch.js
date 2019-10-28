@@ -44,13 +44,12 @@ export default class QueryBySketch extends React.Component{
             size: 0,
             lookup: lookupList,
             selector: 'pen',
-            popover: false,
-            assignVariables: false,
             targetList: targets,
             minList: minList,
             maxList: maxList,
             detectWidth: true
         }
+        this.assignVariables = false;
         this.margin = {"bottom": 20, "left": 20 };
         this.curveSegment = 10;
         this.sketching = false;
@@ -68,6 +67,7 @@ export default class QueryBySketch extends React.Component{
         this.selectedHandle = null;
         this.selectedPoint = null;
         this.controlPoints = [];
+        this.widthVar = null;
 
         FeatureStore.on('updateTarget', () => {
             let targets = FeatureStore.getTarget();
@@ -252,7 +252,7 @@ export default class QueryBySketch extends React.Component{
     CanvasOnMouseDown() {
         return function (event) {
             let hitResult;
-            if (this.state.assignVariables) {
+            if (this.assignVariables) {
                 hitResult = null;
                 hitResult = this.path.hitTest(event.point, {segments: true, tolerance: 5});
                 if (hitResult) {
@@ -268,10 +268,8 @@ export default class QueryBySketch extends React.Component{
                     });
 
                     // set up the popover
-                    this.setState({
-                        popover: true
-                    });
                     let popover = $('#controlPointPopover');
+                    popover.css('display', 'block');
                     let popoverArrow = $('#controlPointPopoverArrow');
                     let arrowWidth = 16, arrowHeight = 8;
                     let popoverWidth = popover.width() + arrowHeight,
@@ -341,18 +339,58 @@ export default class QueryBySketch extends React.Component{
 
                     for (let key in this.controlPoints[this.highlightedPointIdx].assignedVariables) {
                         if (this.controlPoints[this.highlightedPointIdx].assignedVariables[key].length <= 0) {
-                            $('#valueAssignmentCheckbox_' + key).prop('checked', false);
-                            $('#slider_' + key).slider('option', 'values', [0, 0]);
-                            $('#slider_' + key).slider('option', 'disabled', true);
+                            // if no variables are assigned yet
+                            if (key !== this.widthVar) {
+                                // show a slider
+                                $('#valueAssignmentCheckbox_' + key).prop('checked', false);
+                                $('#valueAssignmentCheckbox_' + key).prop('disabled', false);
+                                $('#slider_' + key).css('display', 'block');
+                                $('#slider_' + key).slider('option', 'values', [0, 100]);
+                                $('#slider_' + key).slider('option', 'disabled', true);
+                                $('#widthValue_' + key).css('display', 'none');
+                            } else {
+                                // show a value from the current width
+                                $('#valueAssignmentCheckbox_' + key).prop('disabled', true);
+                                $('#slider_' + key).css('display', 'none');
+                                let minRad = Math.min.apply(null, this.radiuses),
+                                    maxRad = Math.max.apply(null, this.radiuses);
+                                let minVal = Math.min.apply(null, this.state.minList[key]),
+                                    maxVal = Math.max.apply(null, this.state.maxList[key]);
+                                let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
+                                let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
+                                    maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
+
+                                $('#widthValue_' + key).css('display', 'block');
+                                $('#widthValue_' + key).text(this.formatValue((maxRange - minRange) / (maxRad - minRad) * (this.radiuses[this.highlightedPointIdx] - minRad) + minRange));
+                            }
                         } else {
-                            $('#valueAssignmentCheckbox_' + key).prop('checked', true);
-                            let min = Math.min.apply(null, this.state.minList[key]);
-                            let max = Math.max.apply(null, this.state.maxList[key]);
-                            $('#slider_' + key).slider('option', 'values', [
-                                (this.controlPoints[this.highlightedPointIdx].assignedVariables[key][0] - min) / (max - min) * 100,
-                                (this.controlPoints[this.highlightedPointIdx].assignedVariables[key][1] - min) / (max - min) * 100
+                            // if some variables are already assigned
+                            if (key !== this.widthVar) {
+                                // show a slider
+                                $('#valueAssignmentCheckbox_' + key).prop('checked', true);
+                                $('#valueAssignmentCheckbox_' + key).prop('disabled', false);
+                                let min = Math.min.apply(null, this.state.minList[key]);
+                                let max = Math.max.apply(null, this.state.maxList[key]);
+                                $('#slider_' + key).slider('option', 'values', [
+                                    (this.controlPoints[this.highlightedPointIdx].assignedVariables[key][0] - min) / (max - min) * 100,
+                                    (this.controlPoints[this.highlightedPointIdx].assignedVariables[key][1] - min) / (max - min) * 100
                                 ]);
-                            $('#slider_' + key).slider('option', 'disabled', false);
+                                $('#slider_' + key).slider('option', 'disabled', false);
+                            } else {
+                                // show a value from the current width
+                                $('#valueAssignmentCheckbox_' + key).prop('disabled', true);
+                                $('#slider_' + key).css('display', 'none');
+                                let minRad = Math.min.apply(null, this.radiuses),
+                                    maxRad = Math.max.apply(null, this.radiuses);
+                                let minVal = Math.min.apply(null, this.state.minList[key]),
+                                    maxVal = Math.max.apply(null, this.state.maxList[key]);
+                                let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
+                                let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
+                                    maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
+
+                                $('#widthValue_' + key).css('display', 'block');
+                                $('#widthValue_' + key).text(this.formatValue((maxRange - minRange) / (maxRad - minRad) * (this.radiuses[this.highlightedPointIdx] - minRad) + minRange));
+                            }
                         }
                     }
                 }
@@ -481,7 +519,7 @@ export default class QueryBySketch extends React.Component{
 
     CanvasOnMouseDrag() {
         return function (event) {
-            if (!this.state.assignVariables) {
+            if (!this.assignVariables) {
                 switch (this.state.selector) {
                     case 'pen':
                         this.path.add(event.point);
@@ -644,7 +682,7 @@ export default class QueryBySketch extends React.Component{
 
     CanvasOnMouseUp() {
         return function (event) {
-            if (!this.state.assignVariables) {
+            if (!this.assignVariables) {
                 switch (this.state.selector) {
                     case 'pen':
                         let reverse = false;
@@ -938,16 +976,14 @@ export default class QueryBySketch extends React.Component{
     }
 
     switchVariableAssignment() {
-        let switched = !this.state.assignVariables;
-        this.setState({
-            assignVariables: switched
-        });
-        if (switched && this.path) {
+        this.assignVariables = !this.assignVariables;
+        $('#variableAssignmentSwitch').prop('checked', this.assignVariables);
+        if (this.assignVariables && this.path) {
             this.path.fullySelected = true;
             if (this.pathWidth) {
                 this.pathWidth.fullySelected = false;
             }
-        } else if (!switched) {
+        } else if (!this.assignVariables) {
             this.setState({
                 popover: false
             });
@@ -984,12 +1020,6 @@ export default class QueryBySketch extends React.Component{
                 this.controlPoints[i].label = null;
             }
         }
-    }
-
-    selectControlPoint() {
-        this.setState({
-            popover: !this.state.popover
-        });
     }
 
     axisSelectionPanel() {
@@ -1182,7 +1212,7 @@ export default class QueryBySketch extends React.Component{
                 <h5>Options</h5>
                 {this.sketchWidthControl()}
                 {this.definePeriodOfQuery()}
-                {this.assignVariables()}
+                {this.assignVariablesArea()}
             </div>
         );
     }
@@ -1255,6 +1285,16 @@ export default class QueryBySketch extends React.Component{
         this.setState({
             detectWidth: !state
         });
+        if (state) {
+            // if the width detection become off
+            this.widthVar = null;
+        } else {
+            // if the width detection is on
+            let variableList = document.getElementById('widthVariables');
+            let selectedIdx = variableList.selectedIndex;
+            let selectedVal = variableList.options[selectedIdx].value;
+            this.widthVar = selectedVal;
+        }
     }
 
     updateWidthVariable() {
@@ -1264,6 +1304,7 @@ export default class QueryBySketch extends React.Component{
             let selectedVal = variableList.options[selectedIdx].value;
             this.setValueSlider('sketchWidthSlider', Math.min.apply(null, this.state.minList[selectedVal]), Math.max.apply(null, this.state.maxList[selectedVal]));
             $('#sketchWidthSlider').slider('option', 'disabled', !this.state.detectWidth);
+            this.widthVar = selectedVal;
         }
     }
 
@@ -1302,13 +1343,13 @@ export default class QueryBySketch extends React.Component{
         }
     }
 
-    assignVariables() {
+    assignVariablesArea() {
         return (
             <div id='variableAssignment'>
                 <h6>Assign variables to the sketch</h6>
                 <div className='form-group'>
                     <div className="custom-control custom-switch">
-                        <input type="checkbox" className="custom-control-input" id="variableAssignmentSwitch" onChange={this.switchVariableAssignment.bind(this)} checked={this.state.assignVariables}/>
+                        <input type="checkbox" className="custom-control-input" id="variableAssignmentSwitch" onChange={this.switchVariableAssignment.bind(this)}/>
                         <label className="custom-control-label" htmlFor="variableAssignmentSwitch">Assign variables</label>
                     </div>
                     <button type="button" className="btn btn-primary btn-sm" id='removeAllAssignment' onClick={this.removeAllAsignment.bind(this)}>Remove all assignment</button>
@@ -1324,9 +1365,7 @@ export default class QueryBySketch extends React.Component{
     }
 
     onClickValueAssignmentDone() {
-        this.setState({
-            popover: false
-        });
+        $('#controlPointPopover').css('display', 'none');
         let checked = $('input[name=assignedVariableList]:checked');
         let label ='';
         let current = this.controlPoints[this.highlightedPointIdx].assignedVariables;
@@ -1416,6 +1455,9 @@ export default class QueryBySketch extends React.Component{
                             <output id={sliderId + "Max"} style={{bottom: '1.3rem', zIndex: 100 + counter}}></output>
                             <output id={sliderId + "Min"} style={{bottom: '1.3rem', zIndex: 150 + counter}}></output>
                         </div>
+                        <div id={'widthValue_' + key} style={{display: 'none'}}>
+
+                        </div>
                     </div>
                 );
                 this.setValueSlider(sliderId, Math.min.apply(null, this.state.minList[key]), Math.max.apply(null, this.state.maxList[key]));
@@ -1429,7 +1471,7 @@ export default class QueryBySketch extends React.Component{
                 style={{
                     position: 'absolute',
                     opacity: '0.85',
-                    display: (this.state.popover)? 'block': 'none',
+                    display: 'none',
                     padding: '0.5rem 0.8rem'}}>
                 <div id='controlPointPopoverArrow' className='arrow'>
                 </div>
