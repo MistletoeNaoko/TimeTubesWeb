@@ -1,6 +1,7 @@
 import React from 'react';
 import paper from 'paper';
 import * as d3 from 'd3';
+import {tickFormatting} from '../lib/2DGraphLib';
 import FeatureStore from '../Stores/FeatureStore';
 import DataStore from '../Stores/DataStore';
 
@@ -68,46 +69,81 @@ export default class QueryBySketch extends React.Component{
         this.selectedPoint = null;
         this.controlPoints = [];
         this.widthVar = null;
-
+        this.xMinMax = [];
+        this.yMinMax= [];
         FeatureStore.on('updateTarget', () => {
-            let targets = FeatureStore.getTarget();
-
-            let minList = {}, maxList = {};
-            let minTmp = [], maxTmp = [];
-            for (let key in this.state.lookup) {
-                minTmp = [];
-                maxTmp = [];
-                for (let i = 0; i < targets.length; i++) {
-                    minTmp.push(DataStore.getData(targets[i]).data.meta.min[key]);
-                    maxTmp.push(DataStore.getData(targets[i]).data.meta.max[key]);
-                }
-                minList[key] = minTmp;
-                maxList[key] = maxTmp;
+            if (FeatureStore.getMode() === 'QBS') {
+                let targets = FeatureStore.getTarget();
+                let lists = this.extractMinMaxList(targets);
+                this.setState({
+                    targerList: targets,
+                    minList: lists.minList,
+                    maxList: lists.maxList,
+                });
+                let minmax = this.computeMinMaxValue(lists.minList, lists.maxList);
+                this.xMinMax = minmax.xMinMax;
+                this.yMinMax = minmax.yMinMax;
+                this.updateAxis();
             }
-            this.setState({
-                targerList: targets,
-                minList: minList,
-                maxList: maxList
-            });
-            let xMin = Math.min.apply(null, minList[this.state.xItem]),
-                xMax = Math.max.apply(null, maxList[this.state.xItem]),
-                yMin = Math.min.apply(null, minList[this.state.yItem]),
-                yMax = Math.max.apply(null, maxList[this.state.yItem]);
-            if (this.state.xItem === 'z') {
-                xMax = xMax - xMin;
-                xMin = 0;
+        });
+        FeatureStore.on('switchQueryMode', (mode) => {
+            if (mode === 'QBS') {
+                let targets = FeatureStore.getTarget();
+                let lists = this.extractMinMaxList(targets);
+                this.setState({
+                    targerList: targets,
+                    minList: lists.minList,
+                    maxList: lists.maxList,
+                });
+                let minmax = this.computeMinMaxValue(lists.minList, lists.maxList);
+                this.xMinMax = minmax.xMinMax;
+                this.yMinMax = minmax.yMinMax;
+                this.updateAxis();
             }
-            if (this.state.yItem === 'z') {
-                yMax = yMax - yMin;
-                yMin = 0;
-            }
-            this.updateXAxisValue(xMin, xMax);
-            this.updateYAxisValue(yMin, yMax);
         });
     }
 
+    extractMinMaxList(targets) {
+        let minList = {}, maxList = {};
+        let minTmp = [], maxTmp = [];
+        for (let key in this.state.lookup) {
+            minTmp = [];
+            maxTmp = [];
+            for (let i = 0; i < targets.length; i++) {
+                minTmp.push(DataStore.getData(targets[i]).data.meta.min[key]);
+                maxTmp.push(DataStore.getData(targets[i]).data.meta.max[key]);
+            }
+            minList[key] = minTmp;
+            maxList[key] = maxTmp;
+        }
+        return {minList: minList, maxList: maxList};
+    }
+
+    computeMinMaxValue(minList, maxList) {
+        let xMin = Math.min.apply(null, minList[this.state.xItem]),
+            xMax = Math.max.apply(null, maxList[this.state.xItem]),
+            yMin = Math.min.apply(null, minList[this.state.yItem]),
+            yMax = Math.max.apply(null, maxList[this.state.yItem]);
+        if (this.state.xItem === 'z') {
+            xMax = xMax - xMin;
+            xMin = 0;
+        }
+        if (this.state.yItem === 'z') {
+            yMax = yMax - yMin;
+            yMin = 0;
+        }
+        return {xMinMax: [xMin, xMax], yMinMax: [yMin, yMax]};
+    }
+
     componentDidMount() {
+        console.log('componentdidmount', this.state.targetList)
         this.initCanvas();
+        if (this.state.targetList.length > 0) {
+            let minmax = this.computeMinMaxValue(this.state.minList, this.state.maxList);
+            this.xMinMax = minmax.xMinMax;
+            this.yMinMax = minmax.yMinMax;
+            this.updateAxis();
+        }
         // this.initSketchMenu();
     }
 
@@ -132,6 +168,11 @@ export default class QueryBySketch extends React.Component{
         let parentArea = d3.select('#QBSCanvasArea')
             .style('position', 'relative')
             .style('padding-bottom', outerSize + 'px');
+        this.svg = parentArea.append('svg')
+            .attr('id', 'QBSSketchPadSVG')
+            .attr('width', outerSize)
+            .attr('height', outerSize)
+            .style('position', 'absolute');
         this.canvas = parentArea.append('canvas')
             .attr('width', outerSize + 'px !important')
             .attr('height', outerSize + 'px !important')
@@ -140,91 +181,41 @@ export default class QueryBySketch extends React.Component{
             .style('border', '1px solid lightgray');
         paper.setup(this.canvas.node());
 
-        this.xAxis = parentArea
+        this.xAxis = this.svg
             .append('g')
-            .attr('class', 'x_axis')
-            .style('position', 'absolute');
-        this.xAxis
-            .style('left', outerSize / 2 + 'px')
-            .style('top', outerSize - this.margin.bottom + 'px');
-        this.xAxisText = this.xAxis
+            .attr('class', 'x_axis');
+        this.xAxisText = parentArea
             .append('text')
             .attr('class', 'axisLabel')
             .attr('id', 'sketchPadXLabel')
             .attr('fill', 'black')
             .attr('text-anchor', 'middle')
             .style('font-size', '0.7rem')
+            .style('position', 'absolute')
+            .style('background-color', 'white')
+            .style('left', outerSize / 2 + 'px')
+            .style('top', outerSize - 18 + 'px')
             .text(this.state.lookup[this.state.xItem])
             .on('click', this.CanvasXLabelOnClick().bind(this));
-        let xMin = Math.min.apply(null, this.state.minList[this.state.xItem]),
-            xMax = Math.max.apply(null, this.state.maxList[this.state.xItem]);
-        if (this.state.xItem === 'z') {
-            xMax = xMax - xMin;
-            xMin = 0;
-        }
-        this.xMinValueText = parentArea
-            .append('g')
-            .style('position', 'absolute')
-            .attr('class', 'axisLabel')
-            .attr('id', 'sketchPadXMin')
-            .attr('text-anchor', 'left')
-            .style('font-size', '0.5rem')
-            .style('left', this.margin.left + 'px')
-            .style('bottom', '0.5rem')
-            .text(this.formatValue(xMin));
-        this.xMaxValueText = parentArea
-            .append('g')
-            .style('position', 'absolute')
-            .attr('class', 'axisLabel')
-            .attr('id', 'sketchPadXMax')
-            .attr('text-anchor', 'right')
-            .style('font-size', '0.5rem')
-            .style('right', this.margin.left + 'px')
-            .style('bottom', '0.5rem')
-            .text(this.formatValue(xMax));
+        this.xScale = d3.scaleLinear();
 
-        this.yAxis = parentArea
+        this.yAxis = this.svg
             .append('g')
-            .attr('class', 'y_axis')
-            .style('position', 'absolute');
-        this.yAxis
-            .style('left', this.margin.left / 2 + 'px')
-            .style('top', outerSize / 2 + 'px');
-        this.yAxisText = this.yAxis
+            .attr('class', 'y_axis');
+        this.yAxisText = parentArea
             .append('text')
             .attr('class', 'axisLabel')
             .attr('fill', 'black')
             .attr('transform', 'rotate(-90)')
             .attr('text-anchor', 'middle')
             .style('font-size', '0.7rem')
+            .style('position', 'absolute')
+            .style('background-color', 'white')
+            .style('left', this.margin.left / 2 + 'px')
+            .style('top', outerSize / 2 + 'px')
             .text(this.state.lookup[this.state.yItem])
             .on('click', this.CanvasYLabelOnClick().bind(this));
-        let yMin = Math.min.apply(null, this.state.minList[this.state.yItem]),
-            yMax = Math.max.apply(null, this.state.maxList[this.state.yItem]);
-        if (this.state.yItem === 'z') {
-            yMax = yMax - Min;
-            yMin = 0;
-        }
-        this.yMinValueText = parentArea
-            .append('g')
-            .style('position', 'absolute')
-            .attr('class', 'axisLabel')
-            .attr('id', 'sketchPadYMin')
-            .attr('text-anchor', 'left')
-            .style('font-size', '0.5rem')
-            .style('left', this.margin.left / 2 + 'px')
-            .style('bottom', '1rem')
-            .text(this.formatValue(yMin));
-        this.yMaxValueText = parentArea
-            .append('g')
-            .style('position', 'absolute')
-            .attr('class', 'axisLabel')
-            .attr('id', 'sketchPadYMax')
-            .attr('text-anchor', 'right')
-            .style('font-size', '0.5rem')
-            .style('left', this.margin.left / 2 + 'px')
-            .style('top', '0.5rem')
-            .text(this.formatValue(yMax));
+        this.yScale = d3.scaleLinear();
 
         this.tool = new paper.Tool();
         this.tool.minDistance = 15;
@@ -926,25 +917,46 @@ export default class QueryBySketch extends React.Component{
     }
 
     updateXAxisValue(min, max) {
-        if (this.xMinValueText) {
-            this.xMinValueText
-                .text(this.formatValue(min));
-        }
-        if (this.xMaxValueText) {
-            this.xMaxValueText
-                .text(this.formatValue(max));
-        }
+        this.xMinMax = [min, max];
+        this.updateAxis();
     }
 
     updateYAxisValue(min, max) {
-        if (this.yMinValueText) {
-            this.yMinValueText
-                .text(this.formatValue(min));
-        }
-        if (this.yMaxValueText) {
-            this.yMaxValueText
-                .text(this.formatValue(max));
-        }
+        this.yMinMax = [min, max];
+        this.updateAxis();
+    }
+
+    updateAxis() {
+        console.log('update axis', this.xMinMax, this.yMinMax)
+        let paddingLeft = Number($('#featureArea').css('padding-left').replace('px', '')),
+            paddingRight = Number($('#featureArea').css('padding-right').replace('px', ''));
+        let outerSize = Math.floor($('#mainFeatureArea').width() * 0.3 - paddingLeft - paddingRight);
+        this.xScale
+            .domain(this.xMinMax)
+            .range([0, outerSize]);
+        this.xLabel = d3.axisTop(this.xScale)
+            .ticks(5)
+            .tickSize(-outerSize)
+            .tickFormat(tickFormatting);
+        this.xAxis
+            .call(this.xLabel);
+        this.xAxis.select('.domain').remove();
+        this.xAxis.selectAll('.tick text')
+            .attr('y', outerSize - this.margin.bottom);
+
+        this.yScale
+            .domain(this.yMinMax)
+            .range([outerSize, 0]);
+        this.yLabel = d3.axisRight(this.yScale)
+            .ticks(5)
+            .tickSize(outerSize)
+            .tickFormat(tickFormatting);
+        this.yAxis
+            .call(this.yLabel);
+        this.yAxis.select('.domain').remove();
+        this.yAxis.selectAll('.tick text')
+            .attr('x', this.margin.left)
+            .attr('y', '-0.5em');
     }
 
     changeXAxis() {
@@ -1327,7 +1339,7 @@ export default class QueryBySketch extends React.Component{
 
     updateWidthVariable() {
         let variableList = document.getElementById('widthVariables');
-        if (variableList) {
+        if (variableList && variableList.options.length > 0) {
             let selectedIdx = variableList.selectedIndex;
             let selectedVal = variableList.options[selectedIdx].value;
             this.setValueSlider('sketchWidthSlider', Math.min.apply(null, this.state.minList[selectedVal]), Math.max.apply(null, this.state.maxList[selectedVal]));
