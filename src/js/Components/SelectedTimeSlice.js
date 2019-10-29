@@ -19,14 +19,12 @@ export default class SelectedTimeSlice extends React.Component {
 
     render() {
         // this.props sourceId
-        // console.log(this.props);
         let width = $('#selectedIntervalViewArea').width();
         let height = width;
         return (
             <div
                 className='TimeTubes'
                 id='selectedTimeSliceView'
-                // style={{width: width + 'px', height: height + 'px'}}
                 ref={mount => {
                     this.mount = mount;
                 }}
@@ -57,7 +55,6 @@ export default class SelectedTimeSlice extends React.Component {
         });
         FeatureStore.on('setIgnoredVariables', (varList) => {
             this.ignoredVariables = varList;
-            console.log('ignore', varList);
             this.redrawTube();
         });
     }
@@ -223,7 +220,6 @@ export default class SelectedTimeSlice extends React.Component {
         this.tube.geometry.attributes.normal = new THREE.BufferAttribute(new Float32Array(pos.length), 1);
         this.tube.geometry.index = new THREE.BufferAttribute(new Uint32Array(indices), 1);
         this.tube.geometry.computeVertexNormals();
-        console.log(this.tube.geometry.attributes)
         this.renderer.render(this.scene, this.camera);
     }
 
@@ -304,13 +300,11 @@ export default class SelectedTimeSlice extends React.Component {
                 vertices.push(cen[i].z - this.selectedPeriod[0]);
             }
         }
-        // console.log(this.tube.geometry.attributes, vertices)
         // if any ignored variables on colors (H, V) are set, pass a flag as a uniform
         this.tube.material.uniforms.flagH.value = (ignoredH >= 0)? false: true;
         this.tube.material.uniforms.flagV.value = (ignoredV >= 0)? false: true;
         this.tube.geometry.attributes.position.needsUpdate = true;
         this.tube.geometry.attributes.position = new THREE.BufferAttribute(new Float32Array(vertices), 3);
-        console.log(this.tube.geometry.attributes);
         this.tube.geometry.computeVertexNormals();
         this.renderer.render(this.scene, this.camera);
     }

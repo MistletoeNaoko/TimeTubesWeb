@@ -7,6 +7,7 @@ import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import SelectedTimeSlice from './SelectedTimeSlice';
+import QueryByExample from './QueryByExample';
 import QueryBySketch from './QueryBySketch';
 import ResultSummary from './ResultSummary';
 import * as TimeSeriesQuerying from '../lib/TimeSeriesQuerying';
@@ -51,7 +52,6 @@ export default class VisualQuery extends React.Component {
     }
 
     switchSelector() {
-        console.log('switch selector')
         this.setState({selector: !this.state.selector});
         FeatureAction.switchSelector();
     }
@@ -164,69 +164,74 @@ export default class VisualQuery extends React.Component {
     }
 
     QBESelection() {
+        // return (
+        //     <div className='featureElem'>
+        //         <h5>Selection</h5>
+        //         <form className="form-check form-check-inline selector featureRow"
+        //               id='QBESelector' onChange={this.switchSelector.bind(this)}>
+        //             <div className="custom-control custom-radio">
+        //                 <input
+        //                     type="radio"
+        //                     id='QBESelect'
+        //                     name="QBESelector"
+        //                     className="custom-control-input"
+        //                     value="Select"
+        //                     checked={this.state.selector} readOnly/>
+        //                 <label className="custom-control-label" htmlFor="QBESelect">Select</label>
+        //             </div>
+        //             <div
+        //                 className="custom-control custom-radio"
+        //                 style={{marginLeft: '0.5rem'}}>
+        //                 <input
+        //                     type="radio"
+        //                     id='QBEDeselect'
+        //                     name="QBESelector"
+        //                     className="custom-control-input"
+        //                     value="Deselect"
+        //                     checked={!this.state.selector} readOnly/>
+        //                 <label className="custom-control-label" htmlFor="QBEDeselect">Deselect</label>
+        //             </div>
+        //         </form>
+        //         <div id='selectTimeInterval' className='form-row featureRow'>
+        //             <div className="input-group input-group-sm" style={{width: '10rem', marginRight: '1.5rem'}}>
+        //                 <span style={{marginRight: '0.3rem'}}>Select</span>
+        //                 <input
+        //                     type="text"
+        //                     className="form-control custom-input"
+        //                     id='selectTimeIntervalInput'/>
+        //                 <span style={{marginLeft: '0.3rem'}}>days</span>
+        //             </div>
+        //             <button className="btn btn-primary btn-sm"
+        //                     type="button"
+        //                     id='selectTimeIntervalBtn'
+        //                     style={{right: '0'}}
+        //                     onClick={this.selectTimeInterval.bind(this)} >Select</button>
+        //         </div>
+        //         <div className="form-check">
+        //             <input
+        //                 className="form-check-input"
+        //                 type="checkbox"
+        //                 id="checkboxDragTube"
+        //                 value="option1"
+        //                 checked={this.state.dragSelection}
+        //                 onChange={this.switchDragSelection.bind(this)}/>
+        //             <label
+        //                 className="form-check-label"
+        //                 htmlFor="inlineCheckbox1">
+        //                 Selection by drag
+        //             </label>
+        //         </div>
+        //         <button
+        //             id='resetSelectionBtn'
+        //             className='btn btn-primary btn-sm featureRow'
+        //             onClick={this.resetSelection.bind(this)}>
+        //             Deselect all
+        //         </button>
+        //     </div>
+        // );
         return (
-            <div className='featureElem'>
-                <h5>Selection</h5>
-                <form className="form-check form-check-inline selector featureRow"
-                      id='QBESelector' onChange={this.switchSelector.bind(this)}>
-                    <div className="custom-control custom-radio">
-                        <input
-                            type="radio"
-                            id='QBESelect'
-                            name="QBESelector"
-                            className="custom-control-input"
-                            value="Select"
-                            checked={this.state.selector} readOnly/>
-                        <label className="custom-control-label" htmlFor="QBESelect">Select</label>
-                    </div>
-                    <div
-                        className="custom-control custom-radio"
-                        style={{marginLeft: '0.5rem'}}>
-                        <input
-                            type="radio"
-                            id='QBEDeselect'
-                            name="QBESelector"
-                            className="custom-control-input"
-                            value="Deselect"
-                            checked={!this.state.selector} readOnly/>
-                        <label className="custom-control-label" htmlFor="QBEDeselect">Deselect</label>
-                    </div>
-                </form>
-                <div id='selectTimeInterval' className='form-row featureRow'>
-                    <div className="input-group input-group-sm" style={{width: '10rem', marginRight: '1.5rem'}}>
-                        <span style={{marginRight: '0.3rem'}}>Select</span>
-                        <input
-                            type="text"
-                            className="form-control custom-input"
-                            id='selectTimeIntervalInput'/>
-                        <span style={{marginLeft: '0.3rem'}}>days</span>
-                    </div>
-                    <button className="btn btn-primary btn-sm"
-                            type="button"
-                            id='selectTimeIntervalBtn'
-                            style={{right: '0'}}
-                            onClick={this.selectTimeInterval.bind(this)} >Select</button>
-                </div>
-                <div className="form-check">
-                    <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="checkboxDragTube"
-                        value="option1"
-                        checked={this.state.dragSelection}
-                        onChange={this.switchDragSelection.bind(this)}/>
-                    <label
-                        className="form-check-label"
-                        htmlFor="inlineCheckbox1">
-                        Selection by drag
-                    </label>
-                </div>
-                <button
-                    id='resetSelectionBtn'
-                    className='btn btn-primary btn-sm featureRow'
-                    onClick={this.resetSelection.bind(this)}>
-                    Deselect all
-                </button>
+            <div className='featureElem' id='QBEArea'>
+                <QueryByExample/>
             </div>
         );
     }
@@ -466,239 +471,12 @@ export default class VisualQuery extends React.Component {
                         // TODO: Remove overlapping!!
                         FeatureAction.setExtractionResults(results, query, ignored);
                         TimeSeriesQuerying.showExtractionResults();
-                        // // close the source panel
-                        // if ($('#QBESourceMain').css('display') !== 'none') {
-                        //     domActions.toggleSourcePanel();
-                        // }
-                        // // get the options for showing results
-                        // // order of the results
-                        // let resultOrderList = document.getElementById('resultOrderList');
-                        // let selectedIdx = resultOrderList.selectedIndex;
-                        // let resultOrder = resultOrderList.options[selectedIdx].value;
-                        // // k value
-                        // let kValue = $('#topKResults').val();
-                        // // distance threshold
-                        // let distTh = $('#distanceThreshold').val();
-                        //
-                        // // filter results according to the input options
-                        // // sort results
-                        // switch(resultOrder) {
-                        //     case 'distance':
-                        //         results.sort(function (a, b) {
-                        //             return a[3] - b[3];
-                        //         });
-                        //         break;
-                        //     case 'timeStamp':
-                        //         results.sort(function (a, b) {
-                        //             let diff = a[1] - b[1];
-                        //             if (diff === 0) {
-                        //                 diff = a[0] - b[0];
-                        //             }
-                        //             return diff;
-                        //         });
-                        //         break;
-                        //     case 'data':
-                        //         results.sort(function (a, b) {
-                        //             let diff = a[0] - b[0];
-                        //             if (diff === 0) {
-                        //                 diff = a[3] - b[3];
-                        //             }
-                        //             return diff;
-                        //         });
-                        //         break;
-                        // }
-                        //
-                        // // filter out results with distance higher than threshold
-                        // if (distTh !== '') {
-                        //     results = results.filter(function(result) {
-                        //         return (result[3] < distTh)? true: false;
-                        //     });
-                        // }
-                        // // show only top k results
-                        // if (kValue !== '') {
-                        //     results = results.slice(0, kValue);
-                        // }
-                        // // get a snapshot of the time slice
-                        // // step 1: store the current status of the camera
-                        // let targetList = FeatureStore.getTarget();
-                        // let currentCamera = {},
-                        //     currentPos = {},
-                        //     minJDs = {},
-                        //     canvas = {};
-                        // for (let i = 0; i < targetList.length; i++) {
-                        //     currentCamera[String(targetList[i])] = TimeTubesStore.getCameraProp(targetList[i]);
-                        //     currentPos[String(targetList[i])] = TimeTubesStore.getFocused(targetList[i]);
-                        //     minJDs[String(targetList[i])] = DataStore.getData(targetList[i]).data.meta.min.z;
-                        //     canvas[String(targetList[i])] = document.getElementById('TimeTubes_viewport_' + targetList[i]);
-                        //     // step 2: reset camera position
-                        //     let aspect = currentCamera[String(targetList[i])].aspect;
-                        //     TimeTubesAction.updateCamera(targetList[i], {
-                        //         xpos: 0,
-                        //         ypos: 0,
-                        //         zpos: 50,
-                        //         fov: 45,
-                        //         far: 2000,
-                        //         depth: 0,
-                        //         aspect: aspect,
-                        //         zoom: 1,
-                        //         type: 'Perspective'
-                        //     });
-                        // }
-                        // let summaries = [];
-                        // let domnode = document.getElementById('resultsArea');
-                        // // if there are previous results on the result panel, remove all
-                        // while (domnode.firstChild) {
-                        //     ReactDOM.unmountComponentAtNode(domnode.firstChild);
-                        //     domnode.removeChild(domnode.firstChild);
-                        // }
-                        // for (let i = 0; i < results.length; i++) {
-                        //     // add a holder for React component to allow unmount react components
-                        //     let divElem = document.createElement('div');
-                        //     divElem.id = 'resultSummaryHolder_' + i;
-                        //     domnode.appendChild(divElem);
-                        //     let result = results[i];
-                        //     TimeTubesAction.takeSnapshot(result[0], result[1] - minJDs[String(result[0])], result[2]);
-                        //
-                        //     let imageHeight = canvas[String(result[0])].height,
-                        //         imageWidth = canvas[String(result[0])].width;
-                        //     let image = new Image();
-                        //     image.src = canvas[String(result[0])].toDataURL();
-                        //     image.height = imageHeight;
-                        //     image.width = imageWidth;
-                        //     ReactDOM.render(<ResultSummary
-                        //         key={i}
-                        //         id={result[0]}
-                        //         thumbnail={image}
-                        //         period={[result[1], result[1] + result[2]]}
-                        //         distance={result[3]}
-                        //         rank={i}/>, divElem);
-                        // }
-                        // // recover camara status
-                        // for (let i = 0; i < targetList.length; i++) {
-                        //     TimeTubesAction.recoverTube(targetList[i], currentCamera[String(targetList[i])], currentPos[String(targetList[i])]);
-                        // }
                     }
                 }
                 break;
             case 'QBS':
                 console.log('convert QBS into data');
                 break;
-        }
-    }
-
-    showExtractionResults() {
-        // close the source panel
-        if ($('#QBESourceMain').css('display') !== 'none') {
-            domActions.toggleSourcePanel();
-        }
-        // get the options for showing results
-        // order of the results
-        let resultOrderList = document.getElementById('resultOrderList');
-        let selectedIdx = resultOrderList.selectedIndex;
-        let resultOrder = resultOrderList.options[selectedIdx].value;
-        // k value
-        let kValue = $('#topKResults').val();
-        // distance threshold
-        let distTh = $('#distanceThreshold').val();
-
-        // filter results according to the input options
-        // sort results
-        let results = FeatureStore.getExtractionResults();
-        results.sort(domActions.sortResults(resultOrder));
-        // switch(resultOrder) {
-        //     case 'distance':
-        //         results.sort(function (a, b) {
-        //             return a[3] - b[3];
-        //         });
-        //         break;
-        //     case 'timeStamp':
-        //         results.sort(function (a, b) {
-        //             let diff = a[1] - b[1];
-        //             if (diff === 0) {
-        //                 diff = a[0] - b[0];
-        //             }
-        //             return diff;
-        //         });
-        //         break;
-        //     case 'data':
-        //         results.sort(function (a, b) {
-        //             let diff = a[0] - b[0];
-        //             if (diff === 0) {
-        //                 diff = a[3] - b[3];
-        //             }
-        //             return diff;
-        //         });
-        //         break;
-        // }
-
-        // filter out results with distance higher than threshold
-        if (distTh !== '') {
-            results = results.filter(function(result) {
-                return (result[3] < distTh)? true: false;
-            });
-        }
-        // show only top k results
-        if (kValue !== '') {
-            results = results.slice(0, kValue);
-        }
-        // get a snapshot of the time slice
-        // step 1: store the current status of the camera
-        let targetList = FeatureStore.getTarget();
-        let currentCamera = {},
-            currentPos = {},
-            minJDs = {},
-            canvas = {};
-        for (let i = 0; i < targetList.length; i++) {
-            currentCamera[String(targetList[i])] = TimeTubesStore.getCameraProp(targetList[i]);
-            currentPos[String(targetList[i])] = TimeTubesStore.getFocused(targetList[i]);
-            minJDs[String(targetList[i])] = DataStore.getData(targetList[i]).data.meta.min.z;
-            canvas[String(targetList[i])] = document.getElementById('TimeTubes_viewport_' + targetList[i]);
-            // step 2: reset camera position
-            let aspect = currentCamera[String(targetList[i])].aspect;
-            TimeTubesAction.updateCamera(targetList[i], {
-                xpos: 0,
-                ypos: 0,
-                zpos: 50,
-                fov: 45,
-                far: 2000,
-                depth: 0,
-                aspect: aspect,
-                zoom: 1,
-                type: 'Perspective'
-            });
-        }
-        let summaries = [];
-        let domnode = document.getElementById('resultsArea');
-        // if there are previous results on the result panel, remove all
-        while (domnode.firstChild) {
-            ReactDOM.unmountComponentAtNode(domnode.firstChild);
-            domnode.removeChild(domnode.firstChild);
-        }
-        for (let i = 0; i < results.length; i++) {
-            // add a holder for React component to allow unmount react components
-            let divElem = document.createElement('div');
-            divElem.id = 'resultSummaryHolder_' + i;
-            domnode.appendChild(divElem);
-            let result = results[i];
-            TimeTubesAction.takeSnapshot(result[0], result[1] - minJDs[String(result[0])], result[2]);
-
-            let imageHeight = canvas[String(result[0])].height,
-                imageWidth = canvas[String(result[0])].width;
-            let image = new Image();
-            image.src = canvas[String(result[0])].toDataURL();
-            image.height = imageHeight;
-            image.width = imageWidth;
-            ReactDOM.render(<ResultSummary
-                key={i}
-                id={result[0]}
-                thumbnail={image}
-                period={[result[1], result[1] + result[2]]}
-                distance={result[3]}
-                rank={i}/>, divElem);
-        }
-        // recover camara status
-        for (let i = 0; i < targetList.length; i++) {
-            TimeTubesAction.recoverTube(targetList[i], currentCamera[String(targetList[i])], currentPos[String(targetList[i])]);
         }
     }
 
@@ -713,7 +491,7 @@ export default class VisualQuery extends React.Component {
         return (
             <div id='featureArea' className='controllersElem'>
                 {this.queryModes()}
-                {this.extractionSource()}
+                {/*{this.extractionSource()}*/}
                 {queryDefinition}
                 {this.selectionDetail()}
                 {this.matchingControllers()}
