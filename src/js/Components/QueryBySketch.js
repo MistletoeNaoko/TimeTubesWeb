@@ -1286,7 +1286,7 @@ export default class QueryBySketch extends React.Component{
                             name="QBSSelector"
                             value="changeWidth"
                             checked={this.state.selector === 'changeWidth'}
-                            disabled={this.state.detectWidth} readOnly/>
+                            disabled={!this.state.detectWidth} readOnly/>
                         <label className="form-check-label" htmlFor="changeWidth">Change width</label>
                     </div>
                 </form>
