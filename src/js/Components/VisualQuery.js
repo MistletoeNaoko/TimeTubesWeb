@@ -304,11 +304,13 @@ export default class VisualQuery extends React.Component {
         return (
             <div className='featureElem' style={{position: 'relative'}}>
                 <h5>Matching</h5>
-                <h6>Ignored variables</h6>
-                <form id='QBEIgnoredVariables' onChange={this.updateIgnoredVariables.bind(this)}>
-                    {items}
-                </form>
-                <h6>Options</h6>
+                <div id='ignoredVariablesArea' style={{display: (this.state.queryMode === 'QBE')? 'block': 'none'}}>
+                    <h6>Ignored variables</h6>
+                    <form id='QBEIgnoredVariables' onChange={this.updateIgnoredVariables.bind(this)}>
+                        {items}
+                    </form>
+                </div>
+                <h6>Settings of DTW</h6>
                 <div className='container'
                      style={{paddingRight: '0px', paddingLeft: '0px', marginBottom: '0.2rem'}}>
                     <div className='row matchingOption'

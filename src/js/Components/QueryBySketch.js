@@ -1249,10 +1249,10 @@ export default class QueryBySketch extends React.Component{
     sketchOptions() {
         return (
             <div id='QBSSketchOptions' className='featureElem'>
-                <h5>Options</h5>
+                <h5>Options of Query-by-sketch</h5>
                 {this.sketchWidthControl()}
-                {this.definePeriodOfQuery()}
                 {this.assignVariablesArea()}
+                {this.definePeriodOfQuery()}
             </div>
         );
     }
@@ -1352,14 +1352,19 @@ export default class QueryBySketch extends React.Component{
         return (
             <div id='timeLengthOfSketch'>
                 <h6>The length of time of the sketch</h6>
-                <div className="form-inline">
-                    <input className="form-control form-control-sm"
-                           type="text"
-                           placeholder="Length of time"
-                           id="periodOfSketchQuery"
-                           style={{width: '40%', marginRight: '0.5rem'}}
-                           onChange={this.updateTimeLength.bind(this)}/>
-                    <label className="col-form-label col-form-label-sm" htmlFor="periodOfSketchQuery">days</label>
+                <div className="row matchingOption">
+                    <div className='col-5'>
+                        Length of the sketched query
+                    </div>
+                    <div className='col form-inline'>
+                        <input className="form-control form-control-sm"
+                               type="text"
+                               placeholder="Length of time"
+                               id="periodOfSketchQuery"
+                               style={{width: '40%', marginRight: '0.5rem'}}
+                               onChange={this.updateTimeLength.bind(this)}/>
+                        <label className="col-form-label col-form-label-sm" htmlFor="periodOfSketchQuery">days</label>
+                    </div>
                 </div>
             </div>
         );
@@ -1387,12 +1392,16 @@ export default class QueryBySketch extends React.Component{
         return (
             <div id='variableAssignment'>
                 <h6>Assign variables to the sketch</h6>
-                <div className='form-group'>
-                    <div className="custom-control custom-switch">
-                        <input type="checkbox" className="custom-control-input" id="variableAssignmentSwitch" onChange={this.switchVariableAssignment.bind(this)}/>
-                        <label className="custom-control-label" htmlFor="variableAssignmentSwitch">Assign variables</label>
+                <div className="row matchingOption">
+                    <div className='col-5'>
+                        <div className="custom-control custom-switch">
+                            <input type="checkbox" className="custom-control-input" id="variableAssignmentSwitch" onChange={this.switchVariableAssignment.bind(this)}/>
+                            <label className="custom-control-label" htmlFor="variableAssignmentSwitch">Assign variables</label>
+                        </div>
                     </div>
-                    <button type="button" className="btn btn-primary btn-sm" id='removeAllAssignment' onClick={this.removeAllAsignment.bind(this)}>Remove all assignment</button>
+                    <div className='col'>
+                        <button type="button" className="btn btn-primary btn-sm" id='removeAllAssignment' onClick={this.removeAllAsignment.bind(this)}>Remove all assignments</button>
+                    </div>
                 </div>
             </div>
         );
