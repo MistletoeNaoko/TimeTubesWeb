@@ -805,10 +805,9 @@ export default class QueryBySketch extends React.Component{
 
                             // compute the upper/lower points of the simplified curve
                             this.drawPathWidth();
-
                             this.penSizeCircle.remove();
-                            this.penSizeCircle = null;
                         }
+                        this.penSizeCircle = null;
                         this.sketching = false;
                         break;
                     case 'controlPoint':
@@ -832,6 +831,7 @@ export default class QueryBySketch extends React.Component{
                 }
                 this.tool.minDistance = 15;
             }
+            this.convertSketchIntoQuery();
         }
     }
 
@@ -888,6 +888,87 @@ export default class QueryBySketch extends React.Component{
         this.pathWidth.sendToBack();
     }
 
+    convertSketchIntoQuery() {
+        // if the x or y axis is not JD
+        // divide path into small segments with the same length
+        // the number of segments is decided by the user-input query length
+        // e.g. for the sketch for 20 days, the path will be divided into 20 segments
+        // the coordinates of each segment point can be obtained by this.path.getPointAt(offset)
+        // radius of each point also can be computed by interpolating this.radiuses
+        // up to here, x, y, and width are converted into arrays
+        // during the upper procedure, assigned filtering values to the nearest time slice to the original segment
+
+        // if the x or y axis is JD
+        // create a new line which is orthogonal to the JD axis
+        // do hitTest between the sketch and the line by moving the line by a day
+        // from hitTest result, position of the point on the path will be obtained
+        // width can be computed from the offset value of the hitTest and interporation
+
+        // as a result, the converted query will look like as follows:
+        // query: {
+        // x: [collection of values day by day],
+        // y: [...],
+        // w: [...],
+        // f1: [null, null, ..., [min, max], ...],
+        // ...
+        // arrayLength: xx}
+        let query = {};
+
+        if (this.state.xItem !== 'z' && this.state.yItem !== 'z') {
+            // if the x or y axis is not JD
+            // get total length of the path
+            let totalLength = this.path.length;
+
+            // get the time length of the sketch
+            let timeLength = $('#periodOfSketchQuery').val();
+            if (timeLength !== '') {
+                timeLength = Number(timeLength);
+                let del = totalLength / timeLength;
+                let currentLen = this.path.curves[0].length,
+                    curveIdx = 0,
+                    totalCurveLen = 0;
+                let radRange = [], valueRange = [];
+                query[this.state.xItem] = [];
+                query[this.state.yItem] = [];
+                if (this.widthVar) {
+                    query[this.widthVar] = [];
+
+                    let minRad = Math.min.apply(null, this.radiuses),
+                        maxRad = Math.max.apply(null, this.radiuses);
+                    let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
+                        maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
+                    let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
+                    let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
+                        maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
+                    radRange = [minRad, maxRad];
+                    valueRange = [minRange, maxRange];
+                }
+                for (let i = 0; i <= timeLength; i++) {
+                    // convert x and y pos into values
+                    let point = this.path.getPointAt(del * i);
+                    query[this.state.xItem].push(this.xScale.invert(point.x));
+                    query[this.state.yItem].push(this.yScale.invert(point.y));
+                    if (this.widthVar) {
+                        let width =  (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
+                            * (del * i - totalCurveLen) / currentLen + this.radiuses[curveIdx];
+                        // convert width into value
+                        query[this.widthVar].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
+                    }
+                    // update curveLen, curveIdx, totalCurveLen
+                    if (totalCurveLen + currentLen <= del * i) {
+                        totalCurveLen += currentLen;
+                        curveIdx += 1;
+                        if (curveIdx < this.path.curves.length) {
+                            currentLen = this.path.curves[curveIdx].length;
+                        }
+                    }
+                }
+                console.log(query);
+
+            }
+        }
+    }
+
     CanvasXLabelOnClick() {
         return function () {
             let value = this.state.xItemonPanel;
@@ -915,6 +996,12 @@ export default class QueryBySketch extends React.Component{
                 panel
                     .style('transform', 'translate(' + (this.state.size / 2 - divWidth / 2) + 'px,' + (this.state.size - divHeight - this.margin.bottom) + 'px)')
                     .style('visibility', 'visible');
+                if (this.state.xItem === value) {
+                    // set slider values
+                    let sliderMin = (this.xMinMax[0] - minVal) / (maxVal - minVal) * 100,
+                        sliderMax = (this.xMinMax[1] - minVal) / (maxVal - minVal) * 100;
+                    $('#sketchPadXRangeSlider').slider('option', 'values', [sliderMin, sliderMax]);
+                }
             }
         }
     }
@@ -947,6 +1034,12 @@ export default class QueryBySketch extends React.Component{
                     .style('transform', 'translate(' + (this.margin.left + 10) + 'px,' + (this.state.size / 2 - divHeight / 2) + 'px)')
                     .style('visibility', 'visible');
             }
+            if (this.state.yItem === value) {
+                // set slider values
+                let sliderMin = (this.yMinMax[0] - minVal) / (maxVal - minVal) * 100,
+                    sliderMax = (this.yMinMax[1] - minVal) / (maxVal - minVal) * 100;
+                $('#sketchPadYRangeSlider').slider('option', 'values', [sliderMin, sliderMax]);
+            }
         }
     }
 
@@ -954,12 +1047,14 @@ export default class QueryBySketch extends React.Component{
         let value = e.target.value;
         this.setState({xItemonPanel: value});
         this.setValueSlider('sketchPadXRangeSlider', Math.min.apply(null, this.state.minList[value]), Math.max.apply(null, this.state.maxList[value]));
+        $('#sketchPadXRangeSlider').slider('option', 'disabled', false);
     }
 
     onSelectYItem(e) {
         let value = e.target.value;
         this.setState({yItemonPanel: value});
         this.setValueSlider('sketchPadYRangeSlider', Math.min.apply(null, this.state.minList[value]), Math.max.apply(null, this.state.maxList[value]));
+        $('#sketchPadYRangeSlider').slider('option', 'disabled', false);
     }
 
     updateXAxisValue(min, max) {
@@ -1348,7 +1443,7 @@ export default class QueryBySketch extends React.Component{
                             id='widthVariables'
                             style={{width: '40%'}}
                             disabled={!this.state.detectWidth}
-                            onChange={this.updateWidthVariable()}>
+                            onChange={this.updateWidthVariable.bind(this)}>
                             {items}
                         </select>
                     </div>
