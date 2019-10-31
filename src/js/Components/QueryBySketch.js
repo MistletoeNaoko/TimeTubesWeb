@@ -439,6 +439,9 @@ export default class QueryBySketch extends React.Component{
                         for (let i = 0; i < this.controlPoints.length; i++) {
                             if (this.controlPoints[i].label) {
                                 this.controlPoints[i].label.remove();
+                                this.controlPoints[i].label = null;
+                                this.controlPoints[i].labelRect.remove();
+                                this.controlPoints[i].labelRect = null;
                             }
                         }
                         // initialize all
@@ -475,7 +478,8 @@ export default class QueryBySketch extends React.Component{
                             this.controlPoints.splice(curve.segment2.index, 0, {
                                 position: {x: hitResult.point.x, y: hitResult.point.x},
                                 assignedVariables: {},
-                                label: null
+                                label: null,
+                                labelRect: null
                             });
                             for (let key in this.state.lookup) {
                                 this.controlPoints[curve.segment2.index].assignedVariables[key] = [];
@@ -769,7 +773,8 @@ export default class QueryBySketch extends React.Component{
                             this.controlPoints.push({
                                 position: {x: e.point.x, y: e.point.y},
                                 assignedVariables: {},
-                                label: null
+                                label: null,
+                                labelRect: null
                             });
                             for (let key in this.state.lookup) {
                                 this.controlPoints[this.controlPoints.length - 1].assignedVariables[key] = [];
@@ -1167,6 +1172,10 @@ export default class QueryBySketch extends React.Component{
             .transition()
             .duration(50)
             .style('visibility', 'hidden');
+        // if neither x or y axis is z, set default value of the length of the sketch query
+        if (this.state.xItemonPanel !== 'z' && this.state.yItem !== 'z') {
+            $('#periodOfSketchQuery').val(30);
+        }
     }
 
     changeYAxis() {
@@ -1191,6 +1200,10 @@ export default class QueryBySketch extends React.Component{
             .transition()
             .duration(50)
             .style('visibility', 'hidden');
+        // if neither x or y axis is z, set default value of the length of the sketch query
+        if (this.state.xItem !== 'z' && this.state.yItemonPanel !== 'z') {
+            $('#periodOfSketchQuery').val(30);
+        }
     }
 
     switchSelector() {
@@ -1244,6 +1257,8 @@ export default class QueryBySketch extends React.Component{
             if (this.controlPoints[i].label) {
                 this.controlPoints[i].label.remove();
                 this.controlPoints[i].label = null;
+                this.controlPoints[i].labelRect.remove();
+                this.controlPoints[i].labelRect = null;
             }
         }
     }
@@ -1446,17 +1461,20 @@ export default class QueryBySketch extends React.Component{
 
     sketchWidthControl() {
         let items = [];
+        // exclude variables assigned to x or y axis, z (time) should not be assigned to width
         for (let key in this.state.lookup) {
-            let label = '';
-            if (this.state.lookup[key].length > 1) {
-                label = this.state.lookup[key].join(',');
-            } else {
-                label = this.state.lookup[key];
-            }
-            if (label.indexOf('JD') < 0) {
-                items.push(
-                    <option key={key} value={key}>{label}</option>
-                );
+            if (key !== this.state.xItem && key !== this.state.yItem) {
+                let label = '';
+                if (this.state.lookup[key].length > 1) {
+                    label = this.state.lookup[key].join(',');
+                } else {
+                    label = this.state.lookup[key];
+                }
+                if (key !== 'z') {
+                    items.push(
+                        <option key={key} value={key}>{label}</option>
+                    );
+                }
             }
         }
         return (
@@ -1549,7 +1567,8 @@ export default class QueryBySketch extends React.Component{
                                placeholder="Length of time"
                                id="periodOfSketchQuery"
                                style={{width: '40%', marginRight: '0.5rem'}}
-                               onChange={this.updateTimeLength.bind(this)}/>
+                               onChange={this.updateTimeLength.bind(this)}
+                               disabled={(this.state.xItem === 'z' || this.state.yItem === 'z')}/>
                         <label className="col-form-label col-form-label-sm" htmlFor="periodOfSketchQuery">days</label>
                     </div>
                 </div>
@@ -1617,6 +1636,9 @@ export default class QueryBySketch extends React.Component{
         // ToDo: Move text not to overlap on the stroke
         if (this.controlPoints[this.highlightedPointIdx].label) {
             this.controlPoints[this.highlightedPointIdx].label.remove();
+            this.controlPoints[this.highlightedPointIdx].label = null;
+            this.controlPoints[this.highlightedPointIdx].labelRect.remove();
+            this.controlPoints[this.highlightedPointIdx].labelRect = null;
         }
         this.controlPoints[this.highlightedPointIdx].label = new paper.PointText({
             position: {x: this.controlPoints[this.highlightedPointIdx].position.x, y: this.controlPoints[this.highlightedPointIdx].position.y - 10},
@@ -1626,6 +1648,14 @@ export default class QueryBySketch extends React.Component{
         });
         label = label.slice(0, -2);
         this.controlPoints[this.highlightedPointIdx].label.content = label;
+        // set background of the label to avoid occlusion with the path and width
+        this.controlPoints[this.highlightedPointIdx].labelRect = new paper.Path.Rectangle(
+            this.controlPoints[this.highlightedPointIdx].label.bounds
+        );
+        this.controlPoints[this.highlightedPointIdx].labelRect.fillColor = 'white';
+        this.controlPoints[this.highlightedPointIdx].labelRect.strokeColor = 'white';
+        this.controlPoints[this.highlightedPointIdx].label.insertAbove(this.controlPoints[this.highlightedPointIdx].labelRect);
+
         this.convertSketchIntoQuery();
     }
 
