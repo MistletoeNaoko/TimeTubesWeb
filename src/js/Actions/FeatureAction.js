@@ -56,3 +56,7 @@ export function updateSelectedResult(id, period, width, height) {
 export function clearResults() {
     dispatcher.dispatch({type: 'CLEAR_RESULTS'});
 }
+
+export function setQuery(query) {
+    dispatcher.dispatch({type: 'SET_QUERY', query});
+}

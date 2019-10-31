@@ -475,7 +475,7 @@ export default class VisualQuery extends React.Component {
                 }
                 break;
             case 'QBS':
-                console.log('convert QBS into data');
+                let query = FeatureStore.getQuery();
                 break;
         }
     }

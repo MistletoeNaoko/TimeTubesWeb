@@ -65,6 +65,10 @@ class FeatureStore extends EventEmitter {
                 break;
             case 'CLEAR_RESULTS':
                 this.emit('clearResults');
+                break;
+            case 'SET_QUERY':
+                this.setQuery(action.query);
+                break;
             default:
         }
     }
@@ -210,6 +214,10 @@ class FeatureStore extends EventEmitter {
 
     updateSelectedResult(id, period, width, height) {
         this.emit('updateSelectedResult', id, period, width, height);
+    }
+
+    setQuery(query) {
+        this.query = query;
     }
 }
 

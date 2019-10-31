@@ -2,6 +2,7 @@ import React from 'react';
 import paper from 'paper';
 import * as d3 from 'd3';
 import {tickFormatting} from '../lib/2DGraphLib';
+import * as FeatureAction from '../Actions/FeatureAction';
 import FeatureStore from '../Stores/FeatureStore';
 import DataStore from '../Stores/DataStore';
 
@@ -238,7 +239,7 @@ export default class QueryBySketch extends React.Component{
                 this.penSizeCircle = new paper.Path.Circle(center, t);
                 this.penSizeCircle.strokeColor = '#325D88';
             }
-        }
+        };
     }
 
     CanvasOnMouseDown() {
@@ -558,7 +559,7 @@ export default class QueryBySketch extends React.Component{
                         break;
                 }
             }
-        }
+        };
     }
 
     CanvasOnMouseDrag() {
@@ -757,7 +758,7 @@ export default class QueryBySketch extends React.Component{
                         break;
                 }
             }
-        }
+        };
     }
 
     CanvasOnMouseUp() {
@@ -851,7 +852,7 @@ export default class QueryBySketch extends React.Component{
                 this.tool.minDistance = 15;
             }
             this.convertSketchIntoQuery();
-        }
+        };
     }
 
     drawPathWidth() {
@@ -931,27 +932,111 @@ export default class QueryBySketch extends React.Component{
         // f1: [null, null, ..., [min, max], ...],
         // ...
         // arrayLength: xx}
-        let query = {};
-        for (let key in this.state.lookup) {
-            if (key !== 'z') {
-                query[key] = [];
+        if (this.path) {
+            // only when something is on the sketch pad
+
+            let query = {};
+            for (let key in this.state.lookup) {
+                if (key !== 'z') {
+                    query[key] = [];
+                }
             }
-        }
 
-        if (this.state.xItem !== 'z' && this.state.yItem !== 'z') {
-            // if the x or y axis is not JD
-            // get total length of the path
-            let totalLength = this.path.length;
+            if (this.state.xItem !== 'z' && this.state.yItem !== 'z') {
+                // if the x or y axis is not JD
+                // get total length of the path
+                let totalLength = this.path.length;
 
-            // get the time length of the sketch
-            let timeLength = $('#periodOfSketchQuery').val();
-            if (timeLength !== '') {
-                timeLength = Number(timeLength);
-                let del = totalLength / timeLength;
+                // get the time length of the sketch
+                let timeLength = $('#periodOfSketchQuery').val();
+                if (timeLength !== '') {
+                    timeLength = Number(timeLength);
+                    let del = totalLength / timeLength;
+                    let currentLen = this.path.curves[0].length,
+                        curveIdx = 0,
+                        totalCurveLen = 0,
+                        pointBefore;
+                    let radRange = [], valueRange = [];
+                    if (this.widthVar) {
+                        let minRad = Math.min.apply(null, this.radiuses),
+                            maxRad = Math.max.apply(null, this.radiuses);
+                        let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
+                            maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
+                        let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
+                        let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
+                            maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
+                        radRange = [minRad, maxRad];
+                        valueRange = [minRange, maxRange];
+                    }
+                    for (let key in query) {
+                        if (this.controlPoints[0].assignedVariables[key].length > 0) {
+                            query[key].push(this.controlPoints[0].assignedVariables[key]);
+                        }
+                    }
+                    pointBefore = this.controlPoints[0].position;
+                    for (let i = 0; i <= timeLength; i++) {
+                        // convert x and y pos into values
+                        let point = this.path.getPointAt(del * i);
+                        for (let key in query) {
+                            if (key === this.state.xItem) {
+                                query[key].push(this.xScale.invert(point.x));
+                            } else if (key === this.state.yItem) {
+                                query[key].push(this.yScale.invert(point.y));
+                            } else if (key === this.widthVar) {
+                                let width =  (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
+                                    * (del * i - totalCurveLen) / currentLen + this.radiuses[curveIdx];
+                                // convert width into value
+                                query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
+                            } else {
+                                query[key].push(null);
+                            }
+                        }
+                        
+                        // update curveLen, curveIdx, totalCurveLen
+                        if (totalCurveLen + currentLen <= del * i) {
+                            // add assigned filtering value to the query
+                            // judge which of before or current point variables are closer to the segment point
+                            let controlPoint = this.controlPoints[curveIdx + 1].position,
+                                assignedVariables = this.controlPoints[curveIdx + 1].assignedVariables;
+                            let distBefore = Math.sqrt(Math.pow(controlPoint.x - pointBefore.x, 2) + Math.pow(controlPoint.y - pointBefore.y, 2)),
+                                distCurrent = Math.sqrt(Math.pow(controlPoint.x - point.x, 2) + Math.pow(controlPoint.y - point.y, 2));
+                            if (distBefore <= distCurrent) {
+                                // assign variables to before point
+                                for (let key in query) {
+                                    if (assignedVariables[key].length > 0) {
+                                        query[key][query[key].length - 2] = assignedVariables[key];
+                                    }
+                                }
+                            } else {
+                                // assign variables to the current point
+                                for (let key in query) {
+                                    if (assignedVariables[key].length > 0) {
+                                        query[key][query[key].length - 1] = assignedVariables[key];
+                                    }
+                                }
+                            }
+                            totalCurveLen += currentLen;
+                            curveIdx += 1;
+                            if (curveIdx < this.path.curves.length) {
+                                currentLen = this.path.curves[curveIdx].length;
+                            }
+                        }
+                        pointBefore = point;
+                    }
+                } else {
+                    // alert says 'input time length of the input query'
+                }
+            } else if (this.state.xItem === 'z') {
+                // get time range and set the value to $periodOfSketchQuery
+                let minX = this.controlPoints[0].position.x,
+                    maxX = this.controlPoints[this.controlPoints.length - 1].position.x;
+                let sketchRange = this.xScale.invert(maxX - minX);
+                $('#periodOfSketchQuery').val(this.formatValue(sketchRange));
                 let currentLen = this.path.curves[0].length,
                     curveIdx = 0,
                     totalCurveLen = 0,
                     pointBefore;
+                // for converting the width into value
                 let radRange = [], valueRange = [];
                 if (this.widthVar) {
                     let minRad = Math.min.apply(null, this.radiuses),
@@ -964,38 +1049,41 @@ export default class QueryBySketch extends React.Component{
                     radRange = [minRad, maxRad];
                     valueRange = [minRange, maxRange];
                 }
+                // create a vertical line to run hit test
+                let del = this.xScale(1); // 1 day === del px
+                let hitTestPath = new paper.Path.Line(new paper.Point(minX, 0), new paper.Point(minX, this.state.size));
+                let currentX = minX;
+                // initialization
+                pointBefore = this.controlPoints[0].position;
                 for (let key in query) {
                     if (this.controlPoints[0].assignedVariables[key].length > 0) {
                         query[key].push(this.controlPoints[0].assignedVariables[key]);
                     }
                 }
-                pointBefore = this.controlPoints[0].position;
-                for (let i = 0; i <= timeLength; i++) {
-                    // convert x and y pos into values
-                    let point = this.path.getPointAt(del * i);
+
+                while (currentX <= maxX) {
+                    // get the position on the path
+                    let hitResult = this.path.getIntersections(hitTestPath);
+                    let offset = this.path.getOffsetOf(hitResult[0].point);
                     for (let key in query) {
-                        if (key === this.state.xItem) {
-                            query[key].push(this.xScale.invert(point.x));
-                        } else if (key === this.state.yItem) {
-                            query[key].push(this.yScale.invert(point.y));
+                        if (key === this.state.yItem) {
+                            query[key].push(this.yScale.invert(hitResult[0].point.y));
                         } else if (key === this.widthVar) {
                             let width =  (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
-                                * (del * i - totalCurveLen) / currentLen + this.radiuses[curveIdx];
+                                    * (offset - totalCurveLen) / currentLen + this.radiuses[curveIdx];
                             // convert width into value
                             query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
-                        } else {
+                        } else if (key !== 'z') {
                             query[key].push(null);
                         }
                     }
-                    
+
                     // update curveLen, curveIdx, totalCurveLen
-                    if (totalCurveLen + currentLen <= del * i) {
-                        // add assigned filtering value to the query
-                        // judge which of before or current point variables are closer to the segment point
+                    if (totalCurveLen + currentLen <= offset) {
                         let controlPoint = this.controlPoints[curveIdx + 1].position,
                             assignedVariables = this.controlPoints[curveIdx + 1].assignedVariables;
                         let distBefore = Math.sqrt(Math.pow(controlPoint.x - pointBefore.x, 2) + Math.pow(controlPoint.y - pointBefore.y, 2)),
-                            distCurrent = Math.sqrt(Math.pow(controlPoint.x - point.x, 2) + Math.pow(controlPoint.y - point.y, 2));
+                            distCurrent = Math.sqrt(Math.pow(controlPoint.x - hitResult[0].point.x, 2) + Math.pow(controlPoint.y - hitResult[0].point.y, 2));
                         if (distBefore <= distCurrent) {
                             // assign variables to before point
                             for (let key in query) {
@@ -1017,194 +1105,112 @@ export default class QueryBySketch extends React.Component{
                             currentLen = this.path.curves[curveIdx].length;
                         }
                     }
-                    pointBefore = point;
+                    currentX += del;
+                    hitTestPath.segments[0].point.x = currentX;
+                    hitTestPath.segments[1].point.x = currentX;
                 }
-            } else {
-                // alert says 'input time length of the input query'
-            }
-        } else if (this.state.xItem === 'z') {
-            // get time range and set the value to $periodOfSketchQuery
-            let minX = this.controlPoints[0].position.x,
-                maxX = this.controlPoints[this.controlPoints.length - 1].position.x;
-            let sketchRange = this.xScale.invert(maxX - minX);
-            $('#periodOfSketchQuery').val(this.formatValue(sketchRange));
-            let currentLen = this.path.curves[0].length,
-                curveIdx = 0,
-                totalCurveLen = 0,
-                pointBefore;
-            // for converting the width into value
-            let radRange = [], valueRange = [];
-            if (this.widthVar) {
-                let minRad = Math.min.apply(null, this.radiuses),
-                    maxRad = Math.max.apply(null, this.radiuses);
-                let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
-                    maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
-                let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
-                let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
-                    maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
-                radRange = [minRad, maxRad];
-                valueRange = [minRange, maxRange];
-            }
-            // create a vertical line to run hit test
-            let del = this.xScale(1); // 1 day === del px
-            let hitTestPath = new paper.Path.Line(new paper.Point(minX, 0), new paper.Point(minX, this.state.size));
-            let currentX = minX;
-            // initialization
-            pointBefore = this.controlPoints[0].position;
-            for (let key in query) {
-                if (this.controlPoints[0].assignedVariables[key].length > 0) {
-                    query[key].push(this.controlPoints[0].assignedVariables[key]);
+                hitTestPath.remove();
+                // check whether the last point has assigned variables or not
+                let lastPoint = this.controlPoints[this.controlPoints.length - 1].assignedVariables;
+                for (let key in lastPoint) {
+                    if (lastPoint[key].length > 0) {
+                        query[key][query[key].length - 1] = lastPoint[key];
+                    }
                 }
-            }
-
-            while (currentX <= maxX) {
-                // get the position on the path
-                let hitResult = this.path.getIntersections(hitTestPath);
-                let offset = this.path.getOffsetOf(hitResult[0].point);
+            } else if (this.state.yItem === 'z') {
+                // get time range and set the value to $periodOfSketchQuery
+                let minY = this.controlPoints[0].position.y,
+                    maxY = this.controlPoints[this.controlPoints.length - 1].position.y;
+                let sketchRange = this.yScale.invert(maxY - minY);
+                $('#periodOfSketchQuery').val(this.formatValue(sketchRange));
+                let currentLen = this.path.curves[0].length,
+                    curveIdx = 0,
+                    totalCurveLen = 0,
+                    pointBefore;
+                // for converting the width into value
+                let radRange = [], valueRange = [];
+                if (this.widthVar) {
+                    let minRad = Math.min.apply(null, this.radiuses),
+                        maxRad = Math.max.apply(null, this.radiuses);
+                    let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
+                        maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
+                    let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
+                    let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
+                        maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
+                    radRange = [minRad, maxRad];
+                    valueRange = [minRange, maxRange];
+                }
+                // create a vertical line to run hit test
+                let del = this.state.size - this.yScale(1); // 1 day === del px
+                let hitTestPath = new paper.Path.Line(new paper.Point(0, minY), new paper.Point(this.state.size, minY));
+                let currentY = minY;
+                // initialization
+                pointBefore = this.controlPoints[0].position;
                 for (let key in query) {
-                    if (key === this.state.yItem) {
-                        query[key].push(this.yScale.invert(hitResult[0].point.y));
-                    } else if (key === this.widthVar) {
-                        let width =  (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
-                                * (offset - totalCurveLen) / currentLen + this.radiuses[curveIdx];
-                        // convert width into value
-                        query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
-                    } else if (key !== 'z') {
-                        query[key].push(null);
+                    if (this.controlPoints[0].assignedVariables[key].length > 0) {
+                        query[key].push(this.controlPoints[0].assignedVariables[key]);
                     }
                 }
+                while (currentY >= maxY) {
+                    // get the position on the path
+                    let hitResult = this.path.getIntersections(hitTestPath);
+                    let offset = this.path.getOffsetOf(hitResult[0].point);
+                    for (let key in query) {
+                        if (key === this.state.xItem) {
+                            query[key].push(this.xScale.invert(hitResult[0].point.x));
+                        } else if (key === this.widthVar) {
+                            let width =  (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
+                                    * (offset - totalCurveLen) / currentLen + this.radiuses[curveIdx];
+                            // convert width into value
+                            query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
+                        } else if (key !== 'z') {
+                            query[key].push(null);
+                        }
+                    }
 
-                // update curveLen, curveIdx, totalCurveLen
-                if (totalCurveLen + currentLen <= offset) {
-                    let controlPoint = this.controlPoints[curveIdx + 1].position,
-                        assignedVariables = this.controlPoints[curveIdx + 1].assignedVariables;
-                    let distBefore = Math.sqrt(Math.pow(controlPoint.x - pointBefore.x, 2) + Math.pow(controlPoint.y - pointBefore.y, 2)),
-                        distCurrent = Math.sqrt(Math.pow(controlPoint.x - hitResult[0].point.x, 2) + Math.pow(controlPoint.y - hitResult[0].point.y, 2));
-                    if (distBefore <= distCurrent) {
-                        // assign variables to before point
-                        for (let key in query) {
-                            if (assignedVariables[key].length > 0) {
-                                query[key][query[key].length - 2] = assignedVariables[key];
+                    // update curveLen, curveIdx, totalCurveLen
+                    if (totalCurveLen + currentLen <= offset) {
+                        let controlPoint = this.controlPoints[curveIdx + 1].position,
+                            assignedVariables = this.controlPoints[curveIdx + 1].assignedVariables;
+                        let distBefore = Math.sqrt(Math.pow(controlPoint.x - pointBefore.x, 2) + Math.pow(controlPoint.y - pointBefore.y, 2)),
+                            distCurrent = Math.sqrt(Math.pow(controlPoint.x - hitResult[0].point.x, 2) + Math.pow(controlPoint.y - hitResult[0].point.y, 2));
+                        if (distBefore <= distCurrent) {
+                            // assign variables to before point
+                            for (let key in query) {
+                                if (assignedVariables[key].length > 0) {
+                                    query[key][query[key].length - 2] = assignedVariables[key];
+                                }
+                            }
+                        } else {
+                            // assign variables to the current point
+                            for (let key in query) {
+                                if (assignedVariables[key].length > 0) {
+                                    query[key][query[key].length - 1] = assignedVariables[key];
+                                }
                             }
                         }
-                    } else {
-                        // assign variables to the current point
-                        for (let key in query) {
-                            if (assignedVariables[key].length > 0) {
-                                query[key][query[key].length - 1] = assignedVariables[key];
-                            }
+                        totalCurveLen += currentLen;
+                        curveIdx += 1;
+                        if (curveIdx < this.path.curves.length) {
+                            currentLen = this.path.curves[curveIdx].length;
                         }
                     }
-                    totalCurveLen += currentLen;
-                    curveIdx += 1;
-                    if (curveIdx < this.path.curves.length) {
-                        currentLen = this.path.curves[curveIdx].length;
+                    currentY -= del;
+                    hitTestPath.segments[0].point.y = currentY;
+                    hitTestPath.segments[1].point.y = currentY;
+                }
+                hitTestPath.remove();
+                // check whether the last point has assigned variables or not
+                let lastPoint = this.controlPoints[this.controlPoints.length - 1].assignedVariables;
+                for (let key in lastPoint) {
+                    if (lastPoint[key].length > 0) {
+                        query[key][query[key].length - 1] = lastPoint[key];
                     }
                 }
-                currentX += del;
-                hitTestPath.segments[0].point.x = currentX;
-                hitTestPath.segments[1].point.x = currentX;
             }
-            hitTestPath.remove();
-            // check whether the last point has assigned variables or not
-            let lastPoint = this.controlPoints[this.controlPoints.length - 1].assignedVariables;
-            for (let key in lastPoint) {
-                if (lastPoint[key].length > 0) {
-                    query[key][query[key].length - 1] = lastPoint[key];
-                }
-            }
-        } else if (this.state.yItem === 'z') {
-            // get time range and set the value to $periodOfSketchQuery
-            let minY = this.controlPoints[0].position.y,
-                maxY = this.controlPoints[this.controlPoints.length - 1].position.y;
-            let sketchRange = this.yScale.invert(maxY - minY);
-            $('#periodOfSketchQuery').val(this.formatValue(sketchRange));
-            let currentLen = this.path.curves[0].length,
-                curveIdx = 0,
-                totalCurveLen = 0,
-                pointBefore;
-            // for converting the width into value
-            let radRange = [], valueRange = [];
-            if (this.widthVar) {
-                let minRad = Math.min.apply(null, this.radiuses),
-                    maxRad = Math.max.apply(null, this.radiuses);
-                let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
-                    maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
-                let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
-                let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
-                    maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
-                radRange = [minRad, maxRad];
-                valueRange = [minRange, maxRange];
-            }
-            // create a vertical line to run hit test
-            let del = this.state.size - this.yScale(1); // 1 day === del px
-            let hitTestPath = new paper.Path.Line(new paper.Point(0, minY), new paper.Point(this.state.size, minY));
-            let currentY = minY;
-            // initialization
-            pointBefore = this.controlPoints[0].position;
-            for (let key in query) {
-                if (this.controlPoints[0].assignedVariables[key].length > 0) {
-                    query[key].push(this.controlPoints[0].assignedVariables[key]);
-                }
-            }
-            while (currentY >= maxY) {
-                // get the position on the path
-                let hitResult = this.path.getIntersections(hitTestPath);
-                let offset = this.path.getOffsetOf(hitResult[0].point);
-                for (let key in query) {
-                    if (key === this.state.xItem) {
-                        query[key].push(this.xScale.invert(hitResult[0].point.x));
-                    } else if (key === this.widthVar) {
-                        let width =  (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
-                                * (offset - totalCurveLen) / currentLen + this.radiuses[curveIdx];
-                        // convert width into value
-                        query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
-                    } else if (key !== 'z') {
-                        query[key].push(null);
-                    }
-                }
-
-                // update curveLen, curveIdx, totalCurveLen
-                if (totalCurveLen + currentLen <= offset) {
-                    let controlPoint = this.controlPoints[curveIdx + 1].position,
-                        assignedVariables = this.controlPoints[curveIdx + 1].assignedVariables;
-                    let distBefore = Math.sqrt(Math.pow(controlPoint.x - pointBefore.x, 2) + Math.pow(controlPoint.y - pointBefore.y, 2)),
-                        distCurrent = Math.sqrt(Math.pow(controlPoint.x - hitResult[0].point.x, 2) + Math.pow(controlPoint.y - hitResult[0].point.y, 2));
-                    if (distBefore <= distCurrent) {
-                        // assign variables to before point
-                        for (let key in query) {
-                            if (assignedVariables[key].length > 0) {
-                                query[key][query[key].length - 2] = assignedVariables[key];
-                            }
-                        }
-                    } else {
-                        // assign variables to the current point
-                        for (let key in query) {
-                            if (assignedVariables[key].length > 0) {
-                                query[key][query[key].length - 1] = assignedVariables[key];
-                            }
-                        }
-                    }
-                    totalCurveLen += currentLen;
-                    curveIdx += 1;
-                    if (curveIdx < this.path.curves.length) {
-                        currentLen = this.path.curves[curveIdx].length;
-                    }
-                }
-                currentY -= del;
-                hitTestPath.segments[0].point.y = currentY;
-                hitTestPath.segments[1].point.y = currentY;
-            }
-            hitTestPath.remove();
-            // check whether the last point has assigned variables or not
-            let lastPoint = this.controlPoints[this.controlPoints.length - 1].assignedVariables;
-            for (let key in lastPoint) {
-                if (lastPoint[key].length > 0) {
-                    query[key][query[key].length - 1] = lastPoint[key];
-                }
-            }
+            console.log(query);
+            FeatureAction.setQuery(query);
         }
-        console.log(query);
     }
 
     CanvasXLabelOnClick() {
@@ -1377,6 +1383,7 @@ export default class QueryBySketch extends React.Component{
         if (this.state.xItemonPanel !== 'z' && this.state.yItem !== 'z') {
             $('#periodOfSketchQuery').val(30);
         }
+        this.convertSketchIntoQuery();
     }
 
     changeYAxis() {
@@ -1405,6 +1412,7 @@ export default class QueryBySketch extends React.Component{
         if (this.state.xItem !== 'z' && this.state.yItemonPanel !== 'z') {
             $('#periodOfSketchQuery').val(30);
         }
+        this.convertSketchIntoQuery();
     }
 
     switchSelector() {
@@ -1750,9 +1758,17 @@ export default class QueryBySketch extends React.Component{
             let selectedIdx = variableList.selectedIndex;
             let selectedVal = variableList.options[selectedIdx].value;
             this.setValueSlider('sketchWidthSlider', Math.min.apply(null, this.state.minList[selectedVal]), Math.max.apply(null, this.state.maxList[selectedVal]));
+            $('#sketchWidthSlider').on('slidestop', this.stopSlidingWidthSlider().bind(this));
             $('#sketchWidthSlider').slider('option', 'disabled', !this.state.detectWidth);
             this.widthVar = selectedVal;
+            this.convertSketchIntoQuery();
         }
+    }
+
+    stopSlidingWidthSlider() {
+        return function (event, ui) {
+            this.convertSketchIntoQuery();
+        };
     }
 
     definePeriodOfQuery() {
@@ -1793,6 +1809,7 @@ export default class QueryBySketch extends React.Component{
                     maxY = this.controlPoints[this.controlPoints.length - 1].position.y;
                 this.updateYAxisValue(0, this.formatValue(val / (maxY - minY) * canvasSize));
             }
+            this.convertSketchIntoQuery();
         }
     }
 
