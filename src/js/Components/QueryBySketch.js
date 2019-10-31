@@ -326,7 +326,6 @@ export default class QueryBySketch extends React.Component{
                     popover.css({left: position.x + 'px', top: position.y + 'px'});
                     popoverArrow.css({top: '', left: ''});
                     popoverArrow.css(arrowPos);
-
                     for (let key in this.controlPoints[this.highlightedPointIdx].assignedVariables) {
                         if (this.controlPoints[this.highlightedPointIdx].assignedVariables[key].length <= 0) {
                             // if no variables are assigned yet
@@ -334,16 +333,22 @@ export default class QueryBySketch extends React.Component{
                                 // show x value
                                 $('#valueAssignmentCheckbox_' + key).prop('disabled', true);
                                 $('#slider_' + key).css('display', 'none');
-                                let valueRange = [Number($('#sketchPadXMin').text()), Number($('#sketchPadXMax').text())];
                                 $('#widthValue_' + key).css('display', 'block');
-                                $('#widthValue_' + key).text(this.formatValue((valueRange[1] - valueRange[0]) / this.state.size * (this.state.size - this.controlPoints[this.highlightedPointIdx].position.x) + valueRange[0]));
+                                $('#widthValue_' + key).text(
+                                    this.formatValue(
+                                        this.xScale.invert(this.controlPoints[this.highlightedPointIdx].position.x)
+                                    )
+                                );
                             } else if (key === this.state.yItem) {
                                 // show y value
                                 $('#valueAssignmentCheckbox_' + key).prop('disabled', true);
                                 $('#slider_' + key).css('display', 'none');
-                                let valueRange = [Number($('#sketchPadYMin').text()), Number($('#sketchPadYMax').text())];
                                 $('#widthValue_' + key).css('display', 'block');
-                                $('#widthValue_' + key).text(this.formatValue((valueRange[1] - valueRange[0]) / this.state.size * (this.state.size - this.controlPoints[this.highlightedPointIdx].position.y) + valueRange[0]));
+                                $('#widthValue_' + key).text(
+                                    this.formatValue(
+                                        this.yScale.invert(this.controlPoints[this.highlightedPointIdx].position.y)
+                                    )
+                                );
                             } else if (key !== this.widthVar) {
                                 // show a slider
                                 $('#valueAssignmentCheckbox_' + key).prop('checked', false);
@@ -373,16 +378,22 @@ export default class QueryBySketch extends React.Component{
                                 // show x value
                                 $('#valueAssignmentCheckbox_' + key).prop('disabled', true);
                                 $('#slider_' + key).css('display', 'none');
-                                let valueRange = [Number($('#sketchPadXMin').text()), Number($('#sketchPadXMax').text())];
                                 $('#widthValue_' + key).css('display', 'block');
-                                $('#widthValue_' + key).text(this.formatValue((valueRange[1] - valueRange[0]) / this.state.size * (this.state.size - this.controlPoints[this.highlightedPointIdx].position.x) + valueRange[0]));
+                                $('#widthValue_' + key).text(
+                                    this.formatValue(
+                                        this.xScale.invert(this.controlPoints[this.highlightedPointIdx].position.x)
+                                    )
+                                );
                             } else if (key === this.state.yItem) {
                                 // show y value
                                 $('#valueAssignmentCheckbox_' + key).prop('disabled', true);
                                 $('#slider_' + key).css('display', 'none');
-                                let valueRange = [Number($('#sketchPadYMin').text()), Number($('#sketchPadYMax').text())];
                                 $('#widthValue_' + key).css('display', 'block');
-                                $('#widthValue_' + key).text(this.formatValue((valueRange[1] - valueRange[0]) / this.state.size * (this.state.size - this.controlPoints[this.highlightedPointIdx].position.y) + valueRange[0]));
+                                $('#widthValue_' + key).text(
+                                    this.formatValue(
+                                        this.yScale.invert(this.controlPoints[this.highlightedPointIdx].position.y)
+                                    )
+                                );
                             } else if (key !== this.widthVar) {
                                 // show a slider
                                 $('#valueAssignmentCheckbox_' + key).prop('checked', true);
@@ -926,13 +937,13 @@ export default class QueryBySketch extends React.Component{
                 let del = totalLength / timeLength;
                 let currentLen = this.path.curves[0].length,
                     curveIdx = 0,
-                    totalCurveLen = 0;
+                    totalCurveLen = 0,
+                    pointBefore;
                 let radRange = [], valueRange = [];
-                query[this.state.xItem] = [];
-                query[this.state.yItem] = [];
+                for (let key in this.state.lookup) {
+                    query[key] = [];
+                }
                 if (this.widthVar) {
-                    query[this.widthVar] = [];
-
                     let minRad = Math.min.apply(null, this.radiuses),
                         maxRad = Math.max.apply(null, this.radiuses);
                     let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
@@ -943,25 +954,58 @@ export default class QueryBySketch extends React.Component{
                     radRange = [minRad, maxRad];
                     valueRange = [minRange, maxRange];
                 }
+                for (let key in this.state.lookup) {
+                    if (this.controlPoints[0].assignedVariables[key].length > 0) {
+                        query[key].push(this.controlPoints[0].assignedVariables[key]);
+                    }
+                }
+                pointBefore = this.controlPoints[0].position;
                 for (let i = 0; i <= timeLength; i++) {
                     // convert x and y pos into values
                     let point = this.path.getPointAt(del * i);
-                    query[this.state.xItem].push(this.xScale.invert(point.x));
-                    query[this.state.yItem].push(this.yScale.invert(point.y));
-                    if (this.widthVar) {
-                        let width =  (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
-                            * (del * i - totalCurveLen) / currentLen + this.radiuses[curveIdx];
-                        // convert width into value
-                        query[this.widthVar].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
+                    for (let key in this.state.lookup) {
+                        if (key === this.state.xItem) {
+                            query[key].push(this.xScale.invert(point.x));
+                        } else if (key === this.state.yItem) {
+                            query[key].push(this.yScale.invert(point.y));
+                        } else if (key === this.widthVar) {
+                            let width =  (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
+                                * (del * i - totalCurveLen) / currentLen + this.radiuses[curveIdx];
+                            // convert width into value
+                            query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
+                        } else {
+                            query[key].push(null);
+                        }
                     }
                     // update curveLen, curveIdx, totalCurveLen
                     if (totalCurveLen + currentLen <= del * i) {
+                        // judge which of before or current point variables are closer to the segment point
+                        let controlPoint = this.controlPoints[curveIdx + 1].position,
+                            assignedVariables = this.controlPoints[curveIdx + 1].assignedVariables;
+                        let distBefore = Math.sqrt(Math.pow(controlPoint.x - pointBefore.x, 2) + Math.pow(controlPoint.y - pointBefore.y, 2)),
+                            distCurrent = Math.sqrt(Math.pow(controlPoint.x - point.x, 2) + Math.pow(controlPoint.y - point.y, 2));
+                        if (distBefore <= distCurrent) {
+                            // assign variables to before point
+                            for (let key in this.state.lookup) {
+                                if (assignedVariables[key].length > 0) {
+                                    query[key][query[key].length - 2] = assignedVariables[key];
+                                }
+                            }
+                        } else {
+                            // assign variables to the current point
+                            for (let key in this.state.lookup) {
+                                if (assignedVariables[key].length > 0) {
+                                    query[key][query[key].length - 1] = assignedVariables[key];
+                                }
+                            }
+                        }
                         totalCurveLen += currentLen;
                         curveIdx += 1;
                         if (curveIdx < this.path.curves.length) {
                             currentLen = this.path.curves[curveIdx].length;
                         }
                     }
+                    pointBefore = point;
                 }
                 console.log(query);
 
@@ -1582,6 +1626,7 @@ export default class QueryBySketch extends React.Component{
         });
         label = label.slice(0, -2);
         this.controlPoints[this.highlightedPointIdx].label.content = label;
+        this.convertSketchIntoQuery();
     }
 
     setValueSlider(id, min, max) {
