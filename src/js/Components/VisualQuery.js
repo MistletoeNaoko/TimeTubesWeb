@@ -44,6 +44,11 @@ export default class VisualQuery extends React.Component {
             this.setState({
                 queryMode: mode
             });
+            if (mode === 'QBS') {
+                this.setState({
+                    DTWMode: 'DTWD'
+                });
+            }
         });
         FeatureStore.on('updateSelectedPeriod', () => {
             // this.selectedInterval = FeatureStore.getSelectedPeriod();
@@ -405,6 +410,7 @@ export default class VisualQuery extends React.Component {
                                 <div className="custom-control custom-radio">
                                     <input type="radio" id="DTWI" name="DTWType" value='DTWI'
                                            checked={(this.state.DTWMode === 'DTWI')? true: false}
+                                           disabled={this.state.queryMode === 'QBS'}
                                            className="custom-control-input" readOnly/>
                                     <label className="custom-control-label" htmlFor="DTWI">
                                         DTW<sub>I</sub>
@@ -450,12 +456,12 @@ export default class VisualQuery extends React.Component {
         let step = $('#stepSizeOfSlidingWindow').val();
         step = (step === '')? 1: Number(step);
         let DTWType = $('input[name=DTWType]:checked').val();
+        // get target ids
+        let targets = FeatureStore.getTarget();
         switch (this.state.queryMode) {
             case 'QBE':
                 // get source id: this.state.source
                 let source = Number(this.state.source);
-                // get target ids
-                let targets = FeatureStore.getTarget();
                 if (targets.length > 0) {
                     // get selected time period: FeatureStore.getSelectedPeriod()
                     let period = FeatureStore.getSelectedPeriod();
@@ -475,7 +481,10 @@ export default class VisualQuery extends React.Component {
                 }
                 break;
             case 'QBS':
-                let query = FeatureStore.getQuery();
+                if (targets.length > 0) {
+                    let query = FeatureStore.getQuery();
+                    let result = TimeSeriesQuerying.runMatchingSketch(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
+                }
                 break;
         }
     }

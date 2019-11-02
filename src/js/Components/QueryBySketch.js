@@ -1208,6 +1208,7 @@ export default class QueryBySketch extends React.Component{
                     }
                 }
             }
+            query['arrayLength'] = query[Object.keys(query)[0]].length;
             console.log(query);
             FeatureAction.setQuery(query);
         }
