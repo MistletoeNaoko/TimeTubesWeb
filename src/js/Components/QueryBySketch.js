@@ -1744,6 +1744,10 @@ export default class QueryBySketch extends React.Component{
         if (!state) {
             // if the width detection become off
             this.widthVar = null;
+            // if path width is already assigned, remove the width
+            if (this.pathWidth) {
+                this.pathWidth.remove();
+            }
         } else {
             // if the width detection is on
             let variableList = document.getElementById('widthVariables');

@@ -483,7 +483,9 @@ export default class VisualQuery extends React.Component {
             case 'QBS':
                 if (targets.length > 0) {
                     let query = FeatureStore.getQuery();
-                    let result = TimeSeriesQuerying.runMatchingSketch(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
+                    let results = TimeSeriesQuerying.runMatchingSketch(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
+                    FeatureAction.setExtractionResults(results, query, []);
+                    TimeSeriesQuerying.showExtractionResults();
                 }
                 break;
         }

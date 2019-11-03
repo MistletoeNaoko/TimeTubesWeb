@@ -170,10 +170,15 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                         if (normalization) {
                             target = normalizeTimeSeries(target);
                         }
-                        let dtws = DTWSimpleMD(query, target, keys, distFunc, maxLen - period[0] + 1);
+                        let dist = DTWSimpleMD(query, target, keys, distFunc);
+                        let targetPeriod = maxLen - period[0] + 1,
+                            dtws = [];
+                        for (let j = 1; j <= targetPeriod; j++) {
+                            dtws.push(dist[query.arrayLength - 1][target.arrayLength - 1 - targetPeriod + j])
+                        }
                         let minIdx = 0;
                         let minVal = Infinity;
-                        for (let j = 0; j < dtws.length; j++) {
+                        for (let j = 1; j < dtws.length; j++) {
                             if (dtws[j] < minVal) {
                                 minVal = dtws[j];
                                 minIdx = j;
@@ -276,7 +281,68 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
                     }
                 } else {
                     // use DTWSimple
+                    let i = 0;
+                    while (i < targetData.arrayLength - period[0]) {
+                        let target = {};
+                        let maxLen = (i + period[1] < targetData.arrayLength - 1) ? period[1] : targetData.arrayLength - i;
+                        keys.forEach(function (key) {
+                            target[key] = targetData[key].slice(i, i + maxLen);
+                        });
+                        target.arrayLength = maxLen;
+                        if (normalization) {
+                            target = normalizeTimeSeries(target);
+                        }
+                        let dist = DTWSimpleMD(query, target, keys, distFunc);
+                        let targetPeriod = maxLen - period[0] + 1,
+                            dtws = [];
+                        for (let j = 1; j <= targetPeriod; j++) {
+                            dtws.push(dist[query.arrayLength - 1][target.arrayLength - 1 - targetPeriod + j])
+                        }
+                        let minIdx = 0;
+                        let minVal = Infinity;
+                        for (let j = 0; j < dtws.length; j++) {
+                            if (dtws[j] < minVal) {
+                                minVal = dtws[j];
+                                minIdx = j;
+                            }
+                        }
 
+                        let minDist = [];
+                        for (let j = 0; j < dist.length; j++) {
+                            minDist.push(dist[j].slice(0, target.arrayLength - 1 - targetPeriod + (minIdx + 1) + 1));
+                        }
+                        // check whether the time slice is filtered out or not
+                        let path = OptimalWarpPath(minDist);
+                        let flag = true;
+                        for (let key in keysFilter) {
+                            for (let j = 0; j < query[keysFilter[key]].length; j++) {
+                                if (query[keysFilter[key]][j]) {
+                                    // value range is assigned to the time point
+                                    for (let k = 0; k < path.length; k++) {
+                                        // find the corresponding time point in the target
+                                        // path[k][0]: time point of the target
+                                        // path[k][1]: time point of the query
+                                        if (path[k][1] < j) break;
+                                        if (path[k][1] === j) {
+                                            let targetVal = targetData[keysFilter[key]][i + path[k][0]];
+                                            // check whether the value of the variable is in the assigned range
+                                            if (targetVal < query[keysFilter[key]][j][0] || query[keysFilter[key]][j][1] < targetVal) {
+                                                // filtered out!
+                                                flag = false;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                }
+                                if (!flag) break;
+                            }
+                            if (!flag) break;
+                        }
+                        if (flag) {
+                            result.push([targetId, i + minJD, period[0] + minIdx, minVal]);
+                        }
+                        i += step;
+                    }
                 }
                 break;
         }
@@ -346,7 +412,7 @@ export function DTWSimple(s, t, distFunc, period) {
     return result;
 }
 
-export function DTWSimpleMD(s, t, keys, distFunc, period) {
+export function DTWSimpleMD(s, t, keys, distFunc) {
     // s and t are object
     let dist = [];
     for (let i = 0; i < s.arrayLength; i++) {
@@ -382,11 +448,12 @@ export function DTWSimpleMD(s, t, keys, distFunc, period) {
         }
     }
 
-    let result = []
-    for (let i = 1; i <= period; i++) {
-        result.push(dist[s.arrayLength - 1][t.arrayLength - 1 - period + i]);
-    }
-    return result;
+    // let result = []
+    // for (let i = 1; i <= period; i++) {
+    //     result.push(dist[s.arrayLength - 1][t.arrayLength - 1 - period + i]);
+    // }
+    // return result;
+    return dist;
 }
 
 export function DTW(s, t, w, distFunc) {
