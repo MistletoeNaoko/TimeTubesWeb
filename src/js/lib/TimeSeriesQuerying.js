@@ -62,7 +62,7 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                         let dtws = [];
                         for (let j = period[0]; j <= period[1]; j++) {
                             if (i + j > targetData.arrayLength - 1) break;
-                            let dtwSum = 0;
+                            let dtwSum = 0, paths = {};
                             for (let key in query) {
                                 if (Array.isArray(targetData[key]) && key !== 'z') {
                                     let target = targetData[key].slice(i, i + j);
@@ -70,10 +70,49 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                                         target = normalizeTimeSeries(target);
                                     }
                                     let dtw = DTW(query[key], target, window, distFunc);
-                                    dtwSum += dtw;
+                                    let path = OptimalWarpPath(dtw);
+                                    paths[key] = path;
+                                    dtwSum += dtw[query[key].length - 1][target.length - 1];
                                 }
                             }
-                            dtws.push(dtwSum);
+                            dtws.push({dist: dtwSum, path: paths});
+                        }
+                        let minIdx = 0;
+                        let minVal = Infinity;
+                        for (let j = 0; j < dtws.length; j++) {
+                            if (dtws[j].dist < minVal) {
+                                minVal = dtws[j].dist;
+                                minIdx = j;
+                            }
+                        }
+                        result.push([targetId, i + minJD, period[0] + minIdx, minVal, dtws.path]);
+                        i += step;
+                    }
+                } else {
+                    // If there are no restriction on window size (simpleDTW), use fast computing
+                    let i = 0;
+                    while (i < targetData.arrayLength - period[0]) {
+                        let dists = {};
+                        let maxLen = (i + period[1] < targetData.arrayLength - 1) ? period[1] : targetData.arrayLength - i;
+                        for (let key in query) {
+                            if (Array.isArray(targetData[key]) && key !== 'z') {
+                                let target = targetData[key].slice(i, i + maxLen);
+                                if (normalization) {
+                                    target = normalizeTimeSeries(target);
+                                }
+                                let dist = DTWSimple(query[key], target, distFunc);
+                                dists[key] = dist;
+                            }
+                        }
+                        // Choose a collection of dtw which minimize the sum
+                        let targetPeriod = maxLen - period[0] + 1, 
+                            dtws = [];
+                        for (let j = 1; j <= targetPeriod; j++) {
+                            let distSum = 0;
+                            for (let key in dists) {
+                                distSum += dists[key][query.arrayLength - 1][dists[key][0].length - 1 - targetPeriod + j];
+                            }
+                            dtws.push(distSum);
                         }
                         let minIdx = 0;
                         let minVal = Infinity;
@@ -83,40 +122,17 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                                 minIdx = j;
                             }
                         }
-                        result.push([targetId, i + minJD, period[0] + minIdx, minVal]);
-                        i += step;
-                    }
-                } else {
-                    // If there are no restriction on window size (simpleDTW), use fast computing
-                    let i = 0;
-                    while (i < targetData.arrayLength - period[0]) {
-                        let dtws = [];
-                        let maxLen = (i + period[1] < targetData.arrayLength - 1) ? period[1] : targetData.arrayLength - i;
-                        for (let key in query) {
-                            if (Array.isArray(targetData[key]) && key !== 'z') {
-                                let target = targetData[key].slice(i, i + maxLen);
-                                if (normalization) {
-                                    target = normalizeTimeSeries(target);
-                                }
-                                let dtw = DTWSimple(query[key], target, distFunc, maxLen - period[0] + 1);
-                                dtws.push(dtw);
+
+                        let paths = {};
+                        for (let key in dists) {
+                            let minDist = [];
+                            for (let j = 0; j < dists[key].length; j++) {
+                                minDist.push(dists[key].slice(0, dists[key][j].length - 1 - targetPeriod + (minIdx + 1) + 1));
                             }
-                        }
-                        // Choose a collection of dtw which minimize the sum
-                        let minIdx = 0;
-                        let minVal = Infinity;
-                        for (let j = 0; j < dtws[0].length; j++) {
-                            let sum = 0;
-                            for (let k = 0; k < dtws.length; k++) {
-                                sum += dtws[k][j];
-                            }
-                            if (sum < minVal) {
-                                minVal = sum;
-                                minIdx = j;
-                            }
+                            paths[key] = OptimalWarpPath(minDist);
                         }
                         // result is a collection of [start JD, the length of period, dtw value]
-                        result.push([targetId, i + minJD, period[0] + minIdx, minVal]);
+                        result.push([targetId, i + minJD, period[0] + minIdx, minVal, paths]);
                         i += step;
                     }
                 }
@@ -143,18 +159,19 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                             if (normalization) {
                                 target = normalizeTimeSeries(target);
                             }
-                            let distMat = DTWMD(query, target, window, keys, distFunc);
-                            dtws.push(distMat[distMat.length - 1][distMat[0].length - 1]);
+                            // let distMat = DTWMD(query, target, window, keys, distFunc);
+                            dtws.push(DTWMD(query, target, window, keys, distFunc));//distMat[distMat.length - 1][distMat[0].length - 1]);
                         }
                         let minIdx = 0;
                         let minVal = Infinity;
                         for (let j = 0; j < dtws.length; j++) {
-                            if (dtws[j] < minVal) {
-                                minVal = dtws[j];
+                            if (dtws[j][dtws[j].length - 1][dtws[j][0].length - 1] < minVal) {
+                                minVal = dtws[j][dtws[j].length - 1][dtws[j][0].length - 1];
                                 minIdx = j;
                             }
                         }
-                        result.push([targetId, i + minJD, period[0] + minIdx, minVal]);
+                        let path = OptimalWarpPath(dtws[minIdx]);
+                        result.push([targetId, i + minJD, period[0] + minIdx, minVal, path]);
                         i += step;
                     }
                 } else {
@@ -184,7 +201,13 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                                 minIdx = j;
                             }
                         }
-                        result.push([targetId, i + minJD, period[0] + minIdx, minVal]);
+
+                        let minDist = [];
+                        for (let j = 0; j < dist.length; j++) {
+                            minDist.push(dist[j].slice(0, target.arrayLength - 1 - targetPeriod + (minIdx + 1) + 1));
+                        }
+                        let path = OptimalWarpPath(minDist);
+                        result.push([targetId, i + minJD, period[0] + minIdx, minVal, path]);
                         i += step;
                     }
                 }
@@ -275,7 +298,7 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
                             if (!flag) break;
                         }
                         if (flag) {
-                            result.push([targetId, i + minJD, period[0] + minIdx, minVal]);
+                            result.push([targetId, i + minJD, period[0] + minIdx, minVal, path]);
                         }
                         i += step;
                     }
@@ -339,7 +362,7 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
                             if (!flag) break;
                         }
                         if (flag) {
-                            result.push([targetId, i + minJD, period[0] + minIdx, minVal]);
+                            result.push([targetId, i + minJD, period[0] + minIdx, minVal, path]);
                         }
                         i += step;
                     }
@@ -379,7 +402,7 @@ function normalizeTimeSeries(data) {
     return result;
 }
 
-export function DTWSimple(s, t, distFunc, period) {
+export function DTWSimple(s, t, distFunc) {
     let dist = [];
     for (let i = 0; i < s.length; i++) {
         dist[i] = [];
@@ -405,11 +428,11 @@ export function DTWSimple(s, t, distFunc, period) {
             }
         }
     }
-    let result = []
-    for (let i = 1; i <= period; i++) {
-        result.push(dist[s.length - 1][t.length - 1 - period + i]);
-    }
-    return result;
+    // let result = []
+    // for (let i = 1; i <= period; i++) {
+    //     result.push(dist[s.length - 1][t.length - 1 - period + i]);
+    // }
+    return dist;//result;
 }
 
 export function DTWSimpleMD(s, t, keys, distFunc) {
@@ -486,7 +509,7 @@ export function DTW(s, t, w, distFunc) {
             );
         }
     }
-    return dist[s.length - 1][t.length - 1];
+    return dist;//[s.length - 1][t.length - 1];
 }
 
 export function DTWMD(s, t, w, keys, distFunc) {
