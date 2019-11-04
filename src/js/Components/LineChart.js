@@ -8,15 +8,44 @@ export default class LineChart extends React.Component {
     constructor(props) {
         super();
         this.margin = { "top": 30, "bottom": 30, "right": 30, "left": 60 };
+        this.tickWidth = 10;
         this.id = props.id;
         this.item = props.item;
         this.itemName = DataStore.getData(this.id).data.lookup[this.item];
         this.query = props.query;
         this.target = props.target;
-        this.yMinMax = [
-            Math.min(Math.min.apply(null, this.query), Math.min.apply(null, this.target)),
-            Math.max(Math.max.apply(null, this.query), Math.max.apply(null, this.target))
-        ];
+        this.path = props.path;
+        this.filter = false;
+        if (this.query.indexOf(null) >= 0) {
+            this.filter = true;
+        }
+        this.yMinMax;
+        if (!this.filter) {
+            this.yMinMax = [
+                Math.min(Math.min.apply(null, this.query), Math.min.apply(null, this.target)),
+                Math.max(Math.max.apply(null, this.query), Math.max.apply(null, this.target))
+            ];
+        } else {
+            // get the bigggest/smallest value in the filtering value ranges
+            let ranges = this.query.filter(elem => elem !== null);
+            if (ranges.length > 0) {
+                let minVal = ranges[0][0], maxVal = ranges[0][1];
+                for (let i = 1; i < ranges.length; i++) {
+                    if (ranges[i][0] < minVal) {
+                        minVal = ranges[i][0];
+                    }
+                    if (maxVal < ranges[i][1]) {
+                        maxVal = ranges[i][1];
+                    }
+                }
+                this.yMinMax = [
+                    Math.min(minVal, Math.min.apply(null, this.target)),
+                    Math.max(maxVal, Math.max.apply(null, this.target))
+                ];
+            } else {
+                this.yMinMax = [Math.min.apply(null, this.target), Math.max.apply(null, this.target)];
+            }
+        }
         this.state = {
             width: props.width,
             height: props.height,
@@ -56,7 +85,7 @@ export default class LineChart extends React.Component {
             .text(this.itemName);
 
         this.xScale = d3.scaleLinear()
-            .domain([0, Math.max(this.query.length, this.target.length)])
+            .domain([0, (!this.filter)?Math.max(this.query.length - 1, this.target.length - 1): this.target.length - 1])
             .nice()
             .range([0, width]);
         this.xLabel = d3.axisBottom(this.xScale)
@@ -66,7 +95,7 @@ export default class LineChart extends React.Component {
         this.xAxis = this.svg
             .append('g')
             .attr('class', 'x_axis')
-            .attr('transform', 'translate(' + this.margin.left + ',' + (this.margin.top +height) + ')')
+            .attr('transform', 'translate(' + this.margin.left + ',' + (this.margin.top + height) + ')')
             .call(this.xLabel);
 
         this.yScale = d3.scaleLinear()
@@ -83,23 +112,95 @@ export default class LineChart extends React.Component {
             .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')')
             .call(this.yLabel);
 
-        this.queryPath = this.svg
-            .append('path')
-            .datum(this.query)
-            .attr('fill', 'none')
-            .attr('stroke', '#80b139')
-            .attr('stroke-width', 1.5)
-            .attr('id', 'lineChartQuery_' + this.item)
-            .attr('d', d3.line()
-                .x(function (d, i) {
-                    return this.xScale(i);
+        if (!this.filter) {
+            this.queryPath = this.svg
+                .append('path')
+                .datum(this.query)
+                .attr('fill', 'none')
+                .attr('stroke', '#80b139')
+                .attr('stroke-width', 1.5)
+                .attr('id', 'lineChartQuery_' + this.item)
+                .attr('d', d3.line()
+                    .x(function (d, i) {
+                        return this.xScale(i);
+                    }.bind(this))
+                    .y(function(d) {
+                        return this.yScale(d);
+                    }.bind(this))
+                )
+                .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
+        } else {
+            // add error bars to the filtered time points
+            let data = [];
+            for (let i = 0; i < this.query.length; i++) {
+                if (this.query[i]) {
+                    // decide x position
+                    for (let j = 0; j < this.path.length; j++) {
+                        if (this.path[j][1] < i) break;
+                        if (this.path[j][1] === i) {
+                            data.push({x: this.path[j][0], range: this.query[i]});
+                        }
+                    }
+                }
+            }
+            this.ranges = this.svg
+                .selectAll('line.filteredRange')
+                .data(data)
+                .enter()
+                .append('line')
+                .attr('class', 'filteredRange')
+                .attr('x1', function(d) {
+                    return this.xScale(d.x);
                 }.bind(this))
-                .y(function(d) {
-                    return this.yScale(d);
+                .attr('x2', function(d) {
+                    return this.xScale(d.x);
                 }.bind(this))
-            )
-            .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
-
+                .attr('y1', function(d) {
+                    return this.yScale(d.range[0]);
+                }.bind(this))
+                .attr('y2', function(d) {
+                    return this.yScale(d.range[1]);
+                }.bind(this))
+                .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
+            this.rangeTop = this.svg
+                .selectAll('line.filteredRangeTop')
+                .data(data)
+                .enter()
+                .append('line')
+                .attr('class', 'filteredRangeTop')
+                .attr('x1', function(d) {
+                    return this.xScale(d.x) - this.tickWidth / 2;
+                }.bind(this))
+                .attr('x2', function(d) {
+                    return this.xScale(d.x) + this.tickWidth / 2;
+                }.bind(this))
+                .attr('y1', function(d) {
+                    return this.yScale(d.range[0]);
+                }.bind(this))
+                .attr('y2', function(d) {
+                    return this.yScale(d.range[0]);
+                }.bind(this))
+                .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
+            this.rangeBottom = this.svg
+                .selectAll('line.filteredRangeBottom')
+                .data(data)
+                .enter()
+                .append('line')
+                .attr('class', 'filteredRangeBottom')
+                .attr('x1', function(d) {
+                    return this.xScale(d.x) - this.tickWidth / 2;
+                }.bind(this))
+                .attr('x2', function(d) {
+                    return this.xScale(d.x) + this.tickWidth / 2;
+                }.bind(this))
+                .attr('y1', function(d) {
+                    return this.yScale(d.range[1]);
+                }.bind(this))
+                .attr('y2', function(d) {
+                    return this.yScale(d.range[1]);
+                }.bind(this))
+                .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
+        }
         this.targetPath = this.svg
             .append('path')
             .datum(this.target)
@@ -123,10 +224,37 @@ export default class LineChart extends React.Component {
         this.item = this.props.item;
         this.query = this.props.query;
         this.target = this.props.target;
-        this.yMinMax = [
-            Math.min(Math.min.apply(null, this.query), Math.min.apply(null, this.target)),
-            Math.max(Math.max.apply(null, this.query), Math.max.apply(null, this.target))
-        ];
+        this.path = this.props.path;
+        this.filter = false;
+        if (this.query.indexOf(null) >= 0) {
+            this.filter = true;
+        }
+        if (!this.filter) {
+            this.yMinMax = [
+                Math.min(Math.min.apply(null, this.query), Math.min.apply(null, this.target)),
+                Math.max(Math.max.apply(null, this.query), Math.max.apply(null, this.target))
+            ];
+        } else {
+            // get the bigggest/smallest value in the filtering value ranges
+            let ranges = this.query.filter(elem => elem !== null);
+            if (ranges.length > 0) {
+                let minVal = ranges[0][0], maxVal = ranges[0][1];
+                for (let i = 1; i < ranges.length; i++) {
+                    if (ranges[i][0] < minVal) {
+                        minVal = ranges[i][0];
+                    }
+                    if (maxVal < ranges[i][1]) {
+                        maxVal = ranges[i][1];
+                    }
+                }
+                this.yMinMax = [
+                    Math.min(minVal, Math.min.apply(null, this.target)),
+                    Math.max(maxVal, Math.max.apply(null, this.target))
+                ];
+            } else {
+                this.yMinMax = [Math.min.apply(null, this.target), Math.max.apply(null, this.target)];
+            }
+        }
         // this.setState({
         //     width: this.props.width,
         //     height: this.props.height
@@ -150,16 +278,18 @@ export default class LineChart extends React.Component {
             .tickFormat(tickFormatting);
         this.yAxis.call(this.yLabel);
 
-        this.queryPath
-            .datum(this.query)
-            .attr('d', d3.line()
-                .x(function (d, i) {
-                    return this.xScale(i);
-                }.bind(this))
-                .y(function(d) {
-                    return this.yScale(d);
-                }.bind(this))
-            );
+        if (!this.filter) {
+            this.queryPath
+                .datum(this.query)
+                .attr('d', d3.line()
+                    .x(function (d, i) {
+                        return this.xScale(i);
+                    }.bind(this))
+                    .y(function(d) {
+                        return this.yScale(d);
+                    }.bind(this))
+                );
+        }
         this.targetPath
             .datum(this.target)
             .attr('d', d3.line()
