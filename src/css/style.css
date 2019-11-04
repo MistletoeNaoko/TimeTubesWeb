@@ -267,6 +267,21 @@ table#extractionDetailInfoTable td {
     height: 150px;
 }
 
+.filteredRange {
+    stroke: #80b139;
+    stroke-width: 4px;
+}
+
+.filteredRangeTop {
+    stroke: #80b139;
+    stroke-width: 2px;
+}
+
+.filteredRangeBottom {
+    stroke: #80b139;
+    stroke-width: 2px;
+}
+
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
