@@ -49,8 +49,8 @@ export function showLineCharts(LC) {
     dispatcher.dispatch({type: 'SHOW_LINE_CHARTS', LC});
 }
 
-export function updateSelectedResult(id, period, width, height) {
-    dispatcher.dispatch({type: 'UPDATE_SELECTED_RESULT', id, period, width, height});
+export function updateSelectedResult(id, period, width, height, path) {
+    dispatcher.dispatch({type: 'UPDATE_SELECTED_RESULT', id, period, width, height, path});
 }
 
 export function clearResults() {

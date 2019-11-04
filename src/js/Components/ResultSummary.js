@@ -1,5 +1,6 @@
 import React from 'react';
 import * as domActions from '../lib/domActions';
+import {formatValue} from '../lib/2DGraphLib';
 import * as FeatureAction from '../Actions/FeatureAction';
 import FeatureStore from '../Stores/FeatureStore';
 import DataStore from '../Stores/DataStore';
@@ -13,6 +14,7 @@ export default class ResultSummary extends React.Component {
         this.period = props.period;
         this.distance = props.distance;
         this.rank = props.rank;
+        this.path = props.path;
         this.ignored = FeatureStore.getIgnored();
         this.lookup = DataStore.getData(this.id).data.lookup;
         this.variables = [];
@@ -77,7 +79,7 @@ export default class ResultSummary extends React.Component {
                     <label>Distance</label>
                 </div>
                 <div className='col'>
-                    {this.distance.toFixed(3)}
+                    {formatValue(this.distance)}
                 </div>
             </div>
         );
@@ -106,9 +108,7 @@ export default class ResultSummary extends React.Component {
         );
         $('#extractionDetailPeriodValue').text(this.period[0] + ' - ' + this.period[1]);
         $('#extractionDetailLengthValue').text((this.period[1] - this.period[0]) + ' days');
-        $('#extractionDetailDistanceValue').text(this.distance.toFixed(3));
-        let ignored = FeatureStore.getIgnored();
-        let lookup = DataStore.getData(this.id).data.lookup;
+        $('#extractionDetailDistanceValue').text(formatValue(this.distance));
         let ignoredList = '';
         for (let i = 0; i < this.variables.length; i++) {
             ignoredList += this.lookup[this.variables[i]] + ', ';
@@ -120,7 +120,7 @@ export default class ResultSummary extends React.Component {
         // set up a line chart for comparison between query and time slice
         let width = $('#extractionDetailLC').width();
         let height = 200;
-        FeatureAction.updateSelectedResult(this.id, this.period, width, height);
+        FeatureAction.updateSelectedResult(this.id, this.period, width, height, this.path);
     }
 
     render() {

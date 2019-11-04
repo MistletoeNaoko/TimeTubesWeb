@@ -18,6 +18,7 @@ export default class ExtractionResults extends React.Component {
         // this.results = [];
         this.LCWidth = 300;
         this.LCHeight = 200;
+        this.optimalWarpPath = null;
         this.state = {
             results: [], 
             LC: [],
@@ -39,9 +40,10 @@ export default class ExtractionResults extends React.Component {
                 LC: LC
             });
         });
-        FeatureStore.on('updateSelectedResult', (id, period, width, height) => {
+        FeatureStore.on('updateSelectedResult', (id, period, width, height, path) => {
             this.LCWidth = width;
             this.LCHeight = height;
+            this.optimalWarpPath = path;
             this.setState({
                 selected: {
                     id: id,
@@ -166,7 +168,8 @@ export default class ExtractionResults extends React.Component {
                             query={query[key]}
                             target={timeSlice[key]}
                             width={this.LCWidth}
-                            height={this.LCHeight}/>);
+                            height={this.LCHeight}
+                            path={(typeof(this.optimalWarpPath) === 'Object')? this.optimalWarpPath[key]: this.optimalWarpPath}/>);
                 }
             }
         }

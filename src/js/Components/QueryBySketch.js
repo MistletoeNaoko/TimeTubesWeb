@@ -1,7 +1,7 @@
 import React from 'react';
 import paper from 'paper';
 import * as d3 from 'd3';
-import {tickFormatting} from '../lib/2DGraphLib';
+import {tickFormatting, formatValue} from '../lib/2DGraphLib';
 import * as FeatureAction from '../Actions/FeatureAction';
 import FeatureStore from '../Stores/FeatureStore';
 import DataStore from '../Stores/DataStore';
@@ -149,17 +149,6 @@ export default class QueryBySketch extends React.Component{
         // this.initSketchMenu();
     }
 
-    formatValue(value) {
-        value = Number(value);
-        let result;
-        if (Math.log10(Math.abs(value)) < -2 && value !== 0) {
-            result = value.toExponential(1);
-        } else {
-            result = value.toFixed(2);
-        }
-        return result;
-    }
-
     initCanvas() {
         let paddingLeft = Number($('#featureArea').css('padding-left').replace('px', '')),
             paddingRight = Number($('#featureArea').css('padding-right').replace('px', ''));
@@ -249,6 +238,7 @@ export default class QueryBySketch extends React.Component{
                 hitResult = null;
                 hitResult = this.path.hitTest(event.point, {segments: true, tolerance: 5});
                 if (hitResult) {
+                    console.log(this.path);
                     this.highlightedPointIdx = hitResult.segment.index;
                     // highlight the clicked point
                     if (this.highlightedPoint) {
@@ -265,8 +255,8 @@ export default class QueryBySketch extends React.Component{
                     popover.css('display', 'block');
                     let popoverArrow = $('#controlPointPopoverArrow');
                     let arrowWidth = 16, arrowHeight = 8;
-                    let popoverWidth = popover.width() + arrowHeight,
-                        popoverHeight = popover.height() + arrowHeight;
+                    let popoverWidth = popover.outerWidth() + arrowHeight,
+                        popoverHeight = popover.outerHeight() + arrowHeight;
                     let placement = null, position;
                     let arrowPos = {}; // top, bottom, left, right
                     let spaceRight = this.state.size - hitResult.point.x,
@@ -329,7 +319,6 @@ export default class QueryBySketch extends React.Component{
                     popover.css({left: position.x + 'px', top: position.y + 'px'});
                     popoverArrow.css({top: '', left: ''});
                     popoverArrow.css(arrowPos);
-                    console.log(this.widthVar);
                     for (let key in this.controlPoints[this.highlightedPointIdx].assignedVariables) {
                         if (this.controlPoints[this.highlightedPointIdx].assignedVariables[key].length <= 0) {
                             // if no variables are assigned yet
@@ -339,7 +328,7 @@ export default class QueryBySketch extends React.Component{
                                 $('#slider_' + key).css('display', 'none');
                                 $('#widthValue_' + key).css('display', 'block');
                                 $('#widthValue_' + key).text(
-                                    this.formatValue(
+                                    formatValue(
                                         this.xScale.invert(this.controlPoints[this.highlightedPointIdx].position.x)
                                     )
                                 );
@@ -349,7 +338,7 @@ export default class QueryBySketch extends React.Component{
                                 $('#slider_' + key).css('display', 'none');
                                 $('#widthValue_' + key).css('display', 'block');
                                 $('#widthValue_' + key).text(
-                                    this.formatValue(
+                                    formatValue(
                                         this.yScale.invert(this.controlPoints[this.highlightedPointIdx].position.y)
                                     )
                                 );
@@ -374,7 +363,7 @@ export default class QueryBySketch extends React.Component{
                                     maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
 
                                 $('#widthValue_' + key).css('display', 'block');
-                                $('#widthValue_' + key).text(this.formatValue((maxRange - minRange) / (maxRad - minRad) * (this.radiuses[this.highlightedPointIdx] - minRad) + minRange));
+                                $('#widthValue_' + key).text(formatValue((maxRange - minRange) / (maxRad - minRad) * (this.radiuses[this.highlightedPointIdx] - minRad) + minRange));
                             }
                         } else {
                             // if some variables are already assigned
@@ -384,7 +373,7 @@ export default class QueryBySketch extends React.Component{
                                 $('#slider_' + key).css('display', 'none');
                                 $('#widthValue_' + key).css('display', 'block');
                                 $('#widthValue_' + key).text(
-                                    this.formatValue(
+                                    formatValue(
                                         this.xScale.invert(this.controlPoints[this.highlightedPointIdx].position.x)
                                     )
                                 );
@@ -394,7 +383,7 @@ export default class QueryBySketch extends React.Component{
                                 $('#slider_' + key).css('display', 'none');
                                 $('#widthValue_' + key).css('display', 'block');
                                 $('#widthValue_' + key).text(
-                                    this.formatValue(
+                                    formatValue(
                                         this.yScale.invert(this.controlPoints[this.highlightedPointIdx].position.y)
                                     )
                                 );
@@ -422,7 +411,7 @@ export default class QueryBySketch extends React.Component{
                                     maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
 
                                 $('#widthValue_' + key).css('display', 'block');
-                                $('#widthValue_' + key).text(this.formatValue((maxRange - minRange) / (maxRad - minRad) * (this.radiuses[this.highlightedPointIdx] - minRad) + minRange));
+                                $('#widthValue_' + key).text(formatValue((maxRange - minRange) / (maxRad - minRad) * (this.radiuses[this.highlightedPointIdx] - minRad) + minRange));
                             }
                         }
                     }
@@ -1031,7 +1020,9 @@ export default class QueryBySketch extends React.Component{
                 let minX = this.controlPoints[0].position.x,
                     maxX = this.controlPoints[this.controlPoints.length - 1].position.x;
                 let sketchRange = this.xScale.invert(maxX - minX);
-                $('#periodOfSketchQuery').val(this.formatValue(sketchRange));
+                $('#periodOfSketchQuery').val(formatValue(sketchRange));
+                $('#targetLengthMin').val(Math.floor(sketchRange));
+                $('#targetLengthMax').val(Math.ceil(sketchRange));
                 let currentLen = this.path.curves[0].length,
                     curveIdx = 0,
                     totalCurveLen = 0,
@@ -1055,11 +1046,11 @@ export default class QueryBySketch extends React.Component{
                 let currentX = minX;
                 // initialization
                 pointBefore = this.controlPoints[0].position;
-                for (let key in query) {
-                    if (this.controlPoints[0].assignedVariables[key].length > 0) {
-                        query[key].push(this.controlPoints[0].assignedVariables[key]);
-                    }
-                }
+                // for (let key in query) {
+                //     if (this.controlPoints[0].assignedVariables[key].length > 0) {
+                //         query[key].push(this.controlPoints[0].assignedVariables[key]);
+                //     }
+                // }
 
                 while (currentX <= maxX) {
                     // get the position on the path
@@ -1110,7 +1101,13 @@ export default class QueryBySketch extends React.Component{
                     hitTestPath.segments[1].point.x = currentX;
                 }
                 hitTestPath.remove();
-                // check whether the last point has assigned variables or not
+                // check whether the first/last point has assigned variables or not
+                let firstPoint = this.controlPoints[0].assignedVariables;
+                for (let key in query) {
+                    if (firstPoint[key].length > 0) {
+                        query[key][0] = firstPoint[key];
+                    }
+                }
                 let lastPoint = this.controlPoints[this.controlPoints.length - 1].assignedVariables;
                 for (let key in lastPoint) {
                     if (lastPoint[key].length > 0) {
@@ -1122,7 +1119,7 @@ export default class QueryBySketch extends React.Component{
                 let minY = this.controlPoints[0].position.y,
                     maxY = this.controlPoints[this.controlPoints.length - 1].position.y;
                 let sketchRange = this.yScale.invert(maxY - minY);
-                $('#periodOfSketchQuery').val(this.formatValue(sketchRange));
+                $('#periodOfSketchQuery').val(formatValue(sketchRange));
                 let currentLen = this.path.curves[0].length,
                     curveIdx = 0,
                     totalCurveLen = 0,
@@ -1146,11 +1143,6 @@ export default class QueryBySketch extends React.Component{
                 let currentY = minY;
                 // initialization
                 pointBefore = this.controlPoints[0].position;
-                for (let key in query) {
-                    if (this.controlPoints[0].assignedVariables[key].length > 0) {
-                        query[key].push(this.controlPoints[0].assignedVariables[key]);
-                    }
-                }
                 while (currentY >= maxY) {
                     // get the position on the path
                     let hitResult = this.path.getIntersections(hitTestPath);
@@ -1200,7 +1192,13 @@ export default class QueryBySketch extends React.Component{
                     hitTestPath.segments[1].point.y = currentY;
                 }
                 hitTestPath.remove();
-                // check whether the last point has assigned variables or not
+                // check whether the first/last point has assigned variables or not
+                let firstPoint = this.controlPoints[0].assignedVariables;
+                for (let key in query) {
+                    if (firstPoint[key].length > 0) {
+                        query[key][0] = firstPoint[key];
+                    }
+                }
                 let lastPoint = this.controlPoints[this.controlPoints.length - 1].assignedVariables;
                 for (let key in lastPoint) {
                     if (lastPoint[key].length > 0) {
@@ -1209,7 +1207,6 @@ export default class QueryBySketch extends React.Component{
                 }
             }
             query['arrayLength'] = query[Object.keys(query)[0]].length;
-            console.log(query);
             FeatureAction.setQuery(query);
         }
     }
@@ -1808,11 +1805,11 @@ export default class QueryBySketch extends React.Component{
             if (this.state.xItem === 'z') {
                 let minX = this.controlPoints[0].position.x,
                     maxX = this.controlPoints[this.controlPoints.length - 1].position.x;
-                this.updateXAxisValue(0, this.formatValue(val / (maxX - minX) * canvasSize));
+                this.updateXAxisValue(0, formatValue(val / (maxX - minX) * canvasSize));
             } else if (this.state.yItem === 'z') {
                 let minY = this.controlPoints[0].position.y,
                     maxY = this.controlPoints[this.controlPoints.length - 1].position.y;
-                this.updateYAxisValue(0, this.formatValue(val / (maxY - minY) * canvasSize));
+                this.updateYAxisValue(0, formatValue(val / (maxY - minY) * canvasSize));
             }
             this.convertSketchIntoQuery();
         }
@@ -1864,22 +1861,24 @@ export default class QueryBySketch extends React.Component{
             this.controlPoints[this.highlightedPointIdx].labelRect.remove();
             this.controlPoints[this.highlightedPointIdx].labelRect = null;
         }
-        this.controlPoints[this.highlightedPointIdx].label = new paper.PointText({
-            position: {x: this.controlPoints[this.highlightedPointIdx].position.x, y: this.controlPoints[this.highlightedPointIdx].position.y - 10},
-            fillColor: '#7b7971',
-            justification: 'center',
-            fontSize: 8
-        });
-        label = label.slice(0, -2);
-        this.controlPoints[this.highlightedPointIdx].label.content = label;
-        // set background of the label to avoid occlusion with the path and width
-        this.controlPoints[this.highlightedPointIdx].labelRect = new paper.Path.Rectangle(
-            this.controlPoints[this.highlightedPointIdx].label.bounds
-        );
-        this.controlPoints[this.highlightedPointIdx].labelRect.fillColor = 'white';
-        this.controlPoints[this.highlightedPointIdx].labelRect.strokeColor = 'white';
-        this.controlPoints[this.highlightedPointIdx].label.insertAbove(this.controlPoints[this.highlightedPointIdx].labelRect);
-
+        if (label !== '') {
+            // show what variables are assigned to the point
+            this.controlPoints[this.highlightedPointIdx].label = new paper.PointText({
+                position: {x: this.controlPoints[this.highlightedPointIdx].position.x, y: this.controlPoints[this.highlightedPointIdx].position.y - 10},
+                fillColor: '#7b7971',
+                justification: 'center',
+                fontSize: 8
+            });
+            label = label.slice(0, -2);
+            this.controlPoints[this.highlightedPointIdx].label.content = label;
+            // set background of the label to avoid occlusion with the path and width
+            this.controlPoints[this.highlightedPointIdx].labelRect = new paper.Path.Rectangle(
+                this.controlPoints[this.highlightedPointIdx].label.bounds
+            );
+            this.controlPoints[this.highlightedPointIdx].labelRect.fillColor = 'white';
+            this.controlPoints[this.highlightedPointIdx].labelRect.strokeColor = 'white';
+            this.controlPoints[this.highlightedPointIdx].label.insertAbove(this.controlPoints[this.highlightedPointIdx].labelRect);
+        }
         this.convertSketchIntoQuery();
     }
 
@@ -1899,8 +1898,8 @@ export default class QueryBySketch extends React.Component{
                 sliderMax.css('display', 'initial');
                 let minVal = ui.values[0] / 100 * (max - min) + min;
                 let maxVal = ui.values[1] / 100 * (max - min) + min;
-                sliderMin.val(this.formatValue(minVal));
-                sliderMax.val(this.formatValue(maxVal));
+                sliderMin.val(formatValue(minVal));
+                sliderMax.val(formatValue(maxVal));
                 let minPos = -8 + 150 * ui.values[0] / 100;
                 let maxPos = - 8 + 150 - 150 * ui.values[1] / 100;
                 sliderMin.css('left', minPos + 'px');

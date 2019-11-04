@@ -370,7 +370,6 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
                 break;
         }
     }
-    console.log(result);
     return result;
 }
 
@@ -704,6 +703,7 @@ export function showExtractionResults() {
             thumbnail={image}
             period={[result[1], result[1] + result[2]]}
             distance={result[3]}
+            path={result[4]}
             rank={i}/>, divElem);
     }
     // recover camara status
