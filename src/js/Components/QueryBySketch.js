@@ -1746,6 +1746,7 @@ export default class QueryBySketch extends React.Component{
             if (this.pathWidth) {
                 this.pathWidth.remove();
             }
+            this.convertSketchIntoQuery();
         } else {
             // if the width detection is on
             let variableList = document.getElementById('widthVariables');
@@ -1989,6 +1990,7 @@ export default class QueryBySketch extends React.Component{
                     {axisSelection.x}
                     {axisSelection.y}
                     {this.controlPointPopover()}
+                    <div className='overlayHidingPanel'></div>
                 </div>
                 <div id='QBSSketchMenuArea'>
                     {this.sketchOptions()}
