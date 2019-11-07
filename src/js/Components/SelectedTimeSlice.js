@@ -284,7 +284,7 @@ export default class SelectedTimeSlice extends React.Component {
         let col = this.data.data.splines.color.getSpacedPoints(divNumPho);
         let del = Math.PI * 2 / (this.segment - 1);
         let minIdx = Math.ceil((this.selectedPeriod[0] - minJD) / delTime);
-        let attrSize = this.tube.geometry.attributes.position.length / 3 / this.segment;
+        let attrSize = this.tube.geometry.attributes.position.array.length / 3 / this.segment;
         let maxIdx = Math.ceil((this.selectedPeriod[1] - minJD) / delTime);
         let vertices = [], colors = [];
         let deg, cenX, cenY, radX, radY;
