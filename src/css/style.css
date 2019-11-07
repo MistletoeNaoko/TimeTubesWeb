@@ -260,6 +260,7 @@ table#extractionDetailInfoTable td {
     background-color: #fff;
     border: 1px solid rgba(223, 215, 202, 0.75);
     border-radius: 5px;
+    z-index: 1000;
 }
 
 .resultSummaryCanvas {
@@ -280,6 +281,10 @@ table#extractionDetailInfoTable td {
 .filteredRangeBottom {
     stroke: #80b139;
     stroke-width: 2px;
+}
+
+.drag {
+    z-index: 2000;
 }
 
 /*#Controllers {*/

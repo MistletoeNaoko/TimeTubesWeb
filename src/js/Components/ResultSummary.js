@@ -18,6 +18,11 @@ export default class ResultSummary extends React.Component {
         this.ignored = FeatureStore.getIgnored();
         this.lookup = DataStore.getData(this.id).data.lookup;
         this.variables = [];
+        // relative position on the result summary panel
+        this.clickedX = null;
+        this.clickedY = null;
+        // flag to identify whether the action is click or mousedown
+        this.moved = false;
         for (let key in this.lookup) {
             if (this.ignored.indexOf(key) < 0 && key !== 'z') {
                 this.variables.push(key);
@@ -27,7 +32,7 @@ export default class ResultSummary extends React.Component {
 
     componentDidMount() {
         // append image to the imageHolder
-        let canvas = document.getElementById('resultSummary_' + this.rank);
+        let canvas = document.getElementById('resultSummaryCanvas_' + this.rank);
         let ctx = canvas.getContext('2d');
         let size = Math.min(this.thumbnail.height, this.thumbnail.width);
         let px = this.thumbnail.width / 2 - size / 2,
@@ -40,6 +45,8 @@ export default class ResultSummary extends React.Component {
                 0, 0,
                 300, 150);// why 300? the width of canvas seems to be 300px
         }.bind(this);
+
+        document.getElementById('resultSummary_' + this.rank).addEventListener('mousedown', this.onMouseDownOnResultSummary.bind(this), false);
     }
 
     showFileName() {
@@ -53,7 +60,7 @@ export default class ResultSummary extends React.Component {
     showThumbnail() {
         return (
             <canvas
-                id={'resultSummary_' + this.rank}
+                id={'resultSummaryCanvas_' + this.rank}
                 className='resultSummaryCanvas'>
             </canvas>
         );
@@ -123,9 +130,99 @@ export default class ResultSummary extends React.Component {
         FeatureAction.updateSelectedResult(this.id, this.period, width, height, this.path);
     }
 
+    onMouseDownOnResultSummary(event) {
+        this.moved = false;
+        let elem = document.getElementById('resultSummary_' + this.rank);
+        elem.classList.add('drag');
+    
+        this.clickedX = event.pageX - elem.offsetLeft;
+        this.clickedY = event.pageY - elem.offsetTop;
+        // elem.style.position = 'absolute';
+    
+        document.body.addEventListener('mousemove', this.onMouseMoveOnResultSummary.bind(this), false);
+        document.body.addEventListener('mouseleave', this.onMouseUpFromResultSummary.bind(this), false);
+        elem.addEventListener('mouseup', this.onMouseUpFromResultSummary.bind(this), false);
+    }
+    
+    onMouseMoveOnResultSummary(event) {
+        this.moved = true;
+        let drag = document.getElementsByClassName('drag')[0];
+        if (drag) {
+            drag.style.position = 'absolute';
+            event.preventDefault();
+    
+            drag.style.top = event.pageY - this.clickedY + 'px';
+            drag.style.left = event.pageX - this.clickedX + 'px';
+        }
+    }
+    
+    onMouseUpFromResultSummary(event) {
+        document.body.removeEventListener('mousemove', this.onMouseMoveOnResultSummary.bind(this), false);
+
+        let drag = document.getElementsByClassName('drag')[0];
+        if (drag) {
+            drag.removeEventListener('mouseup', this.onMouseUpFromResultSummary.bind(this), false);
+            drag.classList.remove('drag');
+        }
+
+        if (this.moved) {
+            let mode = FeatureStore.getMode();
+            // judge whether the result summary panel is on the selectedTimeSlice view/sketch pad
+            // if not, move it to the original position and change the position style to static
+            switch (mode) {
+                case 'AE':
+                    drag.style.position = 'static';
+                    // TODO: show alert
+                    break;
+                case 'QBE':
+                    let selectedTimeSlice = $('#selectedTimeSliceView');
+                    let selectedTimeSlicePos = selectedTimeSlice.offset(),
+                        selectedTimeSliceWidth = selectedTimeSlice.width(),
+                        selectedTimeSliceHeight = selectedTimeSlice.height();
+                    
+                    if ((selectedTimeSlicePos.left <= event.pageX && event.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
+                    && (selectedTimeSlicePos.top <= event.pageY && event.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
+                        console.log('summary panel is now inside the QBE area');
+                        // convert the result into a new query
+                    }
+                    break;
+                case 'QBS':
+                    let sketchPad = $('#QBSSketchPad');
+                    let sketchPadPos = sketchPad.offset(),
+                        sketchPadWidth = sketchPad.width(),
+                        sketchPadHeight = sketchPad.innerHeight();
+
+                    if ((sketchPadPos.left <= event.pageX && event.pageX <= sketchPadPos.left + sketchPadWidth)
+                    && (sketchPadPos.top <= event.pageY && event.pageY <= sketchPadPos.top + sketchPadHeight)) {
+                        console.log('summary panel is now inside the QBS area');
+                        // convert the result into a new query
+                    }
+                    break;
+            }
+            // move it to the original position
+            drag.style.position = 'static';
+            this.moveToOriginalPos();
+        } else {
+            this.showDetails();
+        }
+    }
+
+    moveToOriginalPos() {
+        let nextResult = $('#resultSummary_' + (this.rank + 1));
+        if (nextResult) {
+            nextResult.insertBefore($('#resultSummary_' + this.rank));
+        } else {
+            let previousResult = $('#resultSummary_' + (this.rank - 1));
+            previousResult.insertAfter($('#resultSummary_' + this.rank));
+        }
+    }
+    
+
     render() {
         return (
-            <div className='resultSummary' onClick={this.showDetails.bind(this)}>
+            <div 
+                className='resultSummary'
+                id={'resultSummary_' + this.rank}>
                 {this.showFileName()}
                 {this.showThumbnail()}
                 <div
