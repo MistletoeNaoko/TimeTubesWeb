@@ -27,8 +27,9 @@ export default class SelectedTimeSlice extends React.Component {
                 id='selectedTimeSliceView'
                 ref={mount => {
                     this.mount = mount;
-                }}
-            />
+                }}>
+                <div className='overlayHidingPanel'></div>
+            </div>
         )
     }
 

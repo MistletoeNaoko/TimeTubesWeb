@@ -244,7 +244,7 @@ table#extractionDetailInfoTable td {
 
 .selectedLine {
     cursor: pointer;
-    stroke: magenta;
+    stroke: #d23430;
 }
 
 .resultElem {
@@ -287,6 +287,14 @@ table#extractionDetailInfoTable td {
     z-index: 2000;
 }
 
+.overlayHidingPanel {
+    width: 100%;
+    height: 100%;
+    background-color: rgba(82, 20, 19, 0.5);
+    position: absolute;
+    display: none;
+    z-index: 1500;
+}
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/

@@ -172,71 +172,6 @@ export default class VisualQuery extends React.Component {
     }
 
     QBESelection() {
-        // return (
-        //     <div className='featureElem'>
-        //         <h5>Selection</h5>
-        //         <form className="form-check form-check-inline selector featureRow"
-        //               id='QBESelector' onChange={this.switchSelector.bind(this)}>
-        //             <div className="custom-control custom-radio">
-        //                 <input
-        //                     type="radio"
-        //                     id='QBESelect'
-        //                     name="QBESelector"
-        //                     className="custom-control-input"
-        //                     value="Select"
-        //                     checked={this.state.selector} readOnly/>
-        //                 <label className="custom-control-label" htmlFor="QBESelect">Select</label>
-        //             </div>
-        //             <div
-        //                 className="custom-control custom-radio"
-        //                 style={{marginLeft: '0.5rem'}}>
-        //                 <input
-        //                     type="radio"
-        //                     id='QBEDeselect'
-        //                     name="QBESelector"
-        //                     className="custom-control-input"
-        //                     value="Deselect"
-        //                     checked={!this.state.selector} readOnly/>
-        //                 <label className="custom-control-label" htmlFor="QBEDeselect">Deselect</label>
-        //             </div>
-        //         </form>
-        //         <div id='selectTimeInterval' className='form-row featureRow'>
-        //             <div className="input-group input-group-sm" style={{width: '10rem', marginRight: '1.5rem'}}>
-        //                 <span style={{marginRight: '0.3rem'}}>Select</span>
-        //                 <input
-        //                     type="text"
-        //                     className="form-control custom-input"
-        //                     id='selectTimeIntervalInput'/>
-        //                 <span style={{marginLeft: '0.3rem'}}>days</span>
-        //             </div>
-        //             <button className="btn btn-primary btn-sm"
-        //                     type="button"
-        //                     id='selectTimeIntervalBtn'
-        //                     style={{right: '0'}}
-        //                     onClick={this.selectTimeInterval.bind(this)} >Select</button>
-        //         </div>
-        //         <div className="form-check">
-        //             <input
-        //                 className="form-check-input"
-        //                 type="checkbox"
-        //                 id="checkboxDragTube"
-        //                 value="option1"
-        //                 checked={this.state.dragSelection}
-        //                 onChange={this.switchDragSelection.bind(this)}/>
-        //             <label
-        //                 className="form-check-label"
-        //                 htmlFor="inlineCheckbox1">
-        //                 Selection by drag
-        //             </label>
-        //         </div>
-        //         <button
-        //             id='resetSelectionBtn'
-        //             className='btn btn-primary btn-sm featureRow'
-        //             onClick={this.resetSelection.bind(this)}>
-        //             Deselect all
-        //         </button>
-        //     </div>
-        // );
         return (
             <div className='featureElem' id='QBEArea'>
                 <QueryByExample/>
@@ -487,7 +422,23 @@ export default class VisualQuery extends React.Component {
                 if (targets.length > 0) {
                     let query = FeatureStore.getQuery();
                     let results = TimeSeriesQuerying.runMatchingSketch(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
-                    FeatureAction.setExtractionResults(results, query, []);
+                    let ignored = [];
+                    for (let key in query) {
+                        if (Array.isArray(query[key])) {
+                            if (query[key].indexOf(null) < 0) {
+                                continue;
+                            }
+                            let flag = true;
+                            for (let i = 0; i < query[key].length; i++) {
+                                if (query[key][i] !== null) {
+                                    flag = false;
+                                    break;
+                                }
+                            }
+                            if (flag) ignored.push(key);
+                        }
+                    }
+                    FeatureAction.setExtractionResults(results, query, ignored);
                     TimeSeriesQuerying.showExtractionResults();
                 }
                 break;
