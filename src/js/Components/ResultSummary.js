@@ -153,6 +153,43 @@ export default class ResultSummary extends React.Component {
     
             drag.style.top = event.pageY - this.clickedY + 'px';
             drag.style.left = event.pageX - this.clickedX + 'px';
+
+
+            let mode = FeatureStore.getMode();
+            switch (mode) {
+                case 'AE':
+                    // do nothing
+                    break;
+                case 'QBE':
+                    let selectedTimeSlice = $('#selectedTimeSliceView');
+                    let selectedTimeSlicePos = selectedTimeSlice.offset(),
+                        selectedTimeSliceWidth = selectedTimeSlice.width(),
+                        selectedTimeSliceHeight = selectedTimeSlice.height();
+                    
+                    if ((selectedTimeSlicePos.left <= event.pageX && event.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
+                    && (selectedTimeSlicePos.top <= event.pageY && event.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
+                        let overlayPanel = $('#selectedTimeSliceView > .overlayHidingPanel');
+                        overlayPanel.css('display', 'block');
+                        overlayPanel.css('width', Math.min(selectedTimeSliceWidth, selectedTimeSliceHeight));
+                        overlayPanel.css('height', Math.min(selectedTimeSliceWidth, selectedTimeSliceHeight));
+                    }
+                    break;
+                case 'QBS':
+                    let sketchPad = $('#QBSSketchPad');
+                    let sketchPadPos = sketchPad.offset(),
+                        sketchPadWidth = sketchPad.width(),
+                        sketchPadHeight = sketchPad.innerHeight();
+
+                    if ((sketchPadPos.left <= event.pageX && event.pageX <= sketchPadPos.left + sketchPadWidth)
+                    && (sketchPadPos.top <= event.pageY && event.pageY <= sketchPadPos.top + sketchPadHeight)) {
+                        let overlayPanel = $('#QBSCanvasArea > .overlayHidingPanel');
+                        overlayPanel.css('display', 'block');
+                        overlayPanel.css('width', Math.min(sketchPadWidth, sketchPadHeight));
+                        overlayPanel.css('height', Math.min(sketchPadWidth, sketchPadHeight));
+                    }
+                    break;
+            }
+
         }
     }
     
@@ -163,6 +200,7 @@ export default class ResultSummary extends React.Component {
         if (drag) {
             drag.removeEventListener('mouseup', this.onMouseUpFromResultSummary.bind(this), false);
             drag.classList.remove('drag');
+            drag.style.position = 'static';
         }
 
         if (this.moved) {
@@ -175,6 +213,7 @@ export default class ResultSummary extends React.Component {
                     // TODO: show alert
                     break;
                 case 'QBE':
+                    $('#selectedTimeSliceView > .overlayHidingPanel').css('display', 'none');
                     let selectedTimeSlice = $('#selectedTimeSliceView');
                     let selectedTimeSlicePos = selectedTimeSlice.offset(),
                         selectedTimeSliceWidth = selectedTimeSlice.width(),
@@ -183,10 +222,13 @@ export default class ResultSummary extends React.Component {
                     if ((selectedTimeSlicePos.left <= event.pageX && event.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
                     && (selectedTimeSlicePos.top <= event.pageY && event.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
                         console.log('summary panel is now inside the QBE area');
+
                         // convert the result into a new query
+
                     }
                     break;
                 case 'QBS':
+                    $('#QBSCanvasArea > .overlayHidingPanel').css('display', 'none');
                     let sketchPad = $('#QBSSketchPad');
                     let sketchPadPos = sketchPad.offset(),
                         sketchPadWidth = sketchPad.width(),
@@ -200,7 +242,6 @@ export default class ResultSummary extends React.Component {
                     break;
             }
             // move it to the original position
-            drag.style.position = 'static';
             this.moveToOriginalPos();
         } else {
             this.showDetails();
