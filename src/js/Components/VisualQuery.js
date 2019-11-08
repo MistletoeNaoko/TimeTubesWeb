@@ -1,15 +1,10 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
-import * as THREE from 'three';
 import * as FeatureAction from '../Actions/FeatureAction';
-import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
-import TimeTubesStore from '../Stores/TimeTubesStore';
 import SelectedTimeSlice from './SelectedTimeSlice';
 import QueryByExample from './QueryByExample';
 import QueryBySketch from './QueryBySketch';
-import ResultSummary from './ResultSummary';
 import * as TimeSeriesQuerying from '../lib/TimeSeriesQuerying';
 import * as domActions from '../lib/domActions';
 
