@@ -57,19 +57,27 @@ export default class QueryBySketch extends React.Component{
         this.sketching = false;
         this.path = null;
         this.pathWidth = null;
+        this.penSizeCircle = null;
+        // store the size of a radius at each control point
+        this.radiuses = null;
+        // store the coordinates on the path, each curve in the path is divided into the same number (curveSegment)
+        // the index of segPoints coincides with pathUpper and pathLower
+        this.segPoints = [];
         this.pathUpper = null;
         this.pathLower = null;
-        this.radiuses = null;
-        this.segPoints = [];
-        this.penSizeCircle = null;
+        
         this.highlightedPoint = null;
         this.highlightedPointIdx = -1;
+        // store the information associated to each control point (position, assigned variables, label, labelRect)
+        this.controlPoints = [];
+        // what variable is assigned to the path width
+        this.widthVar = null;
+        // for converting drawing speed into the path width
         this.timeStamps = [];
+        // for hit tests
         this.selectedIdx = -1;
         this.selectedHandle = null;
         this.selectedPoint = null;
-        this.controlPoints = [];
-        this.widthVar = null;
         this.xMinMax = [];
         this.yMinMax= [];
         FeatureStore.on('updateTarget', () => {
@@ -101,6 +109,34 @@ export default class QueryBySketch extends React.Component{
                 this.xMinMax = minmax.xMinMax;
                 this.yMinMax = minmax.yMinMax;
                 this.updateAxis();
+            }
+        });
+        FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
+            if (FeatureStore.getMode() === 'QBS') {
+                if (this.path) {
+                    this.path.remove();
+                }
+                if (this.pathWidth) {
+                    this.pathWidth.remove();
+                }
+                if (this.penSizeCircle) {
+                    this.penSizeCircle.remove();
+                }
+                for (let i = 0; i < this.controlPoints.length; i++) {
+                    if (this.controlPoints[i].label) {
+                        this.controlPoints[i].label.remove();
+                        this.controlPoints[i].label = null;
+                        this.controlPoints[i].labelRect.remove();
+                        this.controlPoints[i].labelRect = null;
+                    }
+                }
+                this.controlPoints = [];
+                this.timeStamps = [];
+                this.radiuses = [];
+                this.pathUpper = null;
+                this.pathLower = null;
+                this.segPoints = [];
+                this.transformDataIntoSketch(id, period, ignored);
             }
         });
     }
@@ -1212,6 +1248,73 @@ export default class QueryBySketch extends React.Component{
         }
     }
 
+    transformDataIntoSketch(id, period, ignored) {
+        let targetData = DataStore.getDataArray(id, 1);
+        let minIdx = targetData.z.indexOf(period[0]),
+            maxIdx = targetData.z.indexOf(period[1]);
+
+        if (this.state.xItem !== 'z' && this.state.yItem !== 'z') {
+            let xData = targetData[this.state.xItem].slice(minIdx, maxIdx + 1),
+                yData = targetData[this.state.yItem].slice(minIdx, maxIdx + 1);
+            
+            this.path = new paper.Path();
+            this.path.strokeColor = 'black';
+            this.path.strokeWidth = 5;
+
+            for (let i = 0; i < xData.length; i++) {
+                this.path.add(new paper.Point(this.xScale(xData[i]), this.yScale(yData[i])));
+            }
+            let segments = this.path.segments.slice(0, this.path.segments.length);
+            this.path.simplify(10);
+
+            if (this.widthVar) {
+                let widthData = targetData[this.widthVar].slice(minIdx, maxIdx + 1);
+                let minWidth = 5, maxWidth = 50;
+                let minVal = Math.min.apply(null, widthData), maxVal = Math.max.apply(null, widthData);
+                for (let i = 0; i < widthData.length; i++) {
+                    this.radiuses.push((widthData[i] - minVal) / (maxVal - minVal) * (maxWidth - minWidth) + minWidth);
+                }
+
+                // simplificationDeg should be odd (- - * + +: * is the value of the point)
+                let simplificationDeg = segments.length / this.path.segments.length;
+                simplificationDeg = (Math.floor(simplificationDeg) % 2 === 1) ? Math.floor(simplificationDeg) : Math.ceil(simplificationDeg);
+
+                // get the radius value of each point on the simplified path
+                let idxOriginal = 0, idxSimple = 0;
+                let radiusesSimple = [];
+                while (idxOriginal < segments.length && idxSimple < this.path.segments.length) {
+                    if (segments[idxOriginal].point.x === this.path.segments[idxSimple].point.x
+                        && segments[idxOriginal].point.y === this.path.segments[idxSimple].point.y) {
+                        let radTmp = 0, count = 0;
+                        let startIdx = idxOriginal - Math.floor(simplificationDeg / 2);
+                        let endIdx = idxOriginal + Math.floor(simplificationDeg / 2);
+                        startIdx = Math.max(0, startIdx);
+                        endIdx = Math.min(segments.length - 1, endIdx);
+                        for (let i = startIdx; i <= endIdx; i++) {
+                            radTmp += this.radiuses[i];
+                            count++;
+                        }
+                        radTmp /= count;
+                        radiusesSimple.push(radTmp);
+                        idxOriginal++;
+                        idxSimple++;
+                        continue;
+                    }
+                    idxOriginal++;
+                }
+                this.radiuses = radiusesSimple;
+                this.drawPathWidth();
+            }
+            // create this.controlPoints
+        } else if (this.state.xItem === 'z') {
+
+        } else if (this.state.yItem === 'z') {
+
+        }
+        
+        console.log(targetData, period);
+    }
+
     CanvasXLabelOnClick() {
         return function () {
             let value = this.state.xItemonPanel;
@@ -1328,7 +1431,8 @@ export default class QueryBySketch extends React.Component{
         let outerSize = Math.floor($('#mainFeatureArea').width() * 0.3 - paddingLeft - paddingRight);
         this.xScale
             .domain(this.xMinMax)
-            .range([0, outerSize]);
+            .range([0, outerSize])
+            .nice();
         this.xLabel = d3.axisTop(this.xScale)
             .ticks(5)
             .tickSize(-outerSize)
@@ -1342,7 +1446,8 @@ export default class QueryBySketch extends React.Component{
 
         this.yScale
             .domain(this.yMinMax)
-            .range([outerSize, 0]);
+            .range([outerSize, 0])
+            .nice();
         this.yLabel = d3.axisRight(this.yScale)
             .ticks(5)
             .tickSize(outerSize)
