@@ -132,11 +132,12 @@ export default class ResultSummary extends React.Component {
 
     onMouseDownOnResultSummary(event) {
         this.moved = false;
-        let elem = document.getElementById('resultSummary_' + this.rank);
+        let elem = document.getElementById('resultSummaryHolder_' + this.rank);
         elem.classList.add('drag');
+        let child = document.getElementById('resultSummary_' + this.rank);
     
-        this.clickedX = event.pageX - elem.offsetLeft;
-        this.clickedY = event.pageY - elem.offsetTop;
+        this.clickedX = event.pageX - child.offsetLeft;
+        this.clickedY = event.pageY - child.offsetTop;
         // elem.style.position = 'absolute';
     
         document.body.addEventListener('mousemove', this.onMouseMoveOnResultSummary.bind(this), false);
@@ -247,12 +248,12 @@ export default class ResultSummary extends React.Component {
     }
 
     moveToOriginalPos() {
-        let nextResult = $('#resultSummary_' + (this.rank + 1));
+        let nextResult = $('#resultSummaryHolder_' + (this.rank + 1));
         if (nextResult) {
-            nextResult.insertBefore($('#resultSummary_' + this.rank));
+            nextResult.before($('#resultSummaryHolder_' + this.rank));
         } else {
-            let previousResult = $('#resultSummary_' + (this.rank - 1));
-            previousResult.insertAfter($('#resultSummary_' + this.rank));
+            let previousResult = $('#resultSummaryHolder_' + (this.rank - 1));
+            previousResult.after($('#resultSummaryHolder_' + this.rank));
         }
     }
     
