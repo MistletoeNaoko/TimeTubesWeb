@@ -69,6 +69,9 @@ class FeatureStore extends EventEmitter {
             case 'SET_QUERY':
                 this.setQuery(action.query);
                 break;
+            case 'CONVERT_RESULT_INTO_QUERY':
+                this.convertResultIntoQuery(action.id, action.period, action.ignored);
+                break;
             default:
         }
     }
@@ -218,6 +221,14 @@ class FeatureStore extends EventEmitter {
 
     setQuery(query) {
         this.query = query;
+    }
+
+    convertResultIntoQuery(id, period, ignored) {
+        if (this.mode == 'QBE') {
+            this.period = period;
+            this.ignored = ignored;
+        }
+        this.emit('convertResultIntoQuery', id, period, ignored);
     }
 }
 

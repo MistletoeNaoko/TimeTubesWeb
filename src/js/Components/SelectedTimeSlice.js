@@ -58,6 +58,38 @@ export default class SelectedTimeSlice extends React.Component {
             this.ignoredVariables = varList;
             this.redrawTube();
         });
+        FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
+            if (FeatureStore.getMode() === 'QBE') {
+                this.sourceId = id;
+                this.selectedPeriod = period;
+                this.ignoredVariables = ignored;
+
+                // update the source select menu
+                let sourceList = document.getElementById('sourceList');
+                for (let i = 0; i < sourceList.options.length; i++) {
+                    if (Number(sourceList.options[i].value) === id) {
+                        sourceList.selectedIndex = i;
+                        break;
+                    }
+                }
+                // update the selection detail information
+                $('#selectedInterval').text('JD: ' + period[0].toFixed(3) + ' - ' + period[1].toFixed(3));
+                $('#targetLengthMin').val(Math.floor(period[1]) - Math.ceil(period[0]));
+                $('#targetLengthMax').val(Math.floor(period[1]) - Math.ceil(period[0]));
+
+                // update ignored variables
+                let checkList = $('input[name=QBEIgnored]');
+                checkList.each(function(index, element) {
+                    if (ignored.indexOf(element.value) < 0) {
+                        element.checked = false;
+                    } else {
+                        element.checked = true;
+                    }
+                });
+            }
+            this.updateTimePeriod();
+            this.redrawTube();
+        });
     }
 
     componentWillUnmount() {

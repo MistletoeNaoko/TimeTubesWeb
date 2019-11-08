@@ -60,3 +60,7 @@ export function clearResults() {
 export function setQuery(query) {
     dispatcher.dispatch({type: 'SET_QUERY', query});
 }
+
+export function convertResultIntoQuery(id, period, ignored) {
+    dispatcher.dispatch({type: 'CONVERT_RESULT_INTO_QUERY', id, period, ignored});
+}

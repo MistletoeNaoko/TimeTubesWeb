@@ -222,9 +222,8 @@ export default class ResultSummary extends React.Component {
                     if ((selectedTimeSlicePos.left <= event.pageX && event.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
                     && (selectedTimeSlicePos.top <= event.pageY && event.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
                         console.log('summary panel is now inside the QBE area');
-
                         // convert the result into a new query
-
+                        FeatureAction.convertResultIntoQuery(this.id, this.period, this.ignored);
                     }
                     break;
                 case 'QBS':
