@@ -1266,10 +1266,23 @@ export default class QueryBySketch extends React.Component{
             }
             let segments = this.path.segments.slice(0, this.path.segments.length);
             this.path.simplify(10);
+            // create this.controlPoints
+            this.path.segments.forEach(function(e) {
+                this.controlPoints.push({
+                    position: {x: e.point.x, y: e.point.y},
+                    assignedVariables: {},
+                    label: null,
+                    labelRect: null
+                });
+
+                for (let key in this.state.lookup) {
+                    this.controlPoints[this.controlPoints.length - 1].assignedVariables[key] = [];
+                }
+            }.bind(this));
 
             if (this.widthVar) {
                 let widthData = targetData[this.widthVar].slice(minIdx, maxIdx + 1);
-                let minWidth = 5, maxWidth = 50;
+                let minWidth = 2.5, maxWidth = 25;
                 let minVal = Math.min.apply(null, widthData), maxVal = Math.max.apply(null, widthData);
                 for (let i = 0; i < widthData.length; i++) {
                     this.radiuses.push((widthData[i] - minVal) / (maxVal - minVal) * (maxWidth - minWidth) + minWidth);
@@ -1305,14 +1318,11 @@ export default class QueryBySketch extends React.Component{
                 this.radiuses = radiusesSimple;
                 this.drawPathWidth();
             }
-            // create this.controlPoints
         } else if (this.state.xItem === 'z') {
 
         } else if (this.state.yItem === 'z') {
 
         }
-        
-        console.log(targetData, period);
     }
 
     CanvasXLabelOnClick() {
