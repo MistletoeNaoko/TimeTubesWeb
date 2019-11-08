@@ -78,6 +78,7 @@ export default class QueryBySketch extends React.Component{
         this.selectedIdx = -1;
         this.selectedHandle = null;
         this.selectedPoint = null;
+        // for setup sliders and pass the slider values to scale
         this.xMinMax = [];
         this.yMinMax= [];
         FeatureStore.on('updateTarget', () => {
@@ -1264,64 +1265,85 @@ export default class QueryBySketch extends React.Component{
             for (let i = 0; i < xData.length; i++) {
                 this.path.add(new paper.Point(this.xScale(xData[i]), this.yScale(yData[i])));
             }
-            let segments = this.path.segments.slice(0, this.path.segments.length);
-            this.path.simplify(10);
-            // create this.controlPoints
-            this.path.segments.forEach(function(e) {
-                this.controlPoints.push({
-                    position: {x: e.point.x, y: e.point.y},
-                    assignedVariables: {},
-                    label: null,
-                    labelRect: null
-                });
-
-                for (let key in this.state.lookup) {
-                    this.controlPoints[this.controlPoints.length - 1].assignedVariables[key] = [];
-                }
-            }.bind(this));
-
-            if (this.widthVar) {
-                let widthData = targetData[this.widthVar].slice(minIdx, maxIdx + 1);
-                let minWidth = 2.5, maxWidth = 25;
-                let minVal = Math.min.apply(null, widthData), maxVal = Math.max.apply(null, widthData);
-                for (let i = 0; i < widthData.length; i++) {
-                    this.radiuses.push((widthData[i] - minVal) / (maxVal - minVal) * (maxWidth - minWidth) + minWidth);
-                }
-
-                // simplificationDeg should be odd (- - * + +: * is the value of the point)
-                let simplificationDeg = segments.length / this.path.segments.length;
-                simplificationDeg = (Math.floor(simplificationDeg) % 2 === 1) ? Math.floor(simplificationDeg) : Math.ceil(simplificationDeg);
-
-                // get the radius value of each point on the simplified path
-                let idxOriginal = 0, idxSimple = 0;
-                let radiusesSimple = [];
-                while (idxOriginal < segments.length && idxSimple < this.path.segments.length) {
-                    if (segments[idxOriginal].point.x === this.path.segments[idxSimple].point.x
-                        && segments[idxOriginal].point.y === this.path.segments[idxSimple].point.y) {
-                        let radTmp = 0, count = 0;
-                        let startIdx = idxOriginal - Math.floor(simplificationDeg / 2);
-                        let endIdx = idxOriginal + Math.floor(simplificationDeg / 2);
-                        startIdx = Math.max(0, startIdx);
-                        endIdx = Math.min(segments.length - 1, endIdx);
-                        for (let i = startIdx; i <= endIdx; i++) {
-                            radTmp += this.radiuses[i];
-                            count++;
-                        }
-                        radTmp /= count;
-                        radiusesSimple.push(radTmp);
-                        idxOriginal++;
-                        idxSimple++;
-                        continue;
-                    }
-                    idxOriginal++;
-                }
-                this.radiuses = radiusesSimple;
-                this.drawPathWidth();
-            }
         } else if (this.state.xItem === 'z') {
+            let yData = targetData[this.state.yItem].slice(minIdx, maxIdx + 1);
 
+            // put the sketch at the center in the horizontal direction
+            let delta = Math.floor(this.xScale.domain()[1] / 2) - Math.floor(yData.length / 2);
+            this.path = new paper.Path();
+            this.path.strokeColor = 'black';
+            this.path.strokeWidth = 5;
+
+            for (let i = 0; i < yData.length; i++) {
+                this.path.add(new paper.Point(this.xScale(i + delta), this.yScale(yData[i])));
+            }
         } else if (this.state.yItem === 'z') {
+            let xData = targetData[this.state.xItem].slice(minIdx, maxIdx + 1);
 
+            // put the sketch at the center in the horizontal direction
+            let delta = Math.floor(this.yScale.domain()[1] / 2) - Math.floor(xData.length / 2);
+            this.path = new paper.Path();
+            this.path.strokeColor = 'black';
+            this.path.strokeWidth = 5;
+
+            for (let i = 0; i < xData.length; i++) {
+                this.path.add(new paper.Point(this.xScale(xData[i]), this.yScale(i + delta)));
+            }
+        }
+
+        let segments = this.path.segments.slice(0, this.path.segments.length);
+        this.path.simplify(10);
+        // create this.controlPoints
+        this.path.segments.forEach(function(e) {
+            this.controlPoints.push({
+                position: {x: e.point.x, y: e.point.y},
+                assignedVariables: {},
+                label: null,
+                labelRect: null
+            });
+
+            for (let key in this.state.lookup) {
+                this.controlPoints[this.controlPoints.length - 1].assignedVariables[key] = [];
+            }
+        }.bind(this));
+
+        if (this.widthVar) {
+            let widthData = targetData[this.widthVar].slice(minIdx, maxIdx + 1);
+            let minWidth = 2.5, maxWidth = 25;
+            let minVal = Math.min.apply(null, widthData), maxVal = Math.max.apply(null, widthData);
+            for (let i = 0; i < widthData.length; i++) {
+                this.radiuses.push((widthData[i] - minVal) / (maxVal - minVal) * (maxWidth - minWidth) + minWidth);
+            }
+
+            // simplificationDeg should be odd (- - * + +: * is the value of the point)
+            let simplificationDeg = segments.length / this.path.segments.length;
+            simplificationDeg = (Math.floor(simplificationDeg) % 2 === 1) ? Math.floor(simplificationDeg) : Math.ceil(simplificationDeg);
+
+            // get the radius value of each point on the simplified path
+            let idxOriginal = 0, idxSimple = 0;
+            let radiusesSimple = [];
+            while (idxOriginal < segments.length && idxSimple < this.path.segments.length) {
+                if (segments[idxOriginal].point.x === this.path.segments[idxSimple].point.x
+                    && segments[idxOriginal].point.y === this.path.segments[idxSimple].point.y) {
+                    let radTmp = 0, count = 0;
+                    let startIdx = idxOriginal - Math.floor(simplificationDeg / 2);
+                    let endIdx = idxOriginal + Math.floor(simplificationDeg / 2);
+                    startIdx = Math.max(0, startIdx);
+                    endIdx = Math.min(segments.length - 1, endIdx);
+                    for (let i = startIdx; i <= endIdx; i++) {
+                        radTmp += this.radiuses[i];
+                        count++;
+                    }
+                    radTmp /= count;
+                    radiusesSimple.push(radTmp);
+                    idxOriginal++;
+                    idxSimple++;
+                    continue;
+                }
+                idxOriginal++;
+            }
+            this.radiuses = radiusesSimple;
+            this.drawPathWidth();
         }
     }
 
