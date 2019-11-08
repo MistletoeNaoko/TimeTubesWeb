@@ -39,6 +39,11 @@ export default class SelectedTimeSlice extends React.Component {
                this.switchCamera();
            }
         });
+        FeatureStore.on('updateSource', () => {
+            this.sourceId = FeatureStore.getSource();
+            this.data = DataStore.getData(this.sourceId);
+            this.setUpScene();
+        });
         FeatureStore.on('resetSelection', () => {
             this.deselectAll();
         });
@@ -98,39 +103,38 @@ export default class SelectedTimeSlice extends React.Component {
     }
 
     componentDidMount() {
+        const width = $('#selectedIntervalViewArea').width();//this.mount.clientWidth;
+        const height = width;//this.mount.clientHeight;
+        this.scene = new THREE.Scene();
+        this.setCameras();
+        this.renderer = new THREE.WebGLRenderer();
+        this.renderer.setClearColor("#000000");
+        this.renderer.setSize(width, height);
+        this.renderer.domElement.id = 'selectedTimeSliceView';
+        this.mount.appendChild(this.renderer.domElement);
+
+        let directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+        directionalLight.position.set(-20, 40, 60);
+        this.scene.add(directionalLight);
+        let ambientLight = new THREE.AmbientLight(0x292929);
+        this.scene.add(ambientLight);
+        var axis = new THREE.AxesHelper(1000);
+        this.scene.add(axis);
+        
+        this.renderScene();
+        this.start();
+        this.addControls();
         if (this.sourceId >= 0) {
-            const width = $('#selectedIntervalViewArea').width();//this.mount.clientWidth;
-            const height = width;//this.mount.clientHeight;
-            this.scene = new THREE.Scene();
-
-            this.setCameras();
-
-            this.renderer = new THREE.WebGLRenderer({antialias: true});
-            this.renderer.setClearColor("#000000");
-            this.renderer.setSize(width, height);
-            this.renderer.domElement.id = 'selectedTimeSliceView';
-
-            this.mount.appendChild(this.renderer.domElement);
-
-            this.renderScene();
-            this.start();
-
-            let directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
-            directionalLight.position.set(-20, 40, 60);
-            this.scene.add(directionalLight);
-            let ambientLight = new THREE.AmbientLight(0x292929);
-            this.scene.add(ambientLight);
-
-            this.addControls();
-
             this.setPlaceHolder();
-            // let geo = new THREE.BoxGeometry(5, 5, 5);
-            // let mat = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
-            // this.cube = new THREE.Mesh(geo, mat);
-            // this.scene.add(this.cube);
-            var axis = new THREE.AxesHelper(1000);
-            this.scene.add(axis);
         }
+    }
+
+    setUpScene() {
+        this.updateCameras();
+        this.setPlaceHolder();
+        this.renderScene();
+        this.start();
+        this.addControls();
     }
 
     start() {
@@ -154,7 +158,12 @@ export default class SelectedTimeSlice extends React.Component {
 
     setCameras() {
         // initialize camera properties
-        let cameraProp = TimeTubesStore.getCameraProp(this.sourceId);
+        let cameraProp;
+        if (this.sourceId >= 0) {
+            cameraProp = TimeTubesStore.getCameraProp(this.sourceId);
+        } else {
+            cameraProp = TimeTubesStore.getDefaultCameraProp();
+        }
         this.cameraSet = {};
         this.cameraSet.perspective = new THREE.PerspectiveCamera(
             cameraProp.fov,
@@ -168,6 +177,29 @@ export default class SelectedTimeSlice extends React.Component {
             -size_x / 2, size_x / 2,
             size_y / 2, -size_y / 2, 0.1,
             cameraProp.far);
+
+        if (cameraProp.type === 'Perspective') {
+            this.camera = this.cameraSet.perspective;
+        } else {
+            this.camera = this.cameraSet.orthographic;
+        }
+        this.camera.position.z = 50;
+        this.camera.lookAt(-this.scene.position);
+    }
+
+    updateCameras() {
+        let cameraProp = TimeTubesStore.getCameraProp(this.sourceId);
+        this.cameraSet.perspective.fov = cameraProp.fov;
+        this.cameraSet.perspective.far = cameraProp.far;
+
+        let size_y = cameraProp.depth * (50);
+        let size_x = cameraProp.depth * (50) * 1;
+        this.cameraSet.orthographic.left = -size_x / 2;
+        this.cameraSet.orthographic.right = size_x / 2;
+        this.cameraSet.orthographic.top = size_y / 2;
+        this.cameraSet.orthographic.bottom = -size_y / 2;
+        this.cameraSet.orthographic.far = cameraProp.far;
+
 
         if (cameraProp.type === 'Perspective') {
             this.camera = this.cameraSet.perspective;

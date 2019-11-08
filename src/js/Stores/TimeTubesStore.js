@@ -178,6 +178,21 @@ class TimeTubesStore extends EventEmitter{
         return this.cameraProp[id];
     }
 
+    getDefaultCameraProp() {
+        let cameraProp = {
+            xpos: 0,
+            ypos: 0,
+            zpos: 50,
+            fov: 45,
+            far: 2000,
+            depth: 0,
+            aspect: 1,
+            zoom: 1,
+            type: 'Perspective'
+        };
+        return cameraProp;
+    }
+
     getChecked(id) {
         return this.checked[id];
     }

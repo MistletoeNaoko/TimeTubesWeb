@@ -199,7 +199,7 @@ export default class VisualQuery extends React.Component {
     selectionDetail() {
         let selectedTimeSlice;
         // when the mode is QBS, selectedTimeSlice view is not needed to be shown
-        if (this.state.source >= 0 && this.state.queryMode === 'QBE') {
+        if (this.state.queryMode === 'QBE') {
             selectedTimeSlice = <SelectedTimeSlice sourceId={this.state.source}/>;
         }
         let selectionDetail;
