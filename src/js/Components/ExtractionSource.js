@@ -1,6 +1,7 @@
 import React from 'react';
 import * as d3 from 'd3';
 import * as domActions from '../lib/domActions';
+import * as ScatterplotsAction from '../Actions/ScatterplotsAction';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 import Scatterplots from './Scatterplots';
@@ -33,25 +34,6 @@ export default class ExtractionSource extends React.Component {
                 }
             }
         });
-        FeatureStore.on('switchQueryMode', (mode) => {
-            if (mode === 'QBE') {
-                if (this.state.source >= 0) {
-                    // if the light curve is not copied yet
-                    if (document.getElementById('QBE_SP_' + this.state.source) === null) {
-                        // copy SP for lightcurve
-                        this.copySP('scatterplots' + this.state.source + '_0', 'QBE_SP_' + this.state.source);
-                    }
-                }
-            }
-        });
-    }
-
-    copySP(originalSPId, divId) {
-        let content = d3.select('#' + originalSPId).html();
-        let SPdiv = d3.select('#QBESourceSP')
-            .append('div')
-            .attr('id', divId)
-            .html(content);
     }
 
     render() {

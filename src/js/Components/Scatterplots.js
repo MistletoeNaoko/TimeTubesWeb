@@ -74,6 +74,12 @@ export default class Scatterplots extends React.Component{
                 this.updateScatterplots(this.state.xItem, this.state.yItem);
             }
         });
+        FeatureStore.on('updateSelectedPeriod', () => {
+            if (this.divID.indexOf('QBE') >= 0 && FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id) {
+                this.selectedPeriod = FeatureStore.getSelectedPeriod();
+                this.highlightSelectedTimePeriod();
+            }
+        });
     }
 
     componentDidMount() {
@@ -708,12 +714,14 @@ export default class Scatterplots extends React.Component{
         // change the color of plots in the selectedTimePeriod
         let period = this.selectedPeriod;
         this.points
-            .attr('stroke', 'dimgray');
+            .attr('stroke', 'dimgray')
+            .attr('stroke-width', 0.5);
         this.points
             .select(function (d) {
                 return (period[0] <= d.z && d.z <= period[1]) ? this: null;
             })
-            .attr('stroke', 'red');
+            .attr('stroke', '#d23430')
+            .attr('stroke-width', 1);
     }
 
     onClickXAxisDone(e) {
