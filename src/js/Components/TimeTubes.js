@@ -166,12 +166,14 @@ export default class TimeTubes extends React.Component{
         TimeTubesStore.on('changePlotColor', (id) => {
             if (id === this.id) {
                 this.plotColor = TimeTubesStore.getPlotColor(this.id);
-                this.changePlotsColor();
+                this.drawPlot();
+                // this.changePlotsColor();
             } else if (this.data.merge) {
                 let fileName = DataStore.getFileName(id);
                 if (this.data.name.indexOf(fileName) >= 0) {
                     this.plotColor[this.idNameLookup[fileName]] = TimeTubesStore.getPlotColor(id);
-                    this.changePlotsColor();
+                    this.drawPlot();
+                    // this.changePlotsColor();
                 }
             }
         });
@@ -812,8 +814,9 @@ export default class TimeTubes extends React.Component{
     }
 
     changePlotsColor() {
+        console.log(this.plotColor, new THREE.Color(Number('0x' + this.plotColor.slice(1))), this.plot, );
         if (!this.data.merge) {
-            this.plot.material.color.set(this.plotColor);
+            this.plot.material.color = new THREE.Color(Number('0x' + this.plotColor.slice(1)));//.set(this.plotColor);
         } else {
             let circleColor = [];
             let baseColors = [];

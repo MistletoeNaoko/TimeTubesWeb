@@ -645,7 +645,8 @@ export default class Scatterplots extends React.Component{
     }
 
     changePlotColor(color) {
-        d3.selectAll('circle')
+        d3.select('#' + this.divID)
+            .selectAll('circle')
             .attr('fill', color);
     }
 
