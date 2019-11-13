@@ -860,7 +860,7 @@ export default class QueryBySketch extends React.Component{
                         this.selectedPoint = null;
                         break;
                     case 'changeWidth':
-                        if (this.state.detectWidth) {
+                        if (this.state.detectWidth && this.penSizeCircle && this.selectedPoint) {
                             let delX = this.penSizeCircle.segments[0].point.x - this.selectedPoint.point.x,
                                 delY = this.penSizeCircle.segments[0].point.y - this.selectedPoint.point.y;
                             let size = Math.sqrt(delX * delX + delY * delY);
