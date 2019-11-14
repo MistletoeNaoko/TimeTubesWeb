@@ -269,6 +269,8 @@ export default class TimeTubes extends React.Component{
                 this.setQBEView();
                 this.updateControls();
                 this.resetSelection();
+            } else {
+                this.deselectAll();
             }
         });
         FeatureStore.on('updateSource', () => {

@@ -388,6 +388,8 @@ table#extractionDetailInfoTable td {
     border: 1px solid #DFD7CA;
     border-radius: 5px;
     padding: 0.5rem 1rem;
+    width: 100%;
+    max-width: 100%;
 }
 
 #extractionDetailLC {

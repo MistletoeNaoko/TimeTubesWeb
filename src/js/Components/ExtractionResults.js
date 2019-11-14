@@ -159,6 +159,16 @@ export default class ExtractionResults extends React.Component {
             let query = FeatureStore.getQuery();
             for (let key in query) {
                 if (Array.isArray(query[key]) && Array.isArray(targetData[key]) && key !== 'z') {
+                    if (query[key].indexOf(null) >= 0) {
+                        let flag = false;
+                        for (let i = 0; i < query[key].length; i++) {
+                            if (query[key][i]) {
+                                flag = true;
+                                break;
+                            }
+                        }
+                        if (!flag) continue;
+                    }
                     timeSlice[key] = targetData[key].slice(minIdx, maxIdx + 1);
                     lineCharts.push(
                         <LineChart
