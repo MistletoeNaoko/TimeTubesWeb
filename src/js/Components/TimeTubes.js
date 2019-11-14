@@ -298,7 +298,7 @@ export default class TimeTubes extends React.Component{
                 this.paintSelectedPeriod();
             }
         });
-        FeatureStore.on('selectPeriodfromSP', (period) => {
+        FeatureStore.on('updateSelectedPeriod', () => {
             let sourceId = FeatureStore.getSource();
             let mode = FeatureStore.getMode();
             if (mode === 'QBE' && Number(sourceId) === this.id) {
