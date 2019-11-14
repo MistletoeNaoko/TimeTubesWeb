@@ -242,6 +242,7 @@ export default class TimeTubes extends React.Component{
         });
         TimeTubesStore.on('takeSnapshot', (id, pos, far) => {
             if (id === this.id) {
+                this.deselectAll();
                 this.tubeGroup.position.z = pos;
                 this.renderer.render(this.scene, this.camera);
             }
