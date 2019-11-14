@@ -420,6 +420,7 @@ export default class TimeTubes extends React.Component{
 
     onMouseWheel() {
         return function(event) {
+            event.preventDefault();
             // 1 scroll = 100 in deltaY
             let changeColFlg = false;
             let now = this.tubeGroup.position.z;
