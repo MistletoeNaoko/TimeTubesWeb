@@ -1,10 +1,6 @@
 import React from 'react';
-import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import Controllers from '../Components/Controllers';
 import DataColumn from '../Components/DataColumn';
-// import Details from './Details';
-import TimeTubes from '../Components/TimeTubes';
-import ScatterplotsHolder from '../Components/ScatterplotsHolder';
 import DataStore from '../Stores/DataStore';
 
 // a page for the main visualization
@@ -50,9 +46,9 @@ export default class Visualization extends React.Component{
         let dataNum = DataStore.getDataNum();
         if (dataNum > 0) {
             if (dataNum <= 3) {
-                width = $(window).width() / dataNum;// * 0.95;
+                width = window.innerWidth / dataNum;// * 0.95;
             } else {
-                width = Math.ceil($(window).width() / 3);
+                width = Math.ceil(window.innerWidth / 3);
             }
             let height = $(window).height() - $('#appHeader').outerHeight() - $('#tubeControllers').outerHeight();
             heightTT = Math.ceil(height * 0.6) + 100;
@@ -85,17 +81,6 @@ export default class Visualization extends React.Component{
                         {dataColumns}
                     </div>
                 </div>
-                {/*<div className='right'>*/}
-                    {/*<div id='Feature'>*/}
-                        {/*<Feature/>*/}
-                    {/*</div>*/}
-                    {/*<button*/}
-                        {/*className='collapseBtn btn-collapse'*/}
-                        {/*id='collapseFeature'*/}
-                        {/*data-toggle="sidebar"*/}
-                        {/*onClick={this.collapseFeature.bind(this)}>*/}
-                        {/*☰</button>*/}
-                {/*</div>*/}
             </div>
         );
     }

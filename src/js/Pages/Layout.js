@@ -11,6 +11,7 @@ export default class Layout extends React.Component {
         this.state = {
             menu: 'visualization'
         };
+        this.selectMainView();
     }
 //
     componentWillMount() {
@@ -18,21 +19,20 @@ export default class Layout extends React.Component {
             this.setState({
                 menu: menu
             });
+            this.selectMainView();
         });
     }
 
     selectMainView() {
-        let view;
         // switch visibility
         switch (this.state.menu) {
             case 'visualization':
-                view = this.vis;
+                $('body').css('overflow-y', 'hidden');
                 break;
             case 'feature':
-                view = this.feature;
+                    $('body').css('overflow-y', 'scroll');
                 break;
         }
-        return view;
     }
 
     render() {
@@ -55,15 +55,3 @@ export default class Layout extends React.Component {
         );
     }
 }
-// function App() {
-//     return (
-//         <Router>
-//             <div>
-//                 <Menu/>
-//                 {/*<Route exact path="/" component={Visualization} />*/}
-//                 {/*<Route path="/feature" component={FeatureExtraction} />*/}
-//             </div>
-//         </Router>
-//     )
-// }
-// export default App;

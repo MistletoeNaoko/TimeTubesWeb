@@ -1,6 +1,5 @@
 import React from 'react';
 import Scatterplots from './Scatterplots';
-import TimeSelector from './TimeSelector';
 import DataStore from '../Stores/DataStore';
 import * as ScatterplotsAction from '../Actions/ScatterplotsAction';
 
@@ -112,7 +111,10 @@ export default class ScatterplotsHolder extends React.Component{
                             style={{float: 'right'}}
                             onClick={this.addScatterplots.bind(this)}>+</button>
                 </div>
-                <div id={'scatterplots_' + this.id} className='scatterplotsViewports'>
+                <div 
+                    id={'scatterplots_' + this.id} 
+                    className='scatterplotsViewports'
+                    style={{height: this.props.height - this.menuHeight + 'px', width: this.props.width + 'px'}}>
                     {scatterplots}
                     <div style={{clear:'both'}}></div>
                 </div>

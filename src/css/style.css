@@ -89,6 +89,8 @@ table#extractionDetailInfoTable td {
 
 .scatterplotsViewports {
     display:block;
+    overflow-y: scroll;
+    overflow-x: hidden;
 }
 
 .closePanel {
@@ -295,6 +297,7 @@ table#extractionDetailInfoTable td {
     display: none;
     z-index: 1500;
 }
+
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
