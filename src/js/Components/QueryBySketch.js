@@ -534,10 +534,11 @@ export default class QueryBySketch extends React.Component{
                         hitResult = null;
                         hitResult = this.path.hitTest(event.point, {segments: true, tolerance: 5});
                         if (hitResult) {
-                            this.path.removeSegment(hitResult.segment.index);
-                            this.controlPoints.splice(hitResult.segment.index, 1);
+                            let removedIdx = hitResult.segment.index;
+                            this.path.removeSegment(removedIdx);
+                            this.controlPoints.splice(removedIdx, 1);
                             if (this.state.detectWidth) {
-                                this.radiuses.splice(hitResult.segment.index, 1);
+                                this.radiuses.splice(removedIdx, 1);
                                 this.pathWidth.remove();
                                 this.drawPathWidth();
                             }
