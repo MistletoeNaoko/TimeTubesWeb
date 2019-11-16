@@ -49,9 +49,10 @@ export default class QueryBySketch extends React.Component{
             targetList: targets,
             minList: minList,
             maxList: maxList,
-            detectWidth: true
+            detectWidth: true,
+            assignVariables: false
         }
-        this.assignVariables = false;
+        // this.assignVariables = false;
         this.margin = {"bottom": 20, "left": 20 };
         this.curveSegment = 10;
         this.sketching = false;
@@ -271,7 +272,7 @@ export default class QueryBySketch extends React.Component{
     CanvasOnMouseDown() {
         return function (event) {
             let hitResult;
-            if (this.assignVariables) {
+            if (this.state.assignVariables) {
                 hitResult = null;
                 hitResult = this.path.hitTest(event.point, {segments: true, tolerance: 5});
                 if (hitResult) {
@@ -590,7 +591,7 @@ export default class QueryBySketch extends React.Component{
 
     CanvasOnMouseDrag() {
         return function (event) {
-            if (!this.assignVariables) {
+            if (!this.state.assignVariables) {
                 switch (this.state.selector) {
                     case 'pen':
                         this.path.add(event.point);
@@ -793,7 +794,7 @@ export default class QueryBySketch extends React.Component{
 
     CanvasOnMouseUp() {
         return function (event) {
-            if (!this.assignVariables) {
+            if (!this.state.assignVariables) {
                 switch (this.state.selector) {
                     case 'pen':
                         let reverse = false;
@@ -1565,14 +1566,15 @@ export default class QueryBySketch extends React.Component{
     }
 
     switchVariableAssignment() {
-        this.assignVariables = !this.assignVariables;
-        $('#variableAssignmentSwitch').prop('checked', this.assignVariables);
-        if (this.assignVariables && this.path) {
+        // this.assignVariables = !this.assignVariables;
+        let state = !this.state.assignVariables;
+        this.setState({
+            assignVariables: state
+        });
+        $('#variableAssignmentSwitch').prop('checked', state);
+        if (state && this.path) {
             this.path.fullySelected = true;
-            if (this.pathWidth) {
-                this.pathWidth.fullySelected = false;
-            }
-        } else if (!this.assignVariables) {
+        } else if (!state) {
             this.setState({
                 popover: false
             });
@@ -1584,18 +1586,15 @@ export default class QueryBySketch extends React.Component{
     }
 
     updateSelectedStatus(selectedSelector) {
+        // when any one of selectors is selected, hide popup for value assignment and switch off the value assignement mode
         if (selectedSelector === 'addPoint' || selectedSelector === 'eraser') {
             if (this.path) this.path.fullySelected = true;
-            // if (this.pathWidth) this.pathWidth.fullySelected = true;
         } else if (selectedSelector === 'controlPoint') {
             if (this.path) this.path.fullySelected = true;
-            if (this.pathWidth) this.pathWidth.fullySelected = false;
         } else if (selectedSelector === 'changeWidth') {
             if (this.path) this.path.fullySelected = true;
-            if (this.pathWidth) this.pathWidth.fullySelected = false;
         } else if (selectedSelector === 'pen') {
             if (this.path) this.path.fullySelected = false;
-            if (this.pathWidth) this.pathWidth.fullySelected = false;
         }
     }
 
@@ -1751,12 +1750,15 @@ export default class QueryBySketch extends React.Component{
         return (
             <div id='QBSSelectorMenu' className='featureElem'>
                 <h5>Selection</h5>
-                <form className='selector featureRow' onChange={this.switchSelector.bind(this)}>
+                <form 
+                    className='selector featureRow' 
+                    onChange={this.switchSelector.bind(this)}>
                     <div className="form-check form-check-inline">
                         <input
                             type="radio"
                             name="QBSSelector"
                             value="pen"
+                            disabled={this.state.assignVariables}
                             checked={this.state.selector === 'pen'} readOnly/>
                         <label className="form-check-label" htmlFor="pen">Pen</label>
                     </div>
@@ -1765,6 +1767,7 @@ export default class QueryBySketch extends React.Component{
                             type="radio"
                             name="QBSSelector"
                             value="addPoint"
+                            disabled={this.state.assignVariables}
                             checked={this.state.selector === 'addPoint'} readOnly/>
                         <label className="form-check-label" htmlFor="addPoint">Add points</label>
                     </div>
@@ -1773,6 +1776,7 @@ export default class QueryBySketch extends React.Component{
                             type="radio"
                             name="QBSSelector"
                             value="eraser"
+                            disabled={this.state.assignVariables}
                             checked={this.state.selector === 'eraser'} readOnly/>
                         <label className="form-check-label" htmlFor="eraser">Eraser</label>
                     </div>
@@ -1781,6 +1785,7 @@ export default class QueryBySketch extends React.Component{
                             type="radio"
                             name="QBSSelector"
                             value="controlPoint"
+                            disabled={this.state.assignVariables}
                             checked={this.state.selector === 'controlPoint'} readOnly/>
                         <label className="form-check-label" htmlFor="controlPoint">Control point</label>
                     </div>
@@ -1790,7 +1795,7 @@ export default class QueryBySketch extends React.Component{
                             name="QBSSelector"
                             value="changeWidth"
                             checked={this.state.selector === 'changeWidth'}
-                            disabled={!this.state.detectWidth} readOnly/>
+                            disabled={!this.state.detectWidth || this.state.assignVariables} readOnly/>
                         <label className="form-check-label" htmlFor="changeWidth">Change width</label>
                     </div>
                 </form>
