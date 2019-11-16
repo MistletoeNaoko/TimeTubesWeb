@@ -633,6 +633,10 @@ export default class QueryBySketch extends React.Component{
                                 y: this.selectedPoint.point.y + event.delta.y
                             };
                         }
+                        if (this.controlPoints[this.selectedIdx].label !== null) {
+                            this.controlPoints[this.selectedIdx].label.position = new paper.Point(this.controlPoints[this.selectedIdx].position.x, this.controlPoints[this.selectedIdx].position.y - 10);
+                            this.controlPoints[this.selectedIdx].labelRect.position = this.controlPoints[this.selectedIdx].label.bounds;
+                        }
                         if (this.state.detectWidth) {
                             if (this.selectedIdx > 0 && this.selectedIdx < this.path.segments.length - 1) {
                                 // move the curves both before and after the point
