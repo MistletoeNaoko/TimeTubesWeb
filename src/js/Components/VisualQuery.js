@@ -246,129 +246,135 @@ export default class VisualQuery extends React.Component {
         }
         return (
             <div className='featureElem' style={{position: 'relative'}}>
-                <h5>Matching</h5>
-                <div id='ignoredVariablesArea' style={{display: (this.state.queryMode === 'QBE')? 'block': 'none'}}>
-                    <h6>Ignored variables</h6>
-                    <form id='QBEIgnoredVariables' onChange={this.updateIgnoredVariables.bind(this)}>
-                        {items}
-                    </form>
-                </div>
-                <h6>Settings of DTW</h6>
-                <div className='container'
-                     style={{paddingRight: '0px', paddingLeft: '0px', marginBottom: '0.2rem'}}>
-                    <div className='row matchingOption'
-                         style={{paddingLeft: '15px', paddingRight: '15px'}}>
-                        <div className="custom-control custom-switch">
-                            <input type="checkbox" className="custom-control-input" id="QBENormalizeSwitch"/>
-                            <label className="custom-control-label" htmlFor="QBENormalizeSwitch">Normalize</label>
+                <h5 onClick={this.collapseMatchingOptions}>Matching</h5>
+                <div id='matchingOptionsMain'>
+                    <div id='ignoredVariablesArea' style={{display: (this.state.queryMode === 'QBE')? 'block': 'none'}}>
+                        <h6>Ignored variables</h6>
+                        <form id='QBEIgnoredVariables' onChange={this.updateIgnoredVariables.bind(this)}>
+                            {items}
+                        </form>
+                    </div>
+                    <h6>Settings of DTW</h6>
+                    <div className='container'
+                        style={{paddingRight: '0px', paddingLeft: '0px', marginBottom: '0.2rem'}}>
+                        <div className='row matchingOption'
+                            style={{paddingLeft: '15px', paddingRight: '15px'}}>
+                            <div className="custom-control custom-switch">
+                                <input type="checkbox" className="custom-control-input" id="QBENormalizeSwitch"/>
+                                <label className="custom-control-label" htmlFor="QBENormalizeSwitch">Normalize</label>
+                            </div>
+                        </div>
+                        <div className="row matchingOption">
+                            <div className='col-5'>
+                                Distance metric
+                            </div>
+                            <div className='col'>
+                                <select
+                                    className="custom-select custom-select-sm"
+                                    id='distanceMetric'
+                                    style={{width: '40%'}}>
+                                    <option value="Euclidean">Euclidean</option>
+                                    <option value="Manhattan">Manhattan</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="row matchingOption">
+                            <div className='col-5'>
+                                Warping window size
+                            </div>
+                            <div className='col form-inline'>
+                                <input className="form-control form-control-sm"
+                                    type="text"
+                                    placeholder="window size"
+                                    id="warpingWindowSize"
+                                    style={{width: '40%', marginRight: '0.5rem'}}/>
+                                <label className="col-form-label col-form-label-sm"> days</label>
+                            </div>
+                        </div>
+                        <div className="row matchingOption">
+                            <div className='col-5'>
+                                Length of the target time series
+                            </div>
+                            <div className='col form-inline'>
+                                <input className="form-control form-control-sm"
+                                    type="text"
+                                    placeholder="min"
+                                    id="targetLengthMin"
+                                    style={{width: '20%', marginRight: '0.5rem'}}/>
+                                ~
+                                <input className="form-control form-control-sm"
+                                    type="text"
+                                    placeholder="max"
+                                    id="targetLengthMax"
+                                    style={{width: '20%', marginRight: '0.5rem', marginLeft: '0.5rem'}}/>
+                                <label className="col-form-label col-form-label-sm"> days</label>
+                            </div>
+                        </div>
+                        <div className="row matchingOption">
+                            <div className='col-5'>
+                                Step size of sliding window
+                            </div>
+                            <div className='col form-inline'>
+                                <input className="form-control form-control-sm"
+                                    type="text"
+                                    placeholder="step size"
+                                    id="stepSizeOfSlidingWindow"
+                                    style={{width: '40%', marginRight: '0.5rem'}}/>
+                                <label className="col-form-label col-form-label-sm"> days</label>
+                            </div>
+                        </div>
+                        <div className="row matchingOption">
+                            <div className='col-5'>
+                                Restrictions
+                            </div>
+                            <div className='col'>
+                                Restriction checkboxes here
+                            </div>
+                        </div>
+                        <div className="row matchingOption">
+                            <div className='col-5'>
+                                Type of DTW
+                            </div>
+                            <div className='col'>
+                                <form
+                                    className="form-check"
+                                    id='DTWType'
+                                    onChange={this.switchDTWMode.bind(this)}
+                                    style={{paddingLeft: '0px'}}>
+                                    <div className="custom-control custom-radio">
+                                        <input type="radio" id="DTWI" name="DTWType" value='DTWI'
+                                            checked={(this.state.DTWMode === 'DTWI')? true: false}
+                                            disabled={this.state.queryMode === 'QBS'}
+                                            className="custom-control-input" readOnly/>
+                                        <label className="custom-control-label" htmlFor="DTWI">
+                                            DTW<sub>I</sub>
+                                        </label>
+                                    </div>
+                                    <div className="custom-control custom-radio">
+                                        <input type="radio" id="DTWD" name="DTWType" value='DTWD'
+                                            checked={(this.state.DTWMode === 'DTWD')? true: false}
+                                            className="custom-control-input" readOnly/>
+                                        <label className="custom-control-label" htmlFor="DTWD">
+                                            DTW<sub>D</sub>
+                                        </label>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                    <div className="row matchingOption">
-                        <div className='col-5'>
-                            Distance metric
-                        </div>
-                        <div className='col'>
-                            <select
-                                className="custom-select custom-select-sm"
-                                id='distanceMetric'
-                                style={{width: '40%'}}>
-                                <option value="Euclidean">Euclidean</option>
-                                <option value="Manhattan">Manhattan</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div className="row matchingOption">
-                        <div className='col-5'>
-                            Warping window size
-                        </div>
-                        <div className='col form-inline'>
-                            <input className="form-control form-control-sm"
-                                   type="text"
-                                   placeholder="window size"
-                                   id="warpingWindowSize"
-                                   style={{width: '40%', marginRight: '0.5rem'}}/>
-                            <label className="col-form-label col-form-label-sm"> days</label>
-                        </div>
-                    </div>
-                    <div className="row matchingOption">
-                        <div className='col-5'>
-                            Length of the target time series
-                        </div>
-                        <div className='col form-inline'>
-                            <input className="form-control form-control-sm"
-                                   type="text"
-                                   placeholder="min"
-                                   id="targetLengthMin"
-                                   style={{width: '20%', marginRight: '0.5rem'}}/>
-                            ~
-                            <input className="form-control form-control-sm"
-                                   type="text"
-                                   placeholder="max"
-                                   id="targetLengthMax"
-                                   style={{width: '20%', marginRight: '0.5rem', marginLeft: '0.5rem'}}/>
-                            <label className="col-form-label col-form-label-sm"> days</label>
-                        </div>
-                    </div>
-                    <div className="row matchingOption">
-                        <div className='col-5'>
-                            Step size of sliding window
-                        </div>
-                        <div className='col form-inline'>
-                            <input className="form-control form-control-sm"
-                                   type="text"
-                                   placeholder="step size"
-                                   id="stepSizeOfSlidingWindow"
-                                   style={{width: '40%', marginRight: '0.5rem'}}/>
-                            <label className="col-form-label col-form-label-sm"> days</label>
-                        </div>
-                    </div>
-                    <div className="row matchingOption">
-                        <div className='col-5'>
-                            Restrictions
-                        </div>
-                        <div className='col'>
-                            Restriction checkboxes here
-                        </div>
-                    </div>
-                    <div className="row matchingOption">
-                        <div className='col-5'>
-                            Type of DTW
-                        </div>
-                        <div className='col'>
-                            <form
-                                className="form-check"
-                                id='DTWType'
-                                onChange={this.switchDTWMode.bind(this)}
-                                style={{paddingLeft: '0px'}}>
-                                <div className="custom-control custom-radio">
-                                    <input type="radio" id="DTWI" name="DTWType" value='DTWI'
-                                           checked={(this.state.DTWMode === 'DTWI')? true: false}
-                                           disabled={this.state.queryMode === 'QBS'}
-                                           className="custom-control-input" readOnly/>
-                                    <label className="custom-control-label" htmlFor="DTWI">
-                                        DTW<sub>I</sub>
-                                    </label>
-                                </div>
-                                <div className="custom-control custom-radio">
-                                    <input type="radio" id="DTWD" name="DTWType" value='DTWD'
-                                           checked={(this.state.DTWMode === 'DTWD')? true: false}
-                                           className="custom-control-input" readOnly/>
-                                    <label className="custom-control-label" htmlFor="DTWD">
-                                        DTW<sub>D</sub>
-                                    </label>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
 
-                <button className="btn btn-primary btn-sm"
-                        type="button"
-                        id='runMatchingBtn'
-                        style={{float: 'right'}}
-                        onClick={this.runMatching.bind(this)}>Run</button>
+                    <button className="btn btn-primary btn-sm"
+                            type="button"
+                            id='runMatchingBtn'
+                            style={{float: 'right'}}
+                            onClick={this.runMatching.bind(this)}>Run</button>
+                </div>
             </div>
         );
+    }
+
+    collapseMatchingOptions() {
+        $('#matchingOptionsMain').slideToggle();
     }
 
     runMatching() {

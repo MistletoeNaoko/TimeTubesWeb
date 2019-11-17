@@ -1806,12 +1806,18 @@ export default class QueryBySketch extends React.Component{
     sketchOptions() {
         return (
             <div id='QBSSketchOptions' className='featureElem'>
-                <h5>Options of Query-by-sketch</h5>
-                {this.sketchWidthControl()}
-                {this.assignVariablesArea()}
-                {this.definePeriodOfQuery()}
+                <h5 onClick={this.collapseQBSSketchOptions}>Options of Query-by-sketch</h5>
+                <div id='QBSSketchOptionsMain'>
+                    {this.sketchWidthControl()}
+                    {this.assignVariablesArea()}
+                    {this.definePeriodOfQuery()}
+                </div>
             </div>
         );
+    }
+
+    collapseQBSSketchOptions() {
+        $('#QBSSketchOptionsMain').slideToggle();
     }
 
     sketchWidthControl() {
