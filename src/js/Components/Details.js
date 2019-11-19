@@ -182,7 +182,7 @@ export default class Details extends React.Component{
 
     setOpacityCurve() {
         let outerWidth = 150, outerHeight = 150;
-        let margin = {'top': 10, 'bottom': 10, 'left': 10, 'right': 10};
+        let margin = {top: 10, bottom: 15, left: 15, right: 10};
         let width = outerWidth - margin.left - margin.right;
         let height = outerHeight - margin.top - margin.bottom;
         let svg = d3.select('#opacityCurve_' + this.id)

@@ -1,8 +1,116 @@
 import React from 'react';
+import * as d3 from 'd3';
 
 export default class AutomaticExtraction extends React.Component {
     constructor(props) {
         super();
+        this.gaussMargin = {top: 10, bottom: 10, left: 10, right: 10};
+    }
+
+    componentDidMount() {
+        document.getElementById('weightForAverageList').selectedIndex = '2';
+        this.setGaussCurve();
+    }
+
+    setGaussCurve() {
+        let outerWidth = 200, outerHeight = 200;
+        let width = outerWidth - this.gaussMargin.left - this.gaussMargin.right,
+            height = outerHeight - this.gaussMargin.top - this.gaussMargin.bottom;
+
+        let svg = d3.select('#gaussCurveArea')
+            .append('svg')
+            .attr('width', outerWidth)
+            .attr('height', outerHeight)
+            .attr('id', 'gaussCurve');
+
+        svg
+            .append('rect')
+            .attr('width', width)
+            .attr('height', height)
+            .style('fill', 'none')
+            .style('stroke', 'lightgray')
+            .attr('transform', 'translate(' + this.gaussMargin.left + ',' + this.gaussMargin.top + ')');
+
+        // scales
+        this.xScaleGauss = d3.scaleLinear()
+            .range([0, width]);
+        this.yScaleGauss = d3.scaleLinear()
+            .range([height, 0]);
+
+        let weightList = document.getElementById('weightForAverageList');
+        let selectedIdx = weightList.selectedIndex;
+        let selectedOpt = weightList.options[selectedIdx].value;  
+
+        let data = this.getGaussData(Number(selectedOpt));
+
+        this.xScaleGauss
+            .domain([d3.min(data, d => d.x), d3.max(data, d => d.x)]);
+        this.yScaleGauss
+            .domain([d3.min(data, d => d.y), d3.max(data, d => d.y)]);
+        
+        this.gaussPath = svg.append('path')
+            .datum(data)
+            .style('fill', 'none')
+            .style('stroke', 'lightcoral')
+            .style('stroke-width', 3)
+            .attr('id', 'gaussCurvePath')
+            .attr('transform', 'translate(' + this.gaussMargin.left + ',' + this.gaussMargin.top + ')')
+            .attr('d', d3.line()
+                .x(function(d) {
+                    return this.xScaleGauss(d.x);
+                }.bind(this))
+                .y(function(d) {
+                    return this.yScaleGauss(d.y);
+                }.bind(this))
+                .curve(d3.curveBasis)
+            );
+    }
+
+    getGaussData(sigma) {
+        let data = [];
+        if (sigma > 0) {
+            for (let i = -5; i <= 5; i++) {
+                let gauss = Math.exp(-i * i / (2 * sigma * sigma)) / Math.sqrt(2 * Math.PI * sigma * sigma);
+                data.push({x: i, y: gauss});
+            }
+        } else {
+            data.push({x: -1, y: 1});
+            data.push({x: 1, y: 1});
+        }
+        return data;
+    }
+
+    updateWeight() {
+        d3.select('#gaussCurvePath').remove();
+
+        let weightList = document.getElementById('weightForAverageList');
+        let selectedIdx = weightList.selectedIndex;
+        let selectedOpt = weightList.options[selectedIdx].value;  
+
+        let data = this.getGaussData(Number(selectedOpt));
+
+        this.xScaleGauss
+            .domain([d3.min(data, d => d.x), d3.max(data, d => d.x)]);
+        this.yScaleGauss
+            .domain([d3.min(data, d => d.y), d3.max(data, d => d.y)]);
+        
+        this.gaussPath = d3.select('#gaussCurve')
+            .append('path')
+            .datum(data)
+            .style('fill', 'none')
+            .style('stroke', 'lightcoral')
+            .style('stroke-width', 3)
+            .attr('id', 'gaussCurvePath')
+            .attr('transform', 'translate(' + this.gaussMargin.left + ',' + this.gaussMargin.top + ')')
+            .attr('d', d3.line()
+                .x(function(d) {
+                    return this.xScaleGauss(d.x);
+                }.bind(this))
+                .y(function(d) {
+                    return this.yScaleGauss(d.y);
+                }.bind(this))
+                .curve(d3.curveBasis)
+            );    
     }
 
     runAutomaticExtraction() {
@@ -64,11 +172,16 @@ export default class AutomaticExtraction extends React.Component {
                                 <select
                                     className="custom-select custom-select-sm"
                                     id='weightForAverageList'
-                                    style={{width: '40%'}}>
+                                    style={{width: '60%'}}
+                                    onChange={this.updateWeight.bind(this)}>
+                                    <option value="0">Flat (arithmetic mean)</option>
+                                    <option value="1">σ=1</option>
                                     <option value="3">σ=3</option>
-                                    <option value="Manhattan">Manhattan</option>
+                                    <option value="5">σ=5</option>
                                 </select>
                             </div>
+                        </div>
+                        <div id='gaussCurveArea' style={{textAlign: 'center'}}>
                         </div>
                     </div>
                 </div>
