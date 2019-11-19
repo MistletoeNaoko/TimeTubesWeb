@@ -68,7 +68,8 @@ export default class SelectedTimeSlice extends React.Component {
                 this.sourceId = id;
                 this.selectedPeriod = period;
                 this.ignoredVariables = ignored;
-
+                this.data = DataStore.getData(this.sourceId);
+                this.setUpScene();
                 // update the source select menu
                 let sourceList = document.getElementById('sourceList');
                 for (let i = 0; i < sourceList.options.length; i++) {
@@ -103,6 +104,10 @@ export default class SelectedTimeSlice extends React.Component {
     }
 
     componentDidMount() {
+        this.initializeScene();
+    }
+
+    initializeScene() {
         const width = $('#selectedIntervalViewArea').width();//this.mount.clientWidth;
         const height = width;//this.mount.clientHeight;
         this.scene = new THREE.Scene();

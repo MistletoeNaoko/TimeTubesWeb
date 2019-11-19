@@ -225,7 +225,7 @@ class FeatureStore extends EventEmitter {
 
     convertResultIntoQuery(id, period, ignored) {
         if (this.mode == 'QBE') {
-            this.period = period;
+            this.selectedPeriod = period;
             this.ignored = ignored;
         }
         this.emit('convertResultIntoQuery', id, period, ignored);

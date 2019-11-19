@@ -1099,45 +1099,47 @@ export default class QueryBySketch extends React.Component{
                 while (currentX <= maxX) {
                     // get the position on the path
                     let hitResult = this.path.getIntersections(hitTestPath);
-                    let offset = this.path.getOffsetOf(hitResult[0].point);
-                    for (let key in query) {
-                        if (key === this.state.yItem) {
-                            query[key].push(this.yScale.invert(hitResult[0].point.y));
-                        } else if (key === this.widthVar) {
-                            let width =  (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
-                                    * (offset - totalCurveLen) / currentLen + this.radiuses[curveIdx];
-                            // convert width into value
-                            query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
-                        } else if (key !== 'z') {
-                            query[key].push(null);
+                    if (hitResult.length > 0) {
+                        let offset = this.path.getOffsetOf(hitResult[0].point);
+                        for (let key in query) {
+                            if (key === this.state.yItem) {
+                                query[key].push(this.yScale.invert(hitResult[0].point.y));
+                            } else if (key === this.widthVar) {
+                                let width =  (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
+                                        * (offset - totalCurveLen) / currentLen + this.radiuses[curveIdx];
+                                // convert width into value
+                                query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
+                            } else if (key !== 'z') {
+                                query[key].push(null);
+                            }
                         }
-                    }
 
-                    // update curveLen, curveIdx, totalCurveLen
-                    if (totalCurveLen + currentLen <= offset) {
-                        let controlPoint = this.controlPoints[curveIdx + 1].position,
-                            assignedVariables = this.controlPoints[curveIdx + 1].assignedVariables;
-                        let distBefore = Math.sqrt(Math.pow(controlPoint.x - pointBefore.x, 2) + Math.pow(controlPoint.y - pointBefore.y, 2)),
-                            distCurrent = Math.sqrt(Math.pow(controlPoint.x - hitResult[0].point.x, 2) + Math.pow(controlPoint.y - hitResult[0].point.y, 2));
-                        if (distBefore <= distCurrent) {
-                            // assign variables to before point
-                            for (let key in query) {
-                                if (assignedVariables[key].length > 0) {
-                                    query[key][query[key].length - 2] = assignedVariables[key];
+                        // update curveLen, curveIdx, totalCurveLen
+                        if (totalCurveLen + currentLen <= offset) {
+                            let controlPoint = this.controlPoints[curveIdx + 1].position,
+                                assignedVariables = this.controlPoints[curveIdx + 1].assignedVariables;
+                            let distBefore = Math.sqrt(Math.pow(controlPoint.x - pointBefore.x, 2) + Math.pow(controlPoint.y - pointBefore.y, 2)),
+                                distCurrent = Math.sqrt(Math.pow(controlPoint.x - hitResult[0].point.x, 2) + Math.pow(controlPoint.y - hitResult[0].point.y, 2));
+                            if (distBefore <= distCurrent) {
+                                // assign variables to before point
+                                for (let key in query) {
+                                    if (assignedVariables[key].length > 0) {
+                                        query[key][query[key].length - 2] = assignedVariables[key];
+                                    }
+                                }
+                            } else {
+                                // assign variables to the current point
+                                for (let key in query) {
+                                    if (assignedVariables[key].length > 0) {
+                                        query[key][query[key].length - 1] = assignedVariables[key];
+                                    }
                                 }
                             }
-                        } else {
-                            // assign variables to the current point
-                            for (let key in query) {
-                                if (assignedVariables[key].length > 0) {
-                                    query[key][query[key].length - 1] = assignedVariables[key];
-                                }
+                            totalCurveLen += currentLen;
+                            curveIdx += 1;
+                            if (curveIdx < this.path.curves.length) {
+                                currentLen = this.path.curves[curveIdx].length;
                             }
-                        }
-                        totalCurveLen += currentLen;
-                        curveIdx += 1;
-                        if (curveIdx < this.path.curves.length) {
-                            currentLen = this.path.curves[curveIdx].length;
                         }
                     }
                     currentX += del;

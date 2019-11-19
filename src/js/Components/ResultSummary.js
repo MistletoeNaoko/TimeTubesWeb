@@ -224,6 +224,9 @@ export default class ResultSummary extends React.Component {
                     && (selectedTimeSlicePos.top <= event.pageY && event.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
                         // convert the result into a new query
                         FeatureAction.convertResultIntoQuery(this.id, this.period, this.ignored);
+                        if ($('#resultDetailArea').css('display') === 'block') {
+                            domActions.toggleExtractionDetailPanel();
+                        }
                     }
                     break;
                 case 'QBS':

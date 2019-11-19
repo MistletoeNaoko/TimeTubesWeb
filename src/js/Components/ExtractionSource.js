@@ -34,6 +34,20 @@ export default class ExtractionSource extends React.Component {
                 }
             }
         });
+        FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
+            if (FeatureStore.getMode() === 'QBE') {
+                this.setState({
+                    source: id
+                });
+            }
+            if (id >= 0) {
+                // if the light curve is not copied yet
+                if (document.getElementById('QBE_SP_' + id) === null) {
+                    // copy SP for lightcurve
+                    this.copySP('scatterplots' + id + '_0', 'QBE_SP_' + id);
+                }
+            }
+        });
     }
 
     render() {

@@ -80,6 +80,12 @@ export default class Scatterplots extends React.Component{
                 this.highlightSelectedTimePeriod();
             }
         });
+        FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
+            if (this.divID.indexOf('QBE') >= 0 && FeatureStore.getMode() === 'QBE' && Number(id) === this.id) {
+                this.selectedPeriod = FeatureStore.getSelectedPeriod();
+                this.highlightSelectedTimePeriod();
+            }            
+        });
     }
 
     componentDidMount() {
