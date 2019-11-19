@@ -397,3 +397,7 @@ table#extractionDetailInfoTable td {
     overflow-y: scroll;
     width: 100%;
 }
+
+#automaticExtractionQuerying {
+    font-size: 0.8rem;
+}

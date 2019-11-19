@@ -160,6 +160,19 @@ class DataStore extends EventEmitter {
         }
         return -1;
     }
+
+    getAverage(id, focused, bin) {
+        let currentJD, data, average = {x: 0, y: 0};
+        for (let i = 0; i < bin; i++) {
+            currentJD = focused + i;
+            data = this.getValues(id, currentJD);
+            average.x += data.x;
+            average.y += data.y;
+        }
+        average.x /= bin;
+        average.y /= bin;
+        return average;
+    }
 }
 
 const dataStore = new DataStore();

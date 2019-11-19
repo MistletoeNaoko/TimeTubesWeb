@@ -56,6 +56,7 @@ class TimeTubesStore extends EventEmitter{
         }];
         this.texture = [];
         this.checked = [];
+        // focused is not JD, but the position of the tube in the 3D space
         this.focused = [];
         this.minmaxV = [];
         this.minmaxH = [];
@@ -76,6 +77,7 @@ class TimeTubesStore extends EventEmitter{
             }
             this.opacityCurves[key] = new THREE.SplineCurve(points);
         }
+        this.averagePeriod = 0;
     }
 
     handleActions(action) {
@@ -170,6 +172,8 @@ class TimeTubesStore extends EventEmitter{
                 break;
             case 'SHOW_TIMETUBES_OF_TIME_SLICE':
                 this.showTimeTubesofTimeSlice(action.id, action.period);
+            case 'UPDATE_AVERAGE_PERIOD':
+                this.updateAveragePeriod(action.value);
             default:
         }
     }
@@ -276,6 +280,10 @@ class TimeTubesStore extends EventEmitter{
 
     getOpacityCurve(opt) {
         return this.opacityCurves[opt];
+    }
+
+    getAveragePeriod() {
+        return this.averagePeriod;
     }
 
     setPlotColor(id, color) {
@@ -468,6 +476,11 @@ class TimeTubesStore extends EventEmitter{
         this.cameraProp[id].far = period[1] - period[0] + 50;
         this.focused[id] = period[0] - DataStore.getData(id).data.meta.min.z;
         this.emit('showTimeTubesOfTimeSlice', id);
+    }
+
+    updateAveragePeriod(value) {
+        this.averagePeriod = value;
+        this.emit('updateAveragePeriod');
     }
 }
 

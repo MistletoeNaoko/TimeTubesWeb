@@ -35,6 +35,34 @@ export default class Controllers extends React.Component{
         });
     }
 
+    componentDidMount() {
+        this.setAverageSlider();
+    }
+
+    setAverageSlider() {
+        let val = $('#averageSliderVal');
+        $('#averageSlider').slider({
+            range: 'min',
+            value: 0,
+            min: 0,
+            max: 200,
+            slide: function(event, ui) {
+                val.css('display', 'initial');
+                val.val(ui.value + ' days');
+                let min = $('#averageSlider').slider('option', 'min');
+                let range = $('#averageSlider').slider('option', 'max') - min;
+                let pos = -10 + $('#averageSlider').width() * (ui.value - min) / range;
+
+                val.css('left', pos + 'px');
+
+                TimeTubesAction.updateAveragePeriod(ui.value);
+            }, 
+            stop: function() {
+                val.css('display', 'none');
+            }
+        });
+    }
+
     changeFileType() {
         let fileType = $('input[name=fileType]:checked').val();
         this.setState({
@@ -439,6 +467,20 @@ export default class Controllers extends React.Component{
                         Average
                     </label>
                     <div className="dropdown-menu controllersElem" aria-labelledby="navbarDropdown">
+                        <div id='averageSlider'
+                            style={{float: 'left', width: '8rem', marginBottom: '.5rem', marginTop: '.5rem'}}>
+                            <output id="averageSliderVal"
+                                    style={{
+                                        position: 'absolute',
+                                        display:'none',
+                                        top: '-30px',
+                                        backgroundColor: '#fff',
+                                        opacity: '0.8',
+                                        borderRadius: '3px',
+                                        color: '#777',
+                                        padding: '2px'
+                            }}></output>
+                        </div>
                     </div>
                 </li>
                 <li className="nav-item">

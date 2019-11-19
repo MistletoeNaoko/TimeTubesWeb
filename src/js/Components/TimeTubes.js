@@ -29,6 +29,7 @@ export default class TimeTubes extends React.Component{
         this.visualQuery = false;
         this.dragSelection = true;
         this.selector = true;
+        this.averagePeriod = 0;
         this.animationPara = {flag: false, dep: 0, dst:0, speed: 40, now: 0};
         this.raycaster = new THREE.Raycaster();
         this.vertex = document.getElementById('vertexShader_tube').textContent;
@@ -263,6 +264,17 @@ export default class TimeTubes extends React.Component{
                 this.updateCamera();
             }
         });
+        TimeTubesStore.on('updateAveragePeriod', () => {
+            this.averagePeriod = TimeTubesStore.getAveragePeriod();
+            if (this.averagePeriod > 0) {
+                let average = DataStore.getAverage(this.id, this.tubeGroup.position.z, this.averagePeriod);
+                this.disk.visible = true;
+                this.disk.position.x = average.x * this.data.meta.range;
+                this.disk.position.y = average.y * this.data.meta.range;
+            } else {
+                this.disk.visible = false;
+            }
+        });
         FeatureStore.on('switchQueryMode', (mode) => {
             let sourceId = FeatureStore.getSource();
             if (mode === 'QBE' && sourceId !== 'default') {
@@ -383,6 +395,7 @@ export default class TimeTubes extends React.Component{
         this.drawLabel(TimeTubesStore.getGridSize() / this.data.meta.range);
         this.drawAxis();
         this.drawPlot();
+        this.drawDisk();
     }
 
     start() {
@@ -485,6 +498,12 @@ export default class TimeTubes extends React.Component{
                 TimeTubesAction.synchronizeTubes(this.id, dst, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 0));
             ScatterplotsAction.moveCurrentLineonTimeSelector(this.id, dst + this.data.spatial[0].z);
             DataAction.updateDetails(this.id, dst);
+
+            if (this.averagePeriod > 0) {
+                let average = DataStore.getAverage(this.id, this.tubeGroup.position.z, this.averagePeriod);
+                this.disk.position.x = average.x * this.data.meta.range;
+                this.disk.position.y = average.y * this.data.meta.range;
+            }
         }.bind(this);
     }
 
@@ -1190,6 +1209,14 @@ export default class TimeTubes extends React.Component{
         }
         this.tubeGroup.add(this.plot);
         this.plot.rotateY(Math.PI);
+    }
+
+    drawDisk() {
+        let circleGeometry = new THREE.CircleGeometry(0.5, 16);
+        let circleMaterial = new THREE.MeshBasicMaterial({color: 0xff0000, opacity: 0.8});
+        this.disk = new THREE.Mesh(circleGeometry, circleMaterial);
+        this.scene.add(this.disk);
+        this.disk.visible = false;
     }
 
     initQBEView() {

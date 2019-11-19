@@ -122,3 +122,7 @@ export function recoverTube(id, cameraProp, tubePos) {
 export function showTimeTubesOfTimeSlice(id, period) {
     dispatcher.dispatch({type: 'SHOW_TIMETUBES_OF_TIME_SLICE', id, period});
 }
+
+export function updateAveragePeriod(value) {
+    dispatcher.dispatch({type: 'UPDATE_AVERAGE_PERIOD', value});
+}
