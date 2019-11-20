@@ -5,6 +5,13 @@ export default class AutomaticExtraction extends React.Component {
     constructor(props) {
         super();
         this.gaussMargin = {top: 10, bottom: 10, left: 10, right: 10};
+
+        this.state = {
+            flare: false,
+            flareOption: 'automatic GESD',
+            rotation: false,
+            anomaly: false
+        };
     }
 
     componentDidMount() {
@@ -69,7 +76,7 @@ export default class AutomaticExtraction extends React.Component {
     getGaussData(sigma) {
         let data = [];
         if (sigma > 0) {
-            for (let i = -5; i <= 5; i++) {
+            for (let i = -4; i <= 4; i++) {
                 let gauss = Math.exp(-i * i / (2 * sigma * sigma)) / Math.sqrt(2 * Math.PI * sigma * sigma);
                 data.push({x: i, y: gauss});
             }
@@ -117,77 +124,218 @@ export default class AutomaticExtraction extends React.Component {
 
     }
 
+    flareOptions() {
+        return (
+            <form
+                className="form-check"
+                id='flareOptions'
+                onChange={this.switchFlareOption.bind(this)}
+                style={{paddingLeft: '0px'}}>
+                <div className="custom-control custom-radio">
+                    <input type="radio" id="flareAutomatic" name="flareOptions" value='automatic'
+                        checked={this.state.flareOption.indexOf('automatic') >= 0}
+                        disabled={!this.state.flare}
+                        className="custom-control-input" readOnly/>
+                    <label className="custom-control-label" htmlFor="flareAutomatic">
+                        Automatic
+                    </label>
+                    <div className="custom-control custom-checkbox">
+                        <input 
+                            type="checkbox" 
+                            className="custom-control-input" 
+                            id="GESDCheck"
+                            disabled={!this.state.flare}
+                            onChange={this.selectAutomaticFlareExtractionMode.bind(this)}
+                            checked={this.state.flareOption.indexOf('GESD') >= 0}/>
+                        <label className="custom-control-label" htmlFor="GESDCheck">Generalized ESD</label>
+                    </div>
+                    <div className='row matchingOption'>
+                        <div className='col-5'>
+                            Significance level (α)
+                        </div>
+                        <div className='col'>
+                            <input className="form-control form-control-sm"
+                                type="text"
+                                placeholder="α value"
+                                id="alphaValueForGESD"
+                                disabled={!this.state.flare}
+                                style={{width: '40%', marginRight: '0.5rem'}}/>
+                        </div>
+                    </div>
+                </div>
+                <div className="custom-control custom-radio">
+                    <input type="radio" id="flareManual" name="flareOptions" value='manual'
+                        checked={this.state.flareOption === 'manual'}
+                        disabled={!this.state.flare}
+                        className="custom-control-input" readOnly/>
+                    <label className="custom-control-label" htmlFor="flareManual">
+                        Manual
+                    </label>
+                    <div className='row matchingOption'>
+                        <div className='col-5'>
+                            Intensity Threshold
+                        </div>
+                        <div className='col'>
+                            <input className="form-control form-control-sm"
+                                type="text"
+                                placeholder="threshold"
+                                id="FlareThreshold"
+                                disabled={!this.state.flare}
+                                style={{width: '40%', marginRight: '0.5rem'}}/>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        );
+    }
+
+    rotationOptions() {
+        return (
+            <div className='container'
+                style={{paddingRight: '0px', paddingLeft: '0px', marginBottom: '0.2rem'}}>
+                <div className="row matchingOption"> 
+                    <div className='col-5'>
+                        Rotation period
+                    </div>
+                    <div className='col form-inline'>
+                        <input className="form-control form-control-sm"
+                            type="text"
+                            placeholder="min"
+                            id="rotationPeriodMin"
+                            disabled={!this.state.rotation}
+                            style={{width: '20%', marginRight: '0.5rem'}}/>
+                        ~
+                        <input className="form-control form-control-sm"
+                            type="text"
+                            placeholder="max"
+                            id="rotationPeriodMax"
+                            disabled={!this.state.rotation}
+                            style={{width: '20%', marginRight: '0.5rem', marginLeft: '0.5rem'}}/>
+                        <label className="col-form-label col-form-label-sm"> days</label>
+                    </div>
+                </div>
+                <div className='row matchingOption'>
+                    <div className='col-5'>
+                        Rotation diameter
+                    </div>
+                    <div className='col form-inline'>
+                        <input className="form-control form-control-sm"
+                                type="text"
+                                placeholder="diameter"
+                                id="rotationDiameter"
+                                disabled={!this.state.rotation}
+                                style={{width: '40%', marginRight: '0.5rem'}}/>
+                    </div>
+                </div>
+                <div className='row matchingOption'>
+                    <div className='col-5'>
+                        Rotation angle
+                    </div>
+                    <div className='col form-inline'>
+                        <input className="form-control form-control-sm"
+                                type="text"
+                                placeholder="angle"
+                                id="rotationAngle"
+                                disabled={!this.state.rotation}
+                                style={{width: '40%', marginRight: '0.5rem'}}/>
+                    </div>
+                </div>
+                <div className='row matchingOption'>
+                    <div className='col-5'>
+                        Weight for average
+                    </div>
+                    <div className='col'>
+                        <select
+                            className="custom-select custom-select-sm"
+                            id='weightForAverageList'
+                            style={{width: '60%'}}
+                            disabled={!this.state.rotation}
+                            onChange={this.updateWeight.bind(this)}>
+                            <option value="0">Flat (arithmetic mean)</option>
+                            <option value="1">σ=1</option>
+                            <option value="3">σ=3</option>
+                            <option value="5">σ=5</option>
+                        </select>
+                    </div>
+                </div>
+                <div id='gaussCurveArea' style={{textAlign: 'center'}}>
+                </div>
+            </div>
+        );
+    }
+
+    switchFlareOption() {
+        let flareOption = $('input[name=flareOptions]:checked').val();
+        if (flareOption === 'automatic') {
+            flareOption += ' GESD';
+        }
+        this.setState({
+            flareOption: flareOption
+        });
+    }
+
+    selectAutomaticFlareExtractionMode() {
+        
+    }
+
+    clickFlare() {
+        this.setState({
+            flare: !this.state.flare
+        });
+    }
+
+    clickRotation() {
+        this.setState({
+            rotation: !this.state.rotation
+        });
+    }
+
+    clickAnomaly() {
+        this.setState({
+            anomaly: !this.state.anomaly
+        });
+    }
+
     render() {
         return (
             <div 
-                id='automaticExtractionQuerying'
+                id='AEQuerying'
                 className='controllersElem'>
-                <div className="custom-control custom-checkbox">
-                    <input type="checkbox" className="custom-control-input" id="flareExtractionCheck"/>
-                    <label className="custom-control-label" htmlFor="flareExtractionCheck">Flare</label>
-                </div>
-                <div id='rotationExtraction'>
+                <div className="form-group" name='AEModeForm'>
                     <div className="custom-control custom-checkbox">
-                        <input type="checkbox" className="custom-control-input" id="rotationExtractionCheck"/>
-                        <label className="custom-control-label" htmlFor="rotationExtractionCheck">Rotation</label>
+                        <input 
+                            type="checkbox" 
+                            className="custom-control-input" 
+                            id="flareExtractionCheck"
+                            name='AEMode'
+                            onChange={this.clickFlare.bind(this)}
+                            checked={this.state.flare}/>
+                        <label className="custom-control-label" htmlFor="flareExtractionCheck">Flare</label>
+                        {this.flareOptions()}
                     </div>
-                    <div className='container'
-                        style={{paddingRight: '0px', paddingLeft: '0px', marginBottom: '0.2rem'}}>
-                        <div className="row matchingOption"> 
-                            <div className='col-5'>
-                                Rotation period
-                            </div>
-                            <div className='col form-inline'>
-                                <input className="form-control form-control-sm"
-                                    type="text"
-                                    placeholder="min"
-                                    id="rotationPeriodMin"
-                                    style={{width: '20%', marginRight: '0.5rem'}}/>
-                                ~
-                                <input className="form-control form-control-sm"
-                                    type="text"
-                                    placeholder="max"
-                                    id="rotationPeriodMax"
-                                    style={{width: '20%', marginRight: '0.5rem', marginLeft: '0.5rem'}}/>
-                                <label className="col-form-label col-form-label-sm"> days</label>
-                            </div>
+                    <div id='rotationExtraction'>
+                        <div className="custom-control custom-checkbox">
+                            <input 
+                                type="checkbox" 
+                                className="custom-control-input" 
+                                id="rotationExtractionCheck"
+                                name='AEMode'
+                                onChange={this.clickRotation.bind(this)}
+                                checked={this.state.rotation}/>
+                            <label className="custom-control-label" htmlFor="rotationExtractionCheck">Rotation</label>
                         </div>
-                        <div className='row matchingOption'>
-                            <div className='col-5'>
-                                Rotation diameter
-                            </div>
-                            <div className='col form-inline'>
-                                <input className="form-control form-control-sm"
-                                        type="text"
-                                        placeholder="diameter"
-                                        id="rotationDiameter"
-                                        style={{width: '40%', marginRight: '0.5rem'}}/>
-                            </div>
-                        </div>
-                        <div className='row matchingOption'>
-                            <div className='col-5'>
-                                Weight for average
-                            </div>
-                            <div className='col'>
-                                <select
-                                    className="custom-select custom-select-sm"
-                                    id='weightForAverageList'
-                                    style={{width: '60%'}}
-                                    onChange={this.updateWeight.bind(this)}>
-                                    <option value="0">Flat (arithmetic mean)</option>
-                                    <option value="1">σ=1</option>
-                                    <option value="3">σ=3</option>
-                                    <option value="5">σ=5</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div id='gaussCurveArea' style={{textAlign: 'center'}}>
-                        </div>
+                        {this.rotationOptions()}
                     </div>
-                </div>
-                <div className="custom-control custom-checkbox">
-                    <input type="checkbox" className="custom-control-input" id="anomalyExtractionCheck"/>
-                    <label className="custom-control-label" htmlFor="anomalyExtractionCheck">Anomaly</label>
+                    <div className="custom-control custom-checkbox">
+                        <input 
+                            type="checkbox" 
+                            className="custom-control-input" 
+                            name='AEMode'
+                            id="anomalyExtractionCheck"
+                            onChange={this.clickAnomaly.bind(this)}
+                            checked={this.state.anomaly}/>
+                        <label className="custom-control-label" htmlFor="anomalyExtractionCheck">Anomaly</label>
+                    </div>
                 </div>
                 <button className="btn btn-primary btn-sm"
                         type="button"
