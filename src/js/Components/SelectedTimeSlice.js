@@ -69,7 +69,9 @@ export default class SelectedTimeSlice extends React.Component {
                 this.selectedPeriod = period;
                 this.ignoredVariables = ignored;
                 this.data = DataStore.getData(this.sourceId);
-                this.setUpScene();
+                if (!this.tube) {
+                    this.setUpScene();
+                }
                 // update the source select menu
                 let sourceList = document.getElementById('sourceList');
                 for (let i = 0; i < sourceList.options.length; i++) {
