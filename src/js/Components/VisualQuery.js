@@ -411,7 +411,7 @@ export default class VisualQuery extends React.Component {
                         let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored);
                         // compute distance between time slices!
                         // scores of matching with starting JD and period will be returned
-                        // result stores [id, JD, period, dtw distance] (not sorted)
+                        // result stores {id, start, period, dtw distance, path} (not sorted)
                         let results = TimeSeriesQuerying.runMatching(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
                         // TODO: Remove overlapping!!
                         FeatureAction.setExtractionResults(results, query, ignored);
@@ -455,7 +455,7 @@ export default class VisualQuery extends React.Component {
         }
 
         return (
-            <div id='featureArea' className='controllersElem'>
+            <div id='featureArea' className='controllersElem featureArea'>
                 {this.queryModes()}
                 {/*{this.extractionSource()}*/}
                 {queryDefinition}

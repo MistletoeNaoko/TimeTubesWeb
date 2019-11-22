@@ -298,6 +298,10 @@ table#extractionDetailInfoTable td {
     z-index: 1500;
 }
 
+.featureArea {
+    font-size: 0.8rem;
+}
+
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
@@ -369,10 +373,6 @@ table#extractionDetailInfoTable td {
     float: right;
     width: 70%;
     background-color: #F8F5F0;
-}
-
-#featureArea {
-    font-size: 0.8rem;
 }
 
 #collapseSourcePanel{

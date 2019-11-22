@@ -3,9 +3,11 @@ import ReactDOM from 'react-dom';
 import ResultSummary from '../Components/ResultSummary';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import * as domActions from '../lib/domActions';
+import * as mathLib from '../lib/mathLib';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
+import M from 'minimatch';
 
 export function makeQueryfromQBE(source, period, ignored) {
     let roundedPeriod = [Math.floor(period[0]), Math.ceil(period[1])];
@@ -85,7 +87,13 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                                 minIdx = j;
                             }
                         }
-                        result.push([targetId, i + minJD, period[0] + minIdx, minVal, dtws.path]);
+                        result.push({
+                            id: targetId,
+                            start: i + minJD,
+                            period: period[0] + minIdx,
+                            distance: minVal,
+                            path: dtws.path
+                        });//[targetId, i + minJD, period[0] + minIdx, minVal, dtws.path]);
                         i += step;
                     }
                 } else {
@@ -132,7 +140,13 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                             paths[key] = OptimalWarpPath(minDist);
                         }
                         // result is a collection of [start JD, the length of period, dtw value]
-                        result.push([targetId, i + minJD, period[0] + minIdx, minVal, paths]);
+                        result.push({
+                            id: targetId,
+                            start: i + minJD,
+                            period: period[0] + minIdx,
+                            distance: minVal,
+                            path: paths
+                        });//[targetId, i + minJD, period[0] + minIdx, minVal, paths]);
                         i += step;
                     }
                 }
@@ -171,7 +185,13 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                             }
                         }
                         let path = OptimalWarpPath(dtws[minIdx]);
-                        result.push([targetId, i + minJD, period[0] + minIdx, minVal, path]);
+                        result.push({
+                            id: targetId,
+                            start: i + minJD,
+                            period: period[0] + minIdx,
+                            distancec: minVal,
+                            path: path
+                        });//[targetId, i + minJD, period[0] + minIdx, minVal, path]);
                         i += step;
                     }
                 } else {
@@ -207,7 +227,13 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                             minDist.push(dist[j].slice(0, target.arrayLength - 1 - targetPeriod + (minIdx + 1) + 1));
                         }
                         let path = OptimalWarpPath(minDist);
-                        result.push([targetId, i + minJD, period[0] + minIdx, minVal, path]);
+                        result.push({
+                            id: targetId,
+                            start: i + minJD,
+                            period: period[0] + minIdx,
+                            distance: minVal,
+                            path: path
+                        });//[targetId, i + minJD, period[0] + minIdx, minVal, path]);
                         i += step;
                     }
                 }
@@ -298,7 +324,13 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
                             if (!flag) break;
                         }
                         if (flag) {
-                            result.push([targetId, i + minJD, period[0] + minIdx, minVal, path]);
+                            result.push({
+                                id: targetId,
+                                start: i + minJD,
+                                period: period[0] + minIdx,
+                                distance: minVal,
+                                path: path
+                            });//[targetId, i + minJD, period[0] + minIdx, minVal, path]);
                         }
                         i += step;
                     }
@@ -362,7 +394,13 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
                             if (!flag) break;
                         }
                         if (flag) {
-                            result.push([targetId, i + minJD, period[0] + minIdx, minVal, path]);
+                            result.push({
+                                id: targetId,
+                                start: i + minJD,
+                                period: period[0] + minIdx,
+                                distance: minVal,
+                                path: path
+                            });//[targetId, i + minJD, period[0] + minIdx, minVal, path]);
                         }
                         i += step;
                     }
@@ -595,23 +633,23 @@ function sortResults(resultOrder) {
     switch(resultOrder) {
         case 'distance':
             func = function (a, b) {
-                return a[3] - b[3];
+                return a.distance - b.distance;
             };
             break;
         case 'timeStamp':
             func = function (a, b) {
-                let diff = a[1] - b[1];
+                let diff = a.start - b.start;
                 if (diff === 0) {
-                    diff = a[0] - b[0];
+                    diff = a.id - b.id;
                 }
                 return diff;
             };
             break;
         case 'data':
             func = function (a, b) {
-                let diff = a[0] - b[0];
+                let diff = a.id - b.id;
                 if (diff === 0) {
-                    diff = a[3] - b[3];
+                    diff = a.distance - b.distance;
                 }
                 return diff;
             };
@@ -621,6 +659,7 @@ function sortResults(resultOrder) {
 }
 
 export function showExtractionResults() {
+    // result stores {id, start, period, dtw distance, path} (not sorted)
     // close the source panel
     if ($('#QBESourceMain').css('display') !== 'none') {
         domActions.toggleSourcePanel();
@@ -643,7 +682,7 @@ export function showExtractionResults() {
     // filter out results with distance higher than threshold
     if (distTh !== '') {
         results = results.filter(function(result) {
-            return (result[3] < distTh)? true: false;
+            return (result.distance < distTh)? true: false;
         });
     }
     // show only top k results
@@ -689,25 +728,229 @@ export function showExtractionResults() {
         divElem.id = 'resultSummaryHolder_' + i;
         domnode.appendChild(divElem);
         let result = results[i];
-        TimeTubesAction.takeSnapshot(result[0], result[1] - minJDs[String(result[0])], result[2]);
+        TimeTubesAction.takeSnapshot(result.id, result.start - minJDs[String(result.id)], result.period);
 
-        let imageHeight = canvas[String(result[0])].height,
-            imageWidth = canvas[String(result[0])].width;
+        let imageHeight = canvas[String(result.id)].height,
+            imageWidth = canvas[String(result.id)].width;
         let image = new Image();
-        image.src = canvas[String(result[0])].toDataURL();
+        image.src = canvas[String(result.id)].toDataURL();
         image.height = imageHeight;
         image.width = imageWidth;
         ReactDOM.render(<ResultSummary
             key={i}
-            id={result[0]}
+            id={result.id}
             thumbnail={image}
-            period={[result[1], result[1] + result[2]]}
-            distance={result[3]}
-            path={result[4]}
+            period={[result.start, result.start + result.period]}
+            distance={result.distance}
+            path={result.path}
             rank={i}/>, divElem);
     }
     // recover camara status
     for (let i = 0; i < targetList.length; i++) {
         TimeTubesAction.recoverTube(targetList[i], currentCamera[String(targetList[i])], currentPos[String(targetList[i])]);
     }
+}
+
+
+export function extractRotations(targets, period, diameter, angle, sigma) {
+    let results = [];
+    for (let targetId = 0; targetId < targets.length; targetId++) {
+        let targetData = DataStore.getData(targets[targetId]).data.position;
+        // let targetData = DataStore.getDataArray(targets[targetId], 1);
+        let computationResults = [];      
+        for (let firstIdx = 0; firstIdx < targetData.length; firstIdx++) {
+            let rotationList = [];
+            for (let i = period[0]; i <= period[1]; i++) {
+                if (targetData[firstIdx].z + i > targetData[targetData.length - 1].z) break;
+                let missingFlg = false;
+                for (let j = 1; (firstIdx + j < targetData.length) && (targetData[firstIdx + j].z - targetData[firstIdx].z < i); j++) {
+                    if (targetData[firstIdx + j].z - targetData[firstIdx + j - 1].z > 5) {
+                        missingFlg = true;
+                        break;
+                    }
+                }
+                let center = {x: 0, y: 0};
+                let dataByDay = [];
+                
+                // compute the mean of the time period
+                if (sigma === 0) {
+                    // arithmetic average
+                    for (let j = 0; j < i; j++) {
+                        let currentData = DataStore.getValues(targetId, targetData[firstIdx].z + i - targetData[0].z);
+                        dataByDay.push(currentData);
+                        center.x += currentData.x;
+                        center.y += currentData.y;
+                    }
+                } else {
+                    // weighted mean
+                    let delGauss = 8 / i;
+                    let currentGauss = -4;
+                    let weightSum = 0;
+
+                    for (let j = 0; j < i; j++) {
+                        let currentData = DataStore.getValues(targetId, targetData[firstIdx].z + j - targetData[0].z);
+                        dataByDay.push(currentData);
+                        let weightTmp = mathLib.getGaussValue(currentGauss, sigma)
+                        center.x += weightTmp * currentData.x;
+                        center.y += weightTmp * currentData.y;
+                        weightSum += weightTmp;
+                        currentGauss += delGauss;
+                    }
+                    center.x /= weightSum;
+                    center.y /= weightSum;
+                }
+
+                // convert orthogonal coordinates into polar cordinates
+                // and compute standard deviations
+                let numeratorStd = {x: 0, y: 0};
+                let minVal = {x: dataByDay[0].x, y: dataByDay[0].y},
+                    maxVal = {x: dataByDay[0].x, y: dataByDay[0].y};
+                let angList = [], degList = [];
+                for (let j = 0; j < i; j++) {
+                    let pos = {x: dataByDay[j].x, y: dataByDay[j].y};
+                    let angle = calcAngle(pos, center);
+                    let degree = calcDegree(pos, center);
+                    angList.push({z: dataByDay[j].z, angle: angle});
+                    degList.push({z: dataByDay[j].z, degree: degree});
+
+                    numeratorStd.x += Math.pow(dataByDay[j].x - center.x, 2.0);
+                    numeratorStd.y += Math.pow(dataByDay[j].y - center.y, 2.0);
+
+                    if (dataByDay[j].x < minVal.x) {
+                        minVal.x = dataByDay[j].x;
+                    }
+                    if (maxVal.x < dataByDay[j].x) {
+                        maxVal.x = dataByDay[j].x;
+                    }
+                    if (dataByDay[j].y < minVal.y) {
+                        minVal.y = dataByDay[j].y;
+                    }
+                    if (maxVal.y < dataByDay[j].y) {
+                        maxVal.y = dataByDay[j].y;
+                    }
+                }
+                let std = {x: Math.sqrt(numeratorStd.x / i), y: Math.sqrt(numeratorStd.y / i)};
+
+                // check whether the period has larger variation
+                if (!missingFlg
+                    && (std.x > DataStore.getData(targets[targetId]).data.meta.std.x || std.y > DataStore.getData(targets[targetId]).data.meta.std.y)
+                    && ((maxVal.x - minVal.x) > diameter || (maxVal.y - minVal.y) > diameter)) {
+                    let rotationAng = 0,
+                        before = angList[0],
+                        alpha = 0.1,
+                        predAngBef = angList[0].angle;
+                    for (let j = 0; j < i; j++) {
+                        // sum up the differences of angle between two data points
+                        // use the exponential smoothing to find the tendency of the time series
+                        // according to the prediction by the exponential smoothing, 
+                        // decide how to compute the difference
+                        let divDeg;
+                        let predAng = alpha * before.angle + (1 - alpha) * predAngBef;
+                        if (Math.abs(angList[j].angle - before.angle) > 180) {
+                            if (predAng - predAngBef < 0) {
+                                // clockwise
+                                if (before.angle > angList[j].angle) {
+                                    divDeg = -1 * (before.angle - angList[j].angle);
+                                } else {
+                                    divDeg = -1 * (before.angle + 360 - angList[j].angle);
+                                }
+                            } else {
+                                // counterclockwise
+                                if (before.angle > angList[j].angle) {
+                                    divDeg = angList[j].angle + 360 - before.angle;
+                                } else {
+                                    divDeg = angList[j].angle - before.angle;
+                                }
+                            }
+                            // if the current data locates at the first/forth quadrant, reset the exponential smoothing
+                            if ((getQuadrantAngle(angList[j].angle) === 1 && getQuadrantAngle(angList[j - 1].angle) === 4)
+                            || (getQuadrantAngle(angList[j].angle) === 4 && getQuadrantAngle(angList[j - 1].angle) === 1)) {
+                                predAngBef = angList[j].angle;
+                            }
+                        } else {
+                            divDeg = angList[j].angle - before.angle;
+                        }
+
+                        rotationAng += divDeg;
+                        before = angList[j];
+                    }
+
+                    // check whether the total rotation angle is more than the threshold
+                    if (Math.abs(rotationAng) > angle) {
+                        rotationList.push({
+                            start: targetData[firstIdx].z, 
+                            angle: rotationAng,
+                            period: i,
+                            center: center,
+                            diameter: {x: maxVal.x - minVal.x, y: maxVal.y - minVal.y},
+                            direction: (rotationAng < 0)? true: false
+                        });
+                    }
+                }
+            }
+            // store only the one with the biggest rotation angle
+            if (rotationList.length > 0) {
+                let maxAng = Math.abs(rotationList[0].angle),
+                    maxIdx = 0;
+                
+                for (let i = 1; i < rotationList.length; i++) {
+                    if (maxAng < Math.abs(rotationList[i].angle)) {
+                        maxAng = Math.abs(rotationList[i].angle);
+                        maxIdx = i;
+                    }
+                }
+                computationResults.push(rotationList[maxIdx]);
+            }
+        }
+        // remove dupulicates from computationResults
+        if (computationResults.length > 0) {
+            let rotationStart = 0;
+            for (let i = 1; i < computationResults.length; i++) {
+                if (computationResults[i].start - computationResults[i - 1].start < period[0]) {
+                    // if the difference between the current rotation angle and the previous one is less than period[1],
+                    // these rotations are considered to be the same rotation and take the one with larger angle
+                    if (computationResults[rotationStart].angle < computationResults[i].angle) {
+                        rotationStart = i;
+                    }
+                    continue;
+                } else {
+                    // if the difference is larger than period[1], register to the result array
+                    results.push(computationResults[rotationStart]);
+                    rotationStart = i;
+                }
+            }
+            // add the last one to the result
+            results.push(computationResults[rotationStart]);
+        }
+    }
+    return results;
+}
+
+function calcAngle(pos, center) {
+    let rad = Math.atan2(pos.y - center.y, pos.x - center.x);
+    let result;
+    if (rad >= 0) {
+        result = rad * 180 / Math.PI;
+    } else {
+        result = (2 * Math.PI + rad) * 180 / Math.PI;
+    }
+    return result;
+}
+
+function calcDegree(pos, center) {
+    return Math.sqrt(Math.pow(pos.x - center.x, 2.0) + Math.pow(pos.y - center.y, 2.0));
+}
+
+function getQuadrantAngle(angle) {
+    let quad;
+    if (angle >= 0 && angle < 90) {
+        quad = 1;
+    } else if (angle >= 90 && angle < 180) {
+        quad = 2;
+    } else if (angle >= 180 && angle < 270) {
+        quad = 3;
+    } else {
+        quad = 4;
+    }
+    return quad;
 }

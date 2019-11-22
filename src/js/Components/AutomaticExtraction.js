@@ -1,5 +1,8 @@
 import React from 'react';
 import * as d3 from 'd3';
+import * as mathLib from '../lib/mathLib';
+import * as TimeSeriesQuerying from '../lib/TimeSeriesQuerying';
+import FeatureStore from '../Stores/FeatureStore';
 
 export default class AutomaticExtraction extends React.Component {
     constructor(props) {
@@ -48,7 +51,7 @@ export default class AutomaticExtraction extends React.Component {
         let selectedIdx = weightList.selectedIndex;
         let selectedOpt = weightList.options[selectedIdx].value;  
 
-        let data = this.getGaussData(Number(selectedOpt));
+        let data = mathLib.getGaussData(Number(selectedOpt));
 
         this.xScaleGauss
             .domain([d3.min(data, d => d.x), d3.max(data, d => d.x)]);
@@ -73,20 +76,6 @@ export default class AutomaticExtraction extends React.Component {
             );
     }
 
-    getGaussData(sigma) {
-        let data = [];
-        if (sigma > 0) {
-            for (let i = -4; i <= 4; i++) {
-                let gauss = Math.exp(-i * i / (2 * sigma * sigma)) / Math.sqrt(2 * Math.PI * sigma * sigma);
-                data.push({x: i, y: gauss});
-            }
-        } else {
-            data.push({x: -1, y: 1});
-            data.push({x: 1, y: 1});
-        }
-        return data;
-    }
-
     updateWeight() {
         d3.select('#gaussCurvePath').remove();
 
@@ -94,7 +83,7 @@ export default class AutomaticExtraction extends React.Component {
         let selectedIdx = weightList.selectedIndex;
         let selectedOpt = weightList.options[selectedIdx].value;  
 
-        let data = this.getGaussData(Number(selectedOpt));
+        let data = mathLib.getGaussData(Number(selectedOpt));
 
         this.xScaleGauss
             .domain([d3.min(data, d => d.x), d3.max(data, d => d.x)]);
@@ -121,7 +110,28 @@ export default class AutomaticExtraction extends React.Component {
     }
 
     runAutomaticExtraction() {
+        if (document.getElementById('flareExtractionCheck').checked) {
+            console.log('flare');
+        }
+        if (document.getElementById('rotationExtractionCheck').checked) {
+            console.log('rotation');
+            let period = [Number($('#rotationPeriodMin').val()), Number($('#rotationPeriodMax').val())],
+                diameter = $('#rotationDiameter').val(),
+                angle = $('#rotationAngle').val();
+            diameter = (diameter === '')? 0: Number(diameter);
+            angle = (angle === '')? 0: Number(angle);
+            let weightList = document.getElementById('weightForAverageList');
+            let selectedIdx = weightList.selectedIndex;
+            let selectedSigma = Number(weightList.options[selectedIdx].value);
+            let targets = FeatureStore.getTarget();
 
+            let results = TimeSeriesQuerying.extractRotations(targets, period, diameter, angle, selectedSigma);
+
+            console.log(results);
+        }
+        if (document.getElementById('anomalyExtractionCheck').checked) {
+            console.log('anomaly');
+        }
     }
 
     flareOptions() {
@@ -264,6 +274,27 @@ export default class AutomaticExtraction extends React.Component {
         );
     }
 
+    extractionOptions() {
+        return (
+            <div id='extractionOptions'>
+                <h5>Extraction options</h5>
+                <div className="row matchingOption">
+                    <div className='col-5'>
+                        Step size of sliding window
+                    </div>
+                    <div className='col form-inline'>
+                        <input className="form-control form-control-sm"
+                            type="text"
+                            placeholder="step size"
+                            id="stepSizeOfSlidingWindow"
+                            style={{width: '40%', marginRight: '0.5rem'}}/>
+                        <label className="col-form-label col-form-label-sm"> days</label>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+ 
     switchFlareOption() {
         let flareOption = $('input[name=flareOptions]:checked').val();
         if (flareOption === 'automatic') {
@@ -300,7 +331,8 @@ export default class AutomaticExtraction extends React.Component {
         return (
             <div 
                 id='AEQuerying'
-                className='controllersElem'>
+                className='featureArea'
+                style={{padding: '15px'}}>
                 <div className="form-group" name='AEModeForm'>
                     <div className="custom-control custom-checkbox">
                         <input 
@@ -308,6 +340,7 @@ export default class AutomaticExtraction extends React.Component {
                             className="custom-control-input" 
                             id="flareExtractionCheck"
                             name='AEMode'
+                            value='flare'
                             onChange={this.clickFlare.bind(this)}
                             checked={this.state.flare}/>
                         <label className="custom-control-label" htmlFor="flareExtractionCheck">Flare</label>
@@ -320,6 +353,7 @@ export default class AutomaticExtraction extends React.Component {
                                 className="custom-control-input" 
                                 id="rotationExtractionCheck"
                                 name='AEMode'
+                                value='rotation'
                                 onChange={this.clickRotation.bind(this)}
                                 checked={this.state.rotation}/>
                             <label className="custom-control-label" htmlFor="rotationExtractionCheck">Rotation</label>
@@ -331,12 +365,14 @@ export default class AutomaticExtraction extends React.Component {
                             type="checkbox" 
                             className="custom-control-input" 
                             name='AEMode'
+                            value='anomaly'
                             id="anomalyExtractionCheck"
                             onChange={this.clickAnomaly.bind(this)}
                             checked={this.state.anomaly}/>
                         <label className="custom-control-label" htmlFor="anomalyExtractionCheck">Anomaly</label>
                     </div>
                 </div>
+                {this.extractionOptions()}
                 <button className="btn btn-primary btn-sm"
                         type="button"
                         id='runAutomaticExtractionBtn'
