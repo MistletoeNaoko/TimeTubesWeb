@@ -1,13 +1,15 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import ResultSummary from '../Components/ResultSummary';
+import * as d3 from 'd3';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import * as domActions from '../lib/domActions';
 import * as mathLib from '../lib/mathLib';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
-import M from 'minimatch';
+
+const singleEPS = 1.1920928955078125 * Math.pow(10, -7);
 
 export function makeQueryfromQBE(source, period, ignored) {
     let roundedPeriod = [Math.floor(period[0]), Math.ceil(period[1])];
@@ -751,6 +753,228 @@ export function showExtractionResults() {
     }
 }
 
+export function extractAnomalies(targets) {
+    let results = [];
+    for (let targetId = 0; targetId < targets.length; targetId++) {
+        let targetData = DataStore.getData(targetId);
+        let spatial = targetData.data.spatial;
+        // compute the rate of variability of polarization, color, intensity between 2 observation points
+        // in the case that the time stamps between polarization, color, intensity do not coincide, use the interpolated values
+        for (let i = 0; i < spatial.length - 1; i++) {
+            let z1 = spatial[i].z,
+                z2 = spatial[i + 1].z;
+            
+            let data1 = DataStore.getValues(targetId, z1 - spatial[0].z),
+                data2 = DataStore.getValues(targetId, z2 - spatial[0].z);
+
+            let polar = Math.sqrt(
+                Math.pow((data2.x - data1.x) / (targetData.data.meta.max.x - targetData.data.meta.min.x), 2.0)
+                + Math.pow((data2.y - data1.y) / (targetData.data.meta.max.y - targetData.data.meta.min.y), 2.0)
+            ) * 100 / (z2 - z1);
+            if (polar === 0) {
+                polar = 1;
+            }
+
+            let intensity = Math.abs(data2.V - data1.V) 
+                / (targetData.data.meta.max.V - targetData.data.meta.min.V) 
+                * 100 / (z2 - z1);
+            if (intensity === 0) {
+                intensity = 1;
+            }
+
+            let color = Math.abs(data2.H - data1.H) 
+                / (targetData.data.meta.max.H - targetData.data.meta.min.H) 
+                * 100 / (z2 - z1);
+            if (color === 0) {
+                color = 1;
+            }
+
+            results.push({
+                id: targetId,
+                start: z1,
+                anomalyDegree: polar * intensity * color
+            });
+        }
+    }
+    return results;
+}
+
+export function extractFlares(targets, method, lookaround, sensitivity) {
+    let results = [];
+    for (let targetId = 0; targetId < targets.length; targetId++) {
+        let targetData = DataStore.getData(targetId);      
+        let sigList = [];
+        let significance;
+        for (let i = 0; i < targetData.data.color.length; i++) {
+            switch (method) {
+                case 'AveMaximum':
+                    significance = significanceAveMaximum(targetId, i, lookaround);
+                    sigList.push({index: i, significance: significance});
+                    break;
+                case 'AveAve':
+                    significance = significanceAveAve(targetId, i, lookaround);
+                    sigList.push({index: i, significance: significance});
+                    break;
+                case 'AveDist':
+                    significance = significanceAveDist(targetId, i, lookaround);
+                    sigList.push({index: i, significance: significance});
+                    break;
+            }
+        }
+        let sigPositiveList = sigList.filter(d => d.significance > 0);
+        let mean = d3.mean(sigPositiveList, d => d.significance);
+        let std = d3.deviation(sigPositiveList, d => d.significance);
+        for (let i = 0; i < sigPositiveList.length; i++) {
+            if (sigPositiveList[i].significance - mean > sensitivity * std) {
+                results.push({
+                    id: targetId,
+                    start: targetData.data.color[sigPositiveList[i].index].z,
+                    significance: sigPositiveList[i].significance
+                });
+            }
+        }
+    }
+    return results;
+}
+
+function significanceAveMaximum(targetId, dataId, lookaround) {
+    let significance;
+    let targetData = DataStore.getData(targetId).data.color;
+    let current = targetData[dataId].y;
+    let leftNeighbor = targetData.slice(
+        (dataId - lookaround) >= 0? dataId - lookaround: 0, 
+        dataId).map(d => d.y);
+    for (let i = 0; i < leftNeighbor.length; i++) {
+        leftNeighbor[i] = current - leftNeighbor[i];
+    }
+    let rightNeighbor = targetData.slice(
+        dataId + 1,
+        (dataId + lookaround) < targetData.length? dataId + lookaround + 1: targetData.length - 1).map(d => d.y);
+    for (let i = 0; i < rightNeighbor.length; i++) {
+        rightNeighbor[i] = current - rightNeighbor[i];
+    }
+    let leftMax = d3.max(leftNeighbor);
+    let rightMax = d3.max(rightNeighbor);
+    if (!leftMax) {
+        significance = rightMax;
+    } else if (!rightMax) {
+        significance = leftMax;
+    } else {
+        significance = (leftMax + rightMax) / 2;
+    }
+    return significance;
+}
+
+function significanceAveAve(targetId, dataId, lookaround) {
+    let significance;
+    let targetData = DataStore.getData(targetId).data.color;
+    let current = targetData[dataId].y;
+    let leftNeighbor = targetData.slice(
+        (dataId - lookaround) >= 0? dataId - lookaround: 0, 
+        dataId).map(d => d.y);
+    for (let i = 0; i < leftNeighbor.length; i++) {
+        leftNeighbor[i] = current - leftNeighbor[i];
+    }
+    let rightNeighbor = targetData.slice(
+        dataId + 1,
+        (dataId + lookaround) < targetData.length? dataId + lookaround + 1: targetData.length - 1).map(d => d.y);
+    for (let i = 0; i < rightNeighbor.length; i++) {
+        rightNeighbor[i] = current - rightNeighbor[i];
+    }
+    let leftAve = d3.mean(leftNeighbor);
+    let rightAve = d3.mean(rightNeighbor);
+    if (!leftAve) {
+        significance = rightAve;
+    } else if (!rightAve) {
+        significance = leftAve;
+    } else {
+        significance = (leftAve + rightAve) / 2;
+    }
+    return significance;
+}
+
+function significanceAveDist(targetId, dataId, lookaround) {
+    let significance;
+    let targetData = DataStore.getData(targetId).data.color;
+    let current = targetData[dataId].y;
+    let leftNeighbor = targetData.slice(
+        (dataId - lookaround) >= 0? dataId - lookaround: 0, 
+        dataId).map(d => d.y);
+    let rightNeighbor = targetData.slice(
+        dataId + 1,
+        (dataId + lookaround) < targetData.length? dataId + lookaround + 1: targetData.length - 1).map(d => d.y);
+    let leftDist = current - d3.mean(leftNeighbor);
+    let rightDist = current - d3.mean(rightNeighbor);
+    if (!leftDist) {
+        significance = rightDist;
+    } else if (!rightDist) {
+        significance = leftDist;
+    } else {
+        significance = (leftDist + rightDist) / 2;
+    }
+    return significance;
+}
+
+export function extractFlaresGESD(targets, alpha) {
+    let results = [];
+    for (let targetId = 0; targetId < targets.length; targetId++) {
+        let targetData = DataStore.getData(targetId);
+        let thd = targetData.data.meta.mean.V + targetData.data.meta.std.V;
+        let rValue = 0;
+        for (let i = 0; i < targetData.color.length; i++) {
+            if (targetData.color[i].V > thd) {
+                rValue++;
+            }
+        }
+
+    }
+}
+
+function generalizedESD(data, property, r, alpha) {
+    let originalDataLen = data.length;
+    for (let i = 0; i < r; i++) {
+        let mean = d3.mean(data, function(e) {
+            return e[property];
+        });
+        let std = d3.deviation(data, function(e) {
+            return e[property];
+        });
+
+        let maxDiff = calcMaxDiff(data, mean);
+        let candidate = {};
+        candidate.data = data[maxDiff.index];
+        candidate.R = maxDiff.diff / std;
+
+        // p is the cumulative probability, v is the degree of freedom
+        let p = 1.0 - alpha / (2.0 * (originalDataLen - i + 1));
+        let v = originalDataLen - i - 1;
+        // compute t distribution
+        // let t = 
+    }
+
+    function calcMaxDiff(currentData, currentMean) {
+        let maxVal = Math.abs(currentData[0][property] - currentMean);
+        let maxIdx = 0;
+        for (let i = 0; i < currentData.length; i++) {
+            let diff = Math.abs(currentData[i][property] - currentMean);
+            if (maxVal < diff) {
+                maxVal = diff;
+                maxIdx = i;
+            }
+        }
+        return {index: maxIdx, diff: maxVal};
+    }
+}
+
+function invCumDistT(p, v) {
+    // do {
+
+    // } while (Math.abs(Pd) < );
+}
+
+export function extractFlaresManual(targets, threshold) {
+
+}
 
 export function extractRotations(targets, period, diameter, angle, sigma) {
     let results = [];
@@ -878,6 +1102,7 @@ export function extractRotations(targets, period, diameter, angle, sigma) {
                     // check whether the total rotation angle is more than the threshold
                     if (Math.abs(rotationAng) > angle) {
                         rotationList.push({
+                            id: targetId,
                             start: targetData[firstIdx].z, 
                             angle: rotationAng,
                             period: i,
@@ -902,7 +1127,7 @@ export function extractRotations(targets, period, diameter, angle, sigma) {
                 computationResults.push(rotationList[maxIdx]);
             }
         }
-        // remove dupulicates from computationResults
+        // remove redundancies from computationResults
         if (computationResults.length > 0) {
             let rotationStart = 0;
             for (let i = 1; i < computationResults.length; i++) {
@@ -923,6 +1148,7 @@ export function extractRotations(targets, period, diameter, angle, sigma) {
             results.push(computationResults[rotationStart]);
         }
     }
+
     return results;
 }
 

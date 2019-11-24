@@ -11,7 +11,7 @@ export default class AutomaticExtraction extends React.Component {
 
         this.state = {
             flare: false,
-            flareOption: 'automatic GESD',
+            flareOption: 'automatic AveMaximum',
             rotation: false,
             anomaly: false
         };
@@ -110,11 +110,24 @@ export default class AutomaticExtraction extends React.Component {
     }
 
     runAutomaticExtraction() {
-        if (document.getElementById('flareExtractionCheck').checked) {
-            console.log('flare');
+        let targets = FeatureStore.getTarget();
+        let flares, rotations, anomalies;
+        if (this.state.flare) {
+            let mode = this.state.flareOption.split(' ')[0];
+            if (mode === 'automatic') {
+                let method = this.state.flareOption.split(' ')[1];
+                let lookaround = $('#flareLookaround').val(),
+                    sensitivity = $('#flareSensitivity').val();
+                if (lookaround !== '' && sensitivity !== '') {
+                    lookaround = Number(lookaround);
+                    sensitivity = Number(sensitivity);   
+                    TimeSeriesQuerying.extractFlares(targets, method, lookaround, sensitivity);
+                }
+            } else if (mode === 'manual') {
+                flares = TimeSeriesQuerying.extractFlaresManual(targets, Number($('#flareThreshold').val()));
+            }
         }
-        if (document.getElementById('rotationExtractionCheck').checked) {
-            console.log('rotation');
+        if (this.state.rotation) {
             let period = [Number($('#rotationPeriodMin').val()), Number($('#rotationPeriodMax').val())],
                 diameter = $('#rotationDiameter').val(),
                 angle = $('#rotationAngle').val();
@@ -123,14 +136,11 @@ export default class AutomaticExtraction extends React.Component {
             let weightList = document.getElementById('weightForAverageList');
             let selectedIdx = weightList.selectedIndex;
             let selectedSigma = Number(weightList.options[selectedIdx].value);
-            let targets = FeatureStore.getTarget();
 
-            let results = TimeSeriesQuerying.extractRotations(targets, period, diameter, angle, selectedSigma);
-
-            console.log(results);
+            rotations = TimeSeriesQuerying.extractRotations(targets, period, diameter, angle, selectedSigma);
         }
-        if (document.getElementById('anomalyExtractionCheck').checked) {
-            console.log('anomaly');
+        if (this.state.anomaly) {
+            anomalies = TimeSeriesQuerying.extractAnomalies(targets);
         }
     }
 
@@ -139,17 +149,85 @@ export default class AutomaticExtraction extends React.Component {
             <form
                 className="form-check"
                 id='flareOptions'
-                onChange={this.switchFlareOption.bind(this)}
                 style={{paddingLeft: '0px'}}>
                 <div className="custom-control custom-radio">
                     <input type="radio" id="flareAutomatic" name="flareOptions" value='automatic'
                         checked={this.state.flareOption.indexOf('automatic') >= 0}
                         disabled={!this.state.flare}
+                        onChange={this.switchFlareOption.bind(this)}
                         className="custom-control-input" readOnly/>
                     <label className="custom-control-label" htmlFor="flareAutomatic">
                         Automatic
                     </label>
+                    <h6>Parameters</h6>
+                    <div className='container'
+                        style={{paddingRight: '0px', paddingLeft: '0px', marginBottom: '0.2rem'}}></div>
+                        <div className='row matchingOption'>
+                            <div className='col-5'>
+                                Lookaround
+                            </div>
+                            <div className='col form-inline'>
+                                <input className="form-control form-control-sm"
+                                        type="text"
+                                        placeholder="k neightbors"
+                                        id="flareLookaround"
+                                        disabled={!this.state.flare}
+                                        style={{width: '7rem', marginRight: '0.5rem'}}/>
+                            </div>
+                        </div>
+                        <div className='row matchingOption'>
+                            <div className='col-5'>
+                                Sensitivity cutoff
+                            </div>
+                            <div className='col form-inline'>
+                                <input className="form-control form-control-sm"
+                                        type="text"
+                                        placeholder="h"
+                                        id="flareSensitivity"
+                                        disabled={!this.state.flare}
+                                        style={{width: '7rem', marginRight: '0.5rem'}}/>
+                            </div>
+                        </div>
+                    {/* </div> */}
+                    <h6>Peak function</h6>
                     <div className="custom-control custom-checkbox">
+                        <input 
+                            type="checkbox" 
+                            className="custom-control-input" 
+                            id="AveMaximumCheck"
+                            disabled={!this.state.flare}
+                            onChange={this.selectFlareAveMaximum.bind(this)}
+                            checked={this.state.flareOption.indexOf('AveMaximum') >= 0}/>
+                        <label className="custom-control-label" htmlFor="AveMaximumCheck">
+                            Average of the maximums among k left & right neightbors
+                        </label>
+                    </div>
+                    <div className="custom-control custom-checkbox">
+                        <input 
+                            type="checkbox" 
+                            className="custom-control-input" 
+                            id="AveAveCheck"
+                            disabled={!this.state.flare}
+                            onChange={this.selectFlareAveAve.bind(this)}
+                            checked={this.state.flareOption.indexOf('AveAve') >= 0}/>
+                        <label className="custom-control-label" htmlFor="AveAveCheck">
+                            Average of the averages of the signed distance from k left & right neightbors
+                        </label>
+                    </div>
+                    <div className="custom-control custom-checkbox">
+                        <input 
+                            type="checkbox" 
+                            className="custom-control-input" 
+                            id="AveDistCheck"
+                            disabled={!this.state.flare}
+                            onChange={this.selectFlareAveDist.bind(this)}
+                            checked={this.state.flareOption.indexOf('AveDist') >= 0}/>
+                        <label className="custom-control-label" htmlFor="AveDistCheck">
+                            Average signed distance from the averages of k neightbors
+                        </label>
+                    </div>
+
+                    {/* <div className="custom-control custom-checkbox">
                         <input 
                             type="checkbox" 
                             className="custom-control-input" 
@@ -171,12 +249,13 @@ export default class AutomaticExtraction extends React.Component {
                                 disabled={!this.state.flare}
                                 style={{width: '40%', marginRight: '0.5rem'}}/>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
                 <div className="custom-control custom-radio">
                     <input type="radio" id="flareManual" name="flareOptions" value='manual'
                         checked={this.state.flareOption === 'manual'}
                         disabled={!this.state.flare}
+                        onChange={this.switchFlareOption.bind(this)}
                         className="custom-control-input" readOnly/>
                     <label className="custom-control-label" htmlFor="flareManual">
                         Manual
@@ -189,9 +268,9 @@ export default class AutomaticExtraction extends React.Component {
                             <input className="form-control form-control-sm"
                                 type="text"
                                 placeholder="threshold"
-                                id="FlareThreshold"
+                                id="flareThreshold"
                                 disabled={!this.state.flare}
-                                style={{width: '40%', marginRight: '0.5rem'}}/>
+                                style={{width: '7rem', marginRight: '0.5rem'}}/>
                         </div>
                     </div>
                 </div>
@@ -297,16 +376,41 @@ export default class AutomaticExtraction extends React.Component {
  
     switchFlareOption() {
         let flareOption = $('input[name=flareOptions]:checked').val();
-        if (flareOption === 'automatic') {
-            flareOption += ' GESD';
-        }
         this.setState({
             flareOption: flareOption
         });
     }
 
-    selectAutomaticFlareExtractionMode() {
-        
+    selectFlareMethod() {
+        let flareMethod = $('input[name=flareMethods]:checked').val();
+        this.setState({
+            flareOption: 'automatic ' + flareMethod
+        })
+    }
+
+    selectFlareAveMaximum() {
+        console.log(this.state.flareOption, this.state);
+        this.setState({
+            flareOption: 'automatic AveMaximum'
+        });
+        if (this.state.flareOption.indexOf('automatic') >= 0) {
+        }
+    }
+
+    selectFlareAveAve() {
+            this.setState({
+                flareOption: 'automatic AveAve'
+            });
+        if (this.state.flareOption.indexOf('automatic') >= 0) {
+        }
+    }
+
+    selectFlareAveDist() {
+            this.setState({
+                flareOption: 'automatic AveDist'
+            });
+        if (this.state.flareOption.indexOf('automatic') >= 0) {
+        }
     }
 
     clickFlare() {
