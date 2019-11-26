@@ -16,6 +16,7 @@ For more detail information about TimeTubes, please refer the following papers.
 - Makoto Uemura, Ryosuke Itoh, Ioannis Liodakis, Dmitry Blinov, Masanori Nakayama, Longyin Xu, _Naoko Sawada_, Hsiang-Yun Wu, Issei Fujishiro. “Optical polarization variations in the blazar PKS 1749+096,” _Publications of the Astronomical Society of Japan (PASJ),_ Vol. 69, No. 6, Article No. 96, DOI: 10.1093/pasj/psx111, November 2017. [arXiv](https://arxiv.org/abs/1709.02524)[Oxford Academic](https://academic.oup.com/pasj/article/69/6/96/4609697)
 
 ## Example
+![TimeTubes side-by-side](https://github.com/MistletoeNaoko/TimeTubesWeb/blob/images/side-by-side.gif?raw=true)
 
 ## Requirement
 Currently, TimeTubes Web does not operate smoothly on Google Chrome (you can use Google Chrome, but it takes a little long time to render a tube). I highly recommend to use Firefox.
