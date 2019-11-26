@@ -8,6 +8,11 @@ class FeatureStore extends EventEmitter {
         super();
         this.visualQuery = false;
         this.mode = 'AE';
+        this.AEOptions = {
+            flare: false,
+            rotation: false,
+            anomaly: false
+        };
         this.source = -1;
         this.target = [];
         this.selector = true;
@@ -61,7 +66,7 @@ class FeatureStore extends EventEmitter {
                 this.showLineCharts(action.LC);
                 break;
             case 'UPDATE_SELECTED_RESULT':
-                this.updateSelectedResult(action.id, action.period, action.width, action.height, action.path);
+                this.updateSelectedResult(action.result, action.width, action.height);
                 break;
             case 'CLEAR_RESULTS':
                 this.emit('clearResults');
@@ -72,6 +77,8 @@ class FeatureStore extends EventEmitter {
             case 'CONVERT_RESULT_INTO_QUERY':
                 this.convertResultIntoQuery(action.id, action.period, action.ignored);
                 break;
+            case 'UPDATE_AE_OPTION':
+                this.updateAEOption(action.option, action.value);
             default:
         }
     }
@@ -118,6 +125,10 @@ class FeatureStore extends EventEmitter {
 
     getQuery() {
         return this.query;
+    }
+    
+    getAEOptionStatus(option) {
+        return this.AEOptions[option];
     }
 
     updateSource(id) {
@@ -173,6 +184,11 @@ class FeatureStore extends EventEmitter {
 
     switchQueryMode(mode) {
         this.mode = mode;
+        if (mode !== 'AE') {
+            for (let key in this.AEOptions) {
+                this.AEOptions[key] = false;
+            }
+        }
         this.emit('switchQueryMode', mode);
     }
 
@@ -215,8 +231,8 @@ class FeatureStore extends EventEmitter {
         this.emit('showLineCharts', LC);
     }
 
-    updateSelectedResult(id, period, width, height, path) {
-        this.emit('updateSelectedResult', id, period, width, height, path);
+    updateSelectedResult(result, width, height) {
+        this.emit('updateSelectedResult', result, width, height);
     }
 
     setQuery(query) {
@@ -229,6 +245,10 @@ class FeatureStore extends EventEmitter {
             this.ignored = ignored;
         }
         this.emit('convertResultIntoQuery', id, period, ignored);
+    }
+
+    updateAEOption(option, value) {
+        this.AEOptions[option] = value;
     }
 }
 

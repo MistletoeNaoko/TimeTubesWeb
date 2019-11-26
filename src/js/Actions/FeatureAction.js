@@ -49,8 +49,8 @@ export function showLineCharts(LC) {
     dispatcher.dispatch({type: 'SHOW_LINE_CHARTS', LC});
 }
 
-export function updateSelectedResult(id, period, width, height, path) {
-    dispatcher.dispatch({type: 'UPDATE_SELECTED_RESULT', id, period, width, height, path});
+export function updateSelectedResult(result, width, height) {
+    dispatcher.dispatch({type: 'UPDATE_SELECTED_RESULT', result, width, height});
 }
 
 export function clearResults() {
@@ -63,4 +63,8 @@ export function setQuery(query) {
 
 export function convertResultIntoQuery(id, period, ignored) {
     dispatcher.dispatch({type: 'CONVERT_RESULT_INTO_QUERY', id, period, ignored});
+}
+
+export function updateAEOption(option, value) {
+    dispatcher.dispatch({type: 'UPDATE_AE_OPTION', option, value});
 }

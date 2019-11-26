@@ -81,7 +81,6 @@ class TimeTubesStore extends EventEmitter{
     }
 
     handleActions(action) {
-        // console.log('TimeTubesStore received an action', action);
         switch (action.type) {
             case 'UPLOAD_DATA':
                 this.uploadData();

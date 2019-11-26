@@ -58,10 +58,12 @@ export default class LineChart extends React.Component {
 
     componentWillUnmount() {
         let parent = document.getElementById('lineChartArea_' + this.id + '_' + this.item);
-        while (parent.firstChild) {
-            parent.removeChild(parent.firstChild);
+        if (parent) {
+            while (parent.firstChild) {
+                parent.removeChild(parent.firstChild);
+            }
+            parent.parentNode.removeChild(parent);
         }
-        parent.parentNode.removeChild(parent);
     }
 
     initLineChart() {

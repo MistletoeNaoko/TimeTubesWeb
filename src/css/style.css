@@ -255,6 +255,7 @@ table#extractionDetailInfoTable td {
 }
 
 .resultSummary {
+    font-size: 0.8rem;
     width: 164px;
     /* height: 310px; */
     padding: 5px 7px;

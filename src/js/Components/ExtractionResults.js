@@ -1,15 +1,12 @@
 import React from 'react';
-import ReactDOM from "react-dom";
-import ResultSummary from './ResultSummary';
 import LineChart from './LineChart';
 import * as domActions from '../lib/domActions';
 import * as TimeSeriesQuerying from '../lib/TimeSeriesQuerying';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import * as AppAction from '../Actions/AppAction';
 import FeatureStore from '../Stores/FeatureStore';
-import TimeTubesStore from '../Stores/TimeTubesStore';
 import DataStore from '../Stores/DataStore';
-import AppStore from '../Stores/AppStore';
+import { formatValue } from '../lib/2DGraphLib';
 
 export default class ExtractionResults extends React.Component {
     constructor(props) {
@@ -40,15 +37,14 @@ export default class ExtractionResults extends React.Component {
                 LC: LC
             });
         });
-        FeatureStore.on('updateSelectedResult', (id, period, width, height, path) => {
+        FeatureStore.on('updateSelectedResult', (result, width, height) => {
             this.LCWidth = width;
             this.LCHeight = height;
-            this.optimalWarpPath = path;
+            if (result.path) {
+                this.optimalWarpPath = result.path;
+            }
             this.setState({
-                selected: {
-                    id: id,
-                    period: period
-                }
+                selected: result
             });
         });
         FeatureStore.on('clearResults', () => {
@@ -63,17 +59,14 @@ export default class ExtractionResults extends React.Component {
     }
 
     updateOrder() {
-        console.log('update order');
         TimeSeriesQuerying.showExtractionResults();
     }
 
     updateKValue() {
-        console.log('update k value');
         TimeSeriesQuerying.showExtractionResults();
     }
 
     updateDistanceThreshold() {
-        console.log('distance threshold');
         TimeSeriesQuerying.showExtractionResults();
     }
 
@@ -85,14 +78,12 @@ export default class ExtractionResults extends React.Component {
                 onChange={this.updateOrder.bind(this)}>
                 <label
                     className="col-form-label col-form-label-sm"
-                    style={{marginRight: '0.5rem'}}>Align results by</label>
+                    style={{marginRight: '0.5rem'}}>Sort results by</label>
                 <select
                     id='resultOrderList'
                     className="custom-select custom-select-sm" 
                     style={{width: '7rem'}}>
-                    <option value="distance">Distance</option>
-                    <option value="timeStamp">Time stamp</option>
-                    <option value="data">Data</option>
+                    {TimeSeriesQuerying.updateSortResultsPulldown()}
                 </select>
             </div>
         );
@@ -115,6 +106,12 @@ export default class ExtractionResults extends React.Component {
     }
 
     topKResults() {
+        let disabledFlag = false;
+        if (FeatureStore.getMode() === 'AE') {
+            if (FeatureStore.getAEOptionStatus('flare') || FeatureStore.getAEOptionStatus('rotations')) {
+                disabledFlag = true;
+            }
+        }
         return (
             <div className='form-group form-inline' style={{float: 'right', marginLeft: '1rem'}}>
                 <label
@@ -124,6 +121,7 @@ export default class ExtractionResults extends React.Component {
                        type="text"
                        placeholder="k value"
                        id="topKResults"
+                       disabled={disabledFlag}
                        onChange={this.updateKValue.bind(this)}
                        style={{width: '7rem'}}/>
             </div>
@@ -135,7 +133,11 @@ export default class ExtractionResults extends React.Component {
         AppAction.selectMenu('visualization');
         // move a tube to the JD and change far value of the camera
         // pass this.state.selected.id & this.state.selected.period
-        TimeTubesAction.showTimeTubesOfTimeSlice(this.state.selected.id, this.state.selected.period);
+        if (this.selected.period) {
+            TimeTubesAction.showTimeTubesOfTimeSlice(this.state.selected.id, this.state.selected.period);
+        } else {
+            TimeTubesAction.searchTime(this.state.selected.id, this.state.selected.start);
+        }
     }
 
     showLegendOfLC() {
@@ -150,37 +152,93 @@ export default class ExtractionResults extends React.Component {
     }
 
     render() {
-        let lineCharts = [];
+        let lineCharts = [], tbodyDetail = [];
         if (Object.keys(this.state.selected).length > 0) {
-            let targetData = DataStore.getDataArray(this.state.selected.id, 1);
-            let timeSlice = {};
-            let minIdx = targetData.z.indexOf(this.state.selected.period[0]),
-                maxIdx = targetData.z.indexOf(this.state.selected.period[1]);
-            let query = FeatureStore.getQuery();
-            for (let key in query) {
-                if (Array.isArray(query[key]) && Array.isArray(targetData[key]) && key !== 'z') {
-                    if (query[key].indexOf(null) >= 0) {
-                        let flag = false;
-                        for (let i = 0; i < query[key].length; i++) {
-                            if (query[key][i]) {
-                                flag = true;
-                                break;
+            if (this.state.selected.period && !this.state.selected.angle) {
+                let targetData = DataStore.getDataArray(this.state.selected.id, 1);
+                let timeSlice = {};
+                let minIdx = targetData.z.indexOf(this.state.selected.start),
+                    maxIdx = targetData.z.indexOf(this.state.selected.start + this.state.selected.period);
+                let query = FeatureStore.getQuery();
+                for (let key in query) {
+                    if (Array.isArray(query[key]) && Array.isArray(targetData[key]) && key !== 'z') {
+                        if (query[key].indexOf(null) >= 0) {
+                            let flag = false;
+                            for (let i = 0; i < query[key].length; i++) {
+                                if (query[key][i]) {
+                                    flag = true;
+                                    break;
+                                }
                             }
+                            if (!flag) continue;
                         }
-                        if (!flag) continue;
+                        timeSlice[key] = targetData[key].slice(minIdx, maxIdx + 1);
+                        lineCharts.push(
+                            <LineChart
+                                key={key}
+                                id={this.state.selected.id}
+                                item={key}
+                                query={query[key]}
+                                target={timeSlice[key]}
+                                width={this.LCWidth}
+                                height={this.LCHeight}
+                                path={(typeof(this.optimalWarpPath) === 'Object')? this.optimalWarpPath[key]: this.optimalWarpPath}/>);
                     }
-                    timeSlice[key] = targetData[key].slice(minIdx, maxIdx + 1);
-                    lineCharts.push(
-                        <LineChart
-                            key={key}
-                            id={this.state.selected.id}
-                            item={key}
-                            query={query[key]}
-                            target={timeSlice[key]}
-                            width={this.LCWidth}
-                            height={this.LCHeight}
-                            path={(typeof(this.optimalWarpPath) === 'Object')? this.optimalWarpPath[key]: this.optimalWarpPath}/>);
                 }
+            }
+            // set up the table for the detail info
+            for (let key in this.state.selected) {
+                if (key !== 'id' && !Array.isArray(this.state.selected[key])) {
+                    let label;
+                    if (key === 'V') {
+                        label = 'Flx(V)';
+                    } else {
+                        label = key.replace( /([A-Z])/g, " $1" );
+                        label = label.charAt(0).toUpperCase() + label.slice(1);  
+                    }  
+                    let value = this.state.selected[key];
+                    if (typeof(value) === 'object') {
+                        let valueLabel = '(';
+                        for (let valueKey in value) {
+                            valueLabel += formatValue(value[valueKey]) + ', ';
+                        }
+                        valueLabel = valueLabel.slice(0, valueLabel.length - 2);
+                        valueLabel += ')';
+                        value = valueLabel;
+                    } else if (typeof(value) === 'string') {
+                        // do nothing
+                    } else if (typeof(value) === 'number') {
+                        value = formatValue(value);
+                    }
+                    tbodyDetail.push(
+                        <tr id={'extractionDetail' + label} key={key}>
+                            <td>{label}</td>
+                            <td id={'extractionDetail' + label + 'Value'}>{value}</td>
+                        </tr>
+                    );
+                } 
+            }
+            let lookup = DataStore.getData(this.state.selected.id).data.lookup;
+            let ignored = FeatureStore.getIgnored();
+            if (ignored) {
+                let variables = [];
+                for (let key in lookup) {
+                    if (ignored.indexOf(key) < 0 && key !== 'z') {
+                        variables.push(key);
+                    }
+                }
+                let variablesLabel = '';
+                for (let i = 0; i < variables.length; i++) {
+                    variablesLabel += lookup[variables[i]] + ', ';
+                }
+                variablesLabel = variablesLabel.slice(0, variablesLabel.length - 2);
+                     
+                tbodyDetail.push(
+                    <tr id={'extractionDetailVariables'} key='variables'>
+                        <td>Variables</td>
+                        <td id={'extractionDetailVariablesValue'}>{variablesLabel}</td>
+                    </tr>
+                );
             }
         }
         return (
@@ -210,7 +268,8 @@ export default class ExtractionResults extends React.Component {
                                         id='extractionDetailInfoTable'
                                         style={{width: '100%'}}>
                                         <tbody>
-                                            <tr id='extractionDetailPeriod'>
+                                            {tbodyDetail}
+                                            {/* <tr id='extractionDetailPeriod'>
                                                 <td>Period (JD)</td>
                                                 <td id='extractionDetailPeriodValue'></td>
                                             </tr>
@@ -225,7 +284,7 @@ export default class ExtractionResults extends React.Component {
                                             <tr id='extractionDetailVariable'>
                                                 <td>Variables</td>
                                                 <td id='extractionDetailVariableValue'></td>
-                                            </tr>
+                                            </tr> */}
                                         </tbody>
                                     </table>
                                     <button

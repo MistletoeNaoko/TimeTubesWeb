@@ -26,26 +26,12 @@ export default class ExtractionSource extends React.Component {
             this.setState({
                 source: FeatureStore.getSource()
             });
-            if (sourceId >= 0) {
-                // if the light curve is not copied yet
-                if (document.getElementById('QBE_SP_' + sourceId) === null) {
-                    // copy SP for lightcurve
-                    this.copySP('scatterplots' + sourceId + '_0', 'QBE_SP_' + sourceId);
-                }
-            }
         });
         FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
             if (FeatureStore.getMode() === 'QBE') {
                 this.setState({
                     source: id
                 });
-            }
-            if (id >= 0) {
-                // if the light curve is not copied yet
-                if (document.getElementById('QBE_SP_' + id) === null) {
-                    // copy SP for lightcurve
-                    this.copySP('scatterplots' + id + '_0', 'QBE_SP_' + id);
-                }
             }
         });
     }

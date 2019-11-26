@@ -22,7 +22,6 @@ class DataStore extends EventEmitter {
     }
 
     handleActions(action) {
-        // console.log('DataStore received an action', action);
         switch (action.type) {
             case 'UPLOAD_DATA':
                 this.uploadData(action.data);
@@ -40,8 +39,6 @@ class DataStore extends EventEmitter {
             id: id,
             name: data.name,
             data: data,
-            // spatial: spatial,
-            // metadata: meta
         });
         this.emit('upload', id);
         this.emit('showInitSP', id);

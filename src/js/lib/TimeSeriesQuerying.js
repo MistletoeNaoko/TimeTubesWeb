@@ -656,8 +656,64 @@ function sortResults(resultOrder) {
                 return diff;
             };
             break;
+        case 'significance':
+            func = function (a, b) {
+                return a.significance - b.significance;
+            }
+            break;
+        case 'intensity':
+            func = function (a, b) {
+                return a.intensity - b.intensity;
+            }
+            break;
+        case 'angle':
+            func = function (a, b) {
+                return a.angle - b.angle;
+            }
+            break;
+        case 'diameter':
+            func = function (a, b) {
+                return a.diameter - b.diameter;
+            }
+            break;
+        case 'period':
+            func = function (a, b) {
+                return a.period - b.period;
+            }
+            break;
+        // case 'direction':
+        //     func = function (a, b) {
+        //         if (a.)
+        //     }
+        //     break;
+        case 'anomalyDegree':
+            func = function (a, b) {
+                return a.anomalyDegree - b.anomalyDegree;
+            }
+            break;
     }
     return func;
+}
+
+export function setDefaltOrderOfResults() {
+    // select the default order of the results
+    let mode = FeatureStore.getMode();
+    let options = document.getElementById('resultOrderList').options;
+    if (mode === 'AE') {
+        for (let i = 0; i < options.length; i++) {
+            if (options[i].value === 'timeStamp') {
+                document.getElementById('resultOrderList').selectedIndex = i;
+                break;
+            }
+        }
+    } else if (mode === 'QBE' || mode === 'QBS') {
+        for (let i = 0; i < options.length; i++) {
+            if (options[i].value === 'distance') {
+                document.getElementById('resultOrderList').selectedIndex = i;
+                break;
+            }
+        }
+    }
 }
 
 export function showExtractionResults() {
@@ -679,17 +735,32 @@ export function showExtractionResults() {
     // filter results according to the input options
     // sort results
     let results = FeatureStore.getExtractionResults();
-    results.sort(sortResults(resultOrder));
+    if (!$('#topKResults').prop('disabled')) {
+        // sort the result in the order of the most important factor (distance, flx, angle, etc)
+        let mode = FeatureStore.getMode();
+        if (mode === 'QBE' || mode === 'QBS') {
+            // in the visual query mode, order the result by distance at first
+            results.sort(sortResults('distance'));
+        } else if (mode === 'AE') {
+            if (FeatureStore.getAEOptionStatus('anomaly')) {
+                results.sort(sortResults('anomalyDegree'));
+            }
+            // when the flare or rotation extraction is selected in AE, show all candidates
+        }
+        // show only top k results
+        if (kValue !== '') {
+            results = results.slice(0, kValue);
+        }
+        results.sort(sortResults(resultOrder));
+    } else {
+        results.sort(sortResults(resultOrder));
+    }
 
     // filter out results with distance higher than threshold
     if (distTh !== '') {
         results = results.filter(function(result) {
             return (result.distance < distTh)? true: false;
         });
-    }
-    // show only top k results
-    if (kValue !== '') {
-        results = results.slice(0, kValue);
     }
     // get a snapshot of the time slice
     // step 1: store the current status of the camera
@@ -717,7 +788,6 @@ export function showExtractionResults() {
             type: 'Perspective'
         });
     }
-    let summaries = [];
     let domnode = document.getElementById('resultsArea');
     // if there are previous results on the result panel, remove all
     while (domnode.firstChild) {
@@ -742,6 +812,7 @@ export function showExtractionResults() {
             key={i}
             id={result.id}
             thumbnail={image}
+            result={result}
             period={[result.start, result.start + result.period]}
             distance={result.distance}
             path={result.path}
@@ -751,6 +822,41 @@ export function showExtractionResults() {
     for (let i = 0; i < targetList.length; i++) {
         TimeTubesAction.recoverTube(targetList[i], currentCamera[String(targetList[i])], currentPos[String(targetList[i])]);
     }
+}
+
+export function updateSortResultsPulldown() {
+    let options = [];
+    options.push('Time stamp');
+    options.push('Data');
+    let list = [];
+    if (FeatureStore.getMode() === 'AE') {
+        if (FeatureStore.getAEOptionStatus('flare')) {
+            options.push('Significance');
+            options.push('Intensity');
+        }
+        if (FeatureStore.getAEOptionStatus('rotation')) {
+            options.push('Angle');
+            options.push('Diameter');
+            options.push('Period');
+            // options.push('Direction');
+        }
+        if (FeatureStore.getAEOptionStatus('anomaly')) {
+            options.push('Anomaly degree');
+        }
+    } else {
+        options.push('Distance');
+    }
+    for (let i = 0; i < options.length; i++) {
+        let value = '';
+        let splitedOptions = options[i].split(' ');
+        value = splitedOptions[0];
+        for (let j = 1; j < splitedOptions.length; j++) {
+            value += splitedOptions[j].charAt(0).toUpperCase() + splitedOptions[j].slice(1);
+        }
+        value = value.charAt(0).toLowerCase() + value.slice(1);
+        list.push(<option value={value} key={value}>{options[i]}</option>);
+    }
+    return list;
 }
 
 export function extractAnomalies(targets) {
@@ -809,17 +915,15 @@ export function extractFlares(targets, method, lookaround, sensitivity) {
             switch (method) {
                 case 'AveMaximum':
                     significance = significanceAveMaximum(targetId, i, lookaround);
-                    sigList.push({index: i, significance: significance});
                     break;
                 case 'AveAve':
                     significance = significanceAveAve(targetId, i, lookaround);
-                    sigList.push({index: i, significance: significance});
                     break;
                 case 'AveDist':
                     significance = significanceAveDist(targetId, i, lookaround);
-                    sigList.push({index: i, significance: significance});
                     break;
             }
+            sigList.push({index: i, significance: significance, V: targetData.data.color[i].y});
         }
         let sigPositiveList = sigList.filter(d => d.significance > 0);
         let mean = d3.mean(sigPositiveList, d => d.significance);
@@ -829,7 +933,8 @@ export function extractFlares(targets, method, lookaround, sensitivity) {
                 results.push({
                     id: targetId,
                     start: targetData.data.color[sigPositiveList[i].index].z,
-                    significance: sigPositiveList[i].significance
+                    significance: sigPositiveList[i].significance,
+                    V: sigPositiveList[i].V
                 });
             }
         }
@@ -966,14 +1071,21 @@ function generalizedESD(data, property, r, alpha) {
     }
 }
 
-function invCumDistT(p, v) {
-    // do {
-
-    // } while (Math.abs(Pd) < );
-}
-
 export function extractFlaresManual(targets, threshold) {
-
+    let results = [];
+    for (let targetId = 0; targetId < targets.length; targetId++) {
+        let targetData = DataStore.getData(targetId);
+        for (let i = 0; i < targetData.data.color.length; i++) {
+            if (targetData.data.color[i].y >= threshold) {
+                results.push({
+                    id: targetId,
+                    start: targetData.data.color[i].z,
+                    V: targetData.data.color[i].y
+                });
+            }
+        }
+    }
+    return results;
 }
 
 export function extractRotations(targets, period, diameter, angle, sigma) {
@@ -1104,11 +1216,11 @@ export function extractRotations(targets, period, diameter, angle, sigma) {
                         rotationList.push({
                             id: targetId,
                             start: targetData[firstIdx].z, 
-                            angle: rotationAng,
+                            angle: Math.abs(rotationAng),
                             period: i,
                             center: center,
                             diameter: {x: maxVal.x - minVal.x, y: maxVal.y - minVal.y},
-                            direction: (rotationAng < 0)? true: false
+                            direction: (rotationAng < 0)? 'clockwise': 'counterclockwise'
                         });
                     }
                 }

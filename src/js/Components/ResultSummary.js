@@ -11,10 +11,11 @@ export default class ResultSummary extends React.Component {
         this.id = props.id;
         this.fileName = DataStore.getFileName(this.id);
         this.thumbnail = props.thumbnail;
-        this.period = props.period;
-        this.distance = props.distance;
+        this.result = props.result;
+        // this.period = props.period;
+        // this.distance = props.distance;
         this.rank = props.rank;
-        this.path = props.path;
+        // this.path = props.path;
         this.ignored = FeatureStore.getIgnored();
         this.lookup = DataStore.getData(this.id).data.lookup;
         this.variables = [];
@@ -23,9 +24,11 @@ export default class ResultSummary extends React.Component {
         this.clickedY = null;
         // flag to identify whether the action is click or mousedown
         this.moved = false;
-        for (let key in this.lookup) {
-            if (this.ignored.indexOf(key) < 0 && key !== 'z') {
-                this.variables.push(key);
+        if (this.ignored) {
+            for (let key in this.lookup) {
+                if (this.ignored.indexOf(key) < 0 && key !== 'z') {
+                    this.variables.push(key);
+                }
             }
         }
     }
@@ -67,29 +70,66 @@ export default class ResultSummary extends React.Component {
     }
 
     showPeriod() {
-        return (
-            <div className='row'>
-                <div className='col4'>
-                    <label>Period</label>
+        if (this.result.period) {
+            return (
+                <div className='row'>
+                    <div className='col4'>
+                        <label>Period</label>
+                    </div>
+                    <div className='col'>
+                        {this.result.start} - {this.result.start + this.result.period}
+                    </div>
                 </div>
-                <div className='col'>
-                    {this.period[0]} - {this.period[1]}
+            );
+        } else {
+            return (
+                <div className='row'>
+                    <div className='col4'>
+                        <label>JD</label>
+                    </div>
+                    <div className='col'>
+                        {this.result.start}
+                    </div>
                 </div>
-            </div>
-        );
+            );
+        }
     }
 
     showDistance() {
-        return (
-            <div className='row'>
-                <div className='col4'>
-                    <label>Distance</label>
+        if (!isNaN(this.result.distance)) {
+            return (
+                <div className='row'>
+                    <div className='col4'>
+                        <label>Distance</label>
+                    </div>
+                    <div className='col'>
+                        {formatValue(this.result.distance)}
+                    </div>
                 </div>
-                <div className='col'>
-                    {formatValue(this.distance)}
+            );
+        } else if (!isNaN(this.result.V)) {
+            return (
+                <div className='row'>
+                    <div className='col4'>
+                        <label>Intensity</label>
+                    </div>
+                    <div className='col'>
+                        {formatValue(this.result.V)}
+                    </div>
                 </div>
-            </div>
-        );
+            );
+        } else if (!isNaN(this.result.angle)) {
+            return (
+                <div className='row'>
+                    <div className='col4'>
+                        <label>Angle</label>
+                    </div>
+                    <div className='col'>
+                        {formatValue(this.result.angle)}
+                    </div>
+                </div>
+            );
+        }
     }
 
     showDetails() {
@@ -113,21 +153,12 @@ export default class ResultSummary extends React.Component {
             0, 0,
             300, 150
         );
-        $('#extractionDetailPeriodValue').text(this.period[0] + ' - ' + this.period[1]);
-        $('#extractionDetailLengthValue').text((this.period[1] - this.period[0]) + ' days');
-        $('#extractionDetailDistanceValue').text(formatValue(this.distance));
-        let ignoredList = '';
-        for (let i = 0; i < this.variables.length; i++) {
-            ignoredList += this.lookup[this.variables[i]] + ', ';
-        }
-        ignoredList = ignoredList.slice(0, ignoredList.length - 2);
-        $('#extractionDetailVariableValue').text(ignoredList);
         $('#extractionDetailLC').height(size);
 
         // set up a line chart for comparison between query and time slice
         let width = $('#extractionDetailLC').width();
         let height = 200;
-        FeatureAction.updateSelectedResult(this.id, this.period, width, height, this.path);
+        FeatureAction.updateSelectedResult(this.result, width, height);
     }
 
     onMouseDownOnResultSummary(event) {
@@ -138,7 +169,6 @@ export default class ResultSummary extends React.Component {
     
         this.clickedX = event.pageX - child.offsetLeft;
         this.clickedY = event.pageY - child.offsetTop;
-        // elem.style.position = 'absolute';
     
         document.body.addEventListener('mousemove', this.onMouseMoveOnResultSummary.bind(this), false);
         document.body.addEventListener('mouseleave', this.onMouseUpFromResultSummary.bind(this), false);
@@ -223,7 +253,7 @@ export default class ResultSummary extends React.Component {
                     if ((selectedTimeSlicePos.left <= event.pageX && event.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
                     && (selectedTimeSlicePos.top <= event.pageY && event.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
                         // convert the result into a new query
-                        FeatureAction.convertResultIntoQuery(this.id, this.period, this.ignored);
+                        FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
                         if ($('#resultDetailArea').css('display') === 'block') {
                             domActions.toggleExtractionDetailPanel();
                         }
@@ -239,7 +269,10 @@ export default class ResultSummary extends React.Component {
                     if ((sketchPadPos.left <= event.pageX && event.pageX <= sketchPadPos.left + sketchPadWidth)
                     && (sketchPadPos.top <= event.pageY && event.pageY <= sketchPadPos.top + sketchPadHeight)) {
                         // convert the result into a new query
-                        FeatureAction.convertResultIntoQuery(this.id, this.period, this.ignored);
+                        FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
+                        if ($('#resultDetailArea').css('display') === 'block') {
+                            domActions.toggleExtractionDetailPanel();
+                        }
                     }
                     break;
             }

@@ -841,7 +841,6 @@ export default class TimeTubes extends React.Component{
     }
 
     changePlotsColor() {
-        console.log(this.plotColor, new THREE.Color(Number('0x' + this.plotColor.slice(1))), this.plot, );
         if (!this.data.merge) {
             this.plot.material.color = new THREE.Color(Number('0x' + this.plotColor.slice(1)));//.set(this.plotColor);
         } else {
@@ -1164,13 +1163,10 @@ export default class TimeTubes extends React.Component{
                 clippingPlanes: [this.clippingPlane]
             });
             this.plot = new THREE.LineSegments(circleGeometry, circleMaterial);
-            // console.log(this.plot);
-            // this.tubeGroup.add(this.plot);
-            // this.plot.rotateY(Math.PI);
         } else {
             let circlePositions = [];
             let circleColor = [];
-            let baseColor = new THREE.Color(this.plotColor);//'rgb(127, 255, 212)');
+            let baseColor = new THREE.Color(this.plotColor);
             let circleIndices = Array(this.data.position.length * this.segment * 2);
             let del = Math.PI * 2 / this.segment;
             let range = this.data.meta.range;
@@ -1240,7 +1236,8 @@ export default class TimeTubes extends React.Component{
         if (this.visualQuery) {
             this.QBECamera.lookAt(this.scene.position);
             this.QBECamera.far = this.camera.far;
-            let QBESourceWidth = $('#QBESource').outerWidth(true) - Number($('#QBESource').css('padding-left').replace('px', '')) * 2;
+            let sourcePadding = Number($('#QBESource').css('padding-left').replace('px', '')) * 2;
+            let QBESourceWidth = $('#QBESource').outerWidth(true) - (sourcePadding >= 0? sourcePadding: 0);
             this.QBERenderer.setSize(QBESourceWidth, QBESourceWidth);
             if (dom != null) {
                 dom.style.display = 'block';

@@ -2,7 +2,9 @@ import React from 'react';
 import * as d3 from 'd3';
 import * as mathLib from '../lib/mathLib';
 import * as TimeSeriesQuerying from '../lib/TimeSeriesQuerying';
+import * as FeatureAction from '../Actions/FeatureAction';
 import FeatureStore from '../Stores/FeatureStore';
+import TimeTubes from './TimeTubes';
 
 export default class AutomaticExtraction extends React.Component {
     constructor(props) {
@@ -11,7 +13,7 @@ export default class AutomaticExtraction extends React.Component {
 
         this.state = {
             flare: false,
-            flareOption: 'automatic AveMaximum',
+            flareOption: 'automatic AveAve',
             rotation: false,
             anomaly: false
         };
@@ -20,6 +22,17 @@ export default class AutomaticExtraction extends React.Component {
     componentDidMount() {
         document.getElementById('weightForAverageList').selectedIndex = '2';
         this.setGaussCurve();
+        // set default values to input forms
+        this.setDefaultValues();
+    }
+
+    setDefaultValues() {
+        $('#flareLookaround').val(3);
+        $('#flareSensitivity').val(2);
+     
+        $('#rotationPeriodMin').val(20);
+        $('#rotationPeriodMax').val(30);
+        $('#rotationAngle').val(270);
     }
 
     setGaussCurve() {
@@ -121,7 +134,7 @@ export default class AutomaticExtraction extends React.Component {
                 if (lookaround !== '' && sensitivity !== '') {
                     lookaround = Number(lookaround);
                     sensitivity = Number(sensitivity);   
-                    TimeSeriesQuerying.extractFlares(targets, method, lookaround, sensitivity);
+                    flares = TimeSeriesQuerying.extractFlares(targets, method, lookaround, sensitivity);
                 }
             } else if (mode === 'manual') {
                 flares = TimeSeriesQuerying.extractFlaresManual(targets, Number($('#flareThreshold').val()));
@@ -142,6 +155,48 @@ export default class AutomaticExtraction extends React.Component {
         if (this.state.anomaly) {
             anomalies = TimeSeriesQuerying.extractAnomalies(targets);
         }
+
+        let results = [];
+        if (this.state.flare && this.state.rotation) {
+            // rotations with a flare
+            // only rotations which include a flare in its period
+            let i = 0, j = 0;
+            while (i < flares.length && j < rotations.length) {
+                if (rotations[j].id < flares[i].id) {
+                    j++;
+                    continue;
+                } else if (flares[i].id < rotations[j].id) {
+                    i++;
+                    continue;
+                } else {
+                    if (rotations[j].start <= flares[i].start
+                        && flares[i].start <= rotations[j].start + rotations[j].period) {
+                        let resultTmp = rotations[j];
+                        resultTmp.V = flares[i].V;
+                        resultTmp.significance = flares[i].significance;
+                        results.push(resultTmp);
+                    }
+                    i++;
+                    j++;
+                    continue;
+                }
+            }
+
+        } else if (this.state.flare) {
+            results = flares;
+        } else if (this.state.rotation) {
+            results = rotations;
+        }
+
+        if (this.state.anomaly) {
+            results = anomalies;
+        }
+
+        // set the extraction results
+        FeatureAction.setExtractionResults(results);
+        // show the result thumbnails
+        TimeSeriesQuerying.setDefaltOrderOfResults();
+        TimeSeriesQuerying.showExtractionResults();
     }
 
     flareOptions() {
@@ -353,26 +408,26 @@ export default class AutomaticExtraction extends React.Component {
         );
     }
 
-    extractionOptions() {
-        return (
-            <div id='extractionOptions'>
-                <h5>Extraction options</h5>
-                <div className="row matchingOption">
-                    <div className='col-5'>
-                        Step size of sliding window
-                    </div>
-                    <div className='col form-inline'>
-                        <input className="form-control form-control-sm"
-                            type="text"
-                            placeholder="step size"
-                            id="stepSizeOfSlidingWindow"
-                            style={{width: '40%', marginRight: '0.5rem'}}/>
-                        <label className="col-form-label col-form-label-sm"> days</label>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    // extractionOptions() {
+    //     return (
+    //         <div id='extractionOptions'>
+    //             <h5>Extraction options</h5>
+    //             <div className="row matchingOption">
+    //                 <div className='col-5'>
+    //                     Step size of sliding window
+    //                 </div>
+    //                 <div className='col form-inline'>
+    //                     <input className="form-control form-control-sm"
+    //                         type="text"
+    //                         placeholder="step size"
+    //                         id="stepSizeOfSlidingWindow"
+    //                         style={{width: '40%', marginRight: '0.5rem'}}/>
+    //                     <label className="col-form-label col-form-label-sm"> days</label>
+    //                 </div>
+    //             </div>
+    //         </div>
+    //     );
+    // }
  
     switchFlareOption() {
         let flareOption = $('input[name=flareOptions]:checked').val();
@@ -389,7 +444,6 @@ export default class AutomaticExtraction extends React.Component {
     }
 
     selectFlareAveMaximum() {
-        console.log(this.state.flareOption, this.state);
         this.setState({
             flareOption: 'automatic AveMaximum'
         });
@@ -414,21 +468,27 @@ export default class AutomaticExtraction extends React.Component {
     }
 
     clickFlare() {
+        let state = !this.state.flare;
         this.setState({
-            flare: !this.state.flare
+            flare: state
         });
+        FeatureAction.updateAEOption('flare', state);
     }
 
     clickRotation() {
+        let state = !this.state.rotation;
         this.setState({
-            rotation: !this.state.rotation
+            rotation: state
         });
+        FeatureAction.updateAEOption('rotation', state);
     }
 
     clickAnomaly() {
+        let state = !this.state.anomaly;
         this.setState({
-            anomaly: !this.state.anomaly
+            anomaly: state
         });
+        FeatureAction.updateAEOption('anomaly', state);
     }
 
     render() {
@@ -476,7 +536,7 @@ export default class AutomaticExtraction extends React.Component {
                         <label className="custom-control-label" htmlFor="anomalyExtractionCheck">Anomaly</label>
                     </div>
                 </div>
-                {this.extractionOptions()}
+                {/* {this.extractionOptions()} */}
                 <button className="btn btn-primary btn-sm"
                         type="button"
                         id='runAutomaticExtractionBtn'

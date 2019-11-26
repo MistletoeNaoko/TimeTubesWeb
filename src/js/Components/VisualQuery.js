@@ -43,15 +43,29 @@ export default class VisualQuery extends React.Component {
                     DTWMode: 'DTWD'
                 });
             }
+            if ($('#stepSizeOfSlidingWindow').val() === '') {
+                $('#stepSizeOfSlidingWindow').val(5);
+            }
+            if (mode === 'QBE') {
+                if ($('#resultDetailArea').css('display') === 'block') {
+                    domActions.toggleExtractionDetailPanel();
+                }
+            }
         });
         FeatureStore.on('updateSelectedPeriod', () => {
             // this.selectedInterval = FeatureStore.getSelectedPeriod();
             this.updateSelectedInterval();
         });
+        FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
+            this.setState({
+                source: id,
+                selectedInterval: period
+            });
+        });
     }
 
     componentDidMount() {
-        $('#stepSizeOfSlidingWindow').val('5');
+        $('#stepSizeOfSlidingWindow').val(5);
     }
 
     switchSelector() {
@@ -92,10 +106,6 @@ export default class VisualQuery extends React.Component {
         let selectedIdx = sourceList.selectedIndex;
         let selectedId = sourceList.options[selectedIdx].value; // get id
         FeatureAction.updateSource(selectedId);
-    }
-
-    updateTarget() {
-        // console.log('updateTarget');
     }
 
     updateSelectedInterval() {
@@ -415,6 +425,7 @@ export default class VisualQuery extends React.Component {
                         let results = TimeSeriesQuerying.runMatching(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
                         // TODO: Remove overlapping!!
                         FeatureAction.setExtractionResults(results, query, ignored);
+                        TimeSeriesQuerying.setDefaltOrderOfResults();
                         TimeSeriesQuerying.showExtractionResults();
                     }
                 }
@@ -440,6 +451,7 @@ export default class VisualQuery extends React.Component {
                         }
                     }
                     FeatureAction.setExtractionResults(results, query, ignored);
+                    TimeSeriesQuerying.setDefaltOrderOfResults();
                     TimeSeriesQuerying.showExtractionResults();
                 }
                 break;

@@ -86,14 +86,16 @@ export default class SelectedTimeSlice extends React.Component {
                 $('#targetLengthMax').val(Math.floor(period[1]) - Math.ceil(period[0]));
 
                 // update ignored variables
-                let checkList = $('input[name=QBEIgnored]');
-                checkList.each(function(index, element) {
-                    if (ignored.indexOf(element.value) < 0) {
-                        element.checked = false;
-                    } else {
-                        element.checked = true;
-                    }
-                });
+                if (ignored) {
+                    let checkList = $('input[name=QBEIgnored]');
+                    checkList.each(function(index, element) {
+                        if (ignored.indexOf(element.value) < 0) {
+                            element.checked = false;
+                        } else {
+                            element.checked = true;
+                        }
+                    });
+                }
             }
             this.updateTimePeriod();
             this.redrawTube();
@@ -337,12 +339,12 @@ export default class SelectedTimeSlice extends React.Component {
     }
 
     redrawTube() {
-        let ignoredX = this.ignoredVariables.indexOf('x'),
-            ignoredY = this.ignoredVariables.indexOf('y'),
-            ignoredRX = this.ignoredVariables.indexOf('r_x'),
-            ignoredRY = this.ignoredVariables.indexOf('r_y'),
-            ignoredH = this.ignoredVariables.indexOf('H'),
-            ignoredV = this.ignoredVariables.indexOf('V');
+        let ignoredX = (this.ignoredVariables)? this.ignoredVariables.indexOf('x'): -1,
+            ignoredY = (this.ignoredVariables)? this.ignoredVariables.indexOf('y'): -1,
+            ignoredRX = (this.ignoredVariables)? this.ignoredVariables.indexOf('r_x'): -1,
+            ignoredRY = (this.ignoredVariables)? this.ignoredVariables.indexOf('r_y'): -1,
+            ignoredH = (this.ignoredVariables)? this.ignoredVariables.indexOf('H'): -1,
+            ignoredV = (this.ignoredVariables)? this.ignoredVariables.indexOf('V'): -1;
         // if any ignored variables on positions (x, y, r_x, r_y) are set, recompute position attribute
         let minJD = this.data.data.meta.min.z;
         let maxJD = this.data.data.meta.max.z;
