@@ -402,3 +402,12 @@ table#extractionDetailInfoTable td {
 #automaticExtractionQuerying {
     font-size: 0.8rem;
 }
+
+#resultTimelinesArea {
+    background-color: #fff;
+    border: 1px solid #DFD7CA;
+    border-radius: 5px;
+    padding: 0.5rem 1rem;
+    width: 100%;
+    max-width: 100%;
+}

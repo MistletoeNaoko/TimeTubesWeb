@@ -1,5 +1,6 @@
 import React from 'react';
 import LineChart from './LineChart';
+import ResultTimeline from './ResultTimeline';
 import * as domActions from '../lib/domActions';
 import * as TimeSeriesQuerying from '../lib/TimeSeriesQuerying';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
@@ -17,7 +18,7 @@ export default class ExtractionResults extends React.Component {
         this.LCHeight = 200;
         this.optimalWarpPath = null;
         this.state = {
-            results: [], 
+            shownResults: [], 
             LC: [],
             selected: {}
         };
@@ -49,7 +50,12 @@ export default class ExtractionResults extends React.Component {
         });
         FeatureStore.on('clearResults', () => {
             this.setState({
-                results: []
+                shownResults: []
+            });
+        });
+        FeatureStore.on('updateShownResults', (results) => {
+            this.setState({
+                shownResults: results
             });
         });
     }
@@ -151,6 +157,28 @@ export default class ExtractionResults extends React.Component {
         );
     }
 
+    splitResultsByData() {
+        let sortedResults = this.state.shownResults.slice().sort(TimeSeriesQuerying.sortResults('data'));
+        let splitedResult = {};
+        let i = 0;
+        let currentData = [],
+            currentDataIdx = sortedResults[0].id;
+        while (i < sortedResults.length) {
+            if (sortedResults[i].id !== currentDataIdx) {
+                splitedResult[currentDataIdx] = currentData;
+                currentDataIdx = sortedResults[i].id;
+                currentData = [];
+            } else {
+                currentData.push(sortedResults[i]);
+            }
+            i++;
+        }
+        if (currentData.length > 0) {
+            splitedResult[currentDataIdx] = currentData;
+        }
+        return splitedResult;
+    }
+
     render() {
         let lineCharts = [], tbodyDetail = [];
         if (Object.keys(this.state.selected).length > 0) {
@@ -241,6 +269,24 @@ export default class ExtractionResults extends React.Component {
                 );
             }
         }
+        let timelines = [];
+        if (this.state.shownResults.length > 0) {
+            // extract the results only shown on the result panel (top k?)
+
+            // and then split results by data
+            let splitedResult = this.splitResultsByData();
+            for (let key in splitedResult) {
+                timelines.push(
+                    <div className='row' key={key}>
+                        <div className='col-2' style={{lineHeight: '40px'}}>
+                            {DataStore.getFileName(Number(key))}
+                        </div>
+                        <div className='col-10' id={'resultTimelineArea_' + key}>
+                            <ResultTimeline id={Number(key)} results={splitedResult[key]} height={40}/>
+                        </div>
+                    </div>);
+            }
+        }
         return (
             <div id='extractionResults' className='resultElem'>
                 <div id='resultMenus' style={{overflow: 'hidden'}}>
@@ -249,6 +295,11 @@ export default class ExtractionResults extends React.Component {
                     {this.topKResults()}
                 </div>
                 <div id='mainResultArea'>
+                    <div
+                        id='resultTimelinesArea'
+                        className='container'>
+                        {timelines}
+                    </div>
                     <div id='resultDetail' style={{position: 'relative', height: '1.5rem', marginBottom: '0px'}}>
                         <div 
                             id='resultDetailArea'
@@ -269,22 +320,6 @@ export default class ExtractionResults extends React.Component {
                                         style={{width: '100%'}}>
                                         <tbody>
                                             {tbodyDetail}
-                                            {/* <tr id='extractionDetailPeriod'>
-                                                <td>Period (JD)</td>
-                                                <td id='extractionDetailPeriodValue'></td>
-                                            </tr>
-                                            <tr id='extractionDetailLength'>
-                                                <td>Length</td>
-                                                <td id='extractionDetailLengthValue'></td>
-                                            </tr>
-                                            <tr id='extractionDetailDistance'>
-                                                <td>Distance</td>
-                                                <td id='extractionDetailDistanceValue'></td>
-                                            </tr>
-                                            <tr id='extractionDetailVariable'>
-                                                <td>Variables</td>
-                                                <td id='extractionDetailVariableValue'></td>
-                                            </tr> */}
                                         </tbody>
                                     </table>
                                     <button

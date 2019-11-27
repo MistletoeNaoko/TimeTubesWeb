@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import ResultSummary from '../Components/ResultSummary';
 import * as d3 from 'd3';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
+import * as FeatureAction from '../Actions/FeatureAction';
 import * as domActions from '../lib/domActions';
 import * as mathLib from '../lib/mathLib';
 import DataStore from '../Stores/DataStore';
@@ -630,7 +631,7 @@ function EuclideanDist(x, y) {
     }
 }
 
-function sortResults(resultOrder) {
+export function sortResults(resultOrder) {
     let func;
     switch(resultOrder) {
         case 'distance':
@@ -762,6 +763,8 @@ export function showExtractionResults() {
             return (result.distance < distTh)? true: false;
         });
     }
+    FeatureAction.updateShownResults(results);
+
     // get a snapshot of the time slice
     // step 1: store the current status of the camera
     let targetList = FeatureStore.getTarget();

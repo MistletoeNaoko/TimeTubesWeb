@@ -68,3 +68,7 @@ export function convertResultIntoQuery(id, period, ignored) {
 export function updateAEOption(option, value) {
     dispatcher.dispatch({type: 'UPDATE_AE_OPTION', option, value});
 }
+
+export function updateShownResults(results) {
+    dispatcher.dispatch({type: 'UPDATE_SHOWN_RESULTS', results});
+}

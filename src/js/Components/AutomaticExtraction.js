@@ -161,6 +161,7 @@ export default class AutomaticExtraction extends React.Component {
             // rotations with a flare
             // only rotations which include a flare in its period
             let i = 0, j = 0;
+            let resultTmp;
             while (i < flares.length && j < rotations.length) {
                 if (rotations[j].id < flares[i].id) {
                     j++;
@@ -168,20 +169,30 @@ export default class AutomaticExtraction extends React.Component {
                 } else if (flares[i].id < rotations[j].id) {
                     i++;
                     continue;
-                } else {
-                    if (rotations[j].start <= flares[i].start
-                        && flares[i].start <= rotations[j].start + rotations[j].period) {
-                        let resultTmp = rotations[j];
-                        resultTmp.V = flares[i].V;
-                        resultTmp.significance = flares[i].significance;
-                        results.push(resultTmp);
+                } else if (rotations[j].start <= flares[i].start
+                    && flares[i].start <= rotations[j].start + rotations[j].period) {
+                    resultTmp = rotations[j];
+                    if (resultTmp.flares === undefined) {
+                        resultTmp.flares = [];
                     }
+                    resultTmp.flares.push(flares[i]);
                     i++;
+                    continue;
+                } else if (flares[i].start < rotations[j].start) {
+                    i++;
+                    continue;
+                } else if (rotations[j].start + rotations[j].period < flares[i].start) {
+                    if (resultTmp) {
+                        results.push(resultTmp);
+                        resultTmp = null;
+                    }
                     j++;
                     continue;
                 }
             }
-
+            if (resultTmp) {
+                results.push(resultTmp);
+            }
         } else if (this.state.flare) {
             results = flares;
         } else if (this.state.rotation) {

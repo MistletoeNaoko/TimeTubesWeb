@@ -79,6 +79,10 @@ class FeatureStore extends EventEmitter {
                 break;
             case 'UPDATE_AE_OPTION':
                 this.updateAEOption(action.option, action.value);
+                break;
+            case 'UPDATE_SHOWN_RESULTS':
+                this.updateShownResults(action.results);
+                break;
             default:
         }
     }
@@ -249,6 +253,10 @@ class FeatureStore extends EventEmitter {
 
     updateAEOption(option, value) {
         this.AEOptions[option] = value;
+    }
+
+    updateShownResults(results) {
+        this.emit('updateShownResults', results);
     }
 }
 
