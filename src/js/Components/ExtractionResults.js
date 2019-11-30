@@ -39,8 +39,8 @@ export default class ExtractionResults extends React.Component {
             });
         });
         FeatureStore.on('updateSelectedResult', (result, width, height) => {
-            this.LCWidth = width;
-            this.LCHeight = height;
+            this.LCWidth = Math.max(300, width);
+            this.LCHeight = Math.max(200, height);
             if (result.path) {
                 this.optimalWarpPath = result.path;
             }
@@ -60,9 +60,8 @@ export default class ExtractionResults extends React.Component {
         });
         FeatureStore.on('selectResultFromTimeline', (result) => {
             let width = $('#extractionDetailLC').width();
-            let height = 200;
-            this.LCWidth = width;
-            this.LCHeight = height;
+            this.LCWidth = Math.max(300, width);
+            this.LCHeight = 200;
             if (result.path) {
                 this.optimalWarpPath = result.path;
             }

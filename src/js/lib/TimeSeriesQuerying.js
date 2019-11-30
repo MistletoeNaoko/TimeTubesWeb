@@ -258,8 +258,9 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
     if (normalization) {
         query = normalizeTimeSeries(query);
     }
-    for (let targetId = 0; targetId < targets.length; targetId++) {
-        let targetData = DataStore.getDataArray(targets[targetId], 1);
+    for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
+        let targetId = targets[targetIdx];
+        let targetData = DataStore.getDataArray(targetId, 1);
         let minJD = targetData.z[0];
 
         // TODO: how to filter values when DTWI is selected
