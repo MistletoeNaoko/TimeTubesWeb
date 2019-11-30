@@ -65,6 +65,7 @@ table#extractionDetailInfoTable td {
     background: white;
     box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.3);
     font-size: 0.8rem;
+    text-transform: capitalize;
 }
 
 .overlayPanel {

@@ -38,3 +38,20 @@ export function getIgnoredVariables() {
     }
     return ignored;
 }
+
+export function transformCamelToSentence(str) {
+    let result = str.replace( /([A-Z])/g, " $1" );
+    result = result.charAt(0).toUpperCase() + result.slice(1);
+    return result;
+}
+
+export function transformSentenceToCamel(str) {
+    let result = '';
+    let splited = str.split(' ');
+    result = splited[0];
+    for (let i = 1; i < splited.length; i++) {
+        result += splited[i].charAt(0).toUpperCase() + splited[i].slice(1);
+    }
+    result = result.charAt(0).toLowerCase() + result.slice(1);
+    return result;
+}

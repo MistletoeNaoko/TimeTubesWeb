@@ -83,6 +83,12 @@ class FeatureStore extends EventEmitter {
             case 'UPDATE_SHOWN_RESULTS':
                 this.updateShownResults(action.results);
                 break;
+            case 'FOCUS_RESULT_FROM_TIMELINE':
+                this.focusResultFromTimeline(action.result);
+                break;
+            case 'SELECT_RESULT_FROM_TIMELINE':
+                this.selectResultFromTimeline(action.result);
+                break;
             default:
         }
     }
@@ -257,6 +263,14 @@ class FeatureStore extends EventEmitter {
 
     updateShownResults(results) {
         this.emit('updateShownResults', results);
+    }
+
+    focusResultFromTimeline(result) {
+        this.emit('focusResultFromTimeline', result);
+    }
+
+    selectResultFromTimeline(result) {
+        this.emit('selectResultFromTimeline', result);
     }
 }
 

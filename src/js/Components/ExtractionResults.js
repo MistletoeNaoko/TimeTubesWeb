@@ -58,6 +58,18 @@ export default class ExtractionResults extends React.Component {
                 shownResults: results
             });
         });
+        FeatureStore.on('selectResultFromTimeline', (result) => {
+            let width = $('#extractionDetailLC').width();
+            let height = 200;
+            this.LCWidth = width;
+            this.LCHeight = height;
+            if (result.path) {
+                this.optimalWarpPath = result.path;
+            }
+            this.setState({
+                selected: result
+            });
+        });
     }
 
     componentDidMount() {
@@ -139,7 +151,7 @@ export default class ExtractionResults extends React.Component {
         AppAction.selectMenu('visualization');
         // move a tube to the JD and change far value of the camera
         // pass this.state.selected.id & this.state.selected.period
-        if (this.selected.period) {
+        if (this.state.selected.period) {
             TimeTubesAction.showTimeTubesOfTimeSlice(this.state.selected.id, this.state.selected.period);
         } else {
             TimeTubesAction.searchTime(this.state.selected.id, this.state.selected.start);
@@ -221,8 +233,7 @@ export default class ExtractionResults extends React.Component {
                     if (key === 'V') {
                         label = 'Flx(V)';
                     } else {
-                        label = key.replace( /([A-Z])/g, " $1" );
-                        label = label.charAt(0).toUpperCase() + label.slice(1);  
+                        label = domActions.transformCamelToSentence(key);
                     }  
                     let value = this.state.selected[key];
                     if (typeof(value) === 'object') {
@@ -278,8 +289,15 @@ export default class ExtractionResults extends React.Component {
             for (let key in splitedResult) {
                 timelines.push(
                     <div className='row' key={key}>
-                        <div className='col-2' style={{lineHeight: '40px'}}>
-                            {DataStore.getFileName(Number(key))}
+                        <div className='col-2' 
+                            style={{
+                                wordWrap: 'anywhere', 
+                                position: 'relative', 
+                                fontSize: '0.7rem',
+                                lineHeight: '90%'}}>
+                            <label style={{position: 'absolute', top: '50%', transform: 'translateY(-50%)'}}>
+                                {DataStore.getFileName(Number(key))}
+                            </label>
                         </div>
                         <div className='col-10' id={'resultTimelineArea_' + key}>
                             <ResultTimeline id={Number(key)} results={splitedResult[key]} height={40}/>

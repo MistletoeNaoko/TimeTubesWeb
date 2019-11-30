@@ -804,7 +804,6 @@ export function showExtractionResults() {
         domnode.appendChild(divElem);
         let result = results[i];
         TimeTubesAction.takeSnapshot(result.id, result.start - minJDs[String(result.id)], result.period);
-
         let imageHeight = canvas[String(result.id)].height,
             imageWidth = canvas[String(result.id)].width;
         let image = new Image();
@@ -850,13 +849,7 @@ export function updateSortResultsPulldown() {
         options.push('Distance');
     }
     for (let i = 0; i < options.length; i++) {
-        let value = '';
-        let splitedOptions = options[i].split(' ');
-        value = splitedOptions[0];
-        for (let j = 1; j < splitedOptions.length; j++) {
-            value += splitedOptions[j].charAt(0).toUpperCase() + splitedOptions[j].slice(1);
-        }
-        value = value.charAt(0).toLowerCase() + value.slice(1);
+        let value = domActions.transformSentenceToCamel(options[i]);
         list.push(<option value={value} key={value}>{options[i]}</option>);
     }
     return list;
@@ -864,7 +857,8 @@ export function updateSortResultsPulldown() {
 
 export function extractAnomalies(targets) {
     let results = [];
-    for (let targetId = 0; targetId < targets.length; targetId++) {
+    for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
+        let targetId = targets[targetIdx];
         let targetData = DataStore.getData(targetId);
         let spatial = targetData.data.spatial;
         // compute the rate of variability of polarization, color, intensity between 2 observation points
@@ -910,7 +904,8 @@ export function extractAnomalies(targets) {
 
 export function extractFlares(targets, method, lookaround, sensitivity) {
     let results = [];
-    for (let targetId = 0; targetId < targets.length; targetId++) {
+    for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
+        let targetId = targets[targetIdx];
         let targetData = DataStore.getData(targetId);      
         let sigList = [];
         let significance;
@@ -1076,7 +1071,8 @@ function generalizedESD(data, property, r, alpha) {
 
 export function extractFlaresManual(targets, threshold) {
     let results = [];
-    for (let targetId = 0; targetId < targets.length; targetId++) {
+    for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
+        let targetId = targets[targetIdx];
         let targetData = DataStore.getData(targetId);
         for (let i = 0; i < targetData.data.color.length; i++) {
             if (targetData.data.color[i].y >= threshold) {
@@ -1093,8 +1089,9 @@ export function extractFlaresManual(targets, threshold) {
 
 export function extractRotations(targets, period, diameter, angle, sigma) {
     let results = [];
-    for (let targetId = 0; targetId < targets.length; targetId++) {
-        let targetData = DataStore.getData(targets[targetId]).data.position;
+    for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
+        let targetId = targets[targetIdx];
+        let targetData = DataStore.getData(targetId).data.position;
         // let targetData = DataStore.getDataArray(targets[targetId], 1);
         let computationResults = [];      
         for (let firstIdx = 0; firstIdx < targetData.length; firstIdx++) {
@@ -1172,7 +1169,7 @@ export function extractRotations(targets, period, diameter, angle, sigma) {
 
                 // check whether the period has larger variation
                 if (!missingFlg
-                    && (std.x > DataStore.getData(targets[targetId]).data.meta.std.x || std.y > DataStore.getData(targets[targetId]).data.meta.std.y)
+                    && (std.x > DataStore.getData(targetId).data.meta.std.x || std.y > DataStore.getData(targetId).data.meta.std.y)
                     && ((maxVal.x - minVal.x) > diameter || (maxVal.y - minVal.y) > diameter)) {
                     let rotationAng = 0,
                         before = angList[0],

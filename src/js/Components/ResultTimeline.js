@@ -1,8 +1,16 @@
 import React from 'react';
 import * as d3 from 'd3';
 import * as FeatureAction from '../Actions/FeatureAction';
+import * as domActions from '../lib/domActions';
+import {formatValue} from '../lib/2DGraphLib';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
+import { tool } from 'paper';
+
+d3.selection.prototype.moveToFront =
+    function() {
+        return this.each(function(){this.parentNode.appendChild(this);});
+    };
 
 export default class ResultTimeline extends React.Component {
     constructor(props) {
@@ -11,22 +19,32 @@ export default class ResultTimeline extends React.Component {
         this.results = props.results;
         this.data = DataStore.getData(this.id);
         this.height = props.height;
+        this.width = 0;
 
         this.resultsVQ = null;
         this.resultsFlare = null;
         this.resultsRotation = null;
         this.resultsAnomaly = null;
+
+        // FeatureStore.on('updateShownResults', (results) => {
+        //     // this.setState({
+        //     //     shownResults: results
+        //     // });
+        //     console.log('updateShownResults');
+        //     this.updateTimeline();
+        // });
     }
 
     render() {
         if (document.getElementById('resultTimeline_' + this.id)) {
-            this.updateTimeline();
+            if ($('#resultTimelineArea_' + this.id).width() > 200) {
+                this.updateTimeline();
+            }
         }
         return (
             <div
                 id={'resultTimeline_' + this.id}
                 className='timeline'>
-
             </div>
         );
     }
@@ -81,10 +99,11 @@ export default class ResultTimeline extends React.Component {
     setUpTimeline() {
         let parentArea = $('#resultTimelineArea_' + this.id);
         let outerWidth = parentArea.width(), outerHeight = this.height;
+        this.width = outerWidth;
         let margin = {left: 20, right: 20};
         let width = outerWidth - margin.left - margin.right,
             height = outerHeight;// - margin.top - margin.bottom;
-        
+
         this.svg
             .attr('width', outerWidth)
             .attr('height', outerHeight);
@@ -108,9 +127,9 @@ export default class ResultTimeline extends React.Component {
         let resultsFlare = [];
         this.results.forEach(d => {
             if (d.V) {
-                resultsFlare.push(d);
+                resultsFlare = resultsFlare.concat(d);
             } else if (d.flares) {
-                resultsFlare.push(d.flares);
+                resultsFlare = resultsFlare.concat(d.flares);
             }
         });
         let resultsAnomaly = this.results.filter(d => d.anomalyDegree);
@@ -137,9 +156,6 @@ export default class ResultTimeline extends React.Component {
             .remove();
 
         if (resultsVQ.length > 0) {
-            this.svg
-                .selectAll('line.resultsVQ')
-                .remove();
             this.resultsVQ = this.svg
                 .selectAll('line.resultsVQ')
                 .data(resultsVQ)
@@ -156,12 +172,13 @@ export default class ResultTimeline extends React.Component {
                 .attr('y2', height / 2 - 5)
                 .attr('stroke', '#1d95c6')
                 .attr('stroke-width', 20)
-                .attr('opacity', 0.5);
+                .attr('opacity', 0.5)
+                .attr('transform', 'translate(' + margin.left + ',0)')
+                .on('mouseover', this.timelineMouseOver())
+                .on('mouseout', this.timelineMouseOut())
+                .on('click', this.timelineClick());
         }
         if (resultsRotation.length > 0) {
-            this.svg
-                .selectAll('line.resultsRotation')
-                .remove();
             this.resultsRotation = this.svg
                 .selectAll('line.resultsRotation')
                 .data(resultsRotation)
@@ -178,12 +195,13 @@ export default class ResultTimeline extends React.Component {
                 .attr('y2', height / 2 - 5)
                 .attr('stroke', '#80b139')
                 .attr('stroke-width', 20)
-                .attr('opacity', 0.5);
+                .attr('opacity', 0.5)
+                .attr('transform', 'translate(' + margin.left + ',0)')
+                .on('mouseover', this.timelineMouseOver())
+                .on('mouseout', this.timelineMouseOut())
+                .on('click', this.timelineClick());
         }
         if (resultsFlare.length > 0) {
-            this.svg
-                .selectAll('circle.resultsFlare')
-                .remove();
             this.resultsFlare = this.svg
                 .selectAll('circle.resultsFlare')
                 .data(resultsFlare)
@@ -196,12 +214,13 @@ export default class ResultTimeline extends React.Component {
                 .attr('cy', height / 2 - 5)
                 .attr('r', 10)
                 .attr('fill', '#f26418')
-                .attr('opacity', 0.5);
+                .attr('opacity', 0.5)
+                .attr('transform', 'translate(' + margin.left + ',0)')
+                .on('mouseover', this.timelineMouseOver())
+                .on('mouseout', this.timelineMouseOut())
+                .on('click', this.timelineClick());
         }
         if (resultsAnomaly.length > 0) {
-            this.svg
-                .selectAll('circle.resultsAnomaly')
-                .remove();
             this.resultsAnomaly = this.svg
                 .selectAll('circle.resultsAnomaly')
                 .data(resultsAnomaly)
@@ -214,7 +233,95 @@ export default class ResultTimeline extends React.Component {
                 .attr('cy', height / 2 - 5)
                 .attr('r', 10)
                 .attr('fill', '#d23430')
-                .attr('opacity', 0.5);
+                .attr('opacity', 0.5)
+                .attr('transform', 'translate(' + margin.left + ',0)')
+                .on('mouseover', this.timelineMouseOver())
+                .on('mouseout', this.timelineMouseOut())
+                .on('click', this.timelineClick());
+        }
+    }
+
+    timelineMouseOver() {
+        let tooltip = this.tooltip;//d3.select('#resultTimelineTooltip');
+        let xScale = this.xScale;
+        let width = this.svg.attr('width');
+        return function(d) {
+            let selected = d3.select(this);
+            if (selected.attr('stroke')) {
+                selected
+                    .attr('stroke', '#284a6c')
+                    .moveToFront();
+            } else if (selected.attr('fill')) {
+                selected
+                    .attr('fill', '#284a6c')
+                    .moveToFront();
+            }
+            tooltip
+                .transition()
+                .duration(50)
+                .style('visibility', 'visible');
+            // tooltip will show details of the selected result
+            let contents = '';
+            for (let key in d) {
+                if (key !== 'id' && key !== 'start' && key !== 'period' && key !== 'flares' && key !== 'path') {
+                    let value = d[key];
+                    if (typeof(d[key]) === 'object') {
+                        value = '(';
+                        for (let dataKey in d[key]) {
+                            value += formatValue(d[key][dataKey]) + ', ';
+                        }
+                        value = value.slice(0, value.length - 2);
+                        value += ')';
+                    } else if (typeof(d[key]) === 'number') {
+                        value = formatValue(d[key]);
+                    }
+                    contents += '<tr><td>' + domActions.transformCamelToSentence(key) + '</td>' +
+                                '<td>' + value + '</td></tr>';
+                }
+            }
+            if (xScale(d.start) < width / 2) {
+                tooltip.html('<table><tbody>' + contents + '</tbody></table>')
+                    .style('left', (xScale(d.start) + 50) + 'px')
+                    .style('top', 10 + 'px');
+            } else {
+                let tooltipWidth = Number(tooltip.style('width').slice(0, -2));
+                tooltip.html('<table><tbody>' + contents + '</tbody></table>')
+                    .style('left', (xScale(d.start) - tooltipWidth + 20) + 'px')
+                    .style('top', 10 + 'px');
+            }
+            // highlight the corresponding result summary
+            FeatureAction.focusResultfromTimeline(d);
+        };
+    }
+
+    timelineMouseOut() {
+        let tooltip = this.tooltip;//d3.select('#resultTimelineTooltip');
+        return function(d) {
+            let selected = d3.select(this);
+            if (d.distance) {
+                selected
+                    .attr('stroke', '#1d95c6');
+            } else if (d.angle) {
+                selected
+                    .attr('stroke', '#80b139');
+            } else if (d.V) {
+                selected
+                    .attr('fill', '#f26418');
+            } else if (d.anomalyDegree) {
+                selected
+                    .attr('fill', '#d23430');
+            }
+            tooltip
+                .transition()
+                .duration(100)
+                .style('visibility', 'hidden');
+        }
+    }
+
+    timelineClick() {
+        return function(d) {
+            // highlight the corresponding result summary and show the detail of the result
+            FeatureAction.selectResultFromTimeline(d);
         }
     }
 }

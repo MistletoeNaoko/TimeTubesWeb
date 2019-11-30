@@ -1,4 +1,5 @@
 import dispatcher from '../Dispatcher/dispatcher';
+import { func } from 'prop-types';
 
 export function updateSource(id) {
     dispatcher.dispatch({type:'UPDATE_SOURCE', id});
@@ -71,4 +72,12 @@ export function updateAEOption(option, value) {
 
 export function updateShownResults(results) {
     dispatcher.dispatch({type: 'UPDATE_SHOWN_RESULTS', results});
+}
+
+export function focusResultfromTimeline(result) {
+    dispatcher.dispatch({type: 'FOCUS_RESULT_FROM_TIMELINE', result});
+}
+
+export function selectResultFromTimeline(result) {
+    dispatcher.dispatch({type: 'SELECT_RESULT_FROM_TIMELINE', result});
 }

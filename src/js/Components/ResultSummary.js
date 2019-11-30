@@ -2,6 +2,8 @@ import React from 'react';
 import * as domActions from '../lib/domActions';
 import {formatValue} from '../lib/2DGraphLib';
 import * as FeatureAction from '../Actions/FeatureAction';
+import * as d3 from 'd3';
+import * as lodash from 'lodash';
 import FeatureStore from '../Stores/FeatureStore';
 import DataStore from '../Stores/DataStore';
 
@@ -31,6 +33,62 @@ export default class ResultSummary extends React.Component {
                 }
             }
         }
+
+        FeatureStore.on('focusResultFromTimeline', (result) => {
+            let flag = false;
+            // check the focused result is the same with this result
+            if (result.V !== undefined && this.result.flares) {
+                for (let i = 0; i < this.result.flares.length; i++) {
+                    if (lodash.isEqual(this.result.flares[i], result)) {
+                        flag = true;
+                        break;
+                    }
+                }
+            } else {
+                if (lodash.isEqual(this.result, result)) {
+                    flag = true;
+                }
+            }
+            // if they are same, highlight a result summary panel
+            if (flag) {
+                d3.select('#resultSummary_' + this.rank)
+                    .transition()
+                    .duration(300)
+                    .style('border', '1px solid #d23430')
+                    .transition()
+                    .duration(1000)
+                    .style('border', '1px solid rgba(223, 215, 202, 0.75)');
+            }
+        });
+
+        FeatureStore.on('selectResultFromTimeline', (result) => {
+            let flag = false;
+            // check the focused result is the same with this result
+            if (result.V !== undefined && this.result.flares) {
+                for (let i = 0; i < this.result.flares.length; i++) {
+                    if (lodash.isEqual(this.result.flares[i], result)) {
+                        flag = true;
+                        break;
+                    }
+                }
+            } else {
+                if (lodash.isEqual(this.result, result)) {
+                    flag = true;
+                }
+            }
+            // if they are same, highlight a result summary panel and show detail
+            if (flag) {
+                d3.select('#resultSummary_' + this.rank)
+                    .transition()
+                    .duration(300)
+                    .style('border', '1px solid #d23430')
+                    .transition()
+                    .duration(1000)
+                    .style('border', '1px solid rgba(223, 215, 202, 0.75)');
+
+                this.showDetails();
+            }
+        });
     }
 
     componentDidMount() {
@@ -54,9 +112,11 @@ export default class ResultSummary extends React.Component {
 
     showFileName() {
         return (
-            <label>
-                {this.fileName}
-            </label>
+            <div style={{wordWrap: 'anywhere'}}>
+                <label>
+                    {this.fileName}
+                </label>
+            </div>
         );
     }
 
@@ -77,7 +137,7 @@ export default class ResultSummary extends React.Component {
                         <label>Period</label>
                     </div>
                     <div className='col'>
-                        {this.result.start} - {this.result.start + this.result.period}
+                        {formatValue(this.result.start)} - {formatValue(this.result.start + this.result.period)}
                     </div>
                 </div>
             );
@@ -88,7 +148,7 @@ export default class ResultSummary extends React.Component {
                         <label>JD</label>
                     </div>
                     <div className='col'>
-                        {this.result.start}
+                        {formatValue(this.result.start)}
                     </div>
                 </div>
             );
@@ -154,11 +214,6 @@ export default class ResultSummary extends React.Component {
             300, 150
         );
         $('#extractionDetailLC').height(size);
-
-        // set up a line chart for comparison between query and time slice
-        let width = $('#extractionDetailLC').width();
-        let height = 200;
-        FeatureAction.updateSelectedResult(this.result, width, height);
     }
 
     onMouseDownOnResultSummary(event) {
@@ -240,7 +295,7 @@ export default class ResultSummary extends React.Component {
             // if not, move it to the original position and change the position style to static
             switch (mode) {
                 case 'AE':
-                    drag.style.position = 'static';
+                    // drag.style.position = 'static';
                     // TODO: show alert
                     break;
                 case 'QBE':
@@ -280,6 +335,10 @@ export default class ResultSummary extends React.Component {
             this.moveToOriginalPos();
         } else {
             this.showDetails();
+            // set up a line chart for comparison between query and time slice
+            let width = $('#extractionDetailLC').width();
+            let height = 200;
+            FeatureAction.updateSelectedResult(this.result, width, height);
         }
     }
 
