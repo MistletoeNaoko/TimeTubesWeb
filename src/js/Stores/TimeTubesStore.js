@@ -136,6 +136,9 @@ class TimeTubesStore extends EventEmitter{
             case 'CHANGE_PLOTCOLOR':
                 this.changePlotColor(action.id, action.color);
                 break;
+            case 'SET_TEXTURE':
+                this.setTexture(action.id, action.texture);
+                break;
             case 'UPDATE_TEXTURE':
                 this.updateTexture(action.id, action.texture);
                 break;
@@ -405,9 +408,13 @@ class TimeTubesStore extends EventEmitter{
         this.emit('changePlotColor', id);
     }
 
+    setTexture(id, texture) {
+        this.texture[id] = texture;
+    }
+
     updateTexture(id, texture) {
         this.texture[id] = texture;
-        this.emit('updateTexture', id);
+        this.emit('updateTexture', id, texture);
     }
 
     activateViewport(id) {

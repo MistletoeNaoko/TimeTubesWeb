@@ -85,7 +85,7 @@ export default class Controllers extends React.Component{
     }
 
     uploadFile() {
-        let file = document.querySelector('input[type=file]').files;
+        let file = document.getElementById('uploadFileForm').files;
         DataAction.uploadData(file);
     }
 

@@ -275,6 +275,12 @@ export default class TimeTubes extends React.Component{
                 this.disk.visible = false;
             }
         });
+        TimeTubesStore.on('updateTexture', (id, texture) => {
+            if (id === this.id) {
+                // update texture
+                this.tube.material.uniforms.texture.value = texture;
+            }
+        });
         FeatureStore.on('switchQueryMode', (mode) => {
             let sourceId = FeatureStore.getSource();
             if (mode === 'QBE' && sourceId !== 'default') {
@@ -394,7 +400,10 @@ export default class TimeTubes extends React.Component{
         this.scene.add(this.tubeGroup);
 
         let texture = new THREE.TextureLoader();
-        texture.load('img/1_256.png', this.drawTube.bind(this));
+        texture.load('img/1_256.png', function(texture) {
+            TimeTubesAction.setTexture(this.id, texture);
+            this.drawTube(texture);
+        }.bind(this));
         this.drawGrid(TimeTubesStore.getGridSize() * 2, 10);
         this.drawLabel(TimeTubesStore.getGridSize() / this.data.meta.range);
         this.drawAxis();
@@ -892,7 +901,6 @@ export default class TimeTubes extends React.Component{
     }
 
     drawTube(texture){//texture, spline, minList, maxList) {
-        TimeTubesAction.updateTexture(this.id, texture);
         this.texture = texture;
         let minJD = this.data.spatial[0].z;
         let maxJD = this.data.spatial[this.data.spatial.length - 1].z;

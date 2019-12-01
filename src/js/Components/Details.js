@@ -416,6 +416,21 @@ export default class Details extends React.Component{
         TimeTubesAction.changePlotColor(this.id, color.hex);
     }
 
+    changeColorMap() {
+        let file = document.getElementById('uploadColormap').files;
+        
+        let reader = new FileReader();
+        reader.readAsDataURL(file[0]);
+        reader.onload = function() {
+            let dataURL = reader.result;
+            document.getElementById('colormap_' + this.id).src = dataURL;
+            let textureTHREE = new THREE.TextureLoader();
+            textureTHREE.load(dataURL, function(texture) {
+                TimeTubesAction.updateTexture(this.id, texture);
+            }.bind(this));
+        }.bind(this);
+    }
+
     changeOpacityDistribution() {
         let opacityList = document.getElementById('opacityList_' + this.id);
         let selectedIdx = opacityList.selectedIndex;
@@ -570,14 +585,18 @@ export default class Details extends React.Component{
                             <output id={"colorValueMin_" + this.id} style={{marginLeft: '1.3rem'}}></output>
                         </div>
                         <div id={"colorMap_" + this.id} style={{float: 'left', marginLeft: '10px'}}>
-                            <label htmlFor="file_photo">
-                                <img src="img/1_256.png" style={{width: '150px', height: '150px'}}/>
-                            </label>
+                            <img src="img/1_256.png" 
+                                id={'colormap_' + this.id}
+                                style={{width: '150px', height: '150px'}}/>
                         </div>
                         <div style={{clear:'both'}}></div>
                         <div id={"colorHue_" + this.id} style={{width: '150px', marginTop: '5px', marginLeft: '20px'}}>
                             <output id={"colorHueMax_" + this.id} style={{bottom: '1.3rem'}}></output>
                             <output id={"colorHueMin_" + this.id} style={{bottom: '1.3rem'}}></output>
+                        </div>
+                        <div className="custom-file" style={{width: '170px', marginTop: '0.5rem'}}>
+                            <input type="file" className="custom-file-input" id="uploadColormap" onChange={this.changeColorMap.bind(this)}/>
+                            <label className="custom-file-label" htmlFor="uploadColormap">Change</label>
                         </div>
                     </div>
                 </div>
