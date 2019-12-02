@@ -304,6 +304,26 @@ table#extractionDetailInfoTable td {
     font-size: 0.8rem;
 }
 
+.selectorIcon {
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+}
+
+img.selectorIcon:hover {
+    opacity: 0.5;
+    cursor: pointer;
+}
+
+img.selectorIcon:active {
+    position: relative;
+    top: 3px;
+}
+
+.selectorIcon.selected {
+    background-color: rgba(82, 20, 19, 0.5);
+    /* display: block; */
+}
+
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/

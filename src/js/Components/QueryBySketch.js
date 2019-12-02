@@ -1567,6 +1567,61 @@ export default class QueryBySketch extends React.Component{
         this.updateSelectedStatus(selectedSelector);
     }
 
+    selectPen() {
+        this.setState({
+            selector: 'pen'
+        });
+        $('img[name=QBSSelector]').each(function() {
+            $(this).removeClass('selected');
+        });
+        $('#selectorPen').addClass('selected');
+        this.updateSelectedStatus('pen');
+    }
+
+    selectEraser() {
+        this.setState({
+            selector: 'eraser'
+        });
+        $('img[name=QBSSelector]').each(function() {
+            $(this).removeClass('selected');
+        });
+        $('#selectorEraser').addClass('selected');
+        this.updateSelectedStatus('eraser');
+    }
+
+    selectAddPoint() {
+        this.setState({
+            selector: 'addPoint'
+        });
+        $('img[name=QBSSelector]').each(function() {
+            $(this).removeClass('selected');
+        });
+        $('#selectorAddPoint').addClass('selected');
+        this.updateSelectedStatus('addPoint');
+    }
+
+    selectControlPoint() {
+        this.setState({
+            selector: 'controlPoint'
+        });
+        $('img[name=QBSSelector]').each(function() {
+            $(this).removeClass('selected');
+        });
+        $('#selectorControlPoint').addClass('selected');
+        this.updateSelectedStatus('controlPoint');
+    }
+
+    selectChangeWidth() {
+        this.setState({
+            selector: 'changeWidth'
+        });
+        $('img[name=QBSSelector]').each(function() {
+            $(this).removeClass('selected');
+        });
+        $('#selectorChangeWidth').addClass('selected');
+        this.updateSelectedStatus('changeWidth');
+    }
+
     switchVariableAssignment() {
         // this.assignVariables = !this.assignVariables;
         let state = !this.state.assignVariables;
@@ -1756,15 +1811,63 @@ export default class QueryBySketch extends React.Component{
                     className='selector featureRow' 
                     onChange={this.switchSelector.bind(this)}>
                     <div className="form-check form-check-inline">
-                        <input
-                            type="radio"
+                        <img 
+                            id='selectorPen'
+                            className='selectorIcon selected'
                             name="QBSSelector"
                             value="pen"
-                            disabled={this.state.assignVariables}
-                            checked={this.state.selector === 'pen'} readOnly/>
-                        <label className="form-check-label" htmlFor="pen">Pen</label>
+                            src='img/icons/pen.png'
+                            alt='pen'
+                            width='30'
+                            height='30'
+                            onClick={this.selectPen.bind(this)} readOnly/>
+                        <img 
+                            id='selectorAddPoint'
+                            className='selectorIcon'
+                            name="QBSSelector"
+                            value="addPoint"
+                            src='img/icons/add.png'
+                            alt='add point'
+                            width='30'
+                            height='30'
+                            onClick={this.selectAddPoint.bind(this)} readOnly/>
+                        <img 
+                            id='selectorEraser'
+                            className='selectorIcon'
+                            name="QBSSelector"
+                            value="eraser"
+                            src='img/icons/delete.png'
+                            alt='delete point'
+                            width='30'
+                            height='30'
+                            onClick={this.selectEraser.bind(this)} readOnly/>
+                        <img 
+                            id='selectorControlPoint'
+                            className='selectorIcon'
+                            name="QBSSelector"
+                            value="controlPoint"
+                            src='img/icons/control.png'
+                            alt='control point'
+                            width='30'
+                            height='30'
+                            onClick={this.selectControlPoint.bind(this)} readOnly/>
+                        <img 
+                            id='selectorChangeWidth'
+                            className='selectorIcon'
+                            name="QBSSelector"
+                            value="changeWidth"
+                            src='img/icons/width.png'
+                            alt='change width'
+                            width='30'
+                            height='30'
+                            onClick={this.selectChangeWidth.bind(this)} readOnly/>
                     </div>
-                    <div className="form-check form-check-inline">
+                    {/* <input
+                        type="radio"
+                        disabled={this.state.assignVariables}
+                        checked={this.state.selector === 'pen'} readOnly/> */}
+                    {/* <label className="form-check-label" htmlFor="pen">Pen</label> */}
+                    {/* <div className="form-check form-check-inline">
                         <input
                             type="radio"
                             name="QBSSelector"
@@ -1799,7 +1902,7 @@ export default class QueryBySketch extends React.Component{
                             checked={this.state.selector === 'changeWidth'}
                             disabled={!this.state.detectWidth || this.state.assignVariables} readOnly/>
                         <label className="form-check-label" htmlFor="changeWidth">Change width</label>
-                    </div>
+                    </div> */}
                 </form>
             </div>
         );

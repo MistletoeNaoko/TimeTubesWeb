@@ -440,7 +440,7 @@ export default class Controllers extends React.Component{
     tubeMenu() {
         return (
             <ul className="navbar-nav" id='tubeMenu'>
-                <div class="custom-control custom-checkbox menuItem">
+                <div className="custom-control custom-checkbox menuItem">
                     <input
                         className="custom-control-input menuCheck"
                         type="checkbox"
@@ -453,7 +453,7 @@ export default class Controllers extends React.Component{
                         htmlFor="inlineCheckbox1"
                         onClick={this.clipTube.bind(this)}>Clip</label>
                 </div>
-                <div class="custom-control custom-checkbox menuItem">
+                <div className="custom-control custom-checkbox menuItem">
                     <input
                         className="custom-control-input menuCheck"
                         type="checkbox"
@@ -499,7 +499,7 @@ export default class Controllers extends React.Component{
     multiTubesMenu() {
         return (
             <ul className="navbar-nav" id='multiTubesMenu'>
-                <div class="custom-control custom-checkbox menuItem">
+                <div className="custom-control custom-checkbox menuItem">
                     <input
                         className="custom-control-input menuCheck"
                         type="checkbox"
