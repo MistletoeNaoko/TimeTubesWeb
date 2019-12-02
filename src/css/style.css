@@ -324,6 +324,10 @@ img.selectorIcon:active {
     /* display: block; */
 }
 
+.selectorIcon.disabled {
+    background-color: rgba(48, 47, 44, 0.5);
+}
+
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/

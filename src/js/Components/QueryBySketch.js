@@ -1559,14 +1559,6 @@ export default class QueryBySketch extends React.Component{
         this.convertSketchIntoQuery();
     }
 
-    switchSelector() {
-        let selectedSelector = $('input[name=QBSSelector]:checked').val();
-        this.setState({
-            selector: selectedSelector
-        });
-        this.updateSelectedStatus(selectedSelector);
-    }
-
     selectPen() {
         this.setState({
             selector: 'pen'
@@ -1574,7 +1566,9 @@ export default class QueryBySketch extends React.Component{
         $('img[name=QBSSelector]').each(function() {
             $(this).removeClass('selected');
         });
-        $('#selectorPen').addClass('selected');
+        if (!this.state.assignVariables) {
+            $('#selectorPen').addClass('selected');
+        }
         this.updateSelectedStatus('pen');
     }
 
@@ -1585,7 +1579,9 @@ export default class QueryBySketch extends React.Component{
         $('img[name=QBSSelector]').each(function() {
             $(this).removeClass('selected');
         });
-        $('#selectorEraser').addClass('selected');
+        if (!this.state.assignVariables) {
+            $('#selectorEraser').addClass('selected');
+        }
         this.updateSelectedStatus('eraser');
     }
 
@@ -1596,7 +1592,9 @@ export default class QueryBySketch extends React.Component{
         $('img[name=QBSSelector]').each(function() {
             $(this).removeClass('selected');
         });
-        $('#selectorAddPoint').addClass('selected');
+        if (!this.state.assignVariables) {
+            $('#selectorAddPoint').addClass('selected');
+        }
         this.updateSelectedStatus('addPoint');
     }
 
@@ -1607,7 +1605,9 @@ export default class QueryBySketch extends React.Component{
         $('img[name=QBSSelector]').each(function() {
             $(this).removeClass('selected');
         });
-        $('#selectorControlPoint').addClass('selected');
+        if (!this.state.assignVariables) {
+            $('#selectorControlPoint').addClass('selected');
+        }
         this.updateSelectedStatus('controlPoint');
     }
 
@@ -1618,7 +1618,9 @@ export default class QueryBySketch extends React.Component{
         $('img[name=QBSSelector]').each(function() {
             $(this).removeClass('selected');
         });
-        $('#selectorChangeWidth').addClass('selected');
+        if (!this.state.assignVariables) {
+            $('#selectorChangeWidth').addClass('selected');
+        }
         this.updateSelectedStatus('changeWidth');
     }
 
@@ -1628,6 +1630,20 @@ export default class QueryBySketch extends React.Component{
         this.setState({
             assignVariables: state
         });
+        if (state) {
+            $('img[name=QBSSelector]').each(function() {
+                $(this).removeClass('selected');
+                $(this).addClass('disabled');
+            });
+        } else {
+            let currentSelector = this.state.selector;
+            $('img[name=QBSSelector]').each(function() {
+                $(this).removeClass('disabled');
+                if ($(this).attr('value') === currentSelector) {
+                    $(this).addClass('selected');
+                }
+            });
+        }
         $('#variableAssignmentSwitch').prop('checked', state);
         if (state && this.path) {
             this.path.fullySelected = true;
@@ -1808,8 +1824,7 @@ export default class QueryBySketch extends React.Component{
             <div id='QBSSelectorMenu' className='featureElem'>
                 <h5>Selection</h5>
                 <form 
-                    className='selector featureRow' 
-                    onChange={this.switchSelector.bind(this)}>
+                    className='selector featureRow'>
                     <div className="form-check form-check-inline">
                         <img 
                             id='selectorPen'
@@ -1820,6 +1835,7 @@ export default class QueryBySketch extends React.Component{
                             alt='pen'
                             width='30'
                             height='30'
+                            title='draw a sketch'
                             onClick={this.selectPen.bind(this)} readOnly/>
                         <img 
                             id='selectorAddPoint'
@@ -1830,6 +1846,7 @@ export default class QueryBySketch extends React.Component{
                             alt='add point'
                             width='30'
                             height='30'
+                            title='add a control point on the sketch'
                             onClick={this.selectAddPoint.bind(this)} readOnly/>
                         <img 
                             id='selectorEraser'
@@ -1840,6 +1857,7 @@ export default class QueryBySketch extends React.Component{
                             alt='delete point'
                             width='30'
                             height='30'
+                            title='remove a control point from the sketch'
                             onClick={this.selectEraser.bind(this)} readOnly/>
                         <img 
                             id='selectorControlPoint'
@@ -1850,6 +1868,7 @@ export default class QueryBySketch extends React.Component{
                             alt='control point'
                             width='30'
                             height='30'
+                            title='move a control point on the sketch'
                             onClick={this.selectControlPoint.bind(this)} readOnly/>
                         <img 
                             id='selectorChangeWidth'
@@ -1860,7 +1879,10 @@ export default class QueryBySketch extends React.Component{
                             alt='change width'
                             width='30'
                             height='30'
+                            title='change the width of the sketch'
                             onClick={this.selectChangeWidth.bind(this)} readOnly/>
+                    </div>
+                    <div id='selectorExploration' className='tooltip' style={{visibility: 'hidden'}}>
                     </div>
                     {/* <input
                         type="radio"
@@ -2005,12 +2027,20 @@ export default class QueryBySketch extends React.Component{
                 this.pathWidth.remove();
             }
             this.convertSketchIntoQuery();
+            $('img[name=QBSSelector]').each(function() {
+                if ($(this).attr('value') === 'changeWidth') {
+                    $(this).addClass('disabled');
+                }
+            });
         } else {
             // if the width detection is on
             let variableList = document.getElementById('widthVariables');
             let selectedIdx = variableList.selectedIndex;
             let selectedVal = variableList.options[selectedIdx].value;
             this.widthVar = selectedVal;
+            $('img[name=QBSSelector]').each(function() {
+                $(this).removeClass('disabled');
+            });
         }
     }
 
