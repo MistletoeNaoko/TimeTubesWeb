@@ -288,34 +288,40 @@ export default class Controllers extends React.Component{
         return (
             <div id='inputFile' className='controllersElem'>
                 <h6>File type</h6>
-                <form id="fileType" style={{minWidth: '200px'}}
+                <form id="fileType" className='form-check-inline' style={{minWidth: '200px'}}
                       onChange={this.changeFileType.bind(this)}>
-                    <div className="form-check form-check-inline">
+                    <div className="custom-control custom-radio"
+                        style={{marginRight: '0.5rem'}}>
                         <input
                             type="radio"
                             name="fileType"
                             value="csv"
+                            className="custom-control-input"
                             checked={this.state.fileType === 'csv'} readOnly/>
-                        <label className="form-check-label" htmlFor="inlineCheckbox1">csv</label>
+                        <label className="custom-control-label" htmlFor="inlineCheckbox1">csv</label>
                     </div>
-                    <div className="form-check form-check-inline">
+                    <div className="custom-control custom-radio"
+                        style={{marginRight: '0.5rem'}}>
                         <input
                             type="radio"
                             name="fileType"
                             value="tsv"
+                            className="custom-control-input"
                             checked={this.state.fileType === 'tsv'} readOnly/>
-                        <label className="form-check-label" htmlFor="inlineCheckbox1">tsv</label>
+                        <label className="custom-control-label" htmlFor="inlineCheckbox1">tsv</label>
                     </div>
-                    <div className="form-check form-check-inline">
+                    <div className="custom-control custom-radio"
+                        style={{marginRight: '0.5rem'}}>
                         <input
                             type="radio"
                             name="fileType"
                             value="space"
+                            className="custom-control-input"
                             checked={this.state.fileType === 'space'} readOnly/>
-                        <label className="form-check-label" htmlFor="inlineCheckbox1">space</label>
+                        <label className="custom-control-label" htmlFor="inlineCheckbox1">space</label>
                     </div>
                 </form>
-                <h6>Initial line of the data (exclude headers)</h6>
+                <h6>Initial line of the data (excluding headers)</h6>
                 <div className="form-row" id="initialLineField" style={{display: 'flex', justifyContent: 'center'}}>
                     <button
                         type="button"
@@ -361,55 +367,55 @@ export default class Controllers extends React.Component{
                            id='switchCameraBtn'
                            onClick={this.switchCamera.bind(this)}>Switch camera</label>
                 </li>
-                <div className="form-check form-check-inline menuItem">
+                <div className="custom-control custom-checkbox menuItem">
                     <input
-                        className="form-check-input menuCheck"
+                        className="custom-control-input menuCheck"
                         type="checkbox"
                         id="checkboxGrid"
                         value="option1"
                         checked={this.state.grid}
                         onChange={this.switchGridDisplay.bind(this)}/>
                     <label
-                        className="nav-link menuLabel"
+                        className="custom-control-label nav-link menuLabel"
                         htmlFor="inlineCheckbox1"
                         onClick={this.switchGridDisplay.bind(this)}>Grid</label>
                 </div>
-                <div className="form-check form-check-inline menuItem">
+                <div className="custom-control custom-checkbox menuItem">
                     <input
-                        className="form-check-input menuCheck"
+                        className="custom-control-input menuCheck"
                         type="checkbox"
                         id="checkboxLabel"
                         value="option1"
                         checked={this.state.label}
                         onChange={this.switchLabelDisplay.bind(this)}/>
                     <label
-                        className="nav-link menuLabel"
+                        className="custom-control-label nav-link menuLabel"
                         htmlFor="inlineCheckbox1"
                         onClick={this.switchLabelDisplay.bind(this)}>Label</label>
                 </div>
-                <div className="form-check form-check-inline menuItem">
+                <div className="custom-control custom-checkbox menuItem">
                     <input
-                        className="form-check-input menuCheck"
+                        className="custom-control-input menuCheck"
                         type="checkbox"
                         id="checkboxAxis"
                         value="option1"
                         checked={this.state.axis}
                         onChange={this.switchAxisDisplay.bind(this)}/>
                     <label
-                        className="nav-link menuLabel"
+                        className="custom-control-label nav-link menuLabel"
                         htmlFor="inlineCheckbox1"
                         onClick={this.switchAxisDisplay.bind(this)}>Axis</label>
                 </div>
-                <div className="form-check form-check-inline menuItem">
+                <div className="custom-control custom-checkbox menuItem">
                     <input
-                        className="form-check-input menuCheck"
+                        className="custom-control-input menuCheck"
                         type="checkbox"
                         id="checkboxPlot"
                         value="option1"
                         checked={this.state.plot}
                         onChange={this.switchPlotDisplay.bind(this)}/>
                     <label
-                        className="nav-link menuLabel"
+                        className="custom-control-label nav-link menuLabel"
                         htmlFor="inlineCheckbox1"
                         onClick={this.switchPlotDisplay.bind(this)}>Plot</label>
                 </div>
@@ -434,29 +440,29 @@ export default class Controllers extends React.Component{
     tubeMenu() {
         return (
             <ul className="navbar-nav" id='tubeMenu'>
-                <div className="form-check form-check-inline menuItem">
+                <div class="custom-control custom-checkbox menuItem">
                     <input
-                        className="form-check-input menuCheck"
+                        className="custom-control-input menuCheck"
                         type="checkbox"
                         id="checkboxClip"
                         value="option1"
                         checked={this.state.clip}
                         onChange={this.clipTube.bind(this)}/>
                     <label
-                        className="nav-link menuLabel"
+                        className="custom-control-label nav-link menuLabel"
                         htmlFor="inlineCheckbox1"
                         onClick={this.clipTube.bind(this)}>Clip</label>
                 </div>
-                <div className="form-check form-check-inline menuItem">
+                <div class="custom-control custom-checkbox menuItem">
                     <input
-                        className="form-check-input menuCheck"
+                        className="custom-control-input menuCheck"
                         type="checkbox"
                         id="checkboxShade"
                         value="option1"
                         checked={this.state.shade}
                         onChange={this.switchShade.bind(this)}/>
                     <label
-                        className="nav-link menuLabel"
+                        className="custom-control-label nav-link menuLabel"
                         htmlFor="inlineCheckbox1"
                         onClick={this.switchShade.bind(this)}>Shade</label>
                 </div>
@@ -493,9 +499,9 @@ export default class Controllers extends React.Component{
     multiTubesMenu() {
         return (
             <ul className="navbar-nav" id='multiTubesMenu'>
-                <div className="form-check form-check-inline menuItem">
+                <div class="custom-control custom-checkbox menuItem">
                     <input
-                        className="form-check-input menuCheck"
+                        className="custom-control-input menuCheck"
                         type="checkbox"
                         id='checkboxLock'
                         value="option1"
@@ -503,7 +509,7 @@ export default class Controllers extends React.Component{
                         onChange={this.lockControl.bind(this)}
                         disabled={!this.state.multiOptions}/>
                     <label
-                        className="nav-link menuLabel"
+                        className="custom-control-label nav-link menuLabel"
                         htmlFor="inlineCheckbox1"
                         onClick={this.lockControl.bind(this)}>Lock</label>
                 </div>

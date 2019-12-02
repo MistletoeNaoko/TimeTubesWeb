@@ -41,7 +41,7 @@ g.x_axis line, g.y_axis line{
 }
 
 label.menuLabel {
-    padding: 0px;
+    padding: 0px 0.8rem 0px 0px !important;
     margin-bottom: 0px;
 }
 
