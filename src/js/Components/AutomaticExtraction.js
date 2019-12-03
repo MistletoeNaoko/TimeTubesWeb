@@ -122,6 +122,13 @@ export default class AutomaticExtraction extends React.Component {
             );    
     }
 
+    clickRunButton() {
+        $('#matchingStatus').text('searching...');
+        setTimeout(function() {
+            this.runAutomaticExtraction();
+        }.bind(this), 0);
+    }
+
     runAutomaticExtraction() {
         let targets = FeatureStore.getTarget();
         let flares, rotations, anomalies;
@@ -552,7 +559,7 @@ export default class AutomaticExtraction extends React.Component {
                         type="button"
                         id='runAutomaticExtractionBtn'
                         style={{float: 'right'}}
-                        onClick={this.runAutomaticExtraction.bind(this)}>Run</button>
+                        onClick={this.clickRunButton.bind(this)}>Run</button>
             </div>
         );
     }

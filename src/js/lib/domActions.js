@@ -55,3 +55,14 @@ export function transformSentenceToCamel(str) {
     result = result.charAt(0).toLowerCase() + result.slice(1);
     return result;
 }
+
+export function displayLoading(parentId) {
+    if ($('#loading').length <= 0) {
+        $("#" + parentId).append('<img id="loading" src="img/icons/loading.gif" width="30" height="30"/>');
+    }
+    return 'displayLoading';
+}
+
+export function removeLoading() {
+    $('#loading').remove();
+}

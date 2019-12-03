@@ -377,7 +377,7 @@ export default class VisualQuery extends React.Component {
                             type="button"
                             id='runMatchingBtn'
                             style={{float: 'right'}}
-                            onClick={this.runMatching.bind(this)}>Run</button>
+                            onClick={this.clickRunButton.bind(this)}>Run</button>
                 </div>
             </div>
         );
@@ -385,6 +385,13 @@ export default class VisualQuery extends React.Component {
 
     collapseMatchingOptions() {
         $('#matchingOptionsMain').slideToggle();
+    }
+
+    clickRunButton() {
+        $('#matchingStatus').text('searching...');
+        setTimeout(function() {
+            this.runMatching();
+        }.bind(this), 0);
     }
 
     runMatching() {
@@ -426,7 +433,6 @@ export default class VisualQuery extends React.Component {
                         // TODO: Remove overlapping!!
                         FeatureAction.setExtractionResults(results, query, ignored);
                         TimeSeriesQuerying.setDefaltOrderOfResults();
-                        TimeSeriesQuerying.showExtractionResults();
                     }
                 }
                 break;
@@ -452,10 +458,10 @@ export default class VisualQuery extends React.Component {
                     }
                     FeatureAction.setExtractionResults(results, query, ignored);
                     TimeSeriesQuerying.setDefaltOrderOfResults();
-                    TimeSeriesQuerying.showExtractionResults();
                 }
                 break;
         }
+        TimeSeriesQuerying.showExtractionResults();
     }
 
     render() {

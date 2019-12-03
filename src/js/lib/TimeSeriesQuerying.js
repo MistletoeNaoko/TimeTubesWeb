@@ -825,6 +825,11 @@ export function showExtractionResults() {
     for (let i = 0; i < targetList.length; i++) {
         TimeTubesAction.recoverTube(targetList[i], currentCamera[String(targetList[i])], currentPos[String(targetList[i])]);
     }
+    if (results.length > 0) {
+        $('#matchingStatus').text(results.length + ' results are found');
+    } else {
+        $('#matchingStatus').text('No results are found');
+    }
 }
 
 export function updateSortResultsPulldown() {

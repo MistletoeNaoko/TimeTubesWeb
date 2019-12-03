@@ -150,7 +150,9 @@ export default class ExtractionResults extends React.Component {
         AppAction.selectMenu('visualization');
         // move a tube to the JD and change far value of the camera
         // pass this.state.selected.id & this.state.selected.period
-        if (this.state.selected.period) {
+        if (this.state.selected.angle) {
+
+        } else if (this.state.selected.period) {
             TimeTubesAction.showTimeTubesOfTimeSlice(this.state.selected.id, [this.state.selected.start, this.state.selected.start + this.state.selected.period]);
         } else {
             TimeTubesAction.searchTime(this.state.selected.id, this.state.selected.start);
@@ -364,6 +366,7 @@ export default class ExtractionResults extends React.Component {
                             Open
                         </button>
                     </div>
+                    <label id='matchingStatus'></label>
                     <div id='resultsArea'>
                         {/*{results}*/}
                     </div>
