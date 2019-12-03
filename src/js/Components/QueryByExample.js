@@ -1,6 +1,7 @@
 import React from 'react';
 import * as FeatureAction from '../Actions/FeatureAction';
 import DataStore from '../Stores/DataStore';
+import { func } from 'prop-types';
 
 export default class QueryByExample extends React.Component {
     constructor(props) {
@@ -42,9 +43,46 @@ export default class QueryByExample extends React.Component {
         return (
             <div className='featureElem'>
                 <h5>Selection</h5>
+                <div className="form-check">
+                    <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="checkboxDragTube"
+                        value="option1"
+                        checked={this.state.dragSelection}
+                        onChange={this.switchDragSelection.bind(this)}/>
+                    <label
+                        className="form-check-label"
+                        htmlFor="inlineCheckbox1">
+                        Selection by drag
+                    </label>
+                </div>
                 <form className="form-check form-check-inline selector featureRow"
                       id='QBESelector' onChange={this.switchSelector.bind(this)}>
-                    <div className="custom-control custom-radio">
+                    <img
+                        id='QBESelect'
+                        className='selectorIcon selected'
+                        name='QBESelector'
+                        value='Select'
+                        src='img/icons/pen.png'
+                        alt='pen'
+                        width='30'
+                        height='30'
+                        title='select a part of the tube'
+                        onClick={this.selectSelect.bind(this)} readOnly/>
+                    <img
+                        id='QBEDeselect'
+                        className='selectorIcon'
+                        name='QBESelector'
+                        value='Deselect'
+                        src='img/icons/eraser.png'
+                        alt='eraser'
+                        width='30'
+                        height='30'
+                        title='deselect a part of the tube'
+                        onClick={this.selectDeselect.bind(this)} readOnly/>
+                        
+                    {/* <div className="custom-control custom-radio">
                         <input
                             type="radio"
                             id='QBESelect'
@@ -65,7 +103,7 @@ export default class QueryByExample extends React.Component {
                             value="Deselect"
                             checked={!this.state.selector} readOnly/>
                         <label className="custom-control-label" htmlFor="QBEDeselect">Deselect</label>
-                    </div>
+                    </div> */}
                 </form>
                 <div id='selectTimeInterval' className='form-row featureRow'>
                     <div className="input-group input-group-sm" style={{width: '10rem', marginRight: '1.5rem'}}>
@@ -82,20 +120,6 @@ export default class QueryByExample extends React.Component {
                             style={{right: '0'}}
                             onClick={this.selectTimeInterval.bind(this)} >Select</button>
                 </div>
-                <div className="form-check">
-                    <input
-                        className="form-check-input"
-                        type="checkbox"
-                        id="checkboxDragTube"
-                        value="option1"
-                        checked={this.state.dragSelection}
-                        onChange={this.switchDragSelection.bind(this)}/>
-                    <label
-                        className="form-check-label"
-                        htmlFor="inlineCheckbox1">
-                        Selection by drag
-                    </label>
-                </div>
                 <button
                     id='resetSelectionBtn'
                     className='btn btn-primary btn-sm featureRow'
@@ -109,6 +133,26 @@ export default class QueryByExample extends React.Component {
     switchSelector() {
         this.setState({selector: !this.state.selector});
         FeatureAction.switchSelector();
+    }
+
+    selectSelect() {
+        this.setState({
+            selector: true
+        });
+        $('img[name=QBESelector]').each(function() {
+            $(this).removeClass('selected');
+        });
+        $('#QBESelect').addClass('selected');
+    }
+
+    selectDeselect() {
+        this.setState({
+            selector: false
+        });
+        $('img[name=QBESelector]').each(function() {
+            $(this).removeClass('selected');
+        });
+        $('#QBEDeselect').addClass('selected');
     }
 
     selectTimeInterval() {
