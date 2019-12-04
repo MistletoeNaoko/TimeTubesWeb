@@ -36,7 +36,7 @@ export default class AutomaticExtraction extends React.Component {
     }
 
     setGaussCurve() {
-        let outerWidth = 200, outerHeight = 200;
+        let outerWidth = 150, outerHeight = 150;
         let width = outerWidth - this.gaussMargin.left - this.gaussMargin.right,
             height = outerHeight - this.gaussMargin.top - this.gaussMargin.bottom;
 

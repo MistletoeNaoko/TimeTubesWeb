@@ -130,3 +130,7 @@ export function showTimeTubesOfTimeSlice(id, period) {
 export function updateAveragePeriod(value) {
     dispatcher.dispatch({type: 'UPDATE_AVERAGE_PERIOD', value});
 }
+
+export function showRotationCenter(id, period, center) {
+    dispatcher.dispatch({type: 'SHOW_ROTATION_CENTER', id, period, center});
+}

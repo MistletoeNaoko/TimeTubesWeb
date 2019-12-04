@@ -174,8 +174,13 @@ class TimeTubesStore extends EventEmitter{
                 break;
             case 'SHOW_TIMETUBES_OF_TIME_SLICE':
                 this.showTimeTubesofTimeSlice(action.id, action.period);
+                break;
             case 'UPDATE_AVERAGE_PERIOD':
                 this.updateAveragePeriod(action.value);
+                break;
+            case 'SHOW_ROTATION_CENTER':
+                this.showRotationCenter(action.id, action.period, action.center);
+                break;
             default:
         }
     }
@@ -487,6 +492,12 @@ class TimeTubesStore extends EventEmitter{
     updateAveragePeriod(value) {
         this.averagePeriod = value;
         this.emit('updateAveragePeriod');
+    }
+
+    showRotationCenter(id, period, center) {
+        this.cameraProp[id].far = period[1] - period[0] + 50;
+        this.focused[id] = period[0] - DataStore.getData(id).data.meta.min.z;
+        this.emit('showRotationCenter', id, period, center);
     }
 }
 

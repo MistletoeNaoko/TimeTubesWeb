@@ -36,6 +36,7 @@ export default class TimeTubes extends React.Component{
         this.fragment = document.getElementById('fragmentShader_tube').textContent;
         this.lock = false;
         this.opacityCurve = TimeTubesStore.getOpacityCurve('Default');
+        this.rotationPeriod = null;
         // set plot color
         if (this.data.merge) {
             this.plotColor = [];
@@ -281,6 +282,20 @@ export default class TimeTubes extends React.Component{
                 this.tube.material.uniforms.texture.value = texture;
             }
         });
+        TimeTubesStore.on('showRotationCenter', (id, period, center) => {
+            if (id === this.id) {
+                this.resetCamera();
+                this.tubeGroup.position.z = TimeTubesStore.getFocused(id);
+                this.cameraProp = TimeTubesStore.getCameraProp(this.id);
+                this.updateCamera();
+                this.diskRotation.visible = true;
+                this.diskRotation.position.x = center.x * this.data.meta.range;
+                this.diskRotation.position.y = center.y * this.data.meta.range;
+                this.rotationPeriod = period;
+            } else {
+                this.rotationPeriod = null;
+            }
+        });
         FeatureStore.on('switchQueryMode', (mode) => {
             let sourceId = FeatureStore.getSource();
             if (mode === 'QBE' && sourceId !== 'default') {
@@ -409,6 +424,7 @@ export default class TimeTubes extends React.Component{
         this.drawAxis();
         this.drawPlot();
         this.drawDisk();
+        this.drawDiskForRotationCenter();
     }
 
     start() {
@@ -506,6 +522,14 @@ export default class TimeTubes extends React.Component{
             }
 
             this.tubeGroup.position.z = dst;
+
+            if (this.diskRotation.visible) {
+                if (dst < this.rotationPeriod[0] - this.data.spatial[0].z || this.rotationPeriod[1] - this.data.spatial[0].z < dst) {
+                    this.diskRotation.visible = false;
+                    this.rotationPeriod = null;
+                }
+            }
+
             TimeTubesAction.updateFocus(this.id, dst, changeColFlg);
             if (this.lock)
                 TimeTubesAction.synchronizeTubes(this.id, dst, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 0));
@@ -1225,6 +1249,14 @@ export default class TimeTubes extends React.Component{
         this.disk = new THREE.Mesh(circleGeometry, circleMaterial);
         this.scene.add(this.disk);
         this.disk.visible = false;
+    }
+
+    drawDiskForRotationCenter() {
+        let circleGeometry = new THREE.CircleGeometry(0.5, 16);
+        let circleMaterial = new THREE.MeshBasicMaterial({color: 0xffff00, opacity: 0.8});
+        this.diskRotation = new THREE.Mesh(circleGeometry, circleMaterial);
+        this.scene.add(this.diskRotation);
+        this.diskRotation.visible = false;
     }
 
     initQBEView() {
