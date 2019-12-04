@@ -246,6 +246,10 @@ export default class TimeTubes extends React.Component{
             if (id === this.id) {
                 this.deselectAll();
                 this.tubeGroup.position.z = pos;
+                if (far !== undefined) {
+                    this.clippingPlane2.constant = far;
+                    this.renderer.clippingPlanes = [this.clippingPlane2];
+                }
                 this.renderer.render(this.scene, this.camera);
             }
         });
@@ -254,6 +258,7 @@ export default class TimeTubes extends React.Component{
                 this.cameraProp = TimeTubesStore.getCameraProp(this.id);
                 this.tubeGroup.position.z = tubePos;
                 this.updateCamera();
+                this.renderer.clippingPlanes = [];
             }
         });
         TimeTubesStore.on('showTimeTubesOfTimeSlice', (id, period) => {
