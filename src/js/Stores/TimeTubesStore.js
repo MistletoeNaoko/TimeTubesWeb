@@ -484,9 +484,9 @@ class TimeTubesStore extends EventEmitter{
     }
 
     showTimeTubesofTimeSlice(id, period) {
-        this.cameraProp[id].far = period[1] - period[0] + 50;
+        // this.cameraProp[id].far = period[1] - period[0] + 50;
         this.focused[id] = period[0] - DataStore.getData(id).data.meta.min.z;
-        this.emit('showTimeTubesOfTimeSlice', id);
+        this.emit('showTimeTubesOfTimeSlice', id, period);
     }
 
     updateAveragePeriod(value) {
@@ -495,7 +495,7 @@ class TimeTubesStore extends EventEmitter{
     }
 
     showRotationCenter(id, period, center) {
-        this.cameraProp[id].far = period[1] - period[0] + 50;
+        // this.cameraProp[id].far = period[1] - period[0] + 50;
         this.focused[id] = period[0] - DataStore.getData(id).data.meta.min.z;
         this.emit('showRotationCenter', id, period, center);
     }

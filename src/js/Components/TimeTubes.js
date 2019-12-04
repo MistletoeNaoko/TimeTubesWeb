@@ -256,13 +256,12 @@ export default class TimeTubes extends React.Component{
                 this.updateCamera();
             }
         });
-        TimeTubesStore.on('showTimeTubesOfTimeSlice', (id) => {
+        TimeTubesStore.on('showTimeTubesOfTimeSlice', (id, period) => {
             if (id === this.id) {
                 this.resetCamera();
                 this.tubeGroup.position.z = TimeTubesStore.getFocused(id);
-                //TODO: not set far value but add a new clipping plane
-                this.cameraProp = TimeTubesStore.getCameraProp(this.id);
-                this.updateCamera();
+                this.clippingPlane2.constant = period[1] - period[0];
+                this.renderer.clippingPlanes = [this.clippingPlane2];
             }
         });
         TimeTubesStore.on('updateAveragePeriod', () => {
@@ -286,12 +285,12 @@ export default class TimeTubes extends React.Component{
             if (id === this.id) {
                 this.resetCamera();
                 this.tubeGroup.position.z = TimeTubesStore.getFocused(id);
-                this.cameraProp = TimeTubesStore.getCameraProp(this.id);
-                this.updateCamera();
                 this.diskRotation.visible = true;
                 this.diskRotation.position.x = center.x * this.data.meta.range;
                 this.diskRotation.position.y = center.y * this.data.meta.range;
                 this.rotationPeriod = period;
+                this.clippingPlane2.constant = period[1] - period[0];
+                this.renderer.clippingPlanes = [this.clippingPlane2];
             } else {
                 this.rotationPeriod = null;
             }
@@ -381,6 +380,7 @@ export default class TimeTubes extends React.Component{
         this.start();
 
         this.clippingPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
+        this.clippingPlane2 = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
 
         let directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
         directionalLight.position.set(-20, 40, 60);
@@ -523,11 +523,15 @@ export default class TimeTubes extends React.Component{
 
             this.tubeGroup.position.z = dst;
 
+            // remove/hide objects out of use
             if (this.diskRotation.visible) {
                 if (dst < this.rotationPeriod[0] - this.data.spatial[0].z || this.rotationPeriod[1] - this.data.spatial[0].z < dst) {
                     this.diskRotation.visible = false;
                     this.rotationPeriod = null;
                 }
+            }
+            if (this.renderer.clippingPlanes.length > 0) {
+                this.renderer.clippingPlanes = [];
             }
 
             TimeTubesAction.updateFocus(this.id, dst, changeColFlg);
