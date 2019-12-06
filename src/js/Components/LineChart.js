@@ -12,6 +12,9 @@ export default class LineChart extends React.Component {
         this.id = props.id;
         this.item = props.item;
         this.itemName = DataStore.getData(this.id).data.lookup[this.item];
+        if (this.itemName === undefined) {
+            this.itemName = this.item;
+        }
         this.query = props.query;
         this.target = props.target;
         this.path = props.path;

@@ -18,6 +18,7 @@ export default class VisualQuery extends React.Component {
             selector: true,
             source: -1,
             selectedInterval: [],
+            coordinate: 'rectangular',
             DTWMode: 'DTWD'
         };
     }
@@ -87,6 +88,13 @@ export default class VisualQuery extends React.Component {
         let selectedDTWMode = $('input[name=DTWType]:checked').val();
         this.setState({
             DTWMode: selectedDTWMode
+        });
+    }
+
+    switchCoordinate() {
+        let selectedCoordinate = $('input[name=coordinate]:checked').val();
+        this.setState({
+            coordinate: selectedCoordinate
         });
     }
 
@@ -264,7 +272,7 @@ export default class VisualQuery extends React.Component {
                             {items}
                         </form>
                     </div>
-                    <h6>Settings of DTW</h6>
+                    <h6>Computation</h6>
                     <div className='container'
                         style={{paddingRight: '0px', paddingLeft: '0px', marginBottom: '0.2rem'}}>
                         <div className='row matchingOption'
@@ -275,6 +283,37 @@ export default class VisualQuery extends React.Component {
                             </div>
                         </div>
                         <div className="row matchingOption">
+                            <div className='col'>
+                                <form
+                                    className="form-check form-inline"
+                                    id='coordinate'
+                                    onChange={this.switchCoordinate.bind(this)}
+                                    style={{paddingLeft: '0px'}}>
+                                    <div className="custom-control custom-radio">
+                                        <input type="radio" id="rectangularCoordinate" name="coordinate" value='rectangular'
+                                            checked={(this.state.coordinate === 'rectangular')? true: false}
+                                            className="custom-control-input" readOnly/>
+                                        <label className="custom-control-label" htmlFor="rectangularCoordinate">
+                                            Rectangular coordinate
+                                        </label>
+                                    </div>
+                                    <div className="custom-control custom-radio"
+                                        style={{marginLeft: '1.5rem'}}>
+                                        <input type="radio" id="polarCoordinate" name="coordinate" value='polar'
+                                            checked={(this.state.coordinate === 'polar')? true: false}
+                                            className="custom-control-input" readOnly/>
+                                        <label className="custom-control-label" htmlFor="polarCoordinate">
+                                            Polar coordinate
+                                        </label>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <h6>Settings of DTW</h6>
+                    <div className='container'
+                        style={{paddingRight: '0px', paddingLeft: '0px', marginBottom: '0.2rem'}}>
+                        <div className="row matchingOption">
                             <div className='col-5'>
                                 Distance metric
                             </div>
@@ -282,7 +321,7 @@ export default class VisualQuery extends React.Component {
                                 <select
                                     className="custom-select custom-select-sm"
                                     id='distanceMetric'
-                                    style={{width: '40%'}}>
+                                    style={{width: '60%'}}>
                                     <option value="Euclidean">Euclidean</option>
                                     <option value="Manhattan">Manhattan</option>
                                 </select>
@@ -333,14 +372,14 @@ export default class VisualQuery extends React.Component {
                                 <label className="col-form-label col-form-label-sm"> days</label>
                             </div>
                         </div>
-                        <div className="row matchingOption">
+                        {/* <div className="row matchingOption">
                             <div className='col-5'>
                                 Restrictions
                             </div>
                             <div className='col'>
                                 Restriction checkboxes here
                             </div>
-                        </div>
+                        </div> */}
                         <div className="row matchingOption">
                             <div className='col-5'>
                                 Type of DTW
@@ -425,11 +464,19 @@ export default class VisualQuery extends React.Component {
                     let ignored = domActions.getIgnoredVariables();
                     if (source !== NaN) {
                         // convert a query into an object with arrays (divide time series into equal interval (1day))
-                        let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored);
+                        let results;
                         // compute distance between time slices!
                         // scores of matching with starting JD and period will be returned
                         // result stores {id, start, period, dtw distance, path} (not sorted)
-                        let results = TimeSeriesQuerying.runMatching(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
+                        let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored, 'rectangular');
+                        if (this.state.coordinate === 'rectangular') {
+                            results = TimeSeriesQuerying.runMatching(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
+                            // FeatureAction.setExtractionResults(results, query, ignored);
+                        } else if (this.state.coordinate === 'polar') {
+                            let queryPolar = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored, this.state.coordinate);
+                            results = TimeSeriesQuerying.runMatching(queryPolar, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
+                            // FeatureAction.setExtractionResults(results, queryPolar, ignored);
+                        }
                         // TODO: Remove overlapping!!
                         FeatureAction.setExtractionResults(results, query, ignored);
                         TimeSeriesQuerying.setDefaltOrderOfResults();
@@ -439,7 +486,6 @@ export default class VisualQuery extends React.Component {
             case 'QBS':
                 if (targets.length > 0) {
                     let query = FeatureStore.getQuery();
-                    let results = TimeSeriesQuerying.runMatchingSketch(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
                     let ignored = [];
                     for (let key in query) {
                         if (Array.isArray(query[key])) {
@@ -455,6 +501,16 @@ export default class VisualQuery extends React.Component {
                             }
                             if (flag) ignored.push(key);
                         }
+                    }
+                    let results;
+                    if (this.state.coordinate === 'rectangular') {
+                        results = TimeSeriesQuerying.runMatchingSketch(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
+                        // FeatureAction.setExtractionResults(results, query, ignored);
+                    } else if (this.state.coordinate === 'polar') {
+                        // convert query to polar coordinate
+                        let queryPolar = TimeSeriesQuerying.makeQueryPolarQBS(query);
+                        results = TimeSeriesQuerying.runMatchingSketch(queryPolar, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
+                        // FeatureAction.setExtractionResults(results, queryPolar, ignored);
                     }
                     FeatureAction.setExtractionResults(results, query, ignored);
                     TimeSeriesQuerying.setDefaltOrderOfResults();

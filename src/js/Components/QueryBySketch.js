@@ -599,7 +599,7 @@ export default class QueryBySketch extends React.Component{
                             let now = Date.now();
                             let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
                             this.timeStamps.push(now);
-                            let t = deltaT / 1000 * 30 + 5 / 2;
+                            let t = Math.min(deltaT / 1000 * 30 + 5 / 2, 100);
                             let deltaX = event.delta.x, deltaY = event.delta.y;
                             let l = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
                             let step = event.delta;
@@ -819,7 +819,7 @@ export default class QueryBySketch extends React.Component{
                             let now = Date.now();
                             let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
                             this.timeStamps.push(now);
-                            let t = deltaT / 1000 * 30 + 5 / 2;
+                            let t = Math.min(deltaT / 1000 * 30 + 5 / 2, 100);
                             this.radiuses.push(t);
 
                             // remove the temporal width path

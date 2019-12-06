@@ -10,31 +10,95 @@ import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 
-const singleEPS = 1.1920928955078125 * Math.pow(10, -7);
-
-export function makeQueryfromQBE(source, period, ignored) {
+export function makeQueryfromQBE(source, period, ignored, coordinates) {
     let roundedPeriod = [Math.floor(period[0]), Math.ceil(period[1])];
     let minJD = DataStore.getData(source).data.meta.min.z;
     let lookup = DataStore.getData(source).data.lookup;
-    let query = {};
+    let query = {}, keys = [];
     for (let key in lookup) {
         if (ignored.indexOf(key) < 0) {
-            query[key] = [];
+            keys.push(key);
         }
     }
-    for (let i = roundedPeriod[0]; i <= roundedPeriod[1]; i++) {
-        let values = DataStore.getValues(source, i - minJD);
-        for (let key in query) {
-            if (key !== 'z') {
-                query[key].push(values[key]);
-            } else {
-                query[key].push(i);
+    if (coordinates === 'rectangular') {
+        for (let keyIdx = 0; keyIdx < keys.length; keyIdx++) {
+            query[keys[keyIdx]] = [];
+        }
+        for (let i = roundedPeriod[0]; i <= roundedPeriod[1]; i++) {
+            let values = DataStore.getValues(source, i - minJD);
+            for (let key in query) {
+                if (key !== 'z') {
+                    query[key].push(values[key]);
+                } else if (key === 'z') {
+                    query[key].push(i);
+                }
+            }
+        }
+        query['minJD'] = roundedPeriod[0];
+        query['arrayLength'] = roundedPeriod[1] - roundedPeriod[0] + 1;
+    } else if (coordinates === 'polar') {
+        // to use polar coordinate, both of x and y axis information are necessary
+        if (keys.indexOf('x') < 0 || keys.indexOf('y') < 0) {
+            alert('To use the polar coordinate for computing similarities, you cannot ignore the Stokes parameters (Q/I and U/I).');
+        } else {
+            for (let keyIdx = 0; keyIdx < keys.length; keyIdx++) {
+                if (keys[keyIdx] === 'x') {
+                    query.r = [];
+                } else if (keys[keyIdx] === 'y') {
+                    query.theta = [];
+                } else {
+                    query[keys[keyIdx]] = [];
+                }
+            }
+            for (let i = roundedPeriod[0]; i <= roundedPeriod[1]; i++) {
+                let values = DataStore.getValues(source, i - minJD);
+                let r = Math.sqrt(Math.pow(values.x, 2) + Math.pow(values.y, 2));
+                let theta = convertRadToDeg(Math.atan2(values.x, values.y));
+                for (let key in query) {
+                    if (key === 'r') {
+                        query[key].push(r);
+                    } else if (key === 'theta') {
+                        query[key].push(theta);
+                    } else if (key !== 'z') {
+                        query[key].push(values[key]);
+                    } else if (key === 'z') {
+                        query[key].push(i);
+                    }
+                }
+            }
+            query['minJD'] = roundedPeriod[0];
+            query['arrayLength'] = roundedPeriod[1] - roundedPeriod[0] + 1;
+        }
+    }
+    return query;
+}
+
+export function makeQueryPolarQBS(query) {
+    let keys = Object.keys(query);
+    let queryPolar = {};
+    if (keys.indexOf('x') < 0 || keys.indexOf('y') < 0) {
+        alert('To use the polar coordinate for computing similarities, you cannot ignore the Stokes parameters (Q/I and U/I).');
+    } else {
+        if (query.x.indexOf(null) >= 0 || query.y.indexOf(null) >= 0) {
+            alert('To use the polar coordinate for computing similarities, you have to assign Q/I and U/I to x axis, y axis, or width.');
+        } else {
+            let r = [], theta = [];
+            for (let i = 0; i < query.arrayLength; i++) {
+                let rValue = Math.sqrt(Math.pow(query.x[i], 2) + Math.pow(query.y[i], 2));
+                let thetaValue = convertRadToDeg(Math.atan2(query.x[i], query.y[i]));
+                r.push(rValue);
+                theta.push(thetaValue);
+            }
+            queryPolar.r = r;
+            queryPolar.theta = theta;
+            for (let key in query) {
+                if (key !== 'x' && key !== 'y') {
+                    queryPolar[key] = query[key];
+                }
             }
         }
     }
-    query['minJD'] = roundedPeriod[0];
-    query['arrayLength'] = roundedPeriod[1] - roundedPeriod[0] + 1;
-    return query;
+    return queryPolar;
 }
 
 export function runMatching(query, targets, DTWType, normalization, dist, window, step, period) {
@@ -44,7 +108,7 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
     // compute DTW distance
     // store the DTW distance with the first time stamp of the time slice and the length of the priod
     // sort the result
-    let result = [];//, resultLib = [];
+    let result = [];
     let distFunc;
     switch (dist) {
         case 'Euclidean':
@@ -56,6 +120,22 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
     }
     for (let targetId = 0; targetId < targets.length; targetId++) {
         let targetData = DataStore.getDataArray(targets[targetId], 1);
+        if (query.r) {
+            let newTargetData = {};
+            let r = [], theta = [];
+            for (let i = 0; i < targetData.arrayLength; i++) {
+                r.push(Math.sqrt(Math.pow(targetData.x[i], 2) + Math.pow(targetData.y[i], 2)));
+                theta.push(convertRadToDeg(Math.atan2(targetData.x[i], targetData.y[i])));
+            }
+            newTargetData.r = r;
+            newTargetData.theta = theta;
+            for (let key in targetData) {
+                if (key !== 'x' && key !== 'y') {
+                    newTargetData[key] = targetData[key];
+                }
+            }
+            targetData = newTargetData;
+        }
         let minJD = targetData.z[0];
 
         switch (DTWType) {
@@ -72,7 +152,11 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                                 if (Array.isArray(targetData[key]) && key !== 'z') {
                                     let target = targetData[key].slice(i, i + j);
                                     if (normalization) {
-                                        target = normalizeTimeSeries(target);
+                                        if (key !== 'theta') {
+                                            target = normalizeTimeSeries(target);
+                                        } else {
+                                            target = normalizeTheta(target);
+                                        }
                                     }
                                     let dtw = DTW(query[key], target, window, distFunc);
                                     let path = OptimalWarpPath(dtw);
@@ -109,7 +193,11 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                             if (Array.isArray(targetData[key]) && key !== 'z') {
                                 let target = targetData[key].slice(i, i + maxLen);
                                 if (normalization) {
-                                    target = normalizeTimeSeries(target);
+                                    if (key !== 'theta') {
+                                        target = normalizeTimeSeries(target);
+                                    } else {
+                                        target = normalizeTheta(target);
+                                    }
                                 }
                                 let dist = DTWSimple(query[key], target, distFunc);
                                 dists[key] = dist;
@@ -261,6 +349,22 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
     for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
         let targetId = targets[targetIdx];
         let targetData = DataStore.getDataArray(targetId, 1);
+        if (query.r) {
+            let newTargetData = {};
+            let r = [], theta = [];
+            for (let i = 0; i < targetData.arrayLength; i++) {
+                r.push(Math.sqrt(Math.pow(targetData.x[i], 2) + Math.pow(targetData.y[i], 2)));
+                theta.push(convertRadToDeg(Math.atan2(targetData.x[i], targetData.y[i])));
+            }
+            newTargetData.r = r;
+            newTargetData.theta = theta;
+            for (let key in targetData) {
+                if (key !== 'x' && key !== 'y') {
+                    newTargetData[key] = targetData[key];
+                }
+            }
+            targetData = newTargetData;
+        }
         let minJD = targetData.z[0];
 
         // TODO: how to filter values when DTWI is selected
@@ -429,16 +533,49 @@ function normalizeTimeSeries(data) {
         result = {};
         for (let key in data) {
             if (Array.isArray(data[key]) && data[key].indexOf(null) < 0) {
-                let min = Math.min.apply(null, data[key]),
-                    max = Math.max.apply(null, data[key]);
-                let tmp = data[key].map(function (num) {
-                    return (num - min) / (max - min);
-                });
-                result[key] = tmp;
+                if (key !== 'theta') {
+                    let min = Math.min.apply(null, data[key]),
+                        max = Math.max.apply(null, data[key]);
+                    let tmp = data[key].map(function (num) {
+                        return (num - min) / (max - min);
+                    });
+                    result[key] = tmp;
+                } else {
+                    result[key] = normalizeTheta(data[key]);
+                }
             } else {
                 result[key] = data[key];
             }
         }
+    }
+    return result;
+}
+
+function normalizeTheta(data) {
+    let result = [], dataTmp = [];
+    // parameters for the exponential smoothing
+    let before = data[0], quadrantBef = getQuadrantAngle(data[0]), angDelSum = 0;
+    // transform thetas (from 0 to 360) to continuous data
+    for (let i = 0; i < data.length; i++) {
+        let quadrantNow = getQuadrantAngle(data[i]);
+        
+        if (quadrantBef === 1 && quadrantNow === 4) {
+            // from 1st quadrant to 4th quadrant (counterclockwise)
+            angDelSum -= 360;
+        } else if (quadrantBef == 4 && quadrantNow === 1) {
+            // from 4st quadrant to 1th quadrant (counterclockwise)
+            angDelSum += 360;
+        }
+
+        dataTmp.push(data[i] + angDelSum);
+
+        before = data[i] + angDelSum;
+        quadrantBef = quadrantNow;
+    }
+    let min = Math.min.apply(null, dataTmp),
+        max = Math.max.apply(null, dataTmp);
+    for (let i = 0; i < dataTmp.length; i++) {
+        result.push((dataTmp[i] - min) / (max - min));
     }
     return result;
 }
@@ -1208,9 +1345,12 @@ export function extractRotations(targets, period, diameter, angle, sigma) {
                             if ((getQuadrantAngle(angList[j].angle) === 1 && getQuadrantAngle(angList[j - 1].angle) === 4)
                             || (getQuadrantAngle(angList[j].angle) === 4 && getQuadrantAngle(angList[j - 1].angle) === 1)) {
                                 predAngBef = angList[j].angle;
+                            } else {
+                                predAngBef = predAng;
                             }
                         } else {
                             divDeg = angList[j].angle - before.angle;
+                            predAngBef = predAng;
                         }
 
                         rotationAng += divDeg;
@@ -1297,4 +1437,14 @@ function getQuadrantAngle(angle) {
         quad = 4;
     }
     return quad;
+}
+
+export function convertRadToDeg(rad) {
+    let deg = 0;
+    if (rad >= 0) {
+        deg = rad * 180 / Math.PI;
+    } else {
+        deg = (2 * Math.PI + rad) * 180 / Math.PI;
+    }
+    return deg;
 }

@@ -197,10 +197,29 @@ export default class ExtractionResults extends React.Component {
         if (Object.keys(this.state.selected).length > 0) {
             if (this.state.selected.period && !this.state.selected.angle) {
                 let targetData = DataStore.getDataArray(this.state.selected.id, 1);
+                let query = FeatureStore.getQuery();
+                if (query.r) {
+                    // convert x and y to r and theta
+                    let r = [], theta = [];
+                    for (let i = 0; i < targetData.arrayLength; i++) {
+                        let rValue = Math.sqrt(Math.pow(targetData.x[i], 2) + Math.pow(targetData.y[i], 2));
+                        let thetaValue = TimeSeriesQuerying.convertRadToDeg(Math.atan2(targetData.x[i], targetData.y[i]));
+                        r.push(rValue);
+                        theta.push(thetaValue);
+                    }
+                    let newTargetData = {};
+                    newTargetData.r = r;
+                    newTargetData.theta = theta;
+                    for (let key in targetData) {
+                        if (key !== 'x' && key !== 'y') {
+                            newTargetData[key] = targetData[key];
+                        }
+                    }
+                    targetData = newTargetData;
+                }
                 let timeSlice = {};
                 let minIdx = targetData.z.indexOf(this.state.selected.start),
                     maxIdx = targetData.z.indexOf(this.state.selected.start + this.state.selected.period);
-                let query = FeatureStore.getQuery();
                 for (let key in query) {
                     if (Array.isArray(query[key]) && Array.isArray(targetData[key]) && key !== 'z') {
                         if (query[key].indexOf(null) >= 0) {
