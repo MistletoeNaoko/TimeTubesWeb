@@ -1230,7 +1230,7 @@ export function extractFlaresManual(targets, threshold) {
     return results;
 }
 
-export function extractRotations(targets, period, diameter, angle, sigma) {
+export function extractRotations(targets, period, diameter, angle, sigma, stdConst) {
     let results = [];
     for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
         let targetId = targets[targetIdx];
@@ -1311,9 +1311,34 @@ export function extractRotations(targets, period, diameter, angle, sigma) {
                 let std = {x: Math.sqrt(numeratorStd.x / i), y: Math.sqrt(numeratorStd.y / i)};
 
                 // check whether the period has larger variation
-                if (!missingFlg
-                    && (std.x > DataStore.getData(targetId).data.meta.std.x || std.y > DataStore.getData(targetId).data.meta.std.y)
-                    && ((maxVal.x - minVal.x) > diameter || (maxVal.y - minVal.y) > diameter)) {
+                if (!missingFlg && ((maxVal.x - minVal.x) > diameter || (maxVal.y - minVal.y) > diameter)) {
+                    let stdX = DataStore.getData(targetId).data.meta.std.x,
+                        stdY = DataStore.getData(targetId).data.meta.std.y;
+                    switch(stdConst) {
+                        case 'no':
+                            // do nothing
+                            break;
+                        case 'and':
+                            if (!(stdX < std.x && stdY < std.y)) {
+                                continue;
+                            }
+                            break;
+                        case 'or':
+                            if (!(stdX < std.x || stdY < std.y)) {
+                                continue;
+                            }
+                            break;
+                        case 'x':
+                            if (!(stdX < std.x)) {
+                                continue;
+                            }
+                            break;
+                        case 'y':
+                            if (!(stdY < std.y)) {
+                                continue;
+                            }
+                            break;
+                    }
                     let rotationAng = 0,
                         before = angList[0],
                         alpha = 0.1,

@@ -153,11 +153,16 @@ export default class AutomaticExtraction extends React.Component {
                 angle = $('#rotationAngle').val();
             diameter = (diameter === '')? 0: Number(diameter);
             angle = (angle === '')? 0: Number(angle);
+            // std constraint
+            let stdConstraintsList = document.getElementById('stdConstraintsList');
+            let selectedIdx = stdConstraintsList.selectedIndex;
+            let selectedStdConstraint = stdConstraintsList.options[selectedIdx].value;
+            // weight for average
             let weightList = document.getElementById('weightForAverageList');
-            let selectedIdx = weightList.selectedIndex;
+            selectedIdx = weightList.selectedIndex;
             let selectedSigma = Number(weightList.options[selectedIdx].value);
 
-            rotations = TimeSeriesQuerying.extractRotations(targets, period, diameter, angle, selectedSigma);
+            rotations = TimeSeriesQuerying.extractRotations(targets, period, diameter, angle, selectedSigma, selectedStdConstraint);
         }
         if (this.state.anomaly) {
             anomalies = TimeSeriesQuerying.extractAnomalies(targets);
@@ -403,6 +408,26 @@ export default class AutomaticExtraction extends React.Component {
                     </div>
                 </div>
                 <div className='row matchingOption'>
+                    <div className='col-5' 
+                        title='Sx and Sy are standard deviations of the whole data, 
+                        sx and sy are those of the time interval'>
+                        Standard deviation of the period
+                    </div>
+                    <div className='col'>
+                        <select
+                            className="custom-select custom-select-sm"
+                            id='stdConstraintsList'
+                            style={{width: '60%'}}
+                            disabled={!this.state.rotation}>
+                            <option value="no">No constraints</option>
+                            <option value="and">Sx &lt; sx &cap; Sy &lt; sy</option>
+                            <option value="or">Sx &lt; sx &cup; Sy &lt; sy</option>
+                            <option value="x">Sx &lt; sx</option>
+                            <option value="y">Sy &lt; sy</option>
+                        </select>
+                    </div>
+                </div>
+                <div className='row matchingOption'>
                     <div className='col-5'>
                         Weight for average
                     </div>
@@ -425,27 +450,6 @@ export default class AutomaticExtraction extends React.Component {
             </div>
         );
     }
-
-    // extractionOptions() {
-    //     return (
-    //         <div id='extractionOptions'>
-    //             <h5>Extraction options</h5>
-    //             <div className="row matchingOption">
-    //                 <div className='col-5'>
-    //                     Step size of sliding window
-    //                 </div>
-    //                 <div className='col form-inline'>
-    //                     <input className="form-control form-control-sm"
-    //                         type="text"
-    //                         placeholder="step size"
-    //                         id="stepSizeOfSlidingWindow"
-    //                         style={{width: '40%', marginRight: '0.5rem'}}/>
-    //                     <label className="col-form-label col-form-label-sm"> days</label>
-    //                 </div>
-    //             </div>
-    //         </div>
-    //     );
-    // }
  
     switchFlareOption() {
         let flareOption = $('input[name=flareOptions]:checked').val();
@@ -554,7 +558,6 @@ export default class AutomaticExtraction extends React.Component {
                         <label className="custom-control-label" htmlFor="anomalyExtractionCheck">Anomaly</label>
                     </div>
                 </div>
-                {/* {this.extractionOptions()} */}
                 <button className="btn btn-primary btn-sm"
                         type="button"
                         id='runAutomaticExtractionBtn'
