@@ -21,6 +21,7 @@ export default class AutomaticExtraction extends React.Component {
 
     componentDidMount() {
         document.getElementById('weightForAverageList').selectedIndex = '2';
+        document.getElementById('stdConstraintsList').selectedIndex = '2';
         this.setGaussCurve();
         // set default values to input forms
         this.setDefaultValues();
@@ -268,7 +269,42 @@ export default class AutomaticExtraction extends React.Component {
                         </div>
                     {/* </div> */}
                     <h6>Peak function</h6>
-                    <div className="custom-control custom-checkbox">
+                    <div className="form-check form-check-inline">
+                        <img 
+                            id='peakAveMaximum'
+                            className='selectorIcon'
+                            name="peakFunction"
+                            value="AveMaximum"
+                            src='img/icons/flare1.png'
+                            alt='Average of the maximums among k left & right neightbors'
+                            width='80'
+                            height='80'
+                            title='Average of the maximums among k left & right neightbors'
+                            onClick={this.selectFlareAveMaximum.bind(this)} readOnly/>
+                        <img 
+                            id='peakAveAve'
+                            className='selectorIcon selected'
+                            name="peakFunction"
+                            value="AveAve"
+                            src='img/icons/flare2.png'
+                            alt='Average of the averages of the signed distance from k left & right neightbors'
+                            width='80'
+                            height='80'
+                            title='Average of the averages of the signed distance from k left & right neightbors'
+                            onClick={this.selectFlareAveAve.bind(this)} readOnly/>
+                        <img 
+                            id='peakAveDist'
+                            className='selectorIcon'
+                            name="peakFunction"
+                            value="AveDist"
+                            src='img/icons/flare3.png'
+                            alt='Average signed distance from the averages of k neightbors'
+                            width='80'
+                            height='80'
+                            title='Average signed distance from the averages of k neightbors'
+                            onClick={this.selectFlareAveDist.bind(this)} readOnly/>
+                    </div>
+                    {/* <div className="custom-control custom-checkbox">
                         <input 
                             type="checkbox" 
                             className="custom-control-input" 
@@ -303,7 +339,7 @@ export default class AutomaticExtraction extends React.Component {
                         <label className="custom-control-label" htmlFor="AveDistCheck">
                             Average signed distance from the averages of k neightbors
                         </label>
-                    </div>
+                    </div> */}
 
                     {/* <div className="custom-control custom-checkbox">
                         <input 
@@ -469,24 +505,36 @@ export default class AutomaticExtraction extends React.Component {
         this.setState({
             flareOption: 'automatic AveMaximum'
         });
-        if (this.state.flareOption.indexOf('automatic') >= 0) {
-        }
+        // if (this.state.flareOption.indexOf('automatic') >= 0) {
+        // }
+        $('img[name=peakFunction]').each(function() {
+            $(this).removeClass('selected');
+        });
+        $('#peakAveMaximum').addClass('selected');
     }
 
     selectFlareAveAve() {
-            this.setState({
-                flareOption: 'automatic AveAve'
-            });
-        if (this.state.flareOption.indexOf('automatic') >= 0) {
-        }
+        this.setState({
+            flareOption: 'automatic AveAve'
+        });
+        // if (this.state.flareOption.indexOf('automatic') >= 0) {
+        // }
+        $('img[name=peakFunction]').each(function() {
+            $(this).removeClass('selected');
+        });
+        $('#peakAveAve').addClass('selected');
     }
 
     selectFlareAveDist() {
-            this.setState({
-                flareOption: 'automatic AveDist'
-            });
-        if (this.state.flareOption.indexOf('automatic') >= 0) {
-        }
+        this.setState({
+            flareOption: 'automatic AveDist'
+        });
+        // if (this.state.flareOption.indexOf('automatic') >= 0) {
+        // }
+        $('img[name=peakFunction]').each(function() {
+            $(this).removeClass('selected');
+        });
+        $('#peakAveDist').addClass('selected');
     }
 
     clickFlare() {

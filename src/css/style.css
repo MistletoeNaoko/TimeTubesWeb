@@ -320,7 +320,7 @@ img.selectorIcon:active {
 }
 
 .selectorIcon.selected {
-    background-color: rgba(82, 20, 19, 0.5);
+    background-color: rgba(210, 52, 48, 0.5);
     /* display: block; */
 }
 
