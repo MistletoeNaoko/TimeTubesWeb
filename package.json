@@ -12,6 +12,7 @@
     "babel-preset-react": "^6.24.1",
     "babel-preset-stage-0": "^6.24.1",
     "bootstrap": "^4.3.1",
+    "browserify-fs": "^1.0.0",
     "d3": "^5.12.0",
     "dynamic-time-warping": "^1.0.0",
     "flux": "^3.1.3",

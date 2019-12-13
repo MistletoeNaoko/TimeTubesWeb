@@ -8,6 +8,7 @@ import * as AppAction from '../Actions/AppAction';
 import FeatureStore from '../Stores/FeatureStore';
 import DataStore from '../Stores/DataStore';
 import { formatValue } from '../lib/2DGraphLib';
+import * as dataLib from '../lib/dataLib';
 
 export default class ExtractionResults extends React.Component {
     constructor(props) {
@@ -20,7 +21,8 @@ export default class ExtractionResults extends React.Component {
         this.state = {
             shownResults: [], 
             LC: [],
-            selected: {}
+            selected: {},
+            accessibility: 'private'
         };
 
         FeatureStore.on('setExtractionResults', () => {
@@ -143,6 +145,33 @@ export default class ExtractionResults extends React.Component {
                        style={{width: '7rem'}}/>
             </div>
         );
+    }
+
+    updateAccessibility() {
+        let selectedAccessibility = $('input[name=accessibility]:checked').val();
+        this.setState({
+            accessibility: selectedAccessibility
+        });
+    }
+
+    addComment() {
+        document.getElementById('commentFormFeatureExtraction').style.display = 'block';
+    }
+
+    cancelComment() {
+        document.getElementById('commentFormFeatureExtraction').style.display = 'none';
+    }
+
+    submitComment() {
+        let userName = $('#userNameComment').val(),
+            accessibility = this.state.accessibility,
+            comment = $('#textareaComment').val(),
+            timeStamp = new Date();
+
+        let data = timeStamp + ',' + userName + ',' + accessibility + ',' + comment;
+        console.log('submit comment', userName, accessibility, comment);
+        // pass the data to writefile function
+        dataLib.addCommentData(data);
     }
 
     showTT() {
@@ -366,7 +395,15 @@ export default class ExtractionResults extends React.Component {
                                         id='showTTBtn'
                                         style={{float: 'right'}}
                                         onClick={this.showTT.bind(this)}>
-                                        Show TimeTubes
+                                        TimeTubes
+                                    </button>
+                                    <button
+                                        className='btn btn-primary btn-sm'
+                                        type='button'
+                                        id='commentBtn'
+                                        style={{float: 'right'}}
+                                        onClick={this.addComment.bind(this)}>
+                                        Comment
                                     </button>
                                 </div>
                                 <div
@@ -376,6 +413,64 @@ export default class ExtractionResults extends React.Component {
                                     {lineCharts}
                                 </div>
                             </div>
+                        </div>
+                        <div className='formPopup' id='commentFormFeatureExtraction'>
+                            <form className='formContainer'>
+                                <h6>User name</h6>
+                                <input 
+                                    type="text" 
+                                    id='userNameComment'
+                                    className='form-control form-control-sm' 
+                                    placeholder="Enter Name" 
+                                    name="name" required/>
+                                <h6>Accessibility</h6>
+                                <div
+                                    className="form-check form-inline"
+                                    id='accessibility'
+                                    onChange={this.updateAccessibility.bind(this)}
+                                    style={{paddingLeft: '0px'}}>
+                                    <div className="custom-control custom-radio">
+                                        <input type="radio" id="privateComment" name="accessibility" value='private'
+                                            checked={(this.state.accessibility === 'private')? true: false}
+                                            className="custom-control-input" readOnly/>
+                                        <label className="custom-control-label" htmlFor="privateComment">
+                                            Private
+                                        </label>
+                                    </div>
+                                    <div className="custom-control custom-radio"
+                                        style={{marginLeft: '1.5rem'}}>
+                                        <input type="radio" id="publicComment" name="accessibility" value='public'
+                                            checked={(this.state.accessibility === 'public')? true: false}
+                                            className="custom-control-input" readOnly/>
+                                        <label className="custom-control-label" htmlFor="publicComment">
+                                            Public
+                                        </label>
+                                    </div>
+                                </div>
+                                <h6>Comment</h6>
+                                <textarea 
+                                    className="form-control" 
+                                    id="textareaComment" 
+                                    placeholder="Enter comment" 
+                                    rows="3"
+                                    style={{marginBottom: '0.5rem'}}/>
+                                <button
+                                    className='btn btn-primary btn-sm'
+                                    type='button'
+                                    id='submitCommentBtn'
+                                    onClick={this.submitComment.bind(this)}
+                                    style={{float: 'right'}}>
+                                    Submit
+                                </button>
+                                <button
+                                    className='btn btn-secondary btn-sm'
+                                    type='button'
+                                    id='cancelCommentBtn'
+                                    style={{float: 'right'}}
+                                    onClick={this.cancelComment.bind(this)}>
+                                    Cancel
+                                </button>
+                            </form>
                         </div>
                         <button
                             id='collapseResultDetailPanel'

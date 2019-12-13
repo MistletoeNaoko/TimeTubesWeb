@@ -42,9 +42,12 @@ export default class Menu extends React.Component {
                         <li className="nav-item mainMenu" value='feature'>
                             <label className="nav-link menuLabel">Feature Extraction</label>
                         </li>
-                        <li className="nav-item mainMenu" value='original'>
-                            <label className="nav-link menuLabel">Original Data</label>
+                        <li className="nav-item mainMenu" value='comment'>
+                            <label className="nav-link menuLabel">Comment</label>
                         </li>
+                        {/* <li className="nav-item mainMenu" value='original'>
+                            <label className="nav-link menuLabel">Original Data</label>
+                        </li> */}
                         <li className="nav-item mainMenu" value='contact'>
                             <label className="nav-link menuLabel">Contact</label>
                         </li>

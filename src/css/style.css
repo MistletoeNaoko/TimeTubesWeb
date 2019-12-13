@@ -328,6 +328,23 @@ img.selectorIcon:active {
     background-color: rgba(48, 47, 44, 0.5);
 }
 
+.formPopup {
+    display: none;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border: 3px solid #F47C3C;
+    border-radius: 5px;
+    background-color: white;
+    z-index: 1500;
+    padding: 10px;
+}
+
+.formContainer {
+    max-width: 400px;
+}
+
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
