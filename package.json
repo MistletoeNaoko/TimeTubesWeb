@@ -1,5 +1,5 @@
 {
-  "name": "react-tutorials",
+  "name": "TimeTubesWeb",
   "version": "0.0.0",
   "description": "",
   "main": "webpack.config.js",
@@ -12,9 +12,11 @@
     "babel-preset-react": "^6.24.1",
     "babel-preset-stage-0": "^6.24.1",
     "bootstrap": "^4.3.1",
+    "browserfs": "^1.4.3",
     "browserify-fs": "^1.0.0",
     "d3": "^5.12.0",
     "dynamic-time-warping": "^1.0.0",
+    "express": "^4.17.1",
     "flux": "^3.1.3",
     "lodash": "^4.17.15",
     "paper": "^0.12.3",
@@ -28,10 +30,12 @@
   "devDependencies": {
     "babel-core": "^6.26.0",
     "babel-loader": "^7.1.4",
+    "mongodb": "^3.4.0",
+    "mongoose": "^5.8.1",
     "popper.js": "^1.15.0",
     "react": "^16.9.0",
     "react-dom": "^16.9.0",
-    "webpack": "^4.40.2",
+    "webpack": "^4.41.2",
     "webpack-cli": "^3.3.8",
     "webpack-dev-server": "^3.8.1"
   },

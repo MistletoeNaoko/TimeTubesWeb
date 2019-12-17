@@ -173,6 +173,18 @@ export default class Controllers extends React.Component{
         });
     }
 
+    selectAllViews() {
+        let currentMode = $('#selectAllViews').text();
+        let checkboxes = $('input[name=selectView]');
+        if (currentMode === 'Select All') {
+            checkboxes.prop('checked', true);
+            $('#selectAllViews').text('Deselect All');
+        } else if (currentMode === 'Deselect All') {
+            checkboxes.prop('checked', false);
+            $('#selectAllViews').text('Select All');
+        }
+    }
+
     timeFitting() {
         // move all checked TimeTubes to the observation time of the active window
         // JD_Current<JD_Min：to JD_Min
@@ -490,7 +502,7 @@ export default class Controllers extends React.Component{
                     </div>
                 </li>
                 <li className="nav-item">
-                    <label className="nav-link menuLabel">Select All</label>
+                    <label className="nav-link menuLabel" id='selectAllViews' onClick={this.selectAllViews.bind(this)}>Select All</label>
                 </li>
             </ul>
         );

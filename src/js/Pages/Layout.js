@@ -2,6 +2,7 @@ import React from 'react';
 import Menu from './Menu';
 import Visualization from "./Visualization";
 import FeatureExtraction from './FeatureExtraction';
+import Comment from './Comment';
 import AppStore from '../Stores/AppStore';
 
 // Layout menu, visualization, feature form, etc.
@@ -30,7 +31,10 @@ export default class Layout extends React.Component {
                 $('body').css('overflow-y', 'hidden');
                 break;
             case 'feature':
-                    $('body').css('overflow-y', 'scroll');
+                $('body').css('overflow-y', 'scroll');
+                break;
+            case 'comment':
+                $('body').css('overflow-y', 'scroll');
                 break;
         }
     }
@@ -50,6 +54,11 @@ export default class Layout extends React.Component {
                      id='featureExtraction'
                      style={{display: (this.state.menu === 'feature') ? 'block': 'none'}}>
                     <FeatureExtraction/>
+                </div>
+                <div className='maincontainer'
+                     id='fuserComments'
+                     style={{display: (this.state.menu === 'comment') ? 'block': 'none'}}>
+                    <Comment/>
                 </div>
             </div>
         );

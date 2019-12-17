@@ -339,10 +339,27 @@ img.selectorIcon:active {
     background-color: white;
     z-index: 1500;
     padding: 10px;
+    filter:drop-shadow(5px 5px 5px #888888);
 }
 
 .formContainer {
     max-width: 400px;
+}
+
+.commentsArea {
+    padding: 15px 30px;
+}
+
+.privateCommentHeader {
+    text-align: center;
+}
+
+.privateCommentHeader th+th {
+    border-left: 2px solid #DFD7CA;
+}
+
+.privateCommentBody td+td {
+    border-left: 1px solid #DFD7CA;
 }
 
 /*#Controllers {*/
@@ -410,6 +427,7 @@ img.selectorIcon:active {
 #extractionMenu {
     float: left;
     width: 30%;
+    margin-bottom: 15px;
 }
 
 #extractionResults {
@@ -470,4 +488,12 @@ img.selectorIcon:active {
 #matchingStatus {
     text-align: center;
     width: 100%;
+}
+
+#mainCommentsArea {
+    /* background-color: #F8F5F0; */
+    font-size: 0.8rem;
+    min-height: 100vh;
+    padding-top: 15px;
+    padding-bottom: 15px;
 }

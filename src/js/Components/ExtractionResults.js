@@ -162,16 +162,32 @@ export default class ExtractionResults extends React.Component {
         document.getElementById('commentFormFeatureExtraction').style.display = 'none';
     }
 
-    submitComment() {
-        let userName = $('#userNameComment').val(),
+    submitComment(e) {
+        // e.preventDefault();
+        let options = {year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: false};
+        let id = dataLib.getUniqueId(),
+            userName = $('#userNameComment').val(),
             accessibility = this.state.accessibility,
             comment = $('#textareaComment').val(),
-            timeStamp = new Date();
-
-        let data = timeStamp + ',' + userName + ',' + accessibility + ',' + comment;
-        console.log('submit comment', userName, accessibility, comment);
-        // pass the data to writefile function
-        dataLib.addCommentData(data);
+            timeStamp = new Date().toLocaleString("en-US", options);
+        if (accessibility === 'private') {
+            let data = {
+                id: id,
+                timeStamp: timeStamp,
+                fileName: DataStore.getData(this.state.selected.id).name,
+                userName: userName,
+                start: this.state.selected.start,
+                comment: comment,
+            }
+            dataLib.addCommentData(data);
+        } else if (accessibility == 'public') {
+            // ToDo: Store in the database
+        }
+        // hide the form
+        document.getElementById('commentFormFeatureExtraction').style.display = 'none';
+        // clear the input forms 
+        $('#userNameComment').val('');
+        $('#textareaComment').val('');
     }
 
     showTT() {
@@ -441,6 +457,7 @@ export default class ExtractionResults extends React.Component {
                                         style={{marginLeft: '1.5rem'}}>
                                         <input type="radio" id="publicComment" name="accessibility" value='public'
                                             checked={(this.state.accessibility === 'public')? true: false}
+                                            disabled={true}
                                             className="custom-control-input" readOnly/>
                                         <label className="custom-control-label" htmlFor="publicComment">
                                             Public
