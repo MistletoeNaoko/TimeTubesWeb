@@ -471,7 +471,8 @@ export default class TimeTubes extends React.Component{
     onMouseWheel() {
         return function(event) {
             event.preventDefault();
-            // 1 scroll = 100 in deltaY
+            // 1 scroll = 100 in delta
+            // changeColFlg is whether or not current focused coincides with any observations
             let changeColFlg = false;
             let now = this.tubeGroup.position.z;
             let dst = this.tubeGroup.position.z + event.deltaY / 100;
@@ -503,7 +504,7 @@ export default class TimeTubes extends React.Component{
                 if (!this.data.merge) {
                     for (let j = 0; j < this.data.position.length; j++) {
                         if (dst === this.data.spatial[j].z - this.data.spatial[0].z) {
-                            let color = new THREE.Color('rgb(127, 255, 212)');//this.gui.__folders.Display.__folders.Plot.__controllers[1].object.plotColor;
+                            let color = new THREE.Color(Number('0x' + this.plotColor.slice(1)));//this.gui.__folders.Display.__folders.Plot.__controllers[1].object.plotColor;
                             // this._changePlotColor(this.currentHighlightedPlot * this.segment, new THREE.Color(color[0] / 255, color[1] / 255, color[2] / 255));
                             this.changePlotColor(this.currentHighlightedPlot * this.segment, color);
                             this.changePlotColor(j * this.segment, new THREE.Color('red'));
@@ -515,7 +516,7 @@ export default class TimeTubes extends React.Component{
                     for (let j = 0; j < this.data.spatial.length; j++) {
                         if ('x' in this.data.spatial[j]) {
                             if (dst === this.data.spatial[j].z - this.data.spatial[0].z) {
-                                let color = new THREE.Color(this.plotColor[this.idNameLookup[this.data.spatial[j].source]]);
+                                let color = new THREE.Color(Number('0x' + this.plotColor[this.idNameLookup[this.data.spatial[j].source]].slice(1)));//this.plotColor[this.idNameLookup[this.data.spatial[j].source]]);
                                 this.changePlotColor(this.currentHighlightedPlot * this.segment, color);
                                 this.changePlotColor(posCount * this.segment, new THREE.Color('red'));
                                 this.currentHighlightedPlot = posCount;
@@ -859,6 +860,11 @@ export default class TimeTubes extends React.Component{
                 this.animationPara.now += 1;
                 let anim = (1 - Math.cos(Math.PI * this.animationPara.now / this.animationPara.speed)) / 2;
                 this.tubeGroup.position.z = this.animationPara.dep + (this.animationPara.dst - this.animationPara.dep) * anim;
+                if (this.disk.visible) {
+                    let average = DataStore.getAverage(this.id, this.tubeGroup.position.z, this.averagePeriod);
+                    this.disk.position.x = average.x * this.data.meta.range;
+                    this.disk.position.y = average.y * this.data.meta.range;
+                }
             }
             if (this.animationPara.now === this.animationPara.speed) {
                 DataAction.updateDetails(this.id, this.animationPara.dst);
