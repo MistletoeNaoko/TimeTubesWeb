@@ -15,35 +15,38 @@ d3.selection.prototype.moveToFront =
 export default class ResultTimeline extends React.Component {
     constructor(props) {
         super();
-        this.id = props.id;
-        this.results = props.results;
-        this.data = DataStore.getData(this.id);
-        this.height = props.height;
-        this.width = 0;
+        // this.id = props.id;
+        // this.results = props.results;
+        this.data = DataStore.getData(props.id);
+        // this.height = props.height;
+        // this.width = 0;
+        this.state = {
+            id: props.id,
+            results: props.results,
+            // data: DataStore.getData(props.id),
+            height: props.height,
+            width: 0
+        };
 
         this.resultsVQ = null;
         this.resultsFlare = null;
         this.resultsRotation = null;
         this.resultsAnomaly = null;
 
-        // FeatureStore.on('updateShownResults', (results) => {
-        //     // this.setState({
-        //     //     shownResults: results
-        //     // });
-        //     console.log('updateShownResults');
-        //     this.updateTimeline();
-        // });
+        FeatureStore.on('updateShownResults', (results) => {
+            this.updateTimeline();
+        });
     }
 
     render() {
-        if (document.getElementById('resultTimeline_' + this.id)) {
-            if ($('#resultTimelineArea_' + this.id).width() > 200) {
-                this.updateTimeline();
-            }
-        }
+        // if (document.getElementById('resultTimeline_' + this.state.id)) {
+        //     if ($('#resultTimelineArea_' + this.state.id).width() > 200) {
+        //         this.updateTimeline();
+        //     }
+        // }
         return (
             <div
-                id={'resultTimeline_' + this.id}
+                id={'resultTimeline_' + this.state.id}
                 className='timeline'>
             </div>
         );
@@ -55,7 +58,7 @@ export default class ResultTimeline extends React.Component {
     }
 
     componentWillUnmount() {
-        let parent = document.getElementById('resultTimeline_' + this.id);
+        let parent = document.getElementById('resultTimeline_' + this.state.id);
         if (parent) {
             while (parent.firstChild) {
                 parent.removeChild(parent.firstChild);
@@ -65,28 +68,33 @@ export default class ResultTimeline extends React.Component {
     }
 
     initializeTimeline() {
-        this.svg = d3.select('#resultTimeline_' + this.id)
+        this.svg = d3.select('#resultTimeline_' + this.state.id)
             .append('svg')
-            .attr('id', 'resultTimelineSVG_' + this.id);
+            .attr('id', 'resultTimelineSVG_' + this.state.id);
         this.xScale = d3.scaleLinear()
             .domain([this.data.data.meta.min.z, this.data.data.meta.max.z]);
         this.xAxis = this.svg
             .append('g')
             .attr('class', 'x-axis');
 
-        this.tooltip = d3.select('#resultTimeline_' + this.id)
+        this.tooltip = d3.select('#resultTimeline_' + this.state.id)
             .append('div')
             .attr('class', 'tooltip')
-            .attr('id', 'tooltipResultTimeline_' + this.id)
+            .attr('id', 'tooltipResultTimeline_' + this.state.id)
             .style('opacity', 0.75)
             .style('visibility', 'hidden');
     }
 
     updateTimeline() {
-        this.id = this.props.id;
-        this.results = this.props.results;
-        this.data = DataStore.getData(this.id);
-        this.height = this.props.height;
+        // this.id = this.props.id;
+        // this.results = this.props.results;
+        this.data = DataStore.getData(this.props.id);
+        // this.height = this.props.height;
+        this.setState({
+            id: this.props.id,
+            results: this.props.results,
+            height: this.props.height
+        });
 
         this.resultsVQ = null;
         this.resultsFlare = null;
@@ -97,9 +105,12 @@ export default class ResultTimeline extends React.Component {
     }
 
     setUpTimeline() {
-        let parentArea = $('#resultTimelineArea_' + this.id);
-        let outerWidth = parentArea.width(), outerHeight = this.height;
-        this.width = outerWidth;
+        let parentArea = $('#resultTimelineArea_' + this.state.id);
+        let outerWidth = parentArea.width(), outerHeight = this.state.height;
+        // this.width = outerWidth;
+        this.setState({
+            width: outerWidth
+        });
         let margin = {left: 20, right: 20};
         let width = outerWidth - margin.left - margin.right,
             height = outerHeight;// - margin.top - margin.bottom;
@@ -122,37 +133,37 @@ export default class ResultTimeline extends React.Component {
             .call(this.xLabel);
 
 
-        let resultsVQ = this.results.filter(d => d.distance !== undefined);
-        let resultsRotation = this.results.filter(d => d.angle);
+        let resultsVQ = this.state.results.filter(d => d.distance !== undefined);
+        let resultsRotation = this.state.results.filter(d => d.angle);
         let resultsFlare = [];
-        this.results.forEach(d => {
+        this.state.results.forEach(d => {
             if (d.V) {
                 resultsFlare = resultsFlare.concat(d);
             } else if (d.flares) {
                 resultsFlare = resultsFlare.concat(d.flares);
             }
         });
-        let resultsAnomaly = this.results.filter(d => d.anomalyDegree);
+        let resultsAnomaly = this.state.results.filter(d => d.anomalyDegree);
 
         this.svg
             .selectAll('line.resultsVQ')
-            .data(resultsVQ)
-            .exit()
+            // .data()//resultsVQ)
+            // .exit()
             .remove();
         this.svg
             .selectAll('line.resultsRotation')
-            .data(resultsRotation)
-            .exit()
+            // .data(resultsRotation)
+            // .exit()
             .remove();
         this.svg
             .selectAll('circle.resultsFlare')
-            .data(resultsFlare)
-            .exit()
+            // .data(resultsFlare)
+            // .exit()
             .remove();
         this.svg
             .selectAll('circle.resultsAnomaly')
-            .data(resultsAnomaly)
-            .exit()
+            // .data(resultsAnomaly)
+            // .exit()
             .remove();
 
         if (resultsVQ.length > 0) {
