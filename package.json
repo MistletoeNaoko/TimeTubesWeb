@@ -38,6 +38,8 @@
     "dev": "webpack --mode development",
     "build": "webpack --mode production",
     "start": "./node_modules/webpack-dev-server/bin/webpack-dev-server.js --content-base src --inline --hot",
+    "prod": "NODE_ENV=production node server.js",
+    "postinstall": "webpack -p",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
