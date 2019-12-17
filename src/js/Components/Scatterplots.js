@@ -677,12 +677,15 @@ export default class Scatterplots extends React.Component{
     }
 
     updateScatterplots(xItem, yItem) {
+        // update domain
         this.xScale
             .domain(this.xMinMax)
             .nice();
         this.yScale
             .domain(this.yMinMax)
             .nice();
+        this.xMinMax = this.xScale.domain();
+        this.yMinMax = this.yScale.domain();
 
         // update all circles
         this.points
