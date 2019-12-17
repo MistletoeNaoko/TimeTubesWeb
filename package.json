@@ -41,7 +41,6 @@
     "heroku-prebuild": "npm install --dev",
     "start": "webpack -p --progress && node server.js",
     "prod": "NODE_ENV=prheroduction node server.js",
-//    "postinstall": "webpack -p",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
