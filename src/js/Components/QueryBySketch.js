@@ -622,21 +622,23 @@ export default class QueryBySketch extends React.Component{
                         }
                         break;
                     case 'controlPoint':
-                        if (this.selectedHandle) {
-                            this.selectedHandle.x += event.delta.x;
-                            this.selectedHandle.y += event.delta.y;
-                        }
-                        if (this.selectedPoint) {
-                            this.selectedPoint.point.x += event.delta.x;
-                            this.selectedPoint.point.y += event.delta.y;
-                            this.controlPoints[this.selectedIdx].position = {
-                                x: this.selectedPoint.point.x + event.delta.x,
-                                y: this.selectedPoint.point.y + event.delta.y
-                            };
-                        }
-                        if (this.controlPoints[this.selectedIdx].label !== null) {
-                            this.controlPoints[this.selectedIdx].label.position = new paper.Point(this.controlPoints[this.selectedIdx].position.x, this.controlPoints[this.selectedIdx].position.y - 10);
-                            this.controlPoints[this.selectedIdx].labelRect.position = this.controlPoints[this.selectedIdx].label.bounds;
+                        if (this.selectedIdx) {
+                            if (this.selectedHandle) {
+                                this.selectedHandle.x += event.delta.x;
+                                this.selectedHandle.y += event.delta.y;
+                            }
+                            if (this.selectedPoint) {
+                                this.selectedPoint.point.x += event.delta.x;
+                                this.selectedPoint.point.y += event.delta.y;
+                                this.controlPoints[this.selectedIdx].position = {
+                                    x: this.selectedPoint.point.x + event.delta.x,
+                                    y: this.selectedPoint.point.y + event.delta.y
+                                };
+                            }
+                            if (this.controlPoints[this.selectedIdx].label !== null) {
+                                this.controlPoints[this.selectedIdx].label.position = new paper.Point(this.controlPoints[this.selectedIdx].position.x, this.controlPoints[this.selectedIdx].position.y - 10);
+                                this.controlPoints[this.selectedIdx].labelRect.position = this.controlPoints[this.selectedIdx].label.bounds;
+                            }
                         }
                         if (this.state.detectWidth) {
                             if (this.selectedIdx > 0 && this.selectedIdx < this.path.segments.length - 1) {
@@ -1010,51 +1012,53 @@ export default class QueryBySketch extends React.Component{
                     for (let i = 0; i <= timeLength; i++) {
                         // convert x and y pos into values
                         let point = this.path.getPointAt(del * i);
-                        for (let key in query) {
-                            if (key === this.state.xItem) {
-                                query[key].push(this.xScale.invert(point.x));
-                            } else if (key === this.state.yItem) {
-                                query[key].push(this.yScale.invert(point.y));
-                            } else if (key === this.widthVar) {
-                                let width =  (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
-                                    * (del * i - totalCurveLen) / currentLen + this.radiuses[curveIdx];
-                                // convert width into value
-                                query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
-                            } else {
-                                query[key].push(null);
-                            }
-                        }
-                        
-                        // update curveLen, curveIdx, totalCurveLen
-                        if (totalCurveLen + currentLen <= del * i) {
-                            // add assigned filtering value to the query
-                            // judge which of before or current point variables are closer to the segment point
-                            let controlPoint = this.controlPoints[curveIdx + 1].position,
-                                assignedVariables = this.controlPoints[curveIdx + 1].assignedVariables;
-                            let distBefore = Math.sqrt(Math.pow(controlPoint.x - pointBefore.x, 2) + Math.pow(controlPoint.y - pointBefore.y, 2)),
-                                distCurrent = Math.sqrt(Math.pow(controlPoint.x - point.x, 2) + Math.pow(controlPoint.y - point.y, 2));
-                            if (distBefore <= distCurrent) {
-                                // assign variables to before point
-                                for (let key in query) {
-                                    if (assignedVariables[key].length > 0) {
-                                        query[key][query[key].length - 2] = assignedVariables[key];
-                                    }
-                                }
-                            } else {
-                                // assign variables to the current point
-                                for (let key in query) {
-                                    if (assignedVariables[key].length > 0) {
-                                        query[key][query[key].length - 1] = assignedVariables[key];
-                                    }
+                        if (point) {
+                            for (let key in query) {
+                                if (key === this.state.xItem) {
+                                    query[key].push(this.xScale.invert(point.x));
+                                } else if (key === this.state.yItem) {
+                                    query[key].push(this.yScale.invert(point.y));
+                                } else if (key === this.widthVar) {
+                                    let width = (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
+                                        * (del * i - totalCurveLen) / currentLen + this.radiuses[curveIdx];
+                                    // convert width into value
+                                    query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
+                                } else {
+                                    query[key].push(null);
                                 }
                             }
-                            totalCurveLen += currentLen;
-                            curveIdx += 1;
-                            if (curveIdx < this.path.curves.length) {
-                                currentLen = this.path.curves[curveIdx].length;
+
+                            // update curveLen, curveIdx, totalCurveLen
+                            if (totalCurveLen + currentLen <= del * i) {
+                                // add assigned filtering value to the query
+                                // judge which of before or current point variables are closer to the segment point
+                                let controlPoint = this.controlPoints[curveIdx + 1].position,
+                                    assignedVariables = this.controlPoints[curveIdx + 1].assignedVariables;
+                                let distBefore = Math.sqrt(Math.pow(controlPoint.x - pointBefore.x, 2) + Math.pow(controlPoint.y - pointBefore.y, 2)),
+                                    distCurrent = Math.sqrt(Math.pow(controlPoint.x - point.x, 2) + Math.pow(controlPoint.y - point.y, 2));
+                                if (distBefore <= distCurrent) {
+                                    // assign variables to before point
+                                    for (let key in query) {
+                                        if (assignedVariables[key].length > 0) {
+                                            query[key][query[key].length - 2] = assignedVariables[key];
+                                        }
+                                    }
+                                } else {
+                                    // assign variables to the current point
+                                    for (let key in query) {
+                                        if (assignedVariables[key].length > 0) {
+                                            query[key][query[key].length - 1] = assignedVariables[key];
+                                        }
+                                    }
+                                }
+                                totalCurveLen += currentLen;
+                                curveIdx += 1;
+                                if (curveIdx < this.path.curves.length) {
+                                    currentLen = this.path.curves[curveIdx].length;
+                                }
                             }
+                            pointBefore = point;
                         }
-                        pointBefore = point;
                     }
                 } else {
                     // alert says 'input time length of the input query'
@@ -1525,7 +1529,7 @@ export default class QueryBySketch extends React.Component{
             .style('visibility', 'hidden');
         // if neither x or y axis is z, set default value of the length of the sketch query
         if (this.state.xItemonPanel !== 'z' && this.state.yItem !== 'z') {
-            $('#periodOfSketchQuery').val(30);
+            $('#periodOfSketchQuery').val(20);
         }
         this.convertSketchIntoQuery();
     }
@@ -1554,7 +1558,7 @@ export default class QueryBySketch extends React.Component{
             .style('visibility', 'hidden');
         // if neither x or y axis is z, set default value of the length of the sketch query
         if (this.state.xItem !== 'z' && this.state.yItemonPanel !== 'z') {
-            $('#periodOfSketchQuery').val(30);
+            $('#periodOfSketchQuery').val(20);
         }
         this.convertSketchIntoQuery();
     }
@@ -2132,17 +2136,22 @@ export default class QueryBySketch extends React.Component{
 
     onClickValueAssignmentDone() {
         $('#controlPointPopover').css('display', 'none');
-        let checked = $('input[name=assignedVariableList]:checked');
+        let checked = $('input[name=assignedVariableList]');//:checked');
         let label ='';
         let current = this.controlPoints[this.highlightedPointIdx].assignedVariables;
         for (let i = 0; i < checked.length; i++) {
-            let value = checked[i].value;
-            let min = Math.min.apply(null, this.state.minList[value]);
-            let max = Math.max.apply(null, this.state.maxList[value]);
-            let values = $('#slider_' + checked[i].value).slider('option', 'values');
-            this.controlPoints[this.highlightedPointIdx].assignedVariables[value] = [min + (max - min) * values[0] / 100, min + (max - min) * values[1] / 100];
-            label += this.state.lookup[value] + ', ';
-            // show labels of the name of thechecked variables around the highlighted point
+            if (checked[i].checked) {
+                let value = checked[i].value;
+                let min = Math.min.apply(null, this.state.minList[value]);
+                let max = Math.max.apply(null, this.state.maxList[value]);
+                let values = $('#slider_' + checked[i].value).slider('option', 'values');
+                this.controlPoints[this.highlightedPointIdx].assignedVariables[value] = [min + (max - min) * values[0] / 100, min + (max - min) * values[1] / 100];
+                // show labels of the name of the checked variables around the highlighted point
+                label += this.state.lookup[value] + ', ';
+            } else {
+                let value = checked[i].value;
+                this.controlPoints[this.highlightedPointIdx].assignedVariables[value] = [];
+            }
         }
         // ToDo: Move text not to overlap on the stroke
         if (this.controlPoints[this.highlightedPointIdx].label) {
@@ -2151,6 +2160,8 @@ export default class QueryBySketch extends React.Component{
             this.controlPoints[this.highlightedPointIdx].labelRect.remove();
             this.controlPoints[this.highlightedPointIdx].labelRect = null;
         }
+
+        // show a label around the point
         if (label !== '') {
             // show what variables are assigned to the point
             this.controlPoints[this.highlightedPointIdx].label = new paper.PointText({

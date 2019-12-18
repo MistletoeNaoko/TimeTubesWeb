@@ -21,7 +21,7 @@ export default class AutomaticExtraction extends React.Component {
 
     componentDidMount() {
         document.getElementById('weightForAverageList').selectedIndex = '2';
-        document.getElementById('stdConstraintsList').selectedIndex = '2';
+        document.getElementById('stdConstraintsList').selectedIndex = '1';
         this.setGaussCurve();
         // set default values to input forms
         this.setDefaultValues();
