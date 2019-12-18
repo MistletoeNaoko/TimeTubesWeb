@@ -18,6 +18,10 @@ export default class Comment extends React.Component {
         });
     }
 
+    componentDidMount() {
+        $('#privateCommentTable').tablesorter();
+    }
+
     privateCommentListTr() {
         let table = [];
         if (this.state.privateComments) {
@@ -62,11 +66,11 @@ export default class Comment extends React.Component {
             <thead>
                 <tr className='privateCommentHeader'>
                     <th className='col-1'>Select</th>
-                    <th className='col-2'>Date (GMT)</th>
-                    <th className='col-2'>File name</th>
-                    <th className='col-1'>JD</th>
+                    <th className='col-2 num'>Date (GMT)</th>
+                    <th className='col-2 case'>File name</th>
+                    <th className='col-1 num'>JD</th>
                     <th className='col-3'>Comment</th>
-                    <th className='col-2'>User name</th>
+                    <th className='col-2 case'>User name</th>
                     <th className='col-1'>Edit</th>
                 </tr>
             </thead>
@@ -138,7 +142,7 @@ export default class Comment extends React.Component {
                                 Export
                             </button>
                         </div>
-                        <table id='privateCommentTable' className="table table-hover">
+                        <table id='privateCommentTable' className="table table-hover tablesorter">
                             {tableHeader}
                             <tbody>
                                 {tableContents}
