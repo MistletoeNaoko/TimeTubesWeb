@@ -335,6 +335,34 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
     return result;
 }
 
+export function removeOverlappingQBE(source, period, results) {
+    let newResults = [];
+    let queryLength = period[1] - period[0];
+    for (let i = 0; i < results.length; i++) {
+        if (source === results[i].id) {
+            let overlap = 0;
+            if (period[0] <= results[i].start && results[i].start <= period[1]) {
+                overlap = period[1] - results[i].start;
+            } else if (period[0] <= results[i].start + results[i].period && results[i].start + results[i].period <= period[1]) {
+                overlap = results[i].start + results[i].period - period[0];
+            } else if (results[i].start <= period[0] && period[1] <= results[i].start + results[i].period) {
+                // result includes a queru
+                overlap = queryLength;
+            } else if (period[0] <= results[i].start && results[i].start + results[i].period <= period[1]) {
+                // quary includes a result
+                overlap = results[i].period;
+            }
+
+            if (overlap / queryLength < 0.3) {
+                newResults.push(results[i]);
+            }
+        } else {
+            newResults.push(results[i]);
+        }
+    }
+    return newResults;
+}
+
 export function runMatchingSketch(query, targets, DTWType, normalization, dist, window, step, period) {
     let result = [];
     let distFunc;
