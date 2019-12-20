@@ -5,6 +5,7 @@ import * as domActions from '../lib/domActions';
 import * as TimeSeriesQuerying from '../lib/TimeSeriesQuerying';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import * as AppAction from '../Actions/AppAction';
+import * as DataAction from '../Actions/DataAction';
 import FeatureStore from '../Stores/FeatureStore';
 import DataStore from '../Stores/DataStore';
 import { formatValue } from '../lib/2DGraphLib';
@@ -22,7 +23,9 @@ export default class ExtractionResults extends React.Component {
             shownResults: [], 
             LC: [],
             selected: {},
-            accessibility: 'private'
+            accessibility: 'private',
+            mode: FeatureStore.getMode(),
+            AEOptions: FeatureStore.getAEOptions()
         };
 
         FeatureStore.on('setExtractionResults', () => {
@@ -69,6 +72,16 @@ export default class ExtractionResults extends React.Component {
             }
             this.setState({
                 selected: result
+            });
+        });
+        FeatureStore.on('switchQueryMode', () => {
+            this.setState({
+                mode: FeatureStore.getMode()
+            });
+        });
+        FeatureStore.on('updateAEOption', () => {
+            this.setState({
+                AEOptions: FeatureStore.getAEOptions()
             });
         });
     }
@@ -126,8 +139,8 @@ export default class ExtractionResults extends React.Component {
 
     topKResults() {
         let disabledFlag = false;
-        if (FeatureStore.getMode() === 'AE') {
-            if (FeatureStore.getAEOptionStatus('flare') || FeatureStore.getAEOptionStatus('rotations')) {
+        if (this.state.mode === 'AE') {
+            if (this.state.AEOptions.flare || this.state.AEOptions.rotation) {
                 disabledFlag = true;
             }
         }
@@ -188,6 +201,7 @@ export default class ExtractionResults extends React.Component {
         // clear the input forms 
         $('#userNameComment').val('');
         $('#textareaComment').val('');
+        DataAction.updatePrivateComment();
     }
 
     showTT() {

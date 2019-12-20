@@ -44,3 +44,12 @@ export function deletePrivateComment(id) {
     localStorage.setItem('privateComment', JSON.stringify(privateComment));
     return flag;
 }
+
+export function getPrivateCommentFromId(id) {
+    for (let i = 0; i < privateComment.length; i++) {
+        if (privateComment[i].id === id) {
+            return privateComment[i];
+        }
+    }
+    return -1;
+}

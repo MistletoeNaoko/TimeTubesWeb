@@ -181,6 +181,9 @@ class TimeTubesStore extends EventEmitter{
             case 'SHOW_ROTATION_CENTER':
                 this.showRotationCenter(action.id, action.period, action.center);
                 break;
+            case 'SWITCH_COMMENT':
+                this.switchComment(action.id, action.state);
+                break;
             default:
         }
     }
@@ -498,6 +501,10 @@ class TimeTubesStore extends EventEmitter{
         // this.cameraProp[id].far = period[1] - period[0] + 50;
         this.focused[id] = period[0] - DataStore.getData(id).data.meta.min.z;
         this.emit('showRotationCenter', id, period, center);
+    }
+
+    switchComment(id, state) {
+        this.emit('switchComment', id, state);
     }
 }
 

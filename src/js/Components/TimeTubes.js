@@ -5,14 +5,13 @@ import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import * as ScatterplotsAction from '../Actions/ScatterplotsAction';
 import * as DataAction from '../Actions/DataAction';
 import * as FeatureAction from '../Actions/FeatureAction';
+import * as dataLib from '../lib/dataLib';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 import BufferGeometryUtils from '../lib/BufferGeometryUtils';
 import OrbitControls from "three-orbitcontrols";
 import TextSprite from 'three.textsprite';
-import EventListener from 'react-event-listener';
-import { resolve } from 'url';
 
 export default class TimeTubes extends React.Component{
     constructor(props) {
@@ -88,6 +87,9 @@ export default class TimeTubes extends React.Component{
     }
 
     componentWillMount() {
+        DataStore.on('updatePrivateComment', () => {
+            this.updateComment();
+        });
         TimeTubesStore.on('upload', () => {
             this.cameraProp = TimeTubesStore.getCameraProp(this.id);
             this.updateCamera();
@@ -300,6 +302,16 @@ export default class TimeTubes extends React.Component{
                 this.rotationPeriod = null;
             }
         });
+        TimeTubesStore.on('switchComment', (id, state) => {
+            if (id === this.id) {
+                if (state) {
+                    this.comment.visible = true;
+                } else {
+                    this.comment.visible = false;
+                    this.commentContents.visible = false;
+                }
+            }
+        });
         FeatureStore.on('switchQueryMode', (mode) => {
             let sourceId = FeatureStore.getSource();
             if (mode === 'QBE' && sourceId !== 'default') {
@@ -430,6 +442,7 @@ export default class TimeTubes extends React.Component{
         this.drawPlot();
         this.drawDisk();
         this.drawDiskForRotationCenter();
+        this.drawComment();
     }
 
     start() {
@@ -556,12 +569,13 @@ export default class TimeTubes extends React.Component{
 
     onMouseDown() {
         return function (event) {
-            this.drag = true;
+            this.drag = false;
         }
     }
 
     onMouseMove() {
         return function (event) {
+            this.drag = true;
             if (this.drag) {
                 let cameraPropNow = this.cameraProp;
                 cameraPropNow.xpos = this.camera.position.x;
@@ -614,6 +628,38 @@ export default class TimeTubes extends React.Component{
 
     onMouseUp() {
         return function (event) {
+            if (this.comment.visible && !this.drag) {
+                let face;
+                let raymouse = new THREE.Vector2();
+                raymouse.x = (event.offsetX / this.renderer.domElement.clientWidth) * 2 - 1;
+                raymouse.y = -(event.offsetY / this.renderer.domElement.clientHeight) * 2 + 1;
+                this.raycaster.setFromCamera(raymouse, this.camera);
+                let intersects = this.raycaster.intersectObject(this.comment);
+                if (intersects.length > 0) {
+                    face = intersects[0].face;
+                }
+                if (face !== undefined) {
+                    // get the target comment
+                    // show the summary of the comment
+                    if (this.commentContents.visible) {
+                        this.commentContents.visible = false;
+                    } else {
+                        this.commentContents.visible = true;
+                        let commentIdx = Math.floor(face.a / 6);
+                        let commentId = this.commentList[commentIdx];
+                        let comment = dataLib.getPrivateCommentFromId(commentId);
+                        let content = comment.timeStamp + '\n'
+                            + comment.userName + '\n';
+                        if (comment.comment.length > 30) {
+                            content += comment.comment.substr(0, 50);
+                        } else {
+                            content += comment.comment;
+                        }
+                        this.commentContents.material.map.text = content;
+                        this.commentContents.position.set(-TimeTubesStore.getGridSize() - 10, 0, 0);
+                    }
+                }
+            }
             this.drag = false;
         }
     }
@@ -1272,6 +1318,118 @@ export default class TimeTubes extends React.Component{
         this.diskRotation = new THREE.Mesh(circleGeometry, circleMaterial);
         this.scene.add(this.diskRotation);
         this.diskRotation.visible = false;
+    }
+
+    drawComment() {
+        this.commentList = [];
+        let filename = DataStore.getFileName(this.id);
+        let comments = dataLib.getDataFromLocalStorage('privateComment');
+
+        let planeSize = 2;
+        let gridSize = TimeTubesStore.getGridSize();
+        let planePositions = [];
+        for (let i = 0; i < comments.length; i++) {
+            if (comments[i].fileName === filename) {
+                this.commentList.push(comments[i].id);
+
+                // first triangle
+                planePositions.push(gridSize + planeSize + 1);
+                planePositions.push(gridSize);
+                planePositions.push(comments[i].start - this.data.meta.min.z);
+
+                planePositions.push(gridSize + 1);
+                planePositions.push(gridSize);
+                planePositions.push(comments[i].start - this.data.meta.min.z);
+
+                planePositions.push(gridSize + planeSize + 1);
+                planePositions.push(gridSize - planeSize);
+                planePositions.push(comments[i].start - this.data.meta.min.z);
+
+                // second triangle
+                planePositions.push(gridSize + 1);
+                planePositions.push(gridSize);
+                planePositions.push(comments[i].start - this.data.meta.min.z);
+
+                planePositions.push(gridSize + planeSize + 1);
+                planePositions.push(gridSize - planeSize);
+                planePositions.push(comments[i].start - this.data.meta.min.z);
+
+                planePositions.push(gridSize + 1);
+                planePositions.push(gridSize - planeSize);
+                planePositions.push(comments[i].start - this.data.meta.min.z);
+            }
+        }
+        let planeGeometry = new THREE.BufferGeometry();
+        planeGeometry.addAttribute('position', new THREE.Float32BufferAttribute(planePositions, 3));
+        let planeMaterial = new THREE.MeshBasicMaterial({
+            color: 0x80b139, 
+            side: THREE.DoubleSide,
+            clippingPlanes: [this.clippingPlane]
+        });
+        this.comment = new THREE.Mesh(planeGeometry, planeMaterial);
+        this.tubeGroup.add(this.comment);
+        this.comment.rotateY(Math.PI);
+
+        this.commentContents = new TextSprite({
+            material: {
+                color: 0xffffff,
+            },
+            redrawInterval: 250,
+            textSize: 1.3,
+            texture: {
+                fontFamily: 'Arial, Helvetica, sans-serif',
+                fontStyle: 'italic',
+                text: '',
+                align: 'left',
+            },
+        });
+        this.scene.add(this.commentContents);
+        this.commentContents.position.set(-gridSize, gridSize, 0);
+        // this.commentContents.visible = false;
+    }
+
+    updateComment() {
+        this.commentList = [];
+        let filename = DataStore.getFileName(this.id);
+        let comments = dataLib.getDataFromLocalStorage('privateComment');
+
+        let planeSize = 2;
+        let gridSize = TimeTubesStore.getGridSize();
+        let planePositions = [];
+        for (let i = 0; i < comments.length; i++) {
+            if (comments[i].fileName === filename) {
+                this.commentList.push(comments[i].id);
+
+                // first triangle
+                planePositions.push(gridSize + planeSize + 1);
+                planePositions.push(gridSize);
+                planePositions.push(comments[i].start - this.data.meta.min.z);
+
+                planePositions.push(gridSize + 1);
+                planePositions.push(gridSize);
+                planePositions.push(comments[i].start - this.data.meta.min.z);
+
+                planePositions.push(gridSize + planeSize + 1);
+                planePositions.push(gridSize - planeSize);
+                planePositions.push(comments[i].start - this.data.meta.min.z);
+
+                // second triangle
+                planePositions.push(gridSize + 1);
+                planePositions.push(gridSize);
+                planePositions.push(comments[i].start - this.data.meta.min.z);
+
+                planePositions.push(gridSize + planeSize + 1);
+                planePositions.push(gridSize - planeSize);
+                planePositions.push(comments[i].start - this.data.meta.min.z);
+
+                planePositions.push(gridSize + 1);
+                planePositions.push(gridSize - planeSize);
+                planePositions.push(comments[i].start - this.data.meta.min.z);
+            }
+        }
+        this.comment.geometry.attributes.position.needsUpdate = true;
+        this.comment.geometry.attributes.position = new THREE.Float32BufferAttribute(planePositions, 3);
+        this.renderer.render(this.scene, this.camera);
     }
 
     initQBEView() {

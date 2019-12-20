@@ -1,5 +1,6 @@
 import React from 'react';
 import * as dataLib from '../lib/dataLib';
+import * as DataAction from '../Actions/DataAction';
 import AppStore from '../Stores/AppStore';
 
 export default class Comment extends React.Component {
@@ -90,6 +91,7 @@ export default class Comment extends React.Component {
                 privateComments: dataLib.getDataFromLocalStorage('privateComment')
             });
         }
+        DataAction.updatePrivateComment();
     }
 
     exportPrivateComment() {

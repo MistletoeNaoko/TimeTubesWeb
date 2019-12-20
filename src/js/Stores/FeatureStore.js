@@ -137,6 +137,10 @@ class FeatureStore extends EventEmitter {
         return this.query;
     }
     
+    getAEOptions() {
+        return this.AEOptions;
+    }
+
     getAEOptionStatus(option) {
         return this.AEOptions[option];
     }
@@ -259,6 +263,7 @@ class FeatureStore extends EventEmitter {
 
     updateAEOption(option, value) {
         this.AEOptions[option] = value;
+        this.emit('updateAEOption');
     }
 
     updateShownResults(results) {

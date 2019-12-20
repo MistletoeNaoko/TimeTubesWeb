@@ -29,6 +29,9 @@ class DataStore extends EventEmitter {
             case 'UPDATE_DETAIL':
                 this.emit('updateDetail', action.id, action.zpos);
                 break;
+            case 'UPDATE_PRIVATE_COMMENT':
+                this.updatePrivateComment();
+                break;
             default:
         }
     }
@@ -169,6 +172,10 @@ class DataStore extends EventEmitter {
         average.x /= bin;
         average.y /= bin;
         return average;
+    }
+
+    updatePrivateComment() {
+        this.emit('updatePrivateComment');
     }
 }
 

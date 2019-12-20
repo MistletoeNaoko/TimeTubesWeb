@@ -305,3 +305,7 @@ function computeSplines(data) {
     spline.line = new THREE.CatmullRomCurve3(line, false, 'catmullrom');
     return {position: position, radius: radius, color: color, spline:spline};
 }
+
+export function updatePrivateComment() {
+    dispatcher.dispatch({type: 'UPDATE_PRIVATE_COMMENT'});
+}

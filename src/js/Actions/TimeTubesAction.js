@@ -134,3 +134,7 @@ export function updateAveragePeriod(value) {
 export function showRotationCenter(id, period, center) {
     dispatcher.dispatch({type: 'SHOW_ROTATION_CENTER', id, period, center});
 }
+
+export function switchComment(id, state) {
+    dispatcher.dispatch({type: 'SWITCH_COMMENT', id, state});
+}

@@ -304,13 +304,14 @@ export default class ResultSummary extends React.Component {
                     let selectedTimeSlicePos = selectedTimeSlice.offset(),
                         selectedTimeSliceWidth = selectedTimeSlice.width(),
                         selectedTimeSliceHeight = selectedTimeSlice.height();
-                    
-                    if ((selectedTimeSlicePos.left <= event.pageX && event.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
-                    && (selectedTimeSlicePos.top <= event.pageY && event.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
-                        // convert the result into a new query
-                        FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
-                        if ($('#resultDetailArea').css('display') === 'block') {
-                            domActions.toggleExtractionDetailPanel();
+                    if (selectedTimeSlicePos) {
+                        if ((selectedTimeSlicePos.left <= event.pageX && event.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
+                        && (selectedTimeSlicePos.top <= event.pageY && event.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
+                            // convert the result into a new query
+                            FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
+                            if ($('#resultDetailArea').css('display') === 'block') {
+                                domActions.toggleExtractionDetailPanel();
+                            }
                         }
                     }
                     break;
@@ -320,13 +321,14 @@ export default class ResultSummary extends React.Component {
                     let sketchPadPos = sketchPad.offset(),
                         sketchPadWidth = sketchPad.width(),
                         sketchPadHeight = sketchPad.innerHeight();
-
-                    if ((sketchPadPos.left <= event.pageX && event.pageX <= sketchPadPos.left + sketchPadWidth)
-                    && (sketchPadPos.top <= event.pageY && event.pageY <= sketchPadPos.top + sketchPadHeight)) {
-                        // convert the result into a new query
-                        FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
-                        if ($('#resultDetailArea').css('display') === 'block') {
-                            domActions.toggleExtractionDetailPanel();
+                    if (sketchPadPos) {
+                        if ((sketchPadPos.left <= event.pageX && event.pageX <= sketchPadPos.left + sketchPadWidth)
+                        && (sketchPadPos.top <= event.pageY && event.pageY <= sketchPadPos.top + sketchPadHeight)) {
+                            // convert the result into a new query
+                            FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
+                            if ($('#resultDetailArea').css('display') === 'block') {
+                                domActions.toggleExtractionDetailPanel();
+                            }
                         }
                     }
                     break;

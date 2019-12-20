@@ -14,6 +14,7 @@ export default class Controllers extends React.Component{
             label: true,
             axis: true,
             plot: true,
+            comment: true,
             clip: true,
             shade: true,
             lock: false,
@@ -138,6 +139,17 @@ export default class Controllers extends React.Component{
         let checked = this.getSelectedIDs();
         checked.forEach(function (value) {
             TimeTubesAction.switchPlotDisplay(value, state);
+        });
+    }
+
+    switchCommentDisplay() {
+        let state = !this.state.comment;
+        this.setState({
+            comment: state
+        });
+        let checked = this.getSelectedIDs();
+        checked.forEach(function (value) {
+            TimeTubesAction.switchComment(value, state);
         });
     }
 
@@ -384,12 +396,10 @@ export default class Controllers extends React.Component{
                         className="custom-control-input menuCheck"
                         type="checkbox"
                         id="checkboxGrid"
-                        value="option1"
                         checked={this.state.grid}
                         onChange={this.switchGridDisplay.bind(this)}/>
                     <label
                         className="custom-control-label nav-link menuLabel"
-                        htmlFor="inlineCheckbox1"
                         onClick={this.switchGridDisplay.bind(this)}>Grid</label>
                 </div>
                 <div className="custom-control custom-checkbox menuItem">
@@ -397,12 +407,10 @@ export default class Controllers extends React.Component{
                         className="custom-control-input menuCheck"
                         type="checkbox"
                         id="checkboxLabel"
-                        value="option1"
                         checked={this.state.label}
                         onChange={this.switchLabelDisplay.bind(this)}/>
                     <label
                         className="custom-control-label nav-link menuLabel"
-                        htmlFor="inlineCheckbox1"
                         onClick={this.switchLabelDisplay.bind(this)}>Label</label>
                 </div>
                 <div className="custom-control custom-checkbox menuItem">
@@ -410,12 +418,10 @@ export default class Controllers extends React.Component{
                         className="custom-control-input menuCheck"
                         type="checkbox"
                         id="checkboxAxis"
-                        value="option1"
                         checked={this.state.axis}
                         onChange={this.switchAxisDisplay.bind(this)}/>
                     <label
                         className="custom-control-label nav-link menuLabel"
-                        htmlFor="inlineCheckbox1"
                         onClick={this.switchAxisDisplay.bind(this)}>Axis</label>
                 </div>
                 <div className="custom-control custom-checkbox menuItem">
@@ -423,13 +429,22 @@ export default class Controllers extends React.Component{
                         className="custom-control-input menuCheck"
                         type="checkbox"
                         id="checkboxPlot"
-                        value="option1"
                         checked={this.state.plot}
                         onChange={this.switchPlotDisplay.bind(this)}/>
                     <label
                         className="custom-control-label nav-link menuLabel"
-                        htmlFor="inlineCheckbox1"
                         onClick={this.switchPlotDisplay.bind(this)}>Plot</label>
+                </div>
+                <div className="custom-control custom-checkbox menuItem">
+                    <input
+                        className="custom-control-input menuCheck"
+                        type="checkbox"
+                        id="checkboxComment"
+                        checked={this.state.comment}
+                        onChange={this.switchCommentDisplay.bind(this)}/>
+                    <label
+                        className="custom-control-label nav-link menuLabel"
+                        onClick={this.switchCommentDisplay.bind(this)}>Comment</label>
                 </div>
                 <div className="form-check form-check-inline menuItem">
                 <select
