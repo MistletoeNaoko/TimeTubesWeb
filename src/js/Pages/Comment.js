@@ -146,10 +146,9 @@ export default class Comment extends React.Component {
                                 Select All
                             </button>
                             <button
-                                className='btn btn-primary btn-sm'
+                                className='btn btn-danger btn-sm'
                                 type='button'
                                 id={'deleteCommentBtn'}
-                                style={{float: 'left'}}
                                 onClick={this.deletePrivateComment.bind(this)}>
                                 Delete
                             </button>
