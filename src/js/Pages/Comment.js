@@ -37,15 +37,15 @@ export default class Comment extends React.Component {
                         <td>{this.state.privateComments[i].start}</td>
                         <td>{this.state.privateComments[i].comment}</td>
                         <td>{this.state.privateComments[i].userName}</td>
-                        <td>
-                            {/* <button
+                        {/* <td>
+                            <button
                                 className='btn btn-primary btn-sm'
                                 type='button'
                                 id={this.state.privateComments[i].id + ' editCommentBtn'}
                                 onClick={this.editPrivateComment}
                                 style={{float: 'left'}}>
                                 Edit
-                            </button> */}
+                            </button>
                             <button
                                 className='btn btn-primary btn-sm'
                                 type='button'
@@ -54,7 +54,7 @@ export default class Comment extends React.Component {
                                 onClick={this.deletePrivateComment.bind(this)}>
                                 Delete
                             </button>
-                        </td>
+                        </td> */}
                     </tr>
                 );
             }
@@ -65,17 +65,26 @@ export default class Comment extends React.Component {
     privateCommentListHeader() {
         return (
             <thead>
-                <tr className='privateCommentHeader'>
+                <tr id='privateCommentHeader'>
                     <th className='col-1'>Select</th>
-                    <th className='col-2 num'>Date (GMT)</th>
-                    <th className='col-2 case'>File name</th>
-                    <th className='col-1 num'>JD</th>
-                    <th className='col-3'>Comment</th>
-                    <th className='col-2 case'>User name</th>
-                    <th className='col-1'>Edit</th>
+                    <th className='col-2 num' value='timeStamp'>Date (GMT)</th>
+                    <th className='col-2 case' value='fileName'>File name</th>
+                    <th className='col-1 num' value='start'>JD</th>
+                    <th className='col-4' value='comment'>Comment</th>
+                    <th className='col-2 case' value='userName'>User name</th>
+                    {/* <th className='col-1'>Edit</th> */}
                 </tr>
             </thead>
         )
+    }
+
+    getSelectedPrivateComment() {
+        let checked = $('input[name=privateCommentSelector]:checked');
+        let checkedIds = [];
+        for (let i = 0; i < checked.length; i++) {
+            checkedIds.push($(checked[i]).attr('class').split(' ')[0]);
+        }
+        return checkedIds;
     }
 
     editPrivateComment() {
@@ -83,19 +92,19 @@ export default class Comment extends React.Component {
     }
 
     deletePrivateComment(e) {
-        let id = e.currentTarget.id.split(' ')[0];
-        let flag = dataLib.deletePrivateComment(id);
-        // update table
-        if (flag) {
-            this.setState({
-                privateComments: dataLib.getDataFromLocalStorage('privateComment')
-            });
+        let selectedIds = this.getSelectedPrivateComment();
+        for (let i = 0; i < selectedIds.length; i++) {
+            dataLib.deletePrivateComment(selectedIds[i]);
         }
+        // update table
+        this.setState({
+            privateComments: dataLib.getDataFromLocalStorage('privateComment')
+        });
         DataAction.updatePrivateComment();
     }
 
     exportPrivateComment() {
-
+        dataLib.exportPrivateComment(this.getSelectedPrivateComment());
     }
 
     selectAllPrivateComment() {
@@ -139,6 +148,14 @@ export default class Comment extends React.Component {
                             <button
                                 className='btn btn-primary btn-sm'
                                 type='button'
+                                id={'deleteCommentBtn'}
+                                style={{float: 'left'}}
+                                onClick={this.deletePrivateComment.bind(this)}>
+                                Delete
+                            </button>
+                            <button
+                                className='btn btn-primary btn-sm'
+                                type='button'
                                 id='exportPrivateCommentBtn'
                                 onClick={this.exportPrivateComment.bind(this)}>
                                 Export
@@ -146,7 +163,7 @@ export default class Comment extends React.Component {
                         </div>
                         <table id='privateCommentTable' className="table table-hover tablesorter">
                             {tableHeader}
-                            <tbody>
+                            <tbody id='privateCommentBody'>
                                 {tableContents}
                             </tbody>
                         </table>

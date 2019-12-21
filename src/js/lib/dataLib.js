@@ -53,3 +53,67 @@ export function getPrivateCommentFromId(id) {
     }
     return -1;
 }
+
+export function exportPrivateComment(idList) {
+    let selected = [];
+    for (let i = 0; i < idList.length; i++) {
+        selected.push(privateComment.filter(d => {
+            if (d.id === idList[i]) return true;
+        })[0]);
+    }
+    let contents = '';
+    for (let i = 0; i < selected.length; i++) {
+        for (let key in selected[i]) {
+            contents += selected[i][key] + ',';
+        }
+        contents = contents.substring(0, contents.length - 1);
+        contents += '\n';
+    }
+    let filename = 'privateComment_' + createDateLabel() + '.csv';
+    let blob = new Blob([contents], {type: 'text/plain'});
+    let url = window.URL || window.webkitURL;
+    let blobURL = url.createObjectURL(blob);
+    let a = document.createElement('a');
+    a.download = decodeURI(filename);
+    a.href = blobURL;
+    a.type = 'text/csv';
+
+    a.click();
+}
+
+function createDateLabel() {
+    let now = new Date();
+    let year = now.getFullYear(),
+        month = now.getMonth() + 1,
+        day = now.getDate(),
+        hour = now.getHours(),
+        minute = now.getMinutes(),
+        second = now.getSeconds();
+
+    if (month < 10) {
+        month = '0' + month.toString();
+    } else {
+        month = month.toString();
+    }
+    if (day < 10) {
+        day = '0' + day.toString();
+    } else {
+        day = day.toString();
+    }
+    if (hour < 10) {
+        hour = '0' + hour.toString();
+    } else {
+        hour = hour.toString();
+    }
+    if (minute < 10) {
+        minute = '0' + minute.toString();
+    } else {
+        minute = minute.toString();
+    }
+    if (second < 10) {
+        second = '0' + second.toString();
+    } else {
+        second = second.toString();
+    }
+    return year + month + day + hour + minute + second;
+}
