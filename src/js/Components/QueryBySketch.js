@@ -3,6 +3,7 @@ import paper from 'paper';
 import * as d3 from 'd3';
 import {tickFormatting, formatValue} from '../lib/2DGraphLib';
 import * as FeatureAction from '../Actions/FeatureAction';
+import {createDateLabel} from '../lib/dataLib';
 import FeatureStore from '../Stores/FeatureStore';
 import DataStore from '../Stores/DataStore';
 
@@ -269,6 +270,30 @@ export default class QueryBySketch extends React.Component{
         };
     }
 
+    clearCanvas() {
+        if (this.path) {
+            this.path.remove();
+        }
+        if (this.pathWidth) {
+            this.pathWidth.remove();
+        }
+        if (this.penSizeCircle) {
+            this.penSizeCircle.remove();
+        }
+        for (let i = 0; i < this.controlPoints.length; i++) {
+            if (this.controlPoints[i].label) {
+                this.controlPoints[i].label.remove();
+                this.controlPoints[i].label = null;
+                this.controlPoints[i].labelRect.remove();
+                this.controlPoints[i].labelRect = null;
+            }
+        }
+        // initialize all
+        this.controlPoints = [];
+        this.timeStamps = [];
+        this.radiuses = [];
+    }
+
     CanvasOnMouseDown() {
         return function (event) {
             let hitResult;
@@ -457,27 +482,7 @@ export default class QueryBySketch extends React.Component{
                 switch (this.state.selector) {
                     case 'pen':
                         this.sketching = true;
-                        if (this.path) {
-                            this.path.remove();
-                        }
-                        if (this.pathWidth) {
-                            this.pathWidth.remove();
-                        }
-                        if (this.penSizeCircle) {
-                            this.penSizeCircle.remove();
-                        }
-                        for (let i = 0; i < this.controlPoints.length; i++) {
-                            if (this.controlPoints[i].label) {
-                                this.controlPoints[i].label.remove();
-                                this.controlPoints[i].label = null;
-                                this.controlPoints[i].labelRect.remove();
-                                this.controlPoints[i].labelRect = null;
-                            }
-                        }
-                        // initialize all
-                        this.controlPoints = [];
-                        this.timeStamps = [];
-                        this.radiuses = [];
+                        this.clearCanvas();
 
                         if (this.state.detectWidth) {
                             this.radiuses.push(0);
@@ -1261,7 +1266,7 @@ export default class QueryBySketch extends React.Component{
         }
     }
 
-    transformDataIntoSketch(id, period, ignored) {
+    transformDataIntoSketch(id, period) {
         let targetData = DataStore.getDataArray(id, 1);
         let minIdx = targetData.z.indexOf(period[0]),
             maxIdx = targetData.z.indexOf(period[1]);
@@ -1888,47 +1893,6 @@ export default class QueryBySketch extends React.Component{
                     </div>
                     <div id='selectorExploration' className='tooltip' style={{visibility: 'hidden'}}>
                     </div>
-                    {/* <input
-                        type="radio"
-                        disabled={this.state.assignVariables}
-                        checked={this.state.selector === 'pen'} readOnly/> */}
-                    {/* <label className="form-check-label" htmlFor="pen">Pen</label> */}
-                    {/* <div className="form-check form-check-inline">
-                        <input
-                            type="radio"
-                            name="QBSSelector"
-                            value="addPoint"
-                            disabled={this.state.assignVariables}
-                            checked={this.state.selector === 'addPoint'} readOnly/>
-                        <label className="form-check-label" htmlFor="addPoint">Add points</label>
-                    </div>
-                    <div className="form-check form-check-inline">
-                        <input
-                            type="radio"
-                            name="QBSSelector"
-                            value="eraser"
-                            disabled={this.state.assignVariables}
-                            checked={this.state.selector === 'eraser'} readOnly/>
-                        <label className="form-check-label" htmlFor="eraser">Eraser</label>
-                    </div>
-                    <div className="form-check form-check-inline">
-                        <input
-                            type="radio"
-                            name="QBSSelector"
-                            value="controlPoint"
-                            disabled={this.state.assignVariables}
-                            checked={this.state.selector === 'controlPoint'} readOnly/>
-                        <label className="form-check-label" htmlFor="controlPoint">Control point</label>
-                    </div>
-                    <div className="form-check form-check-inline">
-                        <input
-                            type="radio"
-                            name="QBSSelector"
-                            value="changeWidth"
-                            checked={this.state.selector === 'changeWidth'}
-                            disabled={!this.state.detectWidth || this.state.assignVariables} readOnly/>
-                        <label className="form-check-label" htmlFor="changeWidth">Change width</label>
-                    </div> */}
                 </form>
             </div>
         );
@@ -1945,6 +1909,125 @@ export default class QueryBySketch extends React.Component{
                 </div>
             </div>
         );
+    }
+
+    importExportQueryMenu() {
+        return (
+            <div id='importExportQuery' className='featureElem form-inline' style={{float: 'right'}}>
+                {/* <input type='button' className='btn btn-primary btn-sm' value='Import' onClick={this.importQueryClick.bind(this)}/> */}
+                <div className="custom-file" style={{width: '170px', marginRight: '0.5rem'}}>
+                    <input type='file' id='importQuery' className='custom-file-input' onChange={this.importQuery.bind(this)}/>
+                    <label className='custom-file-label' htmlFor='importQuery' style={{justifyContent: 'start'}}>Import</label>
+                </div>
+                <button className='btn btn-primary btn-sm' onClick={this.exportQuery.bind(this)}>Export</button>
+            </div>
+        )
+    }
+
+    importQuery() {
+        let file = document.getElementById('importQuery').files;
+        let reader = new FileReader();
+        reader.readAsText(file[0]);
+        reader.onload = function() {
+            let contents = reader.result;
+            let query = JSON.parse(contents);
+            if (query.type === 'Query-by-sketch') {
+                this.clearCanvas();
+                this.setState({
+                    xItem: query.xItem,
+                    yItem: query.yItem
+                });
+                if (this.xAxisText) {
+                    this.xAxisText
+                        .text(this.state.lookup[query.xItem]);
+                }
+                if (this.yAxisText) {
+                    this.yAxisText
+                        .text(this.state.lookup[query.yItem]);
+                }
+                this.xMinMax = query.xRange;
+                this.yMinMax = query.yRange;
+                this.updateAxis();
+                $('#periodOfSketchQuery').val(query.queryLength);
+                this.controlPoints = query.controlPoints;
+
+                this.path = new paper.Path();
+                this.path.strokeColor = 'black';
+                this.path.strokeWidth = 5;
+                for (let i = 0; i < query.path.length; i++) {
+                    // query.path[i][0]: "segment"
+                    // query.path[i][1]: position of the point [x, y]
+                    // query.path[i][2]: position of the handlein [x, y]
+                    // query.path[i][3]: position of the handleout [x, y]
+                    this.path.add(new paper.Point(query.path[i][1][0], query.path[i][1][1]));
+                    this.path.segments[this.path.segments.length - 1].handleIn.x = query.path[i][2][0];
+                    this.path.segments[this.path.segments.length - 1].handleIn.y = query.path[i][2][1];
+                    this.path.segments[this.path.segments.length - 1].handleOut.x = query.path[i][3][0];
+                    this.path.segments[this.path.segments.length - 1].handleOut.y = query.path[i][3][1];
+                }
+                if (query.widthVar) {
+                    this.widthVar = query.widthVar;
+                    this.changeWidthVariable(this.widthVar);
+                    this.radiuses = query.radiuses;
+                    this.drawPathWidth();
+                }
+                for (let i = 0; i < this.controlPoints.length; i++) {
+                    let label = '';
+                    for (let key in this.controlPoints[i].assignedVariables) {
+                        if (this.controlPoints[i].assignedVariables[key].length > 0) {
+                            label += this.state.lookup[key] + ', ';
+                        }
+                    }
+                    if (label !== '') {
+                        this.controlPoints[i].label = new paper.PointText({
+                            position: {x: this.controlPoints[i].position.x, y: this.controlPoints[i].position.y},
+                            fillColor: '#7b7971',
+                            justification: 'center',
+                            fontSize: 8
+                        });
+                        label = label.slice(0, -2);
+                        this.controlPoints[i].label.content = label;
+
+                        this.controlPoints[i].labelRect = new paper.Path.Rectangle(
+                            this.controlPoints[i].label.bounds
+                        );
+                        this.controlPoints[i].labelRect.fillColor = 'white';
+                        this.controlPoints[i].labelRect.strokeColor = 'white';
+                        this.controlPoints[i].label.insertAbove(this.controlPoints[i].labelRect);
+                    }
+                }
+                this.convertSketchIntoQuery();
+            } else {
+                alert('This file is not for a query-by-sketch.');
+            }
+        }.bind(this);
+    }
+
+    exportQuery() {
+        if (this.path) {
+            let query = {
+                type: 'Query-by-sketch',
+                xItem: this.state.xItem,
+                yItem: this.state.yItem,
+                xRange: this.xScale.domain(),
+                yRange: this.yScale.domain(),
+                controlPoints: this.controlPoints,
+                widthVar: this.widthVar,
+                radiuses: this.radiuses,
+                path: this.path.segments,
+                queryLength: Number($('#periodOfSketchQuery').val())
+            };
+            query = JSON.stringify(query);
+            let filename = 'sketchQuery_' + createDateLabel() + '.json';
+            let blob = new Blob([query], {type: 'application/json'});
+            let url = window.URL || window.webkitURL;
+            let blobURL = url.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.download = decodeURI(filename);
+            a.href = blobURL;
+        
+            a.click();
+        }
     }
 
     collapseQBSSketchOptions() {
@@ -2061,6 +2144,21 @@ export default class QueryBySketch extends React.Component{
         }
     }
 
+    changeWidthVariable(value) {
+        let variableList = document.getElementById('widthVariables');
+        let idx = -1;
+        if (variableList && variableList.options.length > 0) {
+            for (idx = 0; idx < variableList.options.length; idx++) {
+                if (variableList.options[idx].value === value) {
+                    break;
+                }
+            }
+        }
+        if (idx < variableList.options.length) {
+            variableList.selectedIndex = idx;
+        }
+    }
+
     stopSlidingWidthSlider() {
         return function (event, ui) {
             this.convertSketchIntoQuery();
@@ -2082,6 +2180,7 @@ export default class QueryBySketch extends React.Component{
                                id="periodOfSketchQuery"
                                style={{width: '40%', marginRight: '0.5rem'}}
                                onChange={this.updateTimeLength.bind(this)}
+                               required={true}
                                disabled={(this.state.xItem === 'z' || this.state.yItem === 'z')}/>
                         <label className="col-form-label col-form-label-sm" htmlFor="periodOfSketchQuery">days</label>
                     </div>
@@ -2292,6 +2391,8 @@ export default class QueryBySketch extends React.Component{
                     <div className='overlayHidingPanel'></div>
                 </div>
                 <div id='QBSSketchMenuArea'>
+                    {this.importExportQueryMenu()}
+                    <div style={{clear: 'both'}}></div>
                     {this.sketchOptions()}
                 </div>
             </div>

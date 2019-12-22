@@ -903,7 +903,6 @@ export function showExtractionResults() {
     // filter results according to the input options
     // sort results
     let results = FeatureStore.getExtractionResults();
-    console.log(FeatureStore.getMode(), FeatureStore.getAEOptionStatus('anomaly'),$('#topKResults').prop('disabled'), kValue);
     if (!$('#topKResults').prop('disabled')) {
         // sort the result in the order of the most important factor (distance, flx, angle, etc)
         let mode = FeatureStore.getMode();

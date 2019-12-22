@@ -349,13 +349,15 @@ export default class VisualQuery extends React.Component {
                                     type="text"
                                     placeholder="min"
                                     id="targetLengthMin"
-                                    style={{width: '20%', marginRight: '0.5rem'}}/>
+                                    style={{width: '20%', marginRight: '0.5rem'}}
+                                    required={true}/>
                                 ~
                                 <input className="form-control form-control-sm"
                                     type="text"
                                     placeholder="max"
                                     id="targetLengthMax"
-                                    style={{width: '20%', marginRight: '0.5rem', marginLeft: '0.5rem'}}/>
+                                    style={{width: '20%', marginRight: '0.5rem', marginLeft: '0.5rem'}}
+                                    required={true}/>
                                 <label className="col-form-label col-form-label-sm"> days</label>
                             </div>
                         </div>
@@ -368,7 +370,8 @@ export default class VisualQuery extends React.Component {
                                     type="text"
                                     placeholder="step size"
                                     id="stepSizeOfSlidingWindow"
-                                    style={{width: '40%', marginRight: '0.5rem'}}/>
+                                    style={{width: '40%', marginRight: '0.5rem'}}
+                                    required={true}/>
                                 <label className="col-form-label col-form-label-sm"> days</label>
                             </div>
                         </div>
