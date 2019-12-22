@@ -105,8 +105,8 @@ export default class ExtractionResults extends React.Component {
     orderOfResults() {
         return (
             <div
-                className="form-group form-inline"
-                style={{float: 'right', marginLeft: '1rem'}}
+                className="form-group form-inline resultMenu"
+                style={{float: 'left', marginLeft: '1rem'}}
                 onChange={this.updateOrder.bind(this)}>
                 <label
                     className="col-form-label col-form-label-sm"
@@ -123,7 +123,7 @@ export default class ExtractionResults extends React.Component {
 
     distanceThreshold() {
         return (
-            <div className='form-group form-inline' style={{float: 'right', marginLeft: '1rem'}}>
+            <div className='form-group form-inline resultMenu' style={{float: 'left', marginLeft: '1rem'}}>
                 <label
                     className="col-form-label col-form-label-sm"
                     style={{marginRight: '0.5rem'}}>Distance threshold</label>
@@ -145,7 +145,7 @@ export default class ExtractionResults extends React.Component {
             }
         }
         return (
-            <div className='form-group form-inline' style={{float: 'right', marginLeft: '1rem'}}>
+            <div className='form-group form-inline resultMenu' style={{float: 'left', marginLeft: '1rem'}}>
                 <label
                     className="col-form-label col-form-label-sm"
                     style={{marginRight: '0.5rem'}}>Top k result</label>
@@ -158,6 +158,51 @@ export default class ExtractionResults extends React.Component {
                        style={{width: '7rem'}}/>
             </div>
         );
+    }
+
+    exportResultsButton() {
+        return (
+            <div
+                className="form-group form-inline resultMenu"
+                style={{float: 'right'}}>
+                <button 
+                    id='exportResultsBtn'
+                    className='btn btn-primary btn-sm'
+                    onClick={this.exportResults.bind(this)}>
+                    Export
+                </button>
+            </div>
+        );
+    }
+
+    exportResults() {
+        let results = {};//JSON.stringify(this.state.shownResults, null, '\t');
+        results.parameters = FeatureStore.getParameters();
+        if (FeatureStore.getMode !== 'AE') {
+            results.query = FeatureStore.getQuery();
+        }
+        results.results = [];
+        for (let i = 0; i < this.state.shownResults.length; i++) {
+            let result = {};
+            for (let key in this.state.shownResults[i]) {
+                if (key === 'id') {
+                    result.fileName = DataStore.getFileName(Number(this.state.shownResults[i][key]));
+                } else {
+                    result[key] = this.state.shownResults[i][key];
+                }
+            }
+            results.results.push(result);
+        }
+        results = JSON.stringify(results, null, '\t');
+        let filename = 'extractionResults_' + dataLib.createDateLabel() + '.json';
+        let blob = new Blob([results], {type: 'application/json'});
+        let url = window.URL || window.webkitURL;
+        let blobURL = url.createObjectURL(blob);
+        let a = document.createElement('a');
+        a.download = decodeURI(filename);
+        a.href = blobURL;
+    
+        a.click();
     }
 
     updateAccessibility() {
@@ -386,10 +431,11 @@ export default class ExtractionResults extends React.Component {
         }
         return (
             <div id='extractionResults' className='resultElem'>
-                <div id='resultMenus' style={{overflow: 'hidden'}}>
-                    {this.orderOfResults()}
-                    {this.distanceThreshold()}
+                <div id='resultMenus' style={{overflow: 'hidden', height: '2rem'}}>
                     {this.topKResults()}
+                    {this.distanceThreshold()}
+                    {this.orderOfResults()}
+                    {this.exportResultsButton()}
                 </div>
                 <div id='mainResultArea'>
                     <div

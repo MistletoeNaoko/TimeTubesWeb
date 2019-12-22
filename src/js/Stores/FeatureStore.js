@@ -22,6 +22,7 @@ class FeatureStore extends EventEmitter {
         this.extractionResults = [];
         this.query = {};
         this.ignored = [];
+        this.parameters = {};
     }
 
     handleActions(action) {
@@ -60,7 +61,7 @@ class FeatureStore extends EventEmitter {
                 this.setIgnoredVariables(action.varList);
                 break;
             case 'SET_EXTRACTION_RESULTS':
-                this.setExtractionResults(action.results, action.query, action.ignored);
+                this.setExtractionResults(action.parameters, action.results, action.query, action.ignored);
                 break;
             case 'SHOW_LINE_CHARTS':
                 this.showLineCharts(action.LC);
@@ -143,6 +144,10 @@ class FeatureStore extends EventEmitter {
 
     getAEOptionStatus(option) {
         return this.AEOptions[option];
+    }
+
+    getParameters() {
+        return this.parameters;
     }
 
     updateSource(id) {
@@ -229,7 +234,8 @@ class FeatureStore extends EventEmitter {
         this.emit('setIgnoredVariables', varList);
     }
 
-    setExtractionResults(results, query, ignored) {
+    setExtractionResults(parameters, results, query, ignored) {
+        this.parameters = parameters;
         this.extractionResults = results;
         this.query = query;
         this.ignored = ignored;

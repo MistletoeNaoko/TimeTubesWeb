@@ -42,8 +42,8 @@ export function setIgnoredVariables(varList) {
     dispatcher.dispatch({type: 'SET_IGNORED_VARIALES', varList});
 }
 
-export function setExtractionResults(results, query, ignored) {
-    dispatcher.dispatch({type: 'SET_EXTRACTION_RESULTS', results, query, ignored});
+export function setExtractionResults(parameters, results, query, ignored) {
+    dispatcher.dispatch({type: 'SET_EXTRACTION_RESULTS', parameters, results, query, ignored});
 }
 
 export function showLineCharts(LC) {

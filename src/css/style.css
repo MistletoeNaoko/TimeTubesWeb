@@ -409,6 +409,11 @@ img.selectorIcon:active {
     border: none;
 }
 
+.resultMenu {
+    height: 2rem;
+    line-height: 2rem;
+}
+
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/

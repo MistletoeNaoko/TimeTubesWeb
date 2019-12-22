@@ -133,6 +133,7 @@ export default class AutomaticExtraction extends React.Component {
     runAutomaticExtraction() {
         let targets = FeatureStore.getTarget();
         let flares, rotations, anomalies;
+        let parameters = {};
         if (this.state.flare) {
             let mode = this.state.flareOption.split(' ')[0];
             if (mode === 'automatic') {
@@ -144,8 +145,18 @@ export default class AutomaticExtraction extends React.Component {
                     sensitivity = Number(sensitivity);   
                     flares = TimeSeriesQuerying.extractFlares(targets, method, lookaround, sensitivity);
                 }
+                parameters.flare = {
+                    mode: mode,
+                    peakFunction: this.state.flareOption.split(' ')[1],
+                    lookaround: lookaround,
+                    sensitivity: sensitivity
+                };
             } else if (mode === 'manual') {
                 flares = TimeSeriesQuerying.extractFlaresManual(targets, Number($('#flareThreshold').val()));
+                parameters.flare = {
+                    mode: mode,
+                    threshold: Number($('#flareThreshold').val())
+                };
             }
         }
         if (this.state.rotation) {
@@ -164,6 +175,13 @@ export default class AutomaticExtraction extends React.Component {
             let selectedSigma = Number(weightList.options[selectedIdx].value);
 
             rotations = TimeSeriesQuerying.extractRotations(targets, period, diameter, angle, selectedSigma, selectedStdConstraint);
+            parameters.rotation = {
+                period: period,
+                diameter: diameter,
+                angle: angle,
+                stdOfthePeriod: selectedStdConstraint,
+                weightForAverage: (selectedSigma === 0)? 'flat': selectedSigma
+            };
         }
         if (this.state.anomaly) {
             anomalies = TimeSeriesQuerying.extractAnomalies(targets);
@@ -217,7 +235,7 @@ export default class AutomaticExtraction extends React.Component {
         }
 
         // set the extraction results
-        FeatureAction.setExtractionResults(results);
+        FeatureAction.setExtractionResults(parameters, results);
         // show the result thumbnails
         TimeSeriesQuerying.setDefaltOrderOfResults();
         TimeSeriesQuerying.showExtractionResults();

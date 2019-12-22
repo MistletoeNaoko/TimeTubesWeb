@@ -2017,7 +2017,7 @@ export default class QueryBySketch extends React.Component{
                 path: this.path.segments,
                 queryLength: Number($('#periodOfSketchQuery').val())
             };
-            query = JSON.stringify(query);
+            query = JSON.stringify(query, null , '\t');
             let filename = 'sketchQuery_' + createDateLabel() + '.json';
             let blob = new Blob([query], {type: 'application/json'});
             let url = window.URL || window.webkitURL;

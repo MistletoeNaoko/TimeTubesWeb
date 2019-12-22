@@ -465,6 +465,16 @@ export default class VisualQuery extends React.Component {
                     let period = FeatureStore.getSelectedPeriod();
                     // get what to ignore: this.getIgnoredVariables
                     let ignored = domActions.getIgnoredVariables();
+                    let parameters = {};
+                    parameters.QBE = {
+                        normalize: normalization,
+                        coordinate: this.state.coordinate,
+                        distanceMetric: selectedDist,
+                        warpingWindowSize: windowSize,
+                        timeSliceLength: [periodMin, periodMax],
+                        slidingWindow: step,
+                        DTWType: DTWType
+                    };
                     if (source !== NaN) {
                         // convert a query into an object with arrays (divide time series into equal interval (1day))
                         let results;
@@ -481,7 +491,7 @@ export default class VisualQuery extends React.Component {
                             // FeatureAction.setExtractionResults(results, queryPolar, ignored);
                         }
                         results = TimeSeriesQuerying.removeOverlappingQBE(source, period, results);
-                        FeatureAction.setExtractionResults(results, query, ignored);
+                        FeatureAction.setExtractionResults(parameters, results, query, ignored);
                         TimeSeriesQuerying.setDefaltOrderOfResults();
                     }
                 }
@@ -505,6 +515,21 @@ export default class VisualQuery extends React.Component {
                             if (flag) ignored.push(key);
                         }
                     }
+                    let variableList = document.getElementById('widthVariables');
+                    let selectedIdx = variableList.selectedIndex;
+                    let selectedText = variableList.options[selectedIdx].innerText;
+                    let parameters = {};
+                    parameters.QBS = {
+                        width: ($('#widthDetectionSwitch').prop('checked'))? selectedText: false,
+                        sketchLength: $('#periodOfSketchQuery').val(),
+                        normalize: normalization,
+                        coordinate: this.state.coordinate,
+                        distanceMetric: selectedDist,
+                        warpingWindowSize: windowSize,
+                        timeSliceLength: [periodMin, periodMax],
+                        slidingWindow: step,
+                        DTWType: DTWType
+                    };
                     let results;
                     if (this.state.coordinate === 'rectangular') {
                         results = TimeSeriesQuerying.runMatchingSketch(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
@@ -515,7 +540,7 @@ export default class VisualQuery extends React.Component {
                         results = TimeSeriesQuerying.runMatchingSketch(queryPolar, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
                         // FeatureAction.setExtractionResults(results, queryPolar, ignored);
                     }
-                    FeatureAction.setExtractionResults(results, query, ignored);
+                    FeatureAction.setExtractionResults(parameters, results, query, ignored);
                     TimeSeriesQuerying.setDefaltOrderOfResults();
                 }
                 break;
