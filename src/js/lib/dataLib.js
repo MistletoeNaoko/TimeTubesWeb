@@ -64,24 +64,27 @@ export function exportPrivateComment(idList) {
     let contents = '';
     for (let i = 0; i < selected.length; i++) {
         for (let key in selected[i]) {
-            contents += selected[i][key] + ',';
+            if (key === 'timeStamp') {
+                contents += selected[i][key].replace(', ', '_');
+            } else {
+                contents += selected[i][key] + ',';
+            }
         }
         contents = contents.substring(0, contents.length - 1);
         contents += '\n';
     }
     let filename = 'privateComment_' + createDateLabel() + '.csv';
-    let blob = new Blob([contents], {type: 'text/plain'});
+    let blob = new Blob([contents], {type: 'text/csv'});
     let url = window.URL || window.webkitURL;
     let blobURL = url.createObjectURL(blob);
     let a = document.createElement('a');
     a.download = decodeURI(filename);
     a.href = blobURL;
-    a.type = 'text/csv';
 
     a.click();
 }
 
-function createDateLabel() {
+export function createDateLabel() {
     let now = new Date();
     let year = now.getFullYear(),
         month = now.getMonth() + 1,
