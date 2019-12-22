@@ -1949,7 +1949,14 @@ export default class QueryBySketch extends React.Component{
                 this.yMinMax = query.yRange;
                 this.updateAxis();
                 $('#periodOfSketchQuery').val(query.queryLength);
-                this.controlPoints = query.controlPoints;
+
+                // for the case, the size of sketch pad is different
+                let ratio = this.state.size / query.size;
+                for (let i = 0; i < query.controlPoints.length; i++) {
+                    this.controlPoints.push(query.controlPoints[i]);
+                    this.controlPoints[this.controlPoints.length - 1].position.x = this.controlPoints[this.controlPoints.length - 1].position.x * ratio;
+                    this.controlPoints[this.controlPoints.length - 1].position.y = this.controlPoints[this.controlPoints.length - 1].position.y * ratio;
+                }
 
                 this.path = new paper.Path();
                 this.path.strokeColor = 'black';
@@ -1959,11 +1966,11 @@ export default class QueryBySketch extends React.Component{
                     // query.path[i][1]: position of the point [x, y]
                     // query.path[i][2]: position of the handlein [x, y]
                     // query.path[i][3]: position of the handleout [x, y]
-                    this.path.add(new paper.Point(query.path[i][1][0], query.path[i][1][1]));
-                    this.path.segments[this.path.segments.length - 1].handleIn.x = query.path[i][2][0];
-                    this.path.segments[this.path.segments.length - 1].handleIn.y = query.path[i][2][1];
-                    this.path.segments[this.path.segments.length - 1].handleOut.x = query.path[i][3][0];
-                    this.path.segments[this.path.segments.length - 1].handleOut.y = query.path[i][3][1];
+                    this.path.add(new paper.Point(query.path[i][1][0] * ratio, query.path[i][1][1] * ratio));
+                    this.path.segments[this.path.segments.length - 1].handleIn.x = query.path[i][2][0] * ratio;
+                    this.path.segments[this.path.segments.length - 1].handleIn.y = query.path[i][2][1] * ratio;
+                    this.path.segments[this.path.segments.length - 1].handleOut.x = query.path[i][3][0] * ratio;
+                    this.path.segments[this.path.segments.length - 1].handleOut.y = query.path[i][3][1] * ratio;
                 }
                 if (query.widthVar) {
                     this.widthVar = query.widthVar;
@@ -2015,7 +2022,8 @@ export default class QueryBySketch extends React.Component{
                 widthVar: this.widthVar,
                 radiuses: this.radiuses,
                 path: this.path.segments,
-                queryLength: Number($('#periodOfSketchQuery').val())
+                queryLength: Number($('#periodOfSketchQuery').val()),
+                size: this.state.size
             };
             query = JSON.stringify(query, null , '\t');
             let filename = 'sketchQuery_' + createDateLabel() + '.json';
