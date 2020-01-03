@@ -627,7 +627,7 @@ export default class QueryBySketch extends React.Component{
                         }
                         break;
                     case 'controlPoint':
-                        if (this.selectedIdx) {
+                        if (this.selectedIdx >= 0) {
                             if (this.selectedHandle) {
                                 this.selectedHandle.x += event.delta.x;
                                 this.selectedHandle.y += event.delta.y;
