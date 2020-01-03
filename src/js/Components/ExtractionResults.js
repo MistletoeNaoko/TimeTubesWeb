@@ -352,7 +352,7 @@ export default class ExtractionResults extends React.Component {
             }
             // set up the table for the detail info
             for (let key in this.state.selected) {
-                if (key !== 'id' && !Array.isArray(this.state.selected[key])) {
+                if (key !== 'id' && key !== 'path' && !Array.isArray(this.state.selected[key])) {
                     let label;
                     if (key === 'V') {
                         label = 'Flx(V)';
