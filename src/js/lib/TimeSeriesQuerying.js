@@ -1284,11 +1284,13 @@ export function extractRotations(targets, period, diameter, angle, sigma, stdCon
                 if (sigma === 0) {
                     // arithmetic average
                     for (let j = 0; j < i; j++) {
-                        let currentData = DataStore.getValues(targetId, targetData[firstIdx].z + i - targetData[0].z);
+                        let currentData = DataStore.getValues(targetId, targetData[firstIdx].z + j - targetData[0].z);
                         dataByDay.push(currentData);
                         center.x += currentData.x;
                         center.y += currentData.y;
                     }
+                    center.x /= i;
+                    center.y /= i;
                 } else {
                     // weighted mean
                     let delGauss = 8 / i;
