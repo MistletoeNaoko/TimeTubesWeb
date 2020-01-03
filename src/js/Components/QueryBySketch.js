@@ -1020,13 +1020,15 @@ export default class QueryBySketch extends React.Component{
                         if (point) {
                             for (let key in query) {
                                 if (key === this.state.xItem) {
+                                    // convert x pos to value
                                     query[key].push(this.xScale.invert(point.x));
                                 } else if (key === this.state.yItem) {
+                                    // convert y pos to value
                                     query[key].push(this.yScale.invert(point.y));
                                 } else if (key === this.widthVar) {
+                                    // convert width into value
                                     let width = (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
                                         * (del * i - totalCurveLen) / currentLen + this.radiuses[curveIdx];
-                                    // convert width into value
                                     query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
                                 } else {
                                     query[key].push(null);
@@ -1063,6 +1065,13 @@ export default class QueryBySketch extends React.Component{
                                 }
                             }
                             pointBefore = point;
+                        }
+                    }
+                    // if some constraints are assigned to the last point, add them to a query
+                    let lastPoint = this.controlPoints[this.controlPoints.length - 1].assignedVariables;
+                    for (let key in lastPoint) {
+                        if (lastPoint[key].length > 0) {
+                            query[key][query[key].length - 1] = lastPoint[key];
                         }
                     }
                 } else {

@@ -264,6 +264,15 @@ export default class LineChart extends React.Component {
         //     width: this.props.width,
         //     height: this.props.height
         // });
+        this.svg
+            .selectAll('line.filteredRange')
+            .remove();
+        this.svg
+            .selectAll('line.filteredRangeTop')
+            .remove();
+        this.svg
+            .selectAll('line.filteredRangeBottom')
+            .remove();
         this.changeLineChart();
     }
 
@@ -294,6 +303,78 @@ export default class LineChart extends React.Component {
                         return this.yScale(d);
                     }.bind(this))
                 );
+        } else {
+            // add error bars to the filtered time points
+            let data = [];
+            for (let i = 0; i < this.query.length; i++) {
+                if (this.query[i]) {
+                    // decide x position
+                    for (let j = 0; j < this.path.length; j++) {
+                        if (this.path[j][1] < i) break;
+                        if (this.path[j][1] === i) {
+                            data.push({x: this.path[j][0], range: this.query[i]});
+                        }
+                    }
+                }
+            }
+
+            this.ranges = this.svg
+                .selectAll('line.filteredRange')
+                .data(data)
+                .enter()
+                .append('line')
+                .attr('class', 'filteredRange')
+                .attr('x1', function(d) {
+                    return this.xScale(d.x);
+                }.bind(this))
+                .attr('x2', function(d) {
+                    return this.xScale(d.x);
+                }.bind(this))
+                .attr('y1', function(d) {
+                    return this.yScale(d.range[0]);
+                }.bind(this))
+                .attr('y2', function(d) {
+                    return this.yScale(d.range[1]);
+                }.bind(this))
+                .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
+            this.rangeTop = this.svg
+                .selectAll('line.filteredRangeTop')
+                .data(data)
+                .enter()
+                .append('line')
+                .attr('class', 'filteredRangeTop')
+                .attr('x1', function(d) {
+                    return this.xScale(d.x) - this.tickWidth / 2;
+                }.bind(this))
+                .attr('x2', function(d) {
+                    return this.xScale(d.x) + this.tickWidth / 2;
+                }.bind(this))
+                .attr('y1', function(d) {
+                    return this.yScale(d.range[0]);
+                }.bind(this))
+                .attr('y2', function(d) {
+                    return this.yScale(d.range[0]);
+                }.bind(this))
+                .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
+            this.rangeBottom = this.svg
+                .selectAll('line.filteredRangeBottom')
+                .data(data)
+                .enter()
+                .append('line')
+                .attr('class', 'filteredRangeBottom')
+                .attr('x1', function(d) {
+                    return this.xScale(d.x) - this.tickWidth / 2;
+                }.bind(this))
+                .attr('x2', function(d) {
+                    return this.xScale(d.x) + this.tickWidth / 2;
+                }.bind(this))
+                .attr('y1', function(d) {
+                    return this.yScale(d.range[1]);
+                }.bind(this))
+                .attr('y2', function(d) {
+                    return this.yScale(d.range[1]);
+                }.bind(this))
+                .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
         }
         this.targetPath
             .datum(this.target)

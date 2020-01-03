@@ -761,8 +761,8 @@ export function DTWMD(s, t, w, keys, distFunc) {
 
 function OptimalWarpPath(cost) {
     let path = [];
-    let i = cost.length - 1,
-        j = cost[0].length - 1;
+    let i = cost.length - 1,    // y: source
+        j = cost[0].length - 1; // x: target
     path.push([j, i]);
     while (i > 0 && j > 0) {
         if (i === 0) {
