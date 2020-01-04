@@ -21,8 +21,8 @@ export function resetSelection() {
     dispatcher.dispatch({type: 'RESET_SELECTION'});
 }
 
-export function selectTimeInterval(id, value) {
-    dispatcher.dispatch({type:'SELECT_TIMEINTERVAL', id, value});
+export function selectTimeInterval(value) {
+    dispatcher.dispatch({type:'SELECT_TIMEINTERVAL', value});
 }
 
 export function updateSelectedPeriod(period) {

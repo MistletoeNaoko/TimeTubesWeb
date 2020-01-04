@@ -57,6 +57,7 @@ export default class SelectedTimeSlice extends React.Component {
         });
         FeatureStore.on('selectTimeInterval', (id, value) => {
             this.selectedPeriod = FeatureStore.getSelectedPeriod();
+            console.log(this.selectedPeriod);
             this.updateTimePeriod();
         });
         FeatureStore.on('setIgnoredVariables', (varList) => {

@@ -158,7 +158,7 @@ export default class QueryByExample extends React.Component {
     selectTimeInterval() {
         let val = $('#selectTimeIntervalInput').val();
         if (!isNaN(val) && val != '') {
-            FeatureAction.selectTimeInterval(this.state.source, val);
+            FeatureAction.selectTimeInterval(val);
         }
     }
 

@@ -43,7 +43,7 @@ class FeatureStore extends EventEmitter {
                 this.resetSelection();
                 break;
             case 'SELECT_TIMEINTERVAL':
-                this.selectTimeInterval(action.id, action.value);
+                this.selectTimeInterval(action.value);
                 break;
             case 'SWITCH_QUERY_MODE':
                 this.switchQueryMode(action.mode);
@@ -174,8 +174,8 @@ class FeatureStore extends EventEmitter {
         this.emit('resetSelection');
     }
 
-    selectTimeInterval(id, value) {
-        let valueNum = Number(value);
+    selectTimeInterval(value) {
+        let id = this.source;
         let currentPos = TimeTubesStore.getFocused(Number(id)) + DataStore.getData(Number(id)).data.meta.min.z;
         if (this.selectedPeriod[0] !== -1 && this.selectedPeriod[1] !== -1) {
             // previous period: [], selected period: ()
