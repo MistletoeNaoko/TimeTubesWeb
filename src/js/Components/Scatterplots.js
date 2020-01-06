@@ -92,22 +92,6 @@ export default class Scatterplots extends React.Component{
         this.initalizeElements();
         this.computeRange(this.state.xItem, this.state.yItem);
         this.drawScatterplots();
-        // let xAxisPanel = document.getElementById("selectXAxisForm_" + this.SPID);
-        // let yAxisPanel = document.getElementById("selectYAxisForm_" + this.SPID);
-        // let xItems = xAxisPanel["selectXAxisForm_" + this.SPID];
-        // let yItems = yAxisPanel["selectYAxisForm_" + this.SPID];
-        // let currentX = this.data.data.lookup[this.state.xItem];
-        // let currentY = this.data.data.lookup[this.state.yItem];
-        // for (let i = 0; i < xItems.length; i++) {
-        //     if (currentX.indexOf(xItems[i].value) >= 0) {
-        //         xItems[i].checked = true;
-        //     }
-        // }
-        // for (let i = 0; i < yItems.length; i++) {
-        //     if (currentY.indexOf(yItems[i].value) >= 0) {
-        //         yItems[i].checked = true;
-        //     }
-        // }
     }
 
     initalizeElements() {
@@ -271,18 +255,6 @@ export default class Scatterplots extends React.Component{
             .on('mouseout', spYLabelMouseOut);
 
 
-        // the panels for changing the item of each axis
-        // let changeXAxisPanel = d3.select('#scatterplots_' + this.id)
-        //     .append('div')
-        //     .attr('class', 'tooltip')
-        //     .attr('id', 'changeXAxisPanel_' + this.id)
-        //     .style('opacity', 0);
-        // let changeXAxisPanel = d3.select('#scatterplots_' + this.id)
-        //     .append('div')
-        //     .attr('class', 'tooltip')
-        //     .attr('id', 'changeYAxisPanel_' + this.id)
-        //     .style('opacity', 0);
-
         let curLineH = [[0, this.margin.top], [width, this.margin.top]];
         let curLineV = [[this.margin.left, 0], [this.margin.left, height]];
         this.lineH
@@ -290,30 +262,22 @@ export default class Scatterplots extends React.Component{
         this.lineV
             .attr('d', this.line(curLineV));
 
-        // this.sp.append("rect")
-        //     .attr("width", width)
-        //     .attr("height", height)
-        //     .style("fill", "none")
-        //     .style("pointer-events", "all")
-        //     .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
-
         // create a clipping region
         this.clip
             .attr("width", width)
             .attr("height", height);
 
         // Draw data points
-        let points;
         if (!this.data.data.merge) {
             let plotColor = TimeTubesStore.getPlotColor(this.id);
             this.points
                 .attr("cx", function(d) { return this.xScale(d[xItem]); }.bind((this)))
                 .attr("cy", function(d) { return this.yScale(d[yItem]); }.bind((this)))
                 .attr("fill", plotColor)//d3.rgb(color[0], color[1], color[2]))
-                .on('mouseover', spMouseOver)
-                .on('mouseout', spMouseOut)
+                .on('mouseover', this.spMouseOver())
+                .on('mouseout', this.spMouseOut())
                 // .on('click', spClick)
-                .on('dblclick', spDblClick);
+                .on('dblclick', this.spDblClick());
         } else {
             let idNameLookup = {};
             let fileNames = this.data.name.split(',');
@@ -335,10 +299,10 @@ export default class Scatterplots extends React.Component{
                 .attr("fill", function (d) {
                     return plotColors[idNameLookup[d.source]];
                 })//d3.rgb(color[0], color[1], color[2]))
-                .on('mouseover', spMouseOver)
-                .on('mouseout', spMouseOut)
+                .on('mouseover', this.spMouseOver())
+                .on('mouseout', this.spMouseOut())
                 // .on('click', spClick)
-                .on('dblclick', spDblClick);
+                .on('dblclick', this.spDblClick());
         }
 
         function zoomed() {
@@ -388,12 +352,6 @@ export default class Scatterplots extends React.Component{
                 .attr('cx', function(d) {return new_xScale(d[xItem])})
                 .attr('cy', function(d) {return new_yScale(d[yItem])});
 
-            // if (lineH) {
-            //     lineH.attr('transform', 'translate(' + this.margin.left + ',' + new_yScale(lineHPos) + ')');
-            // }
-            // if (lineV) {
-            //     lineV.attr('transform', 'translate(' + new_xScale(lineVPos) + ',' + this.margin.top + ')');
-            // }
             let current = d3.select('circle.current.' + this.divID);
 
             if (current._groups[0][0]) {
@@ -435,75 +393,6 @@ export default class Scatterplots extends React.Component{
                 FeatureAction.selectPeriodfromSP(this.selectedPeriod);
                 this.highlightSelectedTimePeriod();
             }
-        }
-        function spMouseOver(d) {
-            d3.select(this)
-                .attr('stroke-width', 1)
-                .attr('stroke', 'black');
-            tooltip.transition()
-                .duration(50)
-                .style('visibility', 'visible');
-            tooltip.html(
-                '<i>' + data.data.lookup[xItem] + '</i>' + ': ' + d[xItem] + '<br/>' +
-                '<i>' + data.data.lookup[yItem] + '</i>' + ': ' + d[yItem]
-            )
-                .style('left', (d3.event.pageX + 20) + 'px')
-                .style('top', (d3.event.pageY - 30) + 'px');
-        }
-        function spMouseOut(d) {
-            let selected = d3.select(this);
-            if (selected.style('fill') !== d3.color('red').toString()) {
-                selected
-                    .attr('stroke-width', 0.5)
-                    .attr('stroke', 'dimgray');
-                // if focused plot is not currently focused in TimeTubes
-                if (selected.attr('class').indexOf('current') < 0) {
-                    selected
-                        .attr('stroke-width', 0.5)
-                        .attr('stroke', 'dimgray');
-                } else {
-                    selected
-                        .attr('stroke', 'orange')
-                        .attr('stroke-width', 1);
-                }
-            }
-            tooltip.transition()
-                .duration(150)
-                .style("visibility", 'hidden');
-        }
-        // function spClick(d) {
-        //     let curColor = d3.color(d3.select(this).style('fill'));
-        //     if (curColor.r === color[0] && curColor.g === color[1] && curColor.b === color[2]) {
-        //         d3.selectAll('circle')
-        //             .attr('fill', d3.rgb(color[0], color[1], color[2]))
-        //             .attr('stroke-width', 0.5)
-        //             .attr('stroke', 'dimgray');
-        //         d3.select(this)
-        //             .attr('fill', 'red')
-        //             .attr('stroke-width', 1)
-        //             .attr('stroke', 'black')
-        //             .moveToFront();
-        //         let datainfo = '<table class="table_values">';
-        //         for  (let key in d) {
-        //             datainfo += '<tr>' +
-        //                 '<td class="label_values"><i>' +
-        //                 key +
-        //                 '</i></td>' +
-        //                 '<td class="current_values">' +
-        //                 d[key] +
-        //                 '</td></tr>';
-        //         }
-        //         datainfo += '</table>';
-        //         detail.innerHTML = datainfo;
-        //     } else {
-        //         d3.select(this)
-        //             .attr('fill', d3.rgb(color[0], color[1], color[2]))
-        //             .attr('stroke-width', 0.5)
-        //             .attr('stroke', 'dimgray');
-        //     }
-        // }
-        function spDblClick(d, i) {
-            TimeTubesAction.searchTime(id, d.z);
         }
         function spXLabelClick() {
         //    show a panel with choices for axis on scatterplots
@@ -562,6 +451,59 @@ export default class Scatterplots extends React.Component{
             //    change the font color of the y label
             d3.select(this)
                 .style('fill', 'black');
+        }
+    }
+
+    spMouseOver() {
+        let tooltip = this.tooltip,
+            data = this.data,
+            xItem = this.state.xItem,
+            yItem = this.state.yItem;
+        return function(d) {
+            d3.select(this)
+                .attr('stroke-width', 1)
+                .attr('stroke', 'black');
+            tooltip.transition()
+                .duration(50)
+                .style('visibility', 'visible');
+            tooltip.html(
+                '<i>' + data.data.lookup[xItem] + '</i>' + ': ' + d[xItem] + '<br/>' +
+                '<i>' + data.data.lookup[yItem] + '</i>' + ': ' + d[yItem]
+            )
+                .style('left', (d3.event.pageX + 20) + 'px')
+                .style('top', (d3.event.pageY - 30) + 'px');
+        }
+    }
+
+    spMouseOut() {
+        let tooltip = this.tooltip;
+        return function(d) {
+            let selected = d3.select(this);
+            if (selected.style('fill') !== d3.color('red').toString()) {
+                selected
+                    .attr('stroke-width', 0.5)
+                    .attr('stroke', 'dimgray');
+                // if focused plot is not currently focused in TimeTubes
+                if (selected.attr('class').indexOf('current') < 0) {
+                    selected
+                        .attr('stroke-width', 0.5)
+                        .attr('stroke', 'dimgray');
+                } else {
+                    selected
+                        .attr('stroke', 'orange')
+                        .attr('stroke-width', 1);
+                }
+            }
+            tooltip.transition()
+                .duration(150)
+                .style("visibility", 'hidden');
+        }
+    }
+
+    spDblClick() {
+        let id = this.id;
+        return function(d) {
+            TimeTubesAction.searchTime(id, d.z);
         }
     }
 
@@ -624,8 +566,6 @@ export default class Scatterplots extends React.Component{
                 .domain([this.xMinMax[0], this.xMinMax[1]])
                 .range([0, this.props.width - this.margin.left - this.margin.right]);
             let JD = zpos + this.data.data.spatial[0].z;
-            // let currentLineH = d3.selectAll('.currentLineH.' + this.divID + '.scatterplots' + this.id);
-            // let currentLineV = d3.selectAll('.currentLineV.' + this.divID + '.scatterplots' + this.id);
             this.lineH
                 .style('visibility', 'hidden');
             this.lineV
@@ -638,8 +578,6 @@ export default class Scatterplots extends React.Component{
                 .domain([this.yMinMax[0], this.yMinMax[1]])
                 .range([0, currentHeight - this.margin.top - this.margin.bottom]);
             let JD = zpos + this.data.data.spatial[0].z;
-            // this.lineH = d3.selectAll('.currentLineH.' + this.divID + '.scatterplots' + this.id);
-            // let currentLineV = d3.selectAll('.currentLineV.' + this.divID + '.scatterplots' + this.id);
             this.lineV
                 .style('visibility', 'hidden');
             this.lineH
@@ -665,6 +603,7 @@ export default class Scatterplots extends React.Component{
     }
 
     computeRange(xItem, yItem) {
+        // this.data.data.spatial has all observation index by x, y, z, etc.
         this.slicedData = this.data.data.spatial.filter(function (d) {
             return (this.timeRange[0] <= d.z) && (d.z <= this.timeRange[1]);
         }.bind(this));
@@ -688,31 +627,67 @@ export default class Scatterplots extends React.Component{
         this.yMinMax = this.yScale.domain();
 
         // update all circles
-        this.points
-            .data(this.slicedData)
-            .attr('cx', function(d) { return this.xScale(d[xItem]); }.bind((this)))
-            .attr('cy', function(d) { return this.yScale(d[yItem]); }.bind((this)));
-        // this.points
-        //     .data(this.slicedData)
-        //     .enter()
-        //     .append('circle')
-        //     .attr('cx', function(d) { return this.xScale(d[xItem]); }.bind((this)))
-        //     .attr('cy', function(d) { return this.yScale(d[yItem]); }.bind((this)));
-        this.points
-            .data(this.slicedData)
-            .enter()
-            .append('circle')
-            .attr('cx', function(d) { return this.xScale(d[xItem]); }.bind((this)))
-            .attr('cy', function(d) { return this.yScale(d[yItem]); }.bind((this)))
-            .select(function (d) {
-                return (xItem in d && yItem in d) ? this: null;
-            })
-            .attr('opacity', 0.7)
-            .attr('stroke-width', 0.5)
-            .attr('stroke', 'dimgray')
-            .attr("r", 4)
-            .attr('class', this.divID + ' scatterplots' + this.id);
-        this.points.data(this.slicedData).exit().remove();
+        this.points.remove();
+        if (!this.data.data.merge) {
+            let plotColor = TimeTubesStore.getPlotColor(this.id);
+            this.points = this.point_g
+                .selectAll("circle")
+                .data(this.slicedData)
+                .enter()
+                .append('circle')
+                .attr('cx', function(d) { return this.xScale(d[xItem]); }.bind((this)))
+                .attr('cy', function(d) { return this.yScale(d[yItem]); }.bind((this)))
+                .select(function (d) {
+                    return (xItem in d && yItem in d) ? this: null;
+                })
+                .attr("fill", plotColor)//d3.rgb(color[0], color[1], color[2]))
+                .attr('opacity', 0.7)
+                .attr('stroke-width', 0.5)
+                .attr('stroke', 'dimgray')
+                .attr("r", 4)
+                .attr('class', this.divID + ' scatterplots' + this.id)
+                .on('mouseover', this.spMouseOver())
+                .on('mouseout', this.spMouseOut())
+                // .on('click', spClick)
+                .on('dblclick', this.spDblClick());
+        } else {
+            let idNameLookup = {};
+            let fileNames = this.data.name.split(',');
+            let plotColors = [];
+            for (let i = 0; i < fileNames.length; i++) {
+                let id = DataStore.getIdFromName(fileNames[i]);
+                idNameLookup[fileNames[i]] = i;
+                let eachNames = fileNames[i].split('+');
+                if (eachNames.length > 1) {
+                    for (let j = 0; j < eachNames.length; j++) {
+                        idNameLookup[eachNames[j]] = i;
+                    }
+                }
+                plotColors.push(TimeTubesStore.getPlotColor(id));
+            }
+            this.points = this.point_g
+                .selectAll("circle")
+                .data(this.slicedData)
+                .enter()
+                .append('circle')
+                .attr('cx', function(d) { return this.xScale(d[xItem]); }.bind((this)))
+                .attr('cy', function(d) { return this.yScale(d[yItem]); }.bind((this)))
+                .select(function (d) {
+                    return (xItem in d && yItem in d) ? this: null;
+                })
+                .attr("fill", function (d) {
+                    return plotColors[idNameLookup[d.source]];
+                })//d3.rgb(color[0], color[1], color[2]))
+                .attr('opacity', 0.7)
+                .attr('stroke-width', 0.5)
+                .attr('stroke', 'dimgray')
+                .attr("r", 4)
+                .attr('class', this.divID + ' scatterplots' + this.id)
+                .on('mouseover', this.spMouseOver())
+                .on('mouseout', this.spMouseOut())
+                // .on('click', spClick)
+                .on('dblclick', this.spDblClick());
+        }
 
         this.xAxis
             .call(this.xLabel.scale(this.xScale));

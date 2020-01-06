@@ -138,7 +138,7 @@ export default class TimeSelector extends React.Component {
             let s = d3.event.selection || this.xScale.range;
             let xRange = s.map(this.xScale.invert, this.xScale);
             if ((d3.selectAll('.scatterplots' + this.id).size() > 0) && (xRange.toString() !== this.selectedRange.toString())) {
-                ScatterplotsAction.updateTimeRange(id, xRange);
+                ScatterplotsAction.updateTimeRange(this.id, xRange);
             }
             // if (d3.event.sourceEvent && d3.event.sourceEvent.type === 'zoom') return;
             // let selection = d3.event.selection || xScale.range();
