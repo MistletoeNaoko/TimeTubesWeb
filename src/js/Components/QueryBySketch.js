@@ -57,6 +57,7 @@ export default class QueryBySketch extends React.Component{
         this.margin = {"bottom": 20, "left": 20 };
         this.curveSegment = 10;
         this.sketching = false;
+        this.touch = false;
         this.path = null;
         this.pathWidth = null;
         this.penSizeCircle = null;
@@ -253,16 +254,18 @@ export default class QueryBySketch extends React.Component{
         this.tool.onMouseDrag = this.CanvasOnMouseDrag().bind(this);
         this.tool.onMouseUp = this.CanvasOnMouseUp().bind(this);
 
+        document.getElementById('QBSSketchPad').addEventListener('touchmove', this.CanvasOnTouchMove().bind(this));
+
         paper.view.onFrame = this.CanvasOnFrame().bind(this);
     }
 
     CanvasOnFrame() {
         return function (event) {
-            if (this.sketching && this.penSizeCircle) {
+            if (this.sketching && !this.touch && this.penSizeCircle) {
                 let center = this.penSizeCircle.position;
                 let now = Date.now();
                 let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
-                let t = deltaT / 1000 * 30 + 5 / 2;
+                let t = Math.min(deltaT / 1000 * 30 + 5 / 2, 100);
                 this.penSizeCircle.remove();
                 this.penSizeCircle = new paper.Path.Circle(center, t);
                 this.penSizeCircle.strokeColor = '#325D88';
@@ -292,6 +295,18 @@ export default class QueryBySketch extends React.Component{
         this.controlPoints = [];
         this.timeStamps = [];
         this.radiuses = [];
+    }
+
+    CanvasOnTouchMove() {
+        return function(e) {
+            if (this.sketching && this.touch && this.penSizeCircle) {
+                let center = this.penSizeCircle.position;
+                let t = (100 - 2.5) * e.touches[0].force + 2.5;
+                this.penSizeCircle.remove();
+                this.penSizeCircle = new paper.Path.Circle(center, t);
+                this.penSizeCircle.strokeColor = '#325D88';
+            }
+        }
     }
 
     CanvasOnMouseDown() {
@@ -479,9 +494,13 @@ export default class QueryBySketch extends React.Component{
                     }
                 }
             } else {
+                let inputType = event.event.type; // mousedown or touchstart
                 switch (this.state.selector) {
                     case 'pen':
                         this.sketching = true;
+                        if (inputType === 'touchstart') {
+                            this.touch = true;
+                        }
                         this.clearCanvas();
 
                         if (this.state.detectWidth) {
@@ -596,34 +615,64 @@ export default class QueryBySketch extends React.Component{
 
     CanvasOnMouseDrag() {
         return function (event) {
+            let inputType = event.event.type; // mousemove or touchmove
             if (!this.state.assignVariables) {
                 switch (this.state.selector) {
                     case 'pen':
                         this.path.add(event.point);
                         if (this.state.detectWidth) {
-                            let now = Date.now();
-                            let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
-                            this.timeStamps.push(now);
-                            let t = Math.min(deltaT / 1000 * 30 + 5 / 2, 100);
-                            let deltaX = event.delta.x, deltaY = event.delta.y;
-                            let l = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                            let step = event.delta;
-                            step.angle += 90;
-                            let top = {
-                                x: event.middlePoint.x + t / l * step.x,
-                                y: event.middlePoint.y + t / l * step.y
-                            };
-                            let bottom = {
-                                x: event.middlePoint.x - t / l * step.x,
-                                y: event.middlePoint.y - t / l * step.y
-                            };
-                            this.pathWidth.add(top);
-                            this.pathWidth.insert(0, bottom);
-                            this.pathWidth.smooth();
-                            this.radiuses.push(t);
-                            this.penSizeCircle.remove();
-                            this.penSizeCircle = new paper.Path.Circle(event.point, 2.5);
-                            this.penSizeCircle.strokeColor = '#325D88';
+                            if (inputType === 'mousemove') {
+                                let now = Date.now();
+                                let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
+                                this.timeStamps.push(now);
+                                let t = Math.min(deltaT / 1000 * 30 + 5 / 2, 100);
+                                let deltaX = event.delta.x, deltaY = event.delta.y;
+                                let l = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                                let step = event.delta;
+                                step.angle += 90;
+                                let top = {
+                                    x: event.middlePoint.x + t / l * step.x,
+                                    y: event.middlePoint.y + t / l * step.y
+                                };
+                                let bottom = {
+                                    x: event.middlePoint.x - t / l * step.x,
+                                    y: event.middlePoint.y - t / l * step.y
+                                };
+                                this.pathWidth.add(top);
+                                this.pathWidth.insert(0, bottom);
+                                this.pathWidth.smooth();
+                                this.radiuses.push(t);
+                                this.penSizeCircle.remove();
+                                this.penSizeCircle = new paper.Path.Circle(event.point, 2.5);
+                                this.penSizeCircle.strokeColor = '#325D88';
+                            } else if (inputType === 'touchmove') {
+                                let pressure = 0;
+                                if (event.event.touches.length > 0) {
+                                    pressure = event.event.touches[0].force;
+                                    // pressure: 0-1
+                                    // radius: 2.5-100
+                                    let t = (100 - 2.5) * pressure + 2.5;
+                                    let deltaX = event.delta.x, deltaY = event.delta.y;
+                                    let l = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                                    let step = event.delta;
+                                    step.angle += 90;
+                                    let top = {
+                                        x: event.middlePoint.x + t / l * step.x,
+                                        y: event.middlePoint.y + t / l * step.y
+                                    };
+                                    let bottom = {
+                                        x: event.middlePoint.x - t / l * step.x,
+                                        y: event.middlePoint.y - t / l * step.y
+                                    };
+                                    this.pathWidth.add(top);
+                                    this.pathWidth.insert(0, bottom);
+                                    this.pathWidth.smooth();
+                                    this.radiuses.push(t);
+                                    this.penSizeCircle.remove();
+                                    this.penSizeCircle = new paper.Path.Circle(event.point, 2.5);
+                                    this.penSizeCircle.strokeColor = '#325D88';
+                                }
+                            }
                         }
                         break;
                     case 'controlPoint':
@@ -801,6 +850,7 @@ export default class QueryBySketch extends React.Component{
 
     CanvasOnMouseUp() {
         return function (event) {
+            let inputType = event.event.type; // mouseup or touchend
             if (!this.state.assignVariables) {
                 switch (this.state.selector) {
                     case 'pen':
@@ -823,10 +873,19 @@ export default class QueryBySketch extends React.Component{
                             }
                         }.bind(this));
                         if (this.state.detectWidth) {
-                            let now = Date.now();
-                            let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
-                            this.timeStamps.push(now);
-                            let t = Math.min(deltaT / 1000 * 30 + 5 / 2, 100);
+                            let t = 0;
+                            if (inputType === 'mouseup') {
+                                let now = Date.now();
+                                let deltaT = now - this.timeStamps[this.timeStamps.length - 1];
+                                this.timeStamps.push(now);
+                                t = Math.min(deltaT / 1000 * 30 + 5 / 2, 100);
+                            } else if (inputType === 'touchend') {
+                                let pressure = 0;
+                                if (event.event.touches.length > 0) {
+                                    pressure = event.event.touches[0].force;
+                                    t = (100 - 2.5) * pressure + 2.5;
+                                }
+                            }
                             this.radiuses.push(t);
 
                             // remove the temporal width path
@@ -867,6 +926,8 @@ export default class QueryBySketch extends React.Component{
                         }
                         this.penSizeCircle = null;
                         this.sketching = false;
+                        this.touch = false;
+                        this.touchPressure = 0;
                         break;
                     case 'controlPoint':
                         this.selectedHandle = null;
