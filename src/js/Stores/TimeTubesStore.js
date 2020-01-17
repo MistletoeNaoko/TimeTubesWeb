@@ -398,7 +398,7 @@ class TimeTubesStore extends EventEmitter{
 
     changeFar(id, value) {
         this.cameraProp[id].far = value;
-        this.emit('changeFar', id);
+        this.emit('changeFar', id, value);
     }
 
     updateMinMaxH(id, min, max) {

@@ -71,7 +71,7 @@ export default class Details extends React.Component{
             slide: function( event, ui ) {
                 val.css('display', 'initial');
                 // subtract initial position of the camera
-                val.val(ui.value - 50);
+                val.val(ui.value);
                 let min = $( "#farSlider_" + id ).slider('option', 'min');
                 let range = $( "#farSlider_" + id ).slider('option', 'max') - min;
                 let pos = -10 + $( '#farSlider_' + id ).width() * (ui.value - min) / range;

@@ -151,10 +151,12 @@ export default class TimeTubes extends React.Component{
                 this.tube.material.uniforms.shade.value = state;
             }
         });
-        TimeTubesStore.on('changeFar', (id) => {
+        TimeTubesStore.on('changeFar', (id, far) => {
             if (id === this.id) {
                 this.cameraProp = TimeTubesStore.getCameraProp(this.id);
-                this.updateCamera();
+                this.clippingPlane2.constant = far;
+                this.renderer.clippingPlanes = [this.clippingPlane2];
+                this.renderer.render(this.scene, this.camera);
             }
         });
         TimeTubesStore.on('updateMinMaxH', (id) => {
@@ -265,6 +267,7 @@ export default class TimeTubes extends React.Component{
         });
         TimeTubesStore.on('showTimeTubesOfTimeSlice', (id, period) => {
             if (id === this.id) {
+                // put labels at the beginning and end of the period and a tube tu show a period at te origin of the space
                 this.resetCamera();
                 this.tubeGroup.position.z = TimeTubesStore.getFocused(id);
                 this.clippingPlane2.constant = period[1] - period[0];
@@ -290,6 +293,7 @@ export default class TimeTubes extends React.Component{
         });
         TimeTubesStore.on('showRotationCenter', (id, period, center) => {
             if (id === this.id) {
+                // put labels at the beginning and end of the period and a tube tu show a period at te origin of the space
                 this.resetCamera();
                 this.tubeGroup.position.z = TimeTubesStore.getFocused(id);
                 this.diskRotation.visible = true;
@@ -550,7 +554,8 @@ export default class TimeTubes extends React.Component{
                 }
             }
             if (this.renderer.clippingPlanes.length > 0) {
-                this.renderer.clippingPlanes = [];
+                // this.renderer.clippingPlanes = [];
+                this.clippingPlane2.constant = this.cameraProp.far;
             }
 
             TimeTubesAction.updateFocus(this.id, dst, changeColFlg);
@@ -802,7 +807,7 @@ export default class TimeTubes extends React.Component{
     setCameras(width, height) {
         // initialize camera properties
         let fov = 45;
-        let far = Math.ceil(this.data.spatial[this.data.spatial.length - 1].z - this.data.spatial[0].z) + 50;
+        let far = Math.ceil(this.data.spatial[this.data.spatial.length - 1].z - this.data.spatial[0].z);
         let depth = Math.tan(fov / 2.0 * Math.PI / 180.0) * 2;
         let aspect = width / height;
 
@@ -837,7 +842,7 @@ export default class TimeTubes extends React.Component{
         this.camera.lookAt(this.scene.position);
 
         $( "#farSlider_" + this.id ).slider({
-            min: 50,
+            min: 0,
             max: far,
             value: far
         });
@@ -855,7 +860,6 @@ export default class TimeTubes extends React.Component{
         this.camera.position.set(this.cameraProp.xpos, this.cameraProp.ypos, this.cameraProp.zpos);
         this.camera.fov = this.cameraProp.fov;
         this.camera.depth = this.cameraProp.depth;
-        this.camera.far = this.cameraProp.far;
         this.camera.aspect = this.cameraProp.aspect;
         this.camera.zoom = this.cameraProp.zoom;
         this.camera.updateProjectionMatrix();
