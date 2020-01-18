@@ -241,11 +241,11 @@ export default class TimeTubes extends React.Component{
                 this.updateCamera();
             }
         });
-        TimeTubesStore.on('moveTubeGroup', (id, pos) => {
-            if (id === this.id) {
-                this.tubeGroup = pos;
-            }
-        });
+        // TimeTubesStore.on('moveTubeGroup', (id, pos) => {
+        //     if (id === this.id) {
+        //         this.tubeGroup = pos;
+        //     }
+        // });
         TimeTubesStore.on('takeSnapshot', (id, pos, far) => {
             if (id === this.id) {
                 this.deselectAll();
@@ -267,11 +267,13 @@ export default class TimeTubes extends React.Component{
         });
         TimeTubesStore.on('showTimeTubesOfTimeSlice', (id, period) => {
             if (id === this.id) {
-                // put labels at the beginning and end of the period and a tube tu show a period at te origin of the space
+                // put labels at the beginning and end of the period and a tube to show a period at te origin of the space
                 this.resetCamera();
                 this.tubeGroup.position.z = TimeTubesStore.getFocused(id);
                 this.clippingPlane2.constant = period[1] - period[0];
                 this.renderer.clippingPlanes = [this.clippingPlane2];
+
+                this.showPeriod(period);
             }
         });
         TimeTubesStore.on('updateAveragePeriod', () => {
@@ -302,6 +304,8 @@ export default class TimeTubes extends React.Component{
                 this.rotationPeriod = period;
                 this.clippingPlane2.constant = period[1] - period[0];
                 this.renderer.clippingPlanes = [this.clippingPlane2];
+                
+                this.showPeriod(period);
             } else {
                 this.rotationPeriod = null;
             }
@@ -447,6 +451,7 @@ export default class TimeTubes extends React.Component{
         this.drawDisk();
         this.drawDiskForRotationCenter();
         this.drawComment();
+        this.drawPeriodMarker();
     }
 
     start() {
@@ -544,6 +549,9 @@ export default class TimeTubes extends React.Component{
                 }
             }
 
+            if (this.periodStartMarker.visible) {
+                this.periodGroup.position.z = this.periodGroup.position.z + (dst - this.tubeGroup.position.z);
+            }
             this.tubeGroup.position.z = dst;
 
             // remove/hide objects out of use
@@ -989,6 +997,27 @@ export default class TimeTubes extends React.Component{
         this.renderer.render(this.scene, this.camera);
     }
 
+    showPeriod(period) {
+        let gridSize = TimeTubesStore.getGridSize();
+        this.periodGroup.visible = true;
+
+        this.periodTube.geometry.attributes.position.needsUpdate = true;
+        let startIdx = this.periodTube.geometry.attributes.position.array.length / 2 + 2;
+        let endPos = period[1] - period[0];
+        for (let i = 0; i < this.periodTube.geometry.attributes.position.array.length / 3 / 2; i++) {
+            this.periodTube.geometry.attributes.position.array[startIdx + i * 3] = -endPos;
+        }
+
+        this.periodEndMarker.position.set(gridSize + 1, gridSize + 1, -endPos);
+
+        this.periodGroup.position.z = -(period[0] - this.data.spatial[0].z) + this.tubeGroup.position.z;
+
+        this.periodStartMarker.material.map.text = String(period[0].toFixed(0));
+        this.periodEndMarker.material.map.text = String(period[1].toFixed(0));
+
+        this.renderer.render(this.scene, this.camera);
+    }
+
     drawTube(texture){//texture, spline, minList, maxList) {
         this.texture = texture;
         let minJD = this.data.spatial[0].z;
@@ -1012,8 +1041,6 @@ export default class TimeTubes extends React.Component{
         let indices = [];
         let selected = [];
         let currentColorX = 0, currentColorY = 0;
-        let minH = this.data.meta.min.H, maxH = this.data.meta.max.H;
-        let minV = this.data.meta.min.V, maxV = this.data.meta.max.V;
         let opacityPoints = this.opacityCurve.getSpacedPoints(this.tubeNum);
         let opacityList = [];
         for (let i = 1; i <= this.tubeNum; i++) {
@@ -1390,6 +1417,65 @@ export default class TimeTubes extends React.Component{
         this.scene.add(this.commentContents);
         this.commentContents.position.set(-gridSize, gridSize, 0);
         // this.commentContents.visible = false;
+    }
+
+    drawPeriodMarker() {
+        let gridSize = TimeTubesStore.getGridSize();
+        // green text for a start marker
+        this.periodStartMarker = new TextSprite({
+            material: {
+                color: 0x00ff00,
+                clippingPlanes: [this.clippingPlane]
+            },
+            redrawInterval: 250,
+            textSize: 1.3,
+            texture: {
+                fontFamily: 'Arial, Helvetica, sans-serif',
+                fontStyle: 'italic',
+                text: 'start',
+                align: 'left',
+            },
+        });
+        this.periodStartMarker.position.set(gridSize + 1, gridSize + 1, 0);
+        // red text for an end marker
+        this.periodEndMarker = new TextSprite({
+            material: {
+                color: 0xff0000,
+                clippingPlanes: [this.clippingPlane]
+            },
+            redrawInterval: 250,
+            textSize: 1.3,
+            texture: {
+                fontFamily: 'Arial, Helvetica, sans-serif',
+                fontStyle: 'italic',
+                text: 'end',
+                align: 'left',
+            },
+        });
+        this.periodEndMarker.position.set(gridSize + 1, gridSize + 1, 0);
+        // a tube to show the length of the period
+        let curve = new THREE.LineCurve3(
+            new THREE.Vector3(0, 0, 0),
+            new THREE.Vector3(0, 0, -1)
+        );
+        let tubeGeometry = new THREE.TubeBufferGeometry(curve, 1, 0.5, 16, false);
+        let tubeMaterial = new THREE.MeshBasicMaterial({
+            color: 0x0000ff,
+            clippingPlanes: [this.clippingPlane]
+        });
+        this.periodTube = new THREE.Mesh(tubeGeometry, tubeMaterial);
+
+        this.periodGroup = new THREE.Group();
+        this.periodGroup.add(this.periodStartMarker);
+        this.periodGroup.add(this.periodEndMarker);
+        this.periodGroup.add(this.periodTube);
+
+        this.periodGroup.visible = false;
+
+        this.scene.add(this.periodGroup);
+        // this.scene.add(this.periodStartMarker);
+        // this.scene.add(this.periodEndMarker);
+        // this.scene.add(this.periodTube);
     }
 
     updateComment() {
