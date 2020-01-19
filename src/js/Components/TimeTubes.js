@@ -1519,6 +1519,9 @@ export default class TimeTubes extends React.Component{
         }
         this.comment.geometry.attributes.position.needsUpdate = true;
         this.comment.geometry.attributes.position = new THREE.Float32BufferAttribute(planePositions, 3);
+
+        this.commentContents.visible = false;
+
         this.renderer.render(this.scene, this.camera);
     }
 
