@@ -239,7 +239,7 @@ class FeatureStore extends EventEmitter {
         this.extractionResults = results;
         this.query = query;
         this.ignored = ignored;
-        // this.emit('setExtractionResults');
+        this.emit('setExtractionResults');
     }
 
     setTexture(texture) {

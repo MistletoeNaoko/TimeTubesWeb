@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from "react-dom";
 import LineChart from './LineChart';
 import ResultTimeline from './ResultTimeline';
 import * as domActions from '../lib/domActions';
@@ -29,13 +30,20 @@ export default class ExtractionResults extends React.Component {
         };
 
         FeatureStore.on('setExtractionResults', () => {
-            let results = FeatureStore.getExtractionResults();
             this.setState({
-                results: results
+                // shownResults: [],
+                selected: {}
             });
-            if ($('#QBESourceMain').css('display') !== 'none') {
-                domActions.toggleSourcePanel();
+            if ($('#resultDetailArea').css('display') === 'block') {
+                domActions.toggleExtractionDetailPanel();
             }
+            // let results = FeatureStore.getExtractionResults();
+            // this.setState({
+            //     results: results
+            // });
+            // if ($('#QBESourceMain').css('display') !== 'none') {
+            //     domActions.toggleSourcePanel();
+            // }
         });
         FeatureStore.on('showLineCharts', (LC) => {
             // remove all previous LCs
@@ -297,7 +305,7 @@ export default class ExtractionResults extends React.Component {
     }
 
     render() {
-        let lineCharts = [], tbodyDetail = [];
+        let lineCharts = [], tbodyDetail = []; 
         if (Object.keys(this.state.selected).length > 0) {
             if (this.state.selected.period && !this.state.selected.angle) {
                 let targetData = DataStore.getDataArray(this.state.selected.id, 1);

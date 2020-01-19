@@ -1539,7 +1539,12 @@ export default class TimeTubes extends React.Component{
         if (this.visualQuery) {
             this.QBECamera.lookAt(this.scene.position);
             this.QBECamera.far = this.camera.far;
-            let sourcePadding = Number($('#QBESource').css('padding-left').replace('px', '')) * 2;
+            let sourcePadding = 15 * 2;
+            if (Number($('#QBESource').css('padding-left'))) {
+                sourcePadding = Number($('#QBESource').css('padding-left').replace('px', '')) * 2;
+            } else if (Number($('#QBESource').css('padding'))) {
+                sourcePadding = Number($('#QBESource').css('padding').replace('px', '')) * 2;
+            }
             let QBESourceWidth = $('#QBESource').outerWidth(true) - (sourcePadding >= 0? sourcePadding: 0);
             this.QBERenderer.setSize(QBESourceWidth, QBESourceWidth);
             if (dom != null) {
