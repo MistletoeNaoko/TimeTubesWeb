@@ -3,6 +3,7 @@ import * as d3 from 'd3';
 import DataStore from '../Stores/DataStore';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import * as ScatterplotsAction from '../Actions/ScatterplotsAction';
+import TimeTubesStore from '../Stores/TimeTubesStore';
 import ScatterplotsStore from '../Stores/ScatterplotsStore';
 
 export default class TimeSelector extends React.Component {
@@ -21,10 +22,15 @@ export default class TimeSelector extends React.Component {
     }
 
     componentWillMount() {
+        TimeTubesStore.on('updateFocus', (id, zpos, flag) => {
+            if (id === this.id) {
+                this.moveCurrentLine(zpos + this.data.data.spatial[0].z);
+            }
+        });
         ScatterplotsStore.on('moveCurrentLineonTimeSelector', (id, zpos) => {
-           if (id === this.id) {
-               this.moveCurrentLine(zpos);
-           }
+            if (id === this.id) {
+                this.moveCurrentLine(zpos);
+            }
         });
         ScatterplotsStore.on('updateTimeRange', (id, range) => {
             if (id === this.id) {
