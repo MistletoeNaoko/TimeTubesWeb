@@ -186,7 +186,8 @@ export default class VisualQuery extends React.Component {
 
     QBESelection() {
         return (
-            <div className='featureElem' id='QBEArea'>
+            <div className='featureElem' id='QBEArea' 
+                style={{display: (this.state.queryMode === 'QBE')? 'block': 'none'}}>
                 <QueryByExample/>
             </div>
         );
@@ -199,12 +200,12 @@ export default class VisualQuery extends React.Component {
            lookupList.push(e.data.lookup);
         });
         return (
-            <div className='featureElem' id='QBSArea'>
+            <div className='featureElem' id='QBSArea'
+                style={{display: (this.state.queryMode === 'QBS')? 'block': 'none'}}>
                 <QueryBySketch
                     id={this.state.source}
                     xItem={'z'}
-                    yItem={'V'}
-                    lookup={lookupList}/>
+                    yItem={'V'}/>
             </div>
         );
     }
@@ -549,18 +550,21 @@ export default class VisualQuery extends React.Component {
     }
 
     render() {
-        let queryDefinition;
-        if (this.state.queryMode === 'QBE') {
-            queryDefinition = this.QBESelection();
-        } else if (this.state.queryMode === 'QBS') {
-            queryDefinition = this.QBSSelection();
-        }
+        // let queryDefinition;
+        // if (this.state.queryMode === 'QBE') {
+        //     queryDefinition = this.QBESelection();
+        // } else if (this.state.queryMode === 'QBS') {
+        //     queryDefinition = this.QBSSelection();
+        // }
 
         return (
             <div id='featureArea' className='controllersElem featureArea'>
                 {this.queryModes()}
                 {/*{this.extractionSource()}*/}
-                {queryDefinition}
+                <div id='queryModes'>
+                    {this.QBESelection()}
+                    {this.QBSSelection()}
+                </div>
                 {this.selectionDetail()}
                 {this.matchingControllers()}
             </div>

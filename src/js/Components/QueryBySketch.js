@@ -12,24 +12,11 @@ export default class QueryBySketch extends React.Component{
         super();
         // make a complete lookup table for x/y axis selection of the sketch pad
         // props.lookup is a collection of lookups from all data
-        let lookupList = {};
-        props.lookup.forEach(function (e) {
-           for (let key in e) {
-               if (!lookupList[key]) {
-                   lookupList[key] = e[key];
-               } else {
-                   e[key].forEach(function (ee) {
-                       if (lookupList[key].indexOf(ee) < 0) {
-                           lookupList[key].push(ee);
-                       }
-                   });
-               }
-           }
-        });
+        let lookup = this.updateLookup();
         let targets = FeatureStore.getTarget();
         let minList = {}, maxList = {};
         let minTmp = [], maxTmp = [];
-        for (let key in lookupList) {
+        for (let key in lookup) {
             minTmp = [];
             maxTmp = [];
             for (let i = 0; i < targets.length; i++) {
@@ -45,7 +32,7 @@ export default class QueryBySketch extends React.Component{
             xItemonPanel: props.xItem,
             yItemonPanel: props.yItem,
             size: 0,
-            lookup: lookupList,
+            lookup: lookup,
             selector: 'pen',
             targetList: targets,
             minList: minList,
@@ -85,33 +72,43 @@ export default class QueryBySketch extends React.Component{
         this.xMinMax = [];
         this.yMinMax= [];
         FeatureStore.on('updateTarget', () => {
-            if (FeatureStore.getMode() === 'QBS') {
+            // if (FeatureStore.getMode() === 'QBS') {
                 let targets = FeatureStore.getTarget();
                 let lists = this.extractMinMaxList(targets);
+                let lookup = this.updateLookup();
                 this.setState({
-                    targerList: targets,
+                    targetList: targets,
                     minList: lists.minList,
                     maxList: lists.maxList,
+                    lookup: lookup
                 });
                 let minmax = this.computeMinMaxValue(lists.minList, lists.maxList);
                 this.xMinMax = minmax.xMinMax;
                 this.yMinMax = minmax.yMinMax;
+                this.xAxisText
+                    .text(this.state.lookup[this.state.xItem]);
+                this.yAxisText
+                    .text(this.state.lookup[this.state.yItem]);
                 this.updateAxis();
                 this.updateWidthVariable();
-            }
+            // }
         });
         FeatureStore.on('switchQueryMode', (mode) => {
             if (mode === 'QBS') {
                 let targets = FeatureStore.getTarget();
                 let lists = this.extractMinMaxList(targets);
                 this.setState({
-                    targerList: targets,
+                    targetList: targets,
                     minList: lists.minList,
                     maxList: lists.maxList,
                 });
                 let minmax = this.computeMinMaxValue(lists.minList, lists.maxList);
                 this.xMinMax = minmax.xMinMax;
                 this.yMinMax = minmax.yMinMax;
+                this.xAxisText
+                    .text(this.state.lookup[this.state.xItem]);
+                this.yAxisText
+                    .text(this.state.lookup[this.state.yItem]);
                 this.updateAxis();
             }
         });
@@ -143,6 +140,29 @@ export default class QueryBySketch extends React.Component{
                 this.transformDataIntoSketch(id, period, ignored);
             }
         });
+    }
+
+    updateLookup() {
+        let lookupList = [];
+        let dataList = DataStore.getAllData();
+        dataList.forEach(function (e) {
+           lookupList.push(e.data.lookup);
+        });
+        let lookup = {};
+        lookupList.forEach(function (e) {
+           for (let key in e) {
+               if (!lookup[key]) {
+                   lookup[key] = e[key];
+               } else {
+                   e[key].forEach(function (ee) {
+                       if (lookup[key].indexOf(ee) < 0) {
+                           lookup[key].push(ee);
+                       }
+                   });
+               }
+           }
+        });
+        return lookup;
     }
 
     extractMinMaxList(targets) {
@@ -236,6 +256,7 @@ export default class QueryBySketch extends React.Component{
         this.yAxisText = parentArea
             .append('text')
             .attr('class', 'axisLabel')
+            .attr('id', 'sketchPadYLabel')
             .attr('fill', 'black')
             .attr('transform', 'rotate(-90)')
             .attr('text-anchor', 'middle')
@@ -1548,6 +1569,18 @@ export default class QueryBySketch extends React.Component{
         let paddingLeft = Number($('#featureArea').css('padding-left').replace('px', '')),
             paddingRight = Number($('#featureArea').css('padding-right').replace('px', ''));
         let outerSize = Math.floor($('#mainFeatureArea').width() * 0.3 - paddingLeft - paddingRight);
+        this.setState({
+            size: outerSize
+        });
+        d3.select('#QBSCanvasArea')
+            .style('padding-bottom', outerSize + 'px');
+        this.svg
+            .attr('width', outerSize)
+            .attr('height', outerSize);
+        this.canvas
+            .attr('width', outerSize + 'px !important')
+            .attr('height', outerSize + 'px !important');
+        paper.setup(this.canvas.node());
         this.xScale
             .domain(this.xMinMax)
             .range([0, outerSize])
@@ -1562,6 +1595,9 @@ export default class QueryBySketch extends React.Component{
         this.xAxis.selectAll('.tick text')
             .attr('y', outerSize - this.margin.bottom)
             .style('color', '#8c7b7b');
+        this.xAxisText
+            .style('left', outerSize / 2 + 'px')
+            .style('top', outerSize - 18 + 'px');
 
         this.yScale
             .domain(this.yMinMax)
@@ -1578,6 +1614,9 @@ export default class QueryBySketch extends React.Component{
             .attr('x', this.margin.left)
             .attr('y', '-0.5em')
             .style('color', '#79897b');
+        this.yAxisText
+            .style('left', this.margin.left / 2 + 'px')
+            .style('top', outerSize / 2 + 'px');
     }
 
     changeXAxis() {
