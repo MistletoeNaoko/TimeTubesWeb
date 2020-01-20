@@ -40,7 +40,6 @@ export default class Layout extends React.Component {
     }
 
     render() {
-        console.log(this.state.menu)
         return (
             <div>
                 <Menu/>

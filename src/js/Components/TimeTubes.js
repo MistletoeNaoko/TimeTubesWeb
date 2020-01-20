@@ -98,7 +98,7 @@ export default class TimeTubes extends React.Component{
             if (id === this.id) {
                 this.cameraProp = TimeTubesStore.getCameraProp(this.id);
                 this.updateCamera();
-                this.resetCamera();
+                // this.resetCamera();
             }
         });
         TimeTubesStore.on('reset', () => {
@@ -590,11 +590,6 @@ export default class TimeTubes extends React.Component{
         return function (event) {
             this.drag = true;
             if (this.drag) {
-                let cameraPropNow = this.cameraProp;
-                cameraPropNow.xpos = this.camera.position.x;
-                cameraPropNow.ypos = this.camera.position.y;
-                cameraPropNow.zpos = this.camera.position.z;
-                this.cameraProp = cameraPropNow;
                 if (this.lock) {
                     let deg = new THREE.Vector3(this.controls.object.rotation._x, this.controls.object.rotation._y, this.controls.object.rotation._z);
                     let pos = this.controls.object.position;
@@ -672,6 +667,12 @@ export default class TimeTubes extends React.Component{
                         this.commentContents.position.set(-TimeTubesStore.getGridSize() - 10, 0, 0);
                     }
                 }
+            } else if (this.drag) {
+                let cameraPropNow = this.cameraProp;
+                cameraPropNow.xpos = this.camera.position.x;
+                cameraPropNow.ypos = this.camera.position.y;
+                cameraPropNow.zpos = this.camera.position.z;
+                this.cameraProp = cameraPropNow;
             }
             this.drag = false;
         }
