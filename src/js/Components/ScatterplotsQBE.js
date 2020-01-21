@@ -3,6 +3,7 @@ import * as d3 from 'd3';
 import {tickFormatting} from '../lib/2DGraphLib';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import * as FeatureAction from '../Actions/FeatureAction';
+import AppStore from '../Stores/AppStore';
 import DataStore from '../Stores/DataStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import ScatterplotsStore from '../Stores/ScatterplotsStore';
@@ -189,7 +190,7 @@ export default class ScatterplotsQBE extends React.Component{
             .on('end', this.brushedEnd().bind(this));
         this.spBrusher
             .call(this.brush)
-            .call(this.brush.move, [0, 0]);
+            .call(this.brush.move, [this.xScale(this.selectedPeriod[0]), this.xScale(this.selectedPeriod[1])]);
 
         // Draw x axis
         this.xScale
@@ -437,11 +438,14 @@ export default class ScatterplotsQBE extends React.Component{
     brushedEnd() {
         return function() {
             if (FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id) {
-                FeatureAction.selectPeriodfromSP(this.selectedPeriod);
-                if (this.selectedPeriod[1] - this.selectedPeriod[0] > 0) {
-                    this.highlightSelectedTimePeriod();
-                } else {
-                    this.resetSelection();
+                let previousPeriod = FeatureStore.getSelectedPeriod();
+                if (previousPeriod[0] !== this.selectedPeriod[0] || previousPeriod[1] !== this.selectedPeriod[1]) {
+                    FeatureAction.selectPeriodfromSP(this.selectedPeriod);
+                    if (this.selectedPeriod[1] - this.selectedPeriod[0] > 0) {
+                        this.highlightSelectedTimePeriod();
+                    } else {
+                        this.resetSelection();
+                    }
                 }
             } //else if (this.selectedPeriod[1] - this.selectedPeriod[0] === 0) {
             //     FeatureAction.resetSelection();
@@ -748,7 +752,7 @@ export default class ScatterplotsQBE extends React.Component{
     }
 
     render() {
-        if (d3.selectAll('svg#' + this.SPID).size() > 0) {
+        if (AppStore.getMenu() === 'feature' && d3.selectAll('svg#' + this.SPID).size() > 0) {
             this.drawScatterplots();
         }
         let yItems = [];
