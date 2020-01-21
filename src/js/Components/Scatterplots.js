@@ -30,7 +30,6 @@ export default class Scatterplots extends React.Component{
         this.slicedData = this.data.data.spatial;
         this.xMinMax = [0, 0];
         this.yMinMax = [0, 0];
-        this.selectedPeriod = [-1, -1];
         this.state = {
             xItem: props.xItem,
             yItem: props.yItem,
@@ -73,18 +72,6 @@ export default class Scatterplots extends React.Component{
                 this.computeRange(this.state.xItem, this.state.yItem);
                 this.updateScatterplots(this.state.xItem, this.state.yItem);
             }
-        });
-        FeatureStore.on('updateSelectedPeriod', () => {
-            if (this.divID.indexOf('QBE') >= 0 && FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id) {
-                this.selectedPeriod = FeatureStore.getSelectedPeriod();
-                this.highlightSelectedTimePeriod();
-            }
-        });
-        FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
-            if (this.divID.indexOf('QBE') >= 0 && FeatureStore.getMode() === 'QBE' && Number(id) === this.id) {
-                this.selectedPeriod = FeatureStore.getSelectedPeriod();
-                this.highlightSelectedTimePeriod();
-            }            
         });
     }
 
@@ -167,13 +154,6 @@ export default class Scatterplots extends React.Component{
             .attr('stroke', 'dimgray')
             .attr("r", 4)
             .attr('class', this.divID + ' scatterplots' + this.id);
-        if (this.divID.indexOf('QBE') >= 0) {
-            this.brush = d3.brushX();
-            this.spBrusher = this.sp
-                .append('g')
-                .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')')
-                .attr('class', 'brush');
-        }
     }
 
     drawScatterplots() {
@@ -198,17 +178,6 @@ export default class Scatterplots extends React.Component{
             .attr('height', outerHeight)
             .call(this.zoom)
             .on("dblclick.zoom", null);
-        if (divID.indexOf('QBE') >= 0) {
-            this.sp
-                .on('mousedown.zoom', null);
-            this.brush
-                .extent([[0, 0], [width, height]])
-                .on('start brush', brushed.bind(this))
-                .on('end', brushedEnd.bind(this));
-            this.spBrusher
-                .call(this.brush)
-                // .call(this.brush.move, [0, 0]);
-        }
 
         // Draw x axis
         this.xScale
@@ -326,17 +295,6 @@ export default class Scatterplots extends React.Component{
             //     lineVPos = currentXScale.invert(lineVPos);  // x
             //     lineHPos = currentYScale.invert(lineHPos);  // y
             // }
-            let minJD, maxJD;
-            if (divID.indexOf('QBE') >= 0) {
-                let rect = this.sp.select('g.brush')
-                    .select('rect.selection');
-                let xpos = Number(rect
-                    .attr('x'));
-                let rectWidth = Number(rect
-                    .attr('width'));
-                minJD = this.xScale.invert(xpos);
-                maxJD = this.xScale.invert(xpos + rectWidth);
-            }
 
             let new_xScale = d3.event.transform.rescaleX(this.xScale);
             let new_yScale = d3.event.transform.rescaleY(this.yScale);
@@ -376,22 +334,6 @@ export default class Scatterplots extends React.Component{
                         .attr('transform', "translate(" + cx + "," + this.margin.top + ")")
                         .style('visibility', 'visible');
                 }
-            }
-            // if (divID.indexOf('QBE') >= 0) {
-            //     this.spBrusher
-            //         .call(this.brush.move, [new_xScale(minJD), new_xScale(maxJD)]);
-            //
-            // }
-        }
-        function brushed() {
-            let s = d3.event.selection || this.xScaleTmp.range;
-            let xRange = s.map(this.xScaleTmp.invert, this.xScaleTmp);
-            this.selectedPeriod = xRange;
-        }
-        function brushedEnd() {
-            if (FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id) {
-                FeatureAction.selectPeriodfromSP(this.selectedPeriod);
-                this.highlightSelectedTimePeriod();
             }
         }
         function spXLabelClick() {
@@ -693,20 +635,6 @@ export default class Scatterplots extends React.Component{
             .call(this.xLabel.scale(this.xScale));
         this.yAxis
             .call(this.yLabel.scale(this.yScale));
-    }
-
-    highlightSelectedTimePeriod() {
-        // change the color of plots in the selectedTimePeriod
-        let period = this.selectedPeriod;
-        this.points
-            .attr('stroke', 'dimgray')
-            .attr('stroke-width', 0.5);
-        this.points
-            .select(function (d) {
-                return (period[0] <= d.z && d.z <= period[1]) ? this: null;
-            })
-            .attr('stroke', '#d23430')
-            .attr('stroke-width', 1);
     }
 
     onClickXAxisDone(e) {
