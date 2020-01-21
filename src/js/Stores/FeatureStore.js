@@ -2,6 +2,7 @@ import {EventEmitter} from 'events';
 import dispatcher from "../Dispatcher/dispatcher";
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import DataStore from '../Stores/DataStore';
+import {uncheckIgnoredVariables} from '../lib/domActions';
 
 class FeatureStore extends EventEmitter {
     constructor() {
@@ -210,6 +211,11 @@ class FeatureStore extends EventEmitter {
             for (let key in this.AEOptions) {
                 this.AEOptions[key] = false;
             }
+        }
+        if (mode !== 'QBE') {
+            this.source = 'default';
+            this.ignored = [];
+            uncheckIgnoredVariables();
         }
         this.emit('switchQueryMode', mode);
     }

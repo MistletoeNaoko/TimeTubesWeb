@@ -56,7 +56,7 @@ export default class ResultTimeline extends React.Component {
             this.setState({
                 width: $('#resultTimelineArea_' + this.state.id).width()
             });
-            this.setUpTimeline();
+            this.resizeTimeLine();
         });
         FeatureStore.on('updateShownResults', (results) => {
             this.updateTimeline();
@@ -255,6 +255,58 @@ export default class ResultTimeline extends React.Component {
                 .on('mouseover', this.timelineMouseOver())
                 .on('mouseout', this.timelineMouseOut())
                 .on('click', this.timelineClick());
+        }
+    }
+
+    resizeTimeLine() {
+        let parentArea = $('#resultTimelineArea_' + this.state.id);
+        let outerWidth = parentArea.width();
+        let margin = {left: 20, right: 20};
+        let width = outerWidth - margin.left - margin.right;
+
+        this.svg
+            .attr('width', outerWidth);
+
+        this.xScale
+            .range([0, width]);
+
+        this.xLabel = d3.axisBottom(this.xScale)
+            .ticks(10)
+            .tickSize(10);
+
+
+        this.xAxis
+            .call(this.xLabel);
+
+        if (this.resultsVQ) {
+            this.resultsVQ
+                .attr('x1', function(d) {
+                    return this.xScale(d.start);
+                }.bind(this))
+                .attr('x2', function(d) {
+                    return this.xScale(d.start + d.period);
+                }.bind(this));
+        }
+        if (this.resultsRotation) {
+            this.resultsRotation
+                .attr('x1', function(d) {
+                    return this.xScale(d.start);
+                }.bind(this))
+                .attr('x2', function(d) {
+                    return this.xScale(d.start + d.period);
+                }.bind(this));
+        }
+        if (this.resultsFlare) {
+            this.resultsFlare
+                .attr('cx', function(d) {
+                    return this.xScale(d.start);
+                }.bind(this));
+        }
+        if (this.resultsAnomaly) {
+            this.resultsAnomaly
+                .attr('cx', function(d) {
+                    return this.xScale(d.start);
+                }.bind(this));
         }
     }
 

@@ -42,6 +42,13 @@ export function getIgnoredVariables() {
     return ignored;
 }
 
+export function uncheckIgnoredVariables() {
+    let checked = $('input[name=QBEIgnored]:checked');
+    for (let i = 0; i < checked.length; i++) {
+        checked[i].checked = false;
+    }
+}
+
 export function transformCamelToSentence(str) {
     let result = str.replace( /([A-Z])/g, " $1" );
     result = result.charAt(0).toUpperCase() + result.slice(1);

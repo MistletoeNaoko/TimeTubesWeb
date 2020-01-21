@@ -35,6 +35,9 @@ export default class VisualQuery extends React.Component {
             this.setState({
                 queryMode: mode
             });
+                if ($('#resultDetailArea').css('display') === 'block') {
+                    domActions.toggleExtractionDetailPanel();
+                }
             if (mode === 'QBS') {
                 this.setState({
                     DTWMode: 'DTWD'
@@ -43,9 +46,12 @@ export default class VisualQuery extends React.Component {
             if ($('#stepSizeOfSlidingWindow').val() === '') {
                 $('#stepSizeOfSlidingWindow').val(5);
             }
-            if (mode === 'QBE') {
-                if ($('#resultDetailArea').css('display') === 'block') {
-                    domActions.toggleExtractionDetailPanel();
+            if (mode === 'AE') {
+                document.getElementById('sourceList').selectedIndex = 0;
+            }
+            if (mode !== 'QBE') {
+                if ($('#QBESourceMain').css('display') === 'block') {
+                    domActions.toggleSourcePanel();
                 }
             }
         });

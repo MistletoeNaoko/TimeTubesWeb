@@ -46,6 +46,13 @@ export default class SelectedTimeSlice extends React.Component {
                this.switchCamera();
            }
         });
+        FeatureStore.on('switchQueryMode', (mode) => {
+            if (mode !== 'QBE') {
+                this.sourceId = FeatureStore.getSource();
+                this.ignoredVariables = [];
+                this.deselectAll();
+            }
+        });
         FeatureStore.on('updateSource', () => {
             this.sourceId = FeatureStore.getSource();
             this.data = DataStore.getData(this.sourceId);
