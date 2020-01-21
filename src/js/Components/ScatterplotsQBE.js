@@ -89,7 +89,7 @@ export default class ScatterplotsQBE extends React.Component{
 
     initalizeElements() {
         this.zoom = d3.zoom()
-            .scaleExtent([.5, 10]);
+            .scaleExtent([.05, 10]);
         this.sp = d3.select('#' + this.divID)
             .append('svg')
             .attr('id', this.SPID)
@@ -164,6 +164,7 @@ export default class ScatterplotsQBE extends React.Component{
         this.spBrusher = this.sp
             .append('g')
             .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')')
+            .attr('clip-path', 'url(#clipScatterplots_' + this.SPID + ')')
             .attr('class', 'brush');
     }
 
@@ -192,7 +193,7 @@ export default class ScatterplotsQBE extends React.Component{
             .on('end', this.brushedEnd().bind(this));
         this.spBrusher
             .call(this.brush)
-            .call(this.brush.move, [this.xScale(this.selectedPeriod[0]), this.xScale(this.selectedPeriod[1])]);
+            // .call(this.brush.move, [this.xScale(this.selectedPeriod[0]), this.xScale(this.selectedPeriod[1])]);
 
         // Draw x axis
         this.xScale
@@ -441,12 +442,17 @@ export default class ScatterplotsQBE extends React.Component{
         return function() {
             if (FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id) {
                 let previousPeriod = FeatureStore.getSelectedPeriod();
-                if (previousPeriod[0] !== this.selectedPeriod[0] || previousPeriod[1] !== this.selectedPeriod[1]) {
+                // use subtractions to deal with the uncertainties of float number
+                if (Math.abs(previousPeriod[0] - this.selectedPeriod[0]) > 0.00001 || Math.abs(previousPeriod[1] - this.selectedPeriod[1]) > 0.00001) {
                     FeatureAction.selectPeriodfromSP(this.selectedPeriod);
                     if (this.selectedPeriod[1] - this.selectedPeriod[0] > 0) {
                         this.highlightSelectedTimePeriod();
+                        this.timeRange = this.selectedPeriod;
+                        this.updateTimeRange();
                     } else {
                         this.resetSelection();
+                        this.timeRange = [this.data.data.meta.min.z, this.data.data.meta.max.z];
+                        this.updateTimeRange();
                     }
                 }
             } //else if (this.selectedPeriod[1] - this.selectedPeriod[0] === 0) {
@@ -509,9 +515,35 @@ export default class ScatterplotsQBE extends React.Component{
     }
 
     resetScatterplots() {
-        this.sp.transition()
-            .duration(500)
-            .call(this.zoom.transform, d3.zoomIdentity);
+        // initialize graph ranges
+        this.timeRange = [this.data.data.meta.min.z, this.data.data.meta.max.z];
+        this.updateTimeRange();
+
+        // initialize zoom
+        this.zoom = d3.zoom()
+            .scaleExtent([.05, 10])
+            .extent([
+                [0, 0], 
+                [this.props.width - this.margin.left - this.margin.right, Math.max(this.props.height, 200) - this.margin.top - this.margin.bottom]
+            ])
+            .on("zoom", this.zoomed().bind(this));
+        switch (this.selector) {
+            case 'selectRegion':
+                this.sp
+                    .call(this.zoom)
+                    .call(this.zoom.transform, d3.zoomIdentity)
+                    .on("dblclick.zoom", null)
+                    .on('mousedown.zoom', null);
+                break;
+            case 'move':
+                this.sp
+                    .call(this.zoom)
+                    .call(this.zoom.transform, d3.zoomIdentity)
+                    .on("dblclick.zoom", null);
+                break;
+            default:
+                break;
+        }
     }
 
     highlightCurrentPlot(zpos) {
@@ -608,9 +640,7 @@ export default class ScatterplotsQBE extends React.Component{
         this.slicedData = this.data.data.spatial.filter(function (d) {
             return (this.timeRange[0] <= d.z) && (d.z <= this.timeRange[1]);
         }.bind(this));
-        this.xMinMax = d3.extent(this.slicedData, function (d) {
-            return d.z;
-        });
+        this.xMinMax = this.timeRange;
         this.yMinMax = d3.extent(this.slicedData, function (d) {
             return d[yItem];
         });
@@ -710,6 +740,41 @@ export default class ScatterplotsQBE extends React.Component{
             .attr('stroke-width', 1);
     }
 
+    updateTimeRange() {
+        this.computeRange(this.state.yItem);
+        this.xScale
+            .domain(this.xMinMax)
+            .nice();
+        this.xScaleTmp = this.xScale;
+        this.xMinMax = this.xScale.domain();
+        this.xLabel = d3.axisBottom(this.xScale)
+            .ticks(10)
+            .tickSize(-(Math.max(this.props.height, 200) - this.margin.top - this.margin.bottom))
+            .tickFormat(tickFormatting);
+        this.xAxis
+            .transition()
+            .duration(500)
+            .call(this.xLabel.scale(this.xScale));
+        this.yScale
+            .domain(this.yMinMax)
+            .nice();
+        this.yScaleTmp = this.yScale;
+        this.yMinMax = this.yScale.domain();
+        this.yLabel = d3.axisLeft(this.yScale)
+            .ticks(5)
+            .tickSize(-(this.props.width - this.margin.left - this.margin.right))
+            .tickFormat(tickFormatting);
+        this.yAxis
+            .transition()
+            .duration(500)
+            .call(this.yLabel.scale(this.yScale));
+        this.points
+            .attr("cx", function(d) { return this.xScale(d.z); }.bind((this)))
+            .attr("cy", function(d) { return this.yScale(d[this.state.yItem]); }.bind((this)));
+        this.spBrusher
+            .call(this.brush.move, [this.xScale(this.selectedPeriod[0]), this.xScale(this.selectedPeriod[1])]);
+    }
+
     resetSelection() {
         this.selectedPeriod = [-1, -1];
         this.points
@@ -718,15 +783,15 @@ export default class ScatterplotsQBE extends React.Component{
     }
 
     switchMouseInteraction() {
+        this.zoom = d3.zoom()
+            .scaleExtent([.05, 10])
+            .extent([
+                [0, 0], 
+                [this.props.width - this.margin.left - this.margin.right, Math.max(this.props.height, 200) - this.margin.top - this.margin.bottom]
+            ])
+            .on("zoom", this.zoomed().bind(this));
         switch (this.selector) {
             case 'selectRegion':
-                this.zoom = d3.zoom()
-                    .scaleExtent([.5, 10])
-                    .extent([
-                        [0, 0], 
-                        [this.props.width - this.margin.left - this.margin.right, Math.max(this.props.height, 200) - this.margin.top - this.margin.bottom]
-                    ])
-                    .on("zoom", this.zoomed().bind(this));
                 this.sp
                     .call(this.zoom)
                     .on("dblclick.zoom", null)
@@ -736,13 +801,6 @@ export default class ScatterplotsQBE extends React.Component{
                     .call(this.brush);
                 break;
             case 'move':
-                this.zoom = d3.zoom()
-                    .scaleExtent([.5, 10])
-                    .extent([
-                        [0, 0], 
-                        [this.props.width - this.margin.left - this.margin.right, Math.max(this.props.height, 200) - this.margin.top - this.margin.bottom]
-                    ])
-                    .on("zoom", this.zoomed().bind(this));
                 this.sp
                     .call(this.zoom)
                     .on("dblclick.zoom", null);
