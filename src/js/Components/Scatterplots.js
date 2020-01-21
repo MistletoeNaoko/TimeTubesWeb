@@ -40,8 +40,11 @@ export default class Scatterplots extends React.Component{
         };
     }
 
+    componentDidMount() {
+        this.initalizeElements();
+        this.computeRange(this.state.xItem, this.state.yItem);
+        this.drawScatterplots();
 
-    componentWillMount() {
         TimeTubesStore.on('updateFocus', (id, zpos, flag) => {
             // when flag is true, change the color of the plot
             if (id === this.id) {
@@ -61,6 +64,21 @@ export default class Scatterplots extends React.Component{
                 this.changePlotColor(TimeTubesStore.getPlotColor(id));
             }
         });
+        TimeTubesStore.on('showRotationCenter', (id, period, center) => {
+            if (id === this.id) {
+                this.updateCurrentPos(period[0] - this.data.data.spatial[0].z);
+            }
+        });
+        TimeTubesStore.on('showTimeTubesOfTimeSlice', (id, period) => {
+            if (id === this.id) {
+                this.updateCurrentPos(period[0] - this.data.data.spatial[0].z);
+            }
+        });
+        TimeTubesStore.on('searchTime', (id, dst) => {
+            if (id === this.id) {
+                this.highlightCurrentPlot(dst - this.data.data.spatial[0].z);
+            }
+        });
         ScatterplotsStore.on('resetScatterplots',  (id) => {
             if (id === this.id) {
                 this.reset();
@@ -73,12 +91,6 @@ export default class Scatterplots extends React.Component{
                 this.updateScatterplots(this.state.xItem, this.state.yItem);
             }
         });
-    }
-
-    componentDidMount() {
-        this.initalizeElements();
-        this.computeRange(this.state.xItem, this.state.yItem);
-        this.drawScatterplots();
     }
 
     initalizeElements() {

@@ -21,10 +21,28 @@ export default class TimeSelector extends React.Component {
         // this.drawTimeSelector(this.data);
     }
 
-    componentWillMount() {
+    componentDidMount() {
+        this.initializeElements();
+        this.drawTimeSelector();
+
         TimeTubesStore.on('updateFocus', (id, zpos, flag) => {
             if (id === this.id) {
                 this.moveCurrentLine(zpos + this.data.data.spatial[0].z);
+            }
+        });
+        TimeTubesStore.on('showRotationCenter', (id, period, center) => {
+            if (id === this.id) {
+                this.moveCurrentLine(period[0]);
+            }
+        });
+        TimeTubesStore.on('showTimeTubesOfTimeSlice', (id, period) => {
+            if (id === this.id) {
+                this.moveCurrentLine(period[0]);
+            }
+        });
+        TimeTubesStore.on('searchTime', (id, dst) => {
+            if (id === this.id) {
+                this.moveCurrentLine(dst);
             }
         });
         ScatterplotsStore.on('moveCurrentLineonTimeSelector', (id, zpos) => {
@@ -37,11 +55,6 @@ export default class TimeSelector extends React.Component {
                 this.selectedRange = range;
             }
         });
-    }
-
-    componentDidMount() {
-        this.initializeElements();
-        this.drawTimeSelector();
     }
 
     initializeElements() {
