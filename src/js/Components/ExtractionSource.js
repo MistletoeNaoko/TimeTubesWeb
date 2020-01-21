@@ -40,9 +40,10 @@ export default class ExtractionSource extends React.Component {
     render() {
         // draw scatterplots for lightcurve whenever a new file is uploaded
         // let size = $('#QBESource').outerWidth(true) - Number($('#QBESource').css('padding-left').replace('px', '')) * 2;
-        let size = 500;
-        if (document.getElementById('QBESource') !== null) {
-            let tmp = $('#QBESource').outerWidth(true) - Number($('#QBESource').css('padding-left').replace('px', '')) * 2;
+        let size = 400;
+        // because the size of the panel is the same with featureArea, check the size of featureArea
+        if (document.getElementById('featureArea') !== null) {
+            let tmp = $('#featureArea').outerWidth(true) - Number($('#featureArea').css('padding-left').replace('px', '')) * 2;
             if (tmp > 0)
                 size = tmp;
         }
