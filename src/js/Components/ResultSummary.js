@@ -33,6 +33,25 @@ export default class ResultSummary extends React.Component {
                 }
             }
         }
+    }
+
+    componentDidMount() {
+        // append image to the imageHolder
+        let canvas = document.getElementById('resultSummaryCanvas_' + this.rank);
+        let ctx = canvas.getContext('2d');
+        let size = Math.min(this.thumbnail.height, this.thumbnail.width);
+        let px = this.thumbnail.width / 2 - size / 2,
+            py = this.thumbnail.height / 2 - size / 2;
+        this.thumbnail.onload = function() {
+            ctx.drawImage(
+                this.thumbnail,
+                px, py,
+                size, size,
+                0, 0,
+                300, 150);// why 300? the width of canvas seems to be 300px
+        }.bind(this);
+
+        document.getElementById('resultSummary_' + this.rank).addEventListener('mousedown', this.onMouseDownOnResultSummary.bind(this), false);
 
         FeatureStore.on('focusResultFromTimeline', (result) => {
             let flag = false;
@@ -89,25 +108,6 @@ export default class ResultSummary extends React.Component {
                 this.showDetails();
             }
         });
-    }
-
-    componentDidMount() {
-        // append image to the imageHolder
-        let canvas = document.getElementById('resultSummaryCanvas_' + this.rank);
-        let ctx = canvas.getContext('2d');
-        let size = Math.min(this.thumbnail.height, this.thumbnail.width);
-        let px = this.thumbnail.width / 2 - size / 2,
-            py = this.thumbnail.height / 2 - size / 2;
-        this.thumbnail.onload = function() {
-            ctx.drawImage(
-                this.thumbnail,
-                px, py,
-                size, size,
-                0, 0,
-                300, 150);// why 300? the width of canvas seems to be 300px
-        }.bind(this);
-
-        document.getElementById('resultSummary_' + this.rank).addEventListener('mousedown', this.onMouseDownOnResultSummary.bind(this), false);
     }
 
     showFileName() {

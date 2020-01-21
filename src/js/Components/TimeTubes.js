@@ -86,7 +86,82 @@ export default class TimeTubes extends React.Component{
         )
     }
 
-    componentWillMount() {
+    componentWillUnmount() {
+        this.stop();
+        this.mount.removeChild(this.renderer.domElement);
+    }
+
+    componentDidMount() {
+        const width = this.mount.clientWidth;
+        const height = this.mount.clientHeight;
+        this.scene = new THREE.Scene();
+
+        this.setCameras(width, height);
+
+        this.renderer = new THREE.WebGLRenderer({preserveDrawingBuffer: true}); //{ antialias: true }
+        this.renderer.setClearColor("#000000");
+        this.renderer.setSize(width, height);
+        this.renderer.localClippingEnabled = true;
+        this.renderer.domElement.id = 'TimeTubes_viewport_' + this.id;
+        this.renderer.domElement.className = 'TimeTubes_viewport';
+        this.canvas = this.renderer.domElement;
+        this.initQBEView();
+
+        // assign a canvas with the name of 'TimeTubes_viewport_ + this.id' to div element
+        this.mount.appendChild(this.renderer.domElement);
+
+        this.renderScene();
+        this.start();
+
+        this.clippingPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
+        this.clippingPlane2 = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+
+        let directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
+        directionalLight.position.set(-20, 40, 60);
+        this.scene.add(directionalLight);
+        let ambientLight = new THREE.AmbientLight(0x292929);
+        this.scene.add(ambientLight);
+
+        this.addControls();
+        let canvas = document.querySelector('#TimeTubes_viewport_' + this.id);
+        let onMouseWheel = this.onMouseWheel();
+        let onMouseDown = this.onMouseDown();
+        let onMouseMove = this.onMouseMove();
+        let onMouseUp = this.onMouseUp();
+        let onMouseClick = this.onMouseClick();
+
+        canvas.addEventListener('wheel', onMouseWheel.bind(this), false);
+        canvas.addEventListener('mousedown', onMouseDown.bind(this), false);
+        canvas.addEventListener('mousemove', onMouseMove.bind(this), false);
+        canvas.addEventListener('mouseup', onMouseUp.bind(this), false);
+        canvas.addEventListener('click', onMouseClick.bind(this), false);
+
+
+        // for test
+        // let geo = new THREE.BoxGeometry(5, 5, 5);
+        // let mat = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
+        // this.cube = new THREE.Mesh(geo, mat);
+        // this.scene.add(this.cube);
+        // var axis = new THREE.AxisHelper(1000);
+        // this.scene.add(axis);
+
+        this.tubeGroup = new THREE.Group();
+        this.scene.add(this.tubeGroup);
+
+        let texture = new THREE.TextureLoader();
+        texture.load('img/1_256.png', function(texture) {
+            TimeTubesAction.setTexture(this.id, texture);
+            this.drawTube(texture);
+        }.bind(this));
+        this.drawGrid(TimeTubesStore.getGridSize() * 2, 10);
+        this.drawLabel(TimeTubesStore.getGridSize() / this.data.meta.range);
+        this.drawAxis();
+        this.drawPlot();
+        this.drawDisk();
+        this.drawDiskForRotationCenter();
+        this.drawComment();
+        this.drawPeriodMarker();
+
         DataStore.on('updatePrivateComment', () => {
             this.updateComment();
         });
@@ -384,83 +459,6 @@ export default class TimeTubes extends React.Component{
                 this.paintSelectedPeriod();
             }
         });
-    }
-
-    componentWillUnmount() {
-        this.stop();
-        this.mount.removeChild(this.renderer.domElement);
-    }
-
-    componentDidMount() {
-        const width = this.mount.clientWidth;
-        const height = this.mount.clientHeight;
-        this.scene = new THREE.Scene();
-
-        this.setCameras(width, height);
-
-        this.renderer = new THREE.WebGLRenderer({preserveDrawingBuffer: true}); //{ antialias: true }
-        this.renderer.setClearColor("#000000");
-        this.renderer.setSize(width, height);
-        this.renderer.localClippingEnabled = true;
-        this.renderer.domElement.id = 'TimeTubes_viewport_' + this.id;
-        this.renderer.domElement.className = 'TimeTubes_viewport';
-        this.canvas = this.renderer.domElement;
-        this.initQBEView();
-
-        // assign a canvas with the name of 'TimeTubes_viewport_ + this.id' to div element
-        this.mount.appendChild(this.renderer.domElement);
-
-        this.renderScene();
-        this.start();
-
-        this.clippingPlane = new THREE.Plane(new THREE.Vector3(0, 0, -1), 0);
-        this.clippingPlane2 = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-
-        let directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
-        directionalLight.position.set(-20, 40, 60);
-        this.scene.add(directionalLight);
-        let ambientLight = new THREE.AmbientLight(0x292929);
-        this.scene.add(ambientLight);
-
-        this.addControls();
-        let canvas = document.querySelector('#TimeTubes_viewport_' + this.id);
-        let onMouseWheel = this.onMouseWheel();
-        let onMouseDown = this.onMouseDown();
-        let onMouseMove = this.onMouseMove();
-        let onMouseUp = this.onMouseUp();
-        let onMouseClick = this.onMouseClick();
-
-        canvas.addEventListener('wheel', onMouseWheel.bind(this), false);
-        canvas.addEventListener('mousedown', onMouseDown.bind(this), false);
-        canvas.addEventListener('mousemove', onMouseMove.bind(this), false);
-        canvas.addEventListener('mouseup', onMouseUp.bind(this), false);
-        canvas.addEventListener('click', onMouseClick.bind(this), false);
-
-
-        // for test
-        // let geo = new THREE.BoxGeometry(5, 5, 5);
-        // let mat = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
-        // this.cube = new THREE.Mesh(geo, mat);
-        // this.scene.add(this.cube);
-        // var axis = new THREE.AxisHelper(1000);
-        // this.scene.add(axis);
-
-        this.tubeGroup = new THREE.Group();
-        this.scene.add(this.tubeGroup);
-
-        let texture = new THREE.TextureLoader();
-        texture.load('img/1_256.png', function(texture) {
-            TimeTubesAction.setTexture(this.id, texture);
-            this.drawTube(texture);
-        }.bind(this));
-        this.drawGrid(TimeTubesStore.getGridSize() * 2, 10);
-        this.drawLabel(TimeTubesStore.getGridSize() / this.data.meta.range);
-        this.drawAxis();
-        this.drawPlot();
-        this.drawDisk();
-        this.drawDiskForRotationCenter();
-        this.drawComment();
-        this.drawPeriodMarker();
     }
 
     start() {

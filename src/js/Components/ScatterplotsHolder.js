@@ -17,7 +17,7 @@ export default class ScatterplotsHolder extends React.Component{
         }; //x, y, xrange, yrange
     }
 
-    componentWillMount() {
+    componentDidMount() {
         DataStore.on('showInitSP', (id) => {
             if (id === this.id) {
                 let list = this.state.scatterplotsList;
@@ -28,7 +28,6 @@ export default class ScatterplotsHolder extends React.Component{
             }
         });
     }
-
 
     addScatterplots() {
         let selectX = document.getElementById("scatterSelectXAxis_" + this.id);

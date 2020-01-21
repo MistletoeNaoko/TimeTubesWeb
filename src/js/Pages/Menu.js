@@ -9,15 +9,13 @@ export default class Menu extends React.Component {
         this.menu = 'Visualization';
     }
 
-    componentWillMount() {
-        AppStore.on('selectMenu', (menu) => {
-           this.menu = menu;
-        });
-    }
-
     componentDidMount() {
         $("ul[id*=mainMenuList] li").click(function () {
             AppAction.selectMenu($(this).attr('value'));
+        });
+
+        AppStore.on('selectMenu', (menu) => {
+           this.menu = menu;
         });
     }
 

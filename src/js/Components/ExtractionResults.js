@@ -28,6 +28,10 @@ export default class ExtractionResults extends React.Component {
             mode: FeatureStore.getMode(),
             AEOptions: FeatureStore.getAEOptions()
         };
+    }
+
+    componentDidMount() {
+        $('#topKResults').val(20);
 
         FeatureStore.on('setExtractionResults', () => {
             this.setState({
@@ -92,10 +96,6 @@ export default class ExtractionResults extends React.Component {
                 AEOptions: FeatureStore.getAEOptions()
             });
         });
-    }
-
-    componentDidMount() {
-        $('#topKResults').val(20);
     }
 
     updateOrder() {

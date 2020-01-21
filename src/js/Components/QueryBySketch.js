@@ -71,6 +71,18 @@ export default class QueryBySketch extends React.Component{
         // for setup sliders and pass the slider values to scale
         this.xMinMax = [];
         this.yMinMax= [];
+    }
+
+    componentDidMount() {
+        this.initCanvas();
+        if (this.state.targetList.length > 0) {
+            let minmax = this.computeMinMaxValue(this.state.minList, this.state.maxList);
+            this.xMinMax = minmax.xMinMax;
+            this.yMinMax = minmax.yMinMax;
+            this.updateAxis();
+            this.updateWidthVariable();
+        }
+        // this.initSketchMenu();
         FeatureStore.on('updateTarget', () => {
             // if (FeatureStore.getMode() === 'QBS') {
                 let targets = FeatureStore.getTarget();
@@ -195,18 +207,6 @@ export default class QueryBySketch extends React.Component{
             yMin = 0;
         }
         return {xMinMax: [xMin, xMax], yMinMax: [yMin, yMax]};
-    }
-
-    componentDidMount() {
-        this.initCanvas();
-        if (this.state.targetList.length > 0) {
-            let minmax = this.computeMinMaxValue(this.state.minList, this.state.maxList);
-            this.xMinMax = minmax.xMinMax;
-            this.yMinMax = minmax.yMinMax;
-            this.updateAxis();
-            this.updateWidthVariable();
-        }
-        // this.initSketchMenu();
     }
 
     initCanvas() {

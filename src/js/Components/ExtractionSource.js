@@ -15,8 +15,8 @@ export default class ExtractionSource extends React.Component {
             source: -1
         };
     }
-
-    componentWillMount() {
+    
+    componentDidMount() {
         DataStore.on('upload', () => {
             this.setState({
                 data: DataStore.getAllData()

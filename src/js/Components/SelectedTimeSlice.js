@@ -33,7 +33,14 @@ export default class SelectedTimeSlice extends React.Component {
         )
     }
 
-    componentWillMount() {
+    componentWillUnmount() {
+        this.stop();
+        this.mount.removeChild(this.renderer.domElement);
+    }
+
+    componentDidMount() {
+        this.initializeScene();
+
         TimeTubesStore.on('switch', () => {
            if (this.camera) {
                this.switchCamera();
@@ -108,15 +115,6 @@ export default class SelectedTimeSlice extends React.Component {
             this.updateTimePeriod();
             this.redrawTube();
         });
-    }
-
-    componentWillUnmount() {
-        this.stop();
-        this.mount.removeChild(this.renderer.domElement);
-    }
-
-    componentDidMount() {
-        this.initializeScene();
     }
 
     initializeScene() {

@@ -19,8 +19,7 @@ export default class Visualization extends React.Component{
         }
     }
 
-    componentWillMount() {
-
+    componentDidMount() {   
         DataStore.on('upload', () => {
             // add new data & create new TimeTubes view
             this.setState({

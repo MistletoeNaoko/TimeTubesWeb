@@ -22,7 +22,9 @@ export default class Controllers extends React.Component{
         }
     }
 
-    componentWillMount() {
+    componentDidMount() {
+        this.setAverageSlider();
+
         DataStore.on('upload', () => {
             this.setState({
                 data: DataStore.getAllData()
@@ -34,10 +36,6 @@ export default class Controllers extends React.Component{
             }
             $('#fileInputPanel').css('visibility', 'hidden');
         });
-    }
-
-    componentDidMount() {
-        this.setAverageSlider();
     }
 
     setAverageSlider() {

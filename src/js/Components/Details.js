@@ -22,7 +22,13 @@ export default class Details extends React.Component{
         this.opacityCurves = TimeTubesStore.getOpacityCurves();
     }
 
-    componentWillMount() {
+    componentDidMount() {
+        this.setFarSlider();
+        this.setColormapValueSlider();
+        this.setColormapHueSlider();
+        this.setOpacityCurve();
+        this.setOpacityEllipse();
+
         // ToDo: at first file uploading, following 'upload' code cannot catch event emitter
         DataStore.on('upload', (id) => {
             if (this.id === -1) {
@@ -42,7 +48,6 @@ export default class Details extends React.Component{
                 });
             }
         });
-
         TimeTubesStore.on('updateChecked', (id) => {
             if (this.id === id) {
                 this.setState({
@@ -50,14 +55,6 @@ export default class Details extends React.Component{
                 });
             }
         });
-    }
-
-    componentDidMount() {
-        this.setFarSlider();
-        this.setColormapValueSlider();
-        this.setColormapHueSlider();
-        this.setOpacityCurve();
-        this.setOpacityEllipse();
     }
 
     setFarSlider() {

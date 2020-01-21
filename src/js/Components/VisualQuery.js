@@ -23,7 +23,9 @@ export default class VisualQuery extends React.Component {
         };
     }
 
-    componentWillMount() {
+    componentDidMount() {
+        $('#stepSizeOfSlidingWindow').val(5);
+
         FeatureStore.on('updateSource', () => {
             this.setState({
                 source: FeatureStore.getSource()
@@ -62,10 +64,6 @@ export default class VisualQuery extends React.Component {
                 selectedInterval: period
             });
         });
-    }
-
-    componentDidMount() {
-        $('#stepSizeOfSlidingWindow').val(5);
     }
 
     switchSelector() {

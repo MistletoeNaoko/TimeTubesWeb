@@ -10,6 +10,11 @@ export default class Comment extends React.Component {
         this.state = {
             privateComments: dataLib.getDataFromLocalStorage('privateComment')
         };
+    }
+
+    componentDidMount() {
+        $('#privateCommentTable').tablesorter();
+        
         AppStore.on('selectMenu', (menu) => {
             if (menu === 'comment') {
                 this.setState({
@@ -17,10 +22,6 @@ export default class Comment extends React.Component {
                 });
             }
         });
-    }
-
-    componentDidMount() {
-        $('#privateCommentTable').tablesorter();
     }
 
     privateCommentListTr() {

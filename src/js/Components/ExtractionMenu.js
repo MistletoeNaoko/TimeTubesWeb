@@ -14,7 +14,7 @@ export default class ExtractionMenu extends React.Component {
         };
     }
 
-    componentWillMount() {
+    componentDidMount() {
         FeatureStore.on('switchQueryMode', (mode) => {
            this.setState({
                queryMode: mode

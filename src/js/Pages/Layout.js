@@ -14,8 +14,8 @@ export default class Layout extends React.Component {
         };
         this.selectMainView();
     }
-//
-    componentWillMount() {
+
+    componentDidMount() {
         AppStore.on('selectMenu', (menu) => {
             this.setState({
                 menu: menu

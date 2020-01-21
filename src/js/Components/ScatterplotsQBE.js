@@ -39,6 +39,12 @@ export default class ScatterplotsQBE extends React.Component{
             width: props.width,
             height: Math.max(props.height, 200)
         };
+    }
+
+    componentDidMount() {
+        this.initalizeElements();
+        this.computeRange(this.state.yItem);
+        this.drawScatterplots();
 
         TimeTubesStore.on('updateFocus', (id, zpos, flag) => {
             // when flag is true, change the color of the plot
@@ -79,12 +85,6 @@ export default class ScatterplotsQBE extends React.Component{
         FeatureStore.on('resetSelection', () => {
             this.resetSelection();
         });
-    }
-
-    componentDidMount() {
-        this.initalizeElements();
-        this.computeRange(this.state.yItem);
-        this.drawScatterplots();
     }
 
     initalizeElements() {

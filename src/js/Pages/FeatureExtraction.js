@@ -14,8 +14,8 @@ export default class FeatureExtraction extends React.Component{
             menu: 'Visualization'
         };
     }
-
-    componentWillMount() {
+    
+    componentDidMount() {
         FeatureStore.on('switchQueryMode', (mode) => {
             setTimeout(() =>
                 this.setState({

@@ -32,10 +32,6 @@ export default class ResultTimeline extends React.Component {
         this.resultsFlare = null;
         this.resultsRotation = null;
         this.resultsAnomaly = null;
-
-        FeatureStore.on('updateShownResults', (results) => {
-            this.updateTimeline();
-        });
     }
 
     render() {
@@ -55,6 +51,10 @@ export default class ResultTimeline extends React.Component {
     componentDidMount() {
         this.initializeTimeline();
         this.setUpTimeline();
+
+        FeatureStore.on('updateShownResults', (results) => {
+            this.updateTimeline();
+        });
     }
 
     componentWillUnmount() {
