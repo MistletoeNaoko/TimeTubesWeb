@@ -34,7 +34,7 @@ class FeatureStore extends EventEmitter {
                 this.updateTarget(action.ids);
                 break;
             case 'SWITCH_SELECTOR':
-                this.switchSelector();
+                this.switchSelector(action.selector);
                 break;
             case 'SWITCH_DRAGSELECTION':
                 this.switchDragSelection();
@@ -89,6 +89,9 @@ class FeatureStore extends EventEmitter {
                 break;
             case 'SELECT_RESULT_FROM_TIMELINE':
                 this.selectResultFromTimeline(action.result);
+                break;
+            case 'SWITCH_QBE_SELECTOR_SP':
+                this.switchQBESelectorSP(action.selector);
                 break;
             default:
         }
@@ -160,8 +163,8 @@ class FeatureStore extends EventEmitter {
         this.emit('updateTarget');
     }
 
-    switchSelector() {
-        this.selector = !this.selector;
+    switchSelector(selector) {
+        this.selector = selector;
         this.emit('switchSelector');
     }
 
@@ -282,6 +285,10 @@ class FeatureStore extends EventEmitter {
 
     selectResultFromTimeline(result) {
         this.emit('selectResultFromTimeline', result);
+    }
+
+    switchQBESelectorSP(selector) {
+        this.emit('switchQBESelectorSP', selector);
     }
 }
 

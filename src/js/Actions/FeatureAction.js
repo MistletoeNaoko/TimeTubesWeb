@@ -9,8 +9,8 @@ export function updateTarget(ids) {
     dispatcher.dispatch({type: 'UPDATE_TARGET', ids});
 }
 
-export function switchSelector() {
-    dispatcher.dispatch({type: 'SWITCH_SELECTOR'});
+export function switchSelector(selector) {
+    dispatcher.dispatch({type: 'SWITCH_SELECTOR', selector});
 }
 
 export function switchDragSelection() {
@@ -80,4 +80,8 @@ export function focusResultfromTimeline(result) {
 
 export function selectResultFromTimeline(result) {
     dispatcher.dispatch({type: 'SELECT_RESULT_FROM_TIMELINE', result});
+}
+
+export function switchQBESelectorSP(selector) {
+    dispatcher.dispatch({type: 'SWITCH_QBE_SELECTOR_SP', selector});
 }

@@ -17,19 +17,13 @@ export default class VisualQuery extends React.Component {
             queryMode: FeatureStore.getMode(),
             selector: true,
             source: -1,
-            selectedInterval: [],
+            selectedInterval: [-1, -1],
             coordinate: 'rectangular',
             DTWMode: 'DTWD'
         };
     }
 
     componentWillMount() {
-        FeatureStore.on('updateSelectedTimeSlice', () => {
-            this.setState({
-                selectedInterval: FeatureStore.getSelectedInterval()
-            });
-            this.updateSelectedInterval();
-        });
         FeatureStore.on('updateSource', () => {
             this.setState({
                 source: FeatureStore.getSource()
@@ -54,8 +48,13 @@ export default class VisualQuery extends React.Component {
             }
         });
         FeatureStore.on('updateSelectedPeriod', () => {
-            // this.selectedInterval = FeatureStore.getSelectedPeriod();
-            this.updateSelectedInterval();
+            let period = FeatureStore.getSelectedPeriod();
+            if (period[1] - period[0] > 0) {
+                this.setState({
+                    selectedInterval: period
+                });
+                this.updateSelectedInterval();
+            }
         });
         FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
             this.setState({
@@ -117,13 +116,9 @@ export default class VisualQuery extends React.Component {
     }
 
     updateSelectedInterval() {
-        let period = FeatureStore.getSelectedPeriod();
-        this.setState({
-            selectedInterval: period
-        });
-        $('#selectedInterval').text('JD: ' + period[0].toFixed(3) + ' - ' + period[1].toFixed(3));
-        $('#targetLengthMin').val(Math.floor(period[1]) - Math.ceil(period[0]));
-        $('#targetLengthMax').val(Math.floor(period[1]) - Math.ceil(period[0]));
+        $('#selectedInterval').text('JD: ' + this.state.selectedInterval[0].toFixed(3) + ' - ' + this.state.selectedInterval[1].toFixed(3));
+        $('#targetLengthMin').val(Math.floor(this.state.selectedInterval[1]) - Math.ceil(this.state.selectedInterval[0]));
+        $('#targetLengthMax').val(Math.floor(this.state.selectedInterval[1]) - Math.ceil(this.state.selectedInterval[0]));
     }
 
     updateIgnoredVariables() {

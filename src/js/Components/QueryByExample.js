@@ -57,7 +57,7 @@ export default class QueryByExample extends React.Component {
                         Selection by drag
                     </label>
                 </div>
-                <form className="form-check form-check-inline selector featureRow"
+                {/* <form className="form-check form-check-inline selector featureRow"
                       id='QBESelector' onChange={this.switchSelector.bind(this)}>
                     <img
                         id='QBESelect'
@@ -81,30 +81,7 @@ export default class QueryByExample extends React.Component {
                         height='30'
                         title='deselect a part of the tube'
                         onClick={this.selectDeselect.bind(this)} readOnly/>
-                        
-                    {/* <div className="custom-control custom-radio">
-                        <input
-                            type="radio"
-                            id='QBESelect'
-                            name="QBESelector"
-                            className="custom-control-input"
-                            value="Select"
-                            checked={this.state.selector} readOnly/>
-                        <label className="custom-control-label" htmlFor="QBESelect">Select</label>
-                    </div>
-                    <div
-                        className="custom-control custom-radio"
-                        style={{marginLeft: '0.5rem'}}>
-                        <input
-                            type="radio"
-                            id='QBEDeselect'
-                            name="QBESelector"
-                            className="custom-control-input"
-                            value="Deselect"
-                            checked={!this.state.selector} readOnly/>
-                        <label className="custom-control-label" htmlFor="QBEDeselect">Deselect</label>
-                    </div> */}
-                </form>
+                </form> */}
                 <div id='selectTimeInterval' className='form-row featureRow'>
                     <div className="input-group input-group-sm" style={{width: '10rem', marginRight: '1.5rem'}}>
                         <span style={{marginRight: '0.3rem'}}>Select</span>

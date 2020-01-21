@@ -45,7 +45,9 @@ export default class SelectedTimeSlice extends React.Component {
             this.setUpScene();
         });
         FeatureStore.on('resetSelection', () => {
-            this.deselectAll();
+            if (this.tube) {
+                this.deselectAll();
+            }
         });
         FeatureStore.on('updateSelectedPeriod', () => {
             this.selectedPeriod = FeatureStore.getSelectedPeriod();
@@ -53,7 +55,13 @@ export default class SelectedTimeSlice extends React.Component {
         });
         FeatureStore.on('selectPeriodfromSP', (period) => {
             this.selectedPeriod = FeatureStore.getSelectedPeriod();
-            this.updateTimePeriod();
+            if (this.selectedPeriod[1] - this.selectedPeriod[0] > 0) {
+                this.updateTimePeriod();
+            } else {
+                if (this.tube) {
+                    this.deselectAll();
+                }
+            }
         });
         FeatureStore.on('selectTimeInterval', (id, value) => {
             this.selectedPeriod = FeatureStore.getSelectedPeriod();
