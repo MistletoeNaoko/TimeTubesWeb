@@ -342,7 +342,7 @@ class TimeTubesStore extends EventEmitter{
         this.cameraProp[id].xpos = 0;
         this.cameraProp[id].ypos = 0;
         this.cameraProp[id].zpos = 50;
-        this.emit('reset');
+        this.emit('reset', id);
     }
 
     switchCamera(id) {

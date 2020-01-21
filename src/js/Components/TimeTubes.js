@@ -98,13 +98,20 @@ export default class TimeTubes extends React.Component{
             if (id === this.id) {
                 this.cameraProp = TimeTubesStore.getCameraProp(this.id);
                 this.updateCamera();
+                // if (this.cameraProp.xpos === 0 && this.cameraProp.ypos === 0 && this.cameraProp.zpos === 50) {
+                    
+                // console.log('reset camera',this.cameraProp);
+                // this.resetCamera();
+                // }
                 // this.resetCamera();
             }
         });
-        TimeTubesStore.on('reset', () => {
-            this.cameraProp = TimeTubesStore.getCameraProp(this.id);
-            if (this.cameraProp.xpos === 0 && this.cameraProp.ypos === 0 && this.cameraProp.zpos === 50) {
-                this.resetCamera();
+        TimeTubesStore.on('reset', (id) => {
+            if (id === this.id) {
+                this.cameraProp = TimeTubesStore.getCameraProp(this.id);
+                if (this.cameraProp.xpos === 0 && this.cameraProp.ypos === 0 && this.cameraProp.zpos === 50) {
+                    this.resetCamera();
+                }
             }
         });
         TimeTubesStore.on('switch', () => {
@@ -865,7 +872,10 @@ export default class TimeTubes extends React.Component{
     }
 
     resetCamera() {
-        // let cameraStatus = this.cameraProp;
+        this.cameraProp.xpos = 0;
+        this.cameraProp.ypos = 0;
+        this.cameraProp.zpos = 50;
+        TimeTubesAction.updateCamera(this.id, this.cameraProp);
         this.camera.position.set(this.cameraProp.xpos, this.cameraProp.ypos, this.cameraProp.zpos);
         this.camera.zoom = this.cameraProp.zoom;
         // this.controls.position0

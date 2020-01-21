@@ -945,18 +945,19 @@ export function showExtractionResults() {
         minJDs[String(targetList[i])] = DataStore.getData(targetList[i]).data.meta.min.z;
         canvas[String(targetList[i])] = document.getElementById('TimeTubes_viewport_' + targetList[i]);
         // step 2: reset camera position
-        let aspect = currentCamera[String(targetList[i])].aspect;
-        TimeTubesAction.updateCamera(targetList[i], {
-            xpos: 0,
-            ypos: 0,
-            zpos: 50,
-            fov: 45,
-            far: 2000,
-            depth: 0,
-            aspect: aspect,
-            zoom: 1,
-            type: 'Perspective'
-        });
+        // let aspect = currentCamera[String(targetList[i])].aspect;
+        TimeTubesAction.resetCamera(targetList[i]);
+        // TimeTubesAction.updateCamera(targetList[i], {
+        //     xpos: 0,
+        //     ypos: 0,
+        //     zpos: 50,
+        //     fov: 45,
+        //     far: 2000,
+        //     depth: 0,
+        //     aspect: aspect,
+        //     zoom: 1,
+        //     type: 'Perspective'
+        // });
     }
     let domnode = document.getElementById('resultsArea');
     // if there are previous results on the result panel, remove all
