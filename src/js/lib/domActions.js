@@ -1,3 +1,5 @@
+import {resizeExtractionResultsArea} from '../Actions/AppAction';
+
 export function toggleSourcePanel() {
     let current = $('#QBESourceMain').css('display');
     if (current === 'block') {
@@ -13,6 +15,7 @@ export function toggleSourcePanel() {
         $('#extractionResults').css('width', '40%');
         $('#collapseSourcePanel').text('Close');
     }
+    resizeExtractionResultsArea();
 }
 
 export function toggleExtractionDetailPanel() {

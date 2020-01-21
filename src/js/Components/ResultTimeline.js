@@ -3,9 +3,9 @@ import * as d3 from 'd3';
 import * as FeatureAction from '../Actions/FeatureAction';
 import * as domActions from '../lib/domActions';
 import {formatValue} from '../lib/2DGraphLib';
+import AppStore from '../Stores/AppStore';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
-import { tool } from 'paper';
 
 d3.selection.prototype.moveToFront =
     function() {
@@ -52,6 +52,12 @@ export default class ResultTimeline extends React.Component {
         this.initializeTimeline();
         this.setUpTimeline();
 
+        AppStore.on('resizeExtractionResultsArea', () => {
+            this.setState({
+                width: $('#resultTimelineArea_' + this.state.id).width()
+            });
+            this.setUpTimeline();
+        });
         FeatureStore.on('updateShownResults', (results) => {
             this.updateTimeline();
         });
