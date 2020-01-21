@@ -65,7 +65,6 @@ export default class SelectedTimeSlice extends React.Component {
         });
         FeatureStore.on('selectTimeInterval', (id, value) => {
             this.selectedPeriod = FeatureStore.getSelectedPeriod();
-            console.log(this.selectedPeriod);
             this.updateTimePeriod();
         });
         FeatureStore.on('setIgnoredVariables', (varList) => {
@@ -229,38 +228,40 @@ export default class SelectedTimeSlice extends React.Component {
     }
 
     setPlaceHolder() {
-        let texture = TimeTubesStore.getTexture(this.sourceId);
-        let pos = new Float32Array(0);
-        let color = new Float32Array(0);
-        let normals = new Float32Array(0);
-        let selected = new Float32Array(0);
-        let indices = new Uint32Array(0);
-        let tubeGeometry = new THREE.BufferGeometry();
-        tubeGeometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
-        tubeGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-        tubeGeometry.addAttribute('colorData', new THREE.BufferAttribute(new Float32Array(color), 2));
-        tubeGeometry.addAttribute('selected', new THREE.BufferAttribute(new Float32Array(selected), 1));
-        tubeGeometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
-        tubeGeometry.computeVertexNormals();
-        let tubeMaterial = new THREE.ShaderMaterial({
-            vertexShader: document.getElementById('vertexShader_tube').textContent,
-            fragmentShader: document.getElementById('fragmentShader_tube').textContent,
-            uniforms: {
-                lightPosition: {value: new THREE.Vector3(-20, 40, 60)},
-                tubeNum: {value: 1},//TimeTubesStore.getTubeNum()},
-                shade: {value: false},
-                texture: {value: texture},
-                minmaxH: {value: new THREE.Vector2(this.data.data.meta.min.H, this.data.data.meta.max.H)},
-                minmaxV: {value: new THREE.Vector2(this.data.data.meta.min.V, this.data.data.meta.max.V)},
-                flagH: {value: true},
-                flagV: {value: true}
-            },
-            side: THREE.DoubleSide,
-            transparent: true,
-        });
-        this.tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
-        this.tube.rotateY(Math.PI);
-        this.scene.add(this.tube);
+        if (this.tube === undefined) {
+            let texture = TimeTubesStore.getTexture(this.sourceId);
+            let pos = new Float32Array(0);
+            let color = new Float32Array(0);
+            let normals = new Float32Array(0);
+            let selected = new Float32Array(0);
+            let indices = new Uint32Array(0);
+            let tubeGeometry = new THREE.BufferGeometry();
+            tubeGeometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+            tubeGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
+            tubeGeometry.addAttribute('colorData', new THREE.BufferAttribute(new Float32Array(color), 2));
+            tubeGeometry.addAttribute('selected', new THREE.BufferAttribute(new Float32Array(selected), 1));
+            tubeGeometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+            tubeGeometry.computeVertexNormals();
+            let tubeMaterial = new THREE.ShaderMaterial({
+                vertexShader: document.getElementById('vertexShader_tube').textContent,
+                fragmentShader: document.getElementById('fragmentShader_tube').textContent,
+                uniforms: {
+                    lightPosition: {value: new THREE.Vector3(-20, 40, 60)},
+                    tubeNum: {value: 1},//TimeTubesStore.getTubeNum()},
+                    shade: {value: false},
+                    texture: {value: texture},
+                    minmaxH: {value: new THREE.Vector2(this.data.data.meta.min.H, this.data.data.meta.max.H)},
+                    minmaxV: {value: new THREE.Vector2(this.data.data.meta.min.V, this.data.data.meta.max.V)},
+                    flagH: {value: true},
+                    flagV: {value: true}
+                },
+                side: THREE.DoubleSide,
+                transparent: true,
+            });
+            this.tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
+            this.tube.rotateY(Math.PI);
+            this.scene.add(this.tube);
+        }
     }
 
     switchCamera() {
