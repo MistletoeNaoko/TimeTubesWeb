@@ -308,9 +308,15 @@ export default class ResultSummary extends React.Component {
                         if ((selectedTimeSlicePos.left <= event.pageX && event.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
                         && (selectedTimeSlicePos.top <= event.pageY && event.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
                             // convert the result into a new query
+                            if ($('#QBESourceMain').css('display') === 'none') {
+                                domActions.toggleSourcePanel();
+                            }
                             FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
                             if ($('#resultDetailArea').css('display') === 'block') {
                                 domActions.toggleExtractionDetailPanel();
+                            }
+                            if (FeatureStore.getSource() !== this.result.id) {
+                                FeatureAction.updateSource(this.result.id);
                             }
                         }
                     }

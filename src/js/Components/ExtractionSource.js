@@ -28,13 +28,13 @@ export default class ExtractionSource extends React.Component {
                 source: FeatureStore.getSource()
             });
         });
-        FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
-            if (FeatureStore.getMode() === 'QBE') {
-                this.setState({
-                    source: id
-                });
-            }
-        });
+        // FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
+        //     if (FeatureStore.getMode() === 'QBE') {
+        //         this.setState({
+        //             source: id
+        //         });
+        //     }
+        // });
     }
 
     render() {

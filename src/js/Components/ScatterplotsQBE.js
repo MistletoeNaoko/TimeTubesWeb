@@ -55,6 +55,7 @@ export default class ScatterplotsQBE extends React.Component{
             }
         });
         FeatureStore.on('updateSelectedPeriod', () => {
+            console.log('updateSelectedPeriod');
             if (this.divID.indexOf('QBE') >= 0 && FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id) {
                 this.selectedPeriod = FeatureStore.getSelectedPeriod();
                 this.highlightSelectedTimePeriod();
@@ -63,10 +64,14 @@ export default class ScatterplotsQBE extends React.Component{
         FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
             if (this.divID.indexOf('QBE') >= 0 && FeatureStore.getMode() === 'QBE' && Number(id) === this.id) {
                 this.selectedPeriod = FeatureStore.getSelectedPeriod();
+                console.log('convertResultIntoQuery', this.selectedPeriod);
                 this.highlightSelectedTimePeriod();
+                this.spBrusher
+                    .call(this.brush.move, [this.xScale(this.selectedPeriod[0]), this.xScale(this.selectedPeriod[1])]);
             }            
         });
         FeatureStore.on('switchQBESelectorSP', (selector) => {
+            console.log('switchQBESelectorSP');
             if (selector === 'reset') {
                 this.resetScatterplots();
             } else {
@@ -439,6 +444,7 @@ export default class ScatterplotsQBE extends React.Component{
         return function() {
             if (FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id) {
                 let previousPeriod = FeatureStore.getSelectedPeriod();
+                console.log(previousPeriod, this.selectedPeriod);
                 if (previousPeriod[0] !== this.selectedPeriod[0] || previousPeriod[1] !== this.selectedPeriod[1]) {
                     FeatureAction.selectPeriodfromSP(this.selectedPeriod);
                     if (this.selectedPeriod[1] - this.selectedPeriod[0] > 0) {
