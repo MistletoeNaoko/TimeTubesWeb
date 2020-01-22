@@ -23,7 +23,6 @@ export default class ExtractionSource extends React.Component {
             });
         });
         FeatureStore.on('updateSource', () => {
-            let sourceId = FeatureStore.getSource();
             this.setState({
                 source: FeatureStore.getSource()
             });

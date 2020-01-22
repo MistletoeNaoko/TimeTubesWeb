@@ -46,10 +46,8 @@ export default class VisualQuery extends React.Component {
             if ($('#stepSizeOfSlidingWindow').val() === '') {
                 $('#stepSizeOfSlidingWindow').val(5);
             }
-            if (mode === 'AE') {
-                document.getElementById('sourceList').selectedIndex = 0;
-            }
             if (mode !== 'QBE') {
+                document.getElementById('sourceList').selectedIndex = 0;
                 if ($('#QBESourceMain').css('display') === 'block') {
                     domActions.toggleSourcePanel();
                 }

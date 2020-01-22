@@ -52,14 +52,14 @@ export default class ResultTimeline extends React.Component {
         this.initializeTimeline();
         this.setUpTimeline();
 
-        AppStore.on('resizeExtractionResultsArea', () => {
+        FeatureStore.on('updateShownResults', (results) => {
+            this.updateTimeline();
+        });
+        FeatureStore.on('switchQueryMode', (mode) => {
             this.setState({
                 width: $('#resultTimelineArea_' + this.state.id).width()
             });
             this.resizeTimeLine();
-        });
-        FeatureStore.on('updateShownResults', (results) => {
-            this.updateTimeline();
         });
     }
 

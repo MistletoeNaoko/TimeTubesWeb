@@ -60,6 +60,14 @@ export default class ScatterplotsQBE extends React.Component{
                 this.changePlotColor(TimeTubesStore.getPlotColor(id));
             }
         });
+        FeatureStore.on('switchQueryMode', (mode) => {
+            if (mode === 'QBE' && FeatureStore.getSource() !== 'default') {
+                this.setState({
+                    width: this.props.width,
+                    height: Math.max(this.props.height, 200)
+                });
+            }
+        });
         FeatureStore.on('updateSelectedPeriod', () => {
             if (this.divID.indexOf('QBE') >= 0 && FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id) {
                 this.selectedPeriod = FeatureStore.getSelectedPeriod();
@@ -166,15 +174,23 @@ export default class ScatterplotsQBE extends React.Component{
             .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')')
             .attr('clip-path', 'url(#clipScatterplots_' + this.SPID + ')')
             .attr('class', 'brush');
+
+        
+        let outerWidth = this.props.width, outerHeight = Math.max(this.props.height, 200);
+        this.setState({
+            width: outerWidth,
+            height: outerHeight
+        });
     }
 
     drawScatterplots() {
         let SPID = this.SPID;
         let margin = this.margin;
-        let outerWidth = this.props.width, outerHeight = Math.max(this.props.height, 200);
+        let outerWidth = this.state.width, outerHeight = this.state.height;
         let width = outerWidth - this.margin.left - this.margin.right;
         let height = outerHeight - this.margin.top - this.margin.bottom;
         let yItem = this.state.yItem;
+
         // Pan and zoom
         this.zoom
             .extent([[0, 0], [width, height]])
@@ -286,69 +302,6 @@ export default class ScatterplotsQBE extends React.Component{
                 // .on('click', spClick)
                 .on('dblclick', this.spDblClick());
         }
-
-        // function zoomed() {
-        //     // let minJD, maxJD;
-        //     // let rect = this.sp.select('g.brush')
-        //     //     .select('rect.selection');
-        //     // let xpos = Number(rect
-        //     //     .attr('x'));
-        //     // let rectWidth = Number(rect
-        //     //     .attr('width'));
-        //     // minJD = this.xScale.invert(xpos);
-        //     // maxJD = this.xScale.invert(xpos + rectWidth);
-
-        //     let new_xScale = d3.event.transform.rescaleX(this.xScale);
-        //     let new_yScale = d3.event.transform.rescaleY(this.yScale);
-        //     this.xScaleTmp = new_xScale;
-        //     this.yScaleTmp = new_yScale;
-        //     this.xMinMax = new_xScale.domain();
-        //     this.yMinMax = new_yScale.domain();
-        //     // update axes
-        //     this.xAxis.call(this.xLabel.scale(new_xScale));
-        //     this.yAxis.call(this.yLabel.scale(new_yScale));
-
-        //     this.points
-        //         .attr('cx', function(d) {return new_xScale(d.z)})
-        //         .attr('cy', function(d) {return new_yScale(d[yItem])});
-
-        //     let current = d3.select('circle.current.' + this.divID);
-
-        //     if (current._groups[0][0]) {
-        //         let cx = current.attr('cx'), cy = current.attr('cy');
-        //         if (cy <= 0 || height <= cy) {
-        //             this.lineH
-        //                 .attr('transform', "translate(" + this.margin.left + "," + cy + ")")
-        //                 .style('visibility', 'hidden');
-        //         } else {
-        //             this.lineH.transition()
-        //                 .duration(0)
-        //                 .attr('transform', "translate(" + this.margin.left + "," + cy + ")")
-        //                 .style('visibility', 'visible');
-        //         }
-        //         if (cx <= 0 || width <= cx) {
-        //             this.lineV
-        //                 .attr('transform', "translate(" + cx + "," + this.margin.top + ")")
-        //                 .style('visibility', 'hidden');
-        //         } else {
-        //             this.lineV.transition()
-        //                 .duration(0)
-        //                 .attr('transform', "translate(" + cx + "," + this.margin.top + ")")
-        //                 .style('visibility', 'visible');
-        //         }
-        //     }
-        // }
-        // function brushed() {
-        //     let s = d3.event.selection || this.xScaleTmp.range;
-        //     let xRange = s.map(this.xScaleTmp.invert, this.xScaleTmp);
-        //     this.selectedPeriod = xRange;
-        // }
-        // function brushedEnd() {
-        //     if (FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id && this.selectedPeriod[1] - this.selectedPeriod[0] <= 0) {
-        //         FeatureAction.selectPeriodfromSP(this.selectedPeriod);
-        //         this.highlightSelectedTimePeriod();
-        //     }
-        // }
         function spYLabelClick() {
             //    show a panel with choices for axis on scatterplots
             let panel = d3.select('#changeYAxisPanel_' + SPID);
@@ -383,6 +336,9 @@ export default class ScatterplotsQBE extends React.Component{
     zoomed() {
         return function() {
             // if a time interval is selected, move the selection rectangle according to the changes of the graph
+            let width = this.state.width - this.margin.left - this.margin.right,
+                height = this.state.height - this.margin.top - this.margin.bottom;
+
             let yItem = this.state.yItem;
 
             let new_xScale = d3.event.transform.rescaleX(this.xScale);
@@ -515,6 +471,8 @@ export default class ScatterplotsQBE extends React.Component{
     }
 
     resetScatterplots() {
+        let width = this.state.width - this.margin.left - this.margin.right,
+            height = this.state.height - this.margin.top - this.margin.bottom;
         // initialize graph ranges
         this.timeRange = [this.data.data.meta.min.z, this.data.data.meta.max.z];
         this.updateTimeRange();
@@ -524,7 +482,7 @@ export default class ScatterplotsQBE extends React.Component{
             .scaleExtent([.05, 10])
             .extent([
                 [0, 0], 
-                [this.props.width - this.margin.left - this.margin.right, Math.max(this.props.height, 200) - this.margin.top - this.margin.bottom]
+                [width, height]
             ])
             .on("zoom", this.zoomed().bind(this));
         switch (this.selector) {
@@ -593,10 +551,10 @@ export default class ScatterplotsQBE extends React.Component{
     }
 
     updateCurrentPos(zpos) {
-        let currentHeight = this.sp.attr('height');
+        let width = this.state.width - this.margin.left - this.margin.right;
         let new_xScale = d3.scaleLinear()
             .domain([this.xMinMax[0], this.xMinMax[1]])
-            .range([0, this.props.width - this.margin.left - this.margin.right]);
+            .range([0, width]);
         let JD = zpos + this.data.data.spatial[0].z;
         this.lineH
             .style('visibility', 'hidden');
@@ -741,6 +699,8 @@ export default class ScatterplotsQBE extends React.Component{
     }
 
     updateTimeRange() {
+        let width = this.state.width - this.margin.left - this.margin.right,
+            height = this.state.height - this.margin.top - this.margin.bottom;
         this.computeRange(this.state.yItem);
         this.xScale
             .domain(this.xMinMax)
@@ -749,7 +709,7 @@ export default class ScatterplotsQBE extends React.Component{
         this.xMinMax = this.xScale.domain();
         this.xLabel = d3.axisBottom(this.xScale)
             .ticks(10)
-            .tickSize(-(Math.max(this.props.height, 200) - this.margin.top - this.margin.bottom))
+            .tickSize(-height)
             .tickFormat(tickFormatting);
         this.xAxis
             .transition()
@@ -762,7 +722,7 @@ export default class ScatterplotsQBE extends React.Component{
         this.yMinMax = this.yScale.domain();
         this.yLabel = d3.axisLeft(this.yScale)
             .ticks(5)
-            .tickSize(-(this.props.width - this.margin.left - this.margin.right))
+            .tickSize(-width)
             .tickFormat(tickFormatting);
         this.yAxis
             .transition()
@@ -783,11 +743,13 @@ export default class ScatterplotsQBE extends React.Component{
     }
 
     switchMouseInteraction() {
+        let width = this.state.width - this.margin.left - this.margin.right,
+            height = this.state.height - this.margin.top - this.margin.bottom;
         this.zoom = d3.zoom()
             .scaleExtent([.05, 10])
             .extent([
                 [0, 0], 
-                [this.props.width - this.margin.left - this.margin.right, Math.max(this.props.height, 200) - this.margin.top - this.margin.bottom]
+                [width, height]
             ])
             .on("zoom", this.zoomed().bind(this));
         switch (this.selector) {
