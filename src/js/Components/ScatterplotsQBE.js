@@ -69,13 +69,15 @@ export default class ScatterplotsQBE extends React.Component{
             }
         });
         FeatureStore.on('updateSelectedPeriod', () => {
-            if (this.divID.indexOf('QBE') >= 0 && FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id) {
+            if (FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id) {
                 this.selectedPeriod = FeatureStore.getSelectedPeriod();
                 this.highlightSelectedTimePeriod();
+                this.spBrusher
+                    .call(this.brush.move, [this.xScale(this.selectedPeriod[0]), this.xScale(this.selectedPeriod[1])]);
             }
         });
         FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
-            if (this.divID.indexOf('QBE') >= 0 && FeatureStore.getMode() === 'QBE' && Number(id) === this.id) {
+            if (FeatureStore.getMode() === 'QBE' && Number(id) === this.id) {
                 this.selectedPeriod = FeatureStore.getSelectedPeriod();
                 this.highlightSelectedTimePeriod();
                 this.spBrusher
@@ -92,6 +94,14 @@ export default class ScatterplotsQBE extends React.Component{
         });
         FeatureStore.on('resetSelection', () => {
             this.resetSelection();
+        });
+        FeatureStore.on('selectTimeInterval', (id, val) => {
+            if (FeatureStore.getMode() === 'QBE' && Number(id) === this.id) {
+                this.selectedPeriod = FeatureStore.getSelectedPeriod();
+                this.highlightSelectedTimePeriod();
+                this.spBrusher
+                    .call(this.brush.move, [this.xScale(this.selectedPeriod[0]), this.xScale(this.selectedPeriod[1])]);
+            }
         });
     }
 
@@ -403,7 +413,7 @@ export default class ScatterplotsQBE extends React.Component{
                     FeatureAction.selectPeriodfromSP(this.selectedPeriod);
                     if (this.selectedPeriod[1] - this.selectedPeriod[0] > 0) {
                         this.highlightSelectedTimePeriod();
-                        this.timeRange = this.selectedPeriod;
+                        this.timeRange = [this.selectedPeriod[0] - 10, this.selectedPeriod[1] + 10];
                         this.updateTimeRange();
                     } else {
                         this.resetSelection();

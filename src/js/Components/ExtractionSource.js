@@ -22,6 +22,11 @@ export default class ExtractionSource extends React.Component {
                 data: DataStore.getAllData()
             });
         });
+        DataStore.on('updateDetail', (id, zpos) => {
+            if (Number(this.state.source) === id) {
+                document.getElementById('currentJDValue').innerText = (zpos + this.state.data[id].data.meta.min.z).toFixed(3);
+            }
+        });
         FeatureStore.on('updateSource', () => {
             this.setState({
                 source: FeatureStore.getSource()
@@ -70,76 +75,12 @@ export default class ExtractionSource extends React.Component {
                 className='controllersElem featureColumn'
                 style={{float: 'left', width: '30%', position: 'relative'}}>
                 <div id='QBESourceMain' style={{display: 'block'}}>
+                    {this.QBESelector()}
                     <div id='QBESourceTT' className='featureElem'>
-                        <div id='selectorForQBETT'>
-                            <h5>Selection options for TimeTubes</h5>
-                            <form className="form-check form-check-inline selector featureRow"
-                                id='QBESelectorTT'>
-                                <img
-                                    id='QBESelectTT'
-                                    className='selectorIcon selected'
-                                    name='QBESelectorTT'
-                                    value='Select'
-                                    src='img/icons/pen.png'
-                                    alt='pen'
-                                    width='30'
-                                    height='30'
-                                    title='select a part of the tube'
-                                    onClick={this.selectSelect.bind(this)} readOnly/>
-                                <img
-                                    id='QBEDeselectTT'
-                                    className='selectorIcon'
-                                    name='QBESelectorTT'
-                                    value='Deselect'
-                                    src='img/icons/eraser.png'
-                                    alt='eraser'
-                                    width='30'
-                                    height='30'
-                                    title='deselect a part of the tube'
-                                    onClick={this.selectDeselect.bind(this)} readOnly/>
-                            </form>
-                        </div>
+                        {this.selectorOptionsTT()}
                     </div>
                     <div id='QBESourceSP' className='featureElem'>
-                        <div id='selectorForQBESP'>
-                            <h5>Selection options for scatterplots</h5>
-                            <form className="form-check form-check-inline selector featureRow"
-                                id='QBESelectorSP'>
-                                <img
-                                    id='QBESelectRegionSP'
-                                    className='selectorIcon selected'
-                                    name='QBESelectorSP'
-                                    value='SelectRegion'
-                                    src='img/icons/selectRegion.png'
-                                    alt='select region'
-                                    width='30'
-                                    height='30'
-                                    title='select a part of the scatterplot'
-                                    onClick={this.selectSelectRegion.bind(this)} readOnly/>
-                                <img
-                                    id='QBEMoveSP'
-                                    className='selectorIcon'
-                                    name='QBESelectorSP'
-                                    value='Move'
-                                    src='img/icons/move.png'
-                                    alt='move'
-                                    width='30'
-                                    height='30'
-                                    title='move the scatteplot'
-                                    onClick={this.selectMove.bind(this)} readOnly/>
-                                <img
-                                    id='QBEResetSP'
-                                    className='selectorIcon'
-                                    name='QBESelectorSP'
-                                    value='Reset'
-                                    src='img/icons/reset.png'
-                                    alt='reset'
-                                    width='30'
-                                    height='30'
-                                    title='reset changes on the scatterplot'
-                                    onClick={this.selectReset.bind(this)} readOnly/>
-                            </form>
-                        </div>
+                        {this.selectorOptionsSP()}
                         {scatterplots}
                     </div>
                 </div>
@@ -154,6 +95,144 @@ export default class ExtractionSource extends React.Component {
         );
     }
 
+
+    QBESelector() {
+        return (
+            <div className='featureElem'>
+                <div id='selectTimeInterval' className='form-row featureRow'>
+                    {/* <div className="input-group input-group-sm"> */}
+                        <span style={{marginRight: '0.3rem'}}>Select</span>
+                        <input
+                            type="text"
+                            className="form-control custom-input"
+                            id='selectTimeIntervalInput'
+                            style={{width: '5rem'}}/>
+                        <span style={{marginLeft: '0.3rem'}}>days from JD=</span>
+                        <span id='currentJDValue'></span>
+                    {/* </div> */}
+                    <button className="btn btn-primary btn-sm"
+                            type="button"
+                            id='selectTimeIntervalBtn'
+                            style={{display: 'block', margin: '0 0 0 auto'}}
+                            onClick={this.selectTimeInterval.bind(this)} >Select</button>
+                </div>
+                <button
+                    id='resetSelectionBtn'
+                    className='btn btn-primary btn-sm featureRow'
+                    style={{display: 'block', margin: '0 0 0 auto'}}
+                    onClick={this.resetSelection.bind(this)}>
+                    Deselect all
+                </button>
+            </div>
+        );
+    }
+
+    selectorOptionsTT() {
+        return (
+            <div id='selectorForQBETT'>
+                <h5>Selection options for TimeTubes</h5>
+                <form className="form-check form-check-inline selector featureRow"
+                    id='QBESelectorTT'>
+                    <img
+                        id='QBESelectTT'
+                        className='selectorIcon selected'
+                        name='QBESelectorTT'
+                        value='Select'
+                        src='img/icons/pen.png'
+                        alt='pen'
+                        width='30'
+                        height='30'
+                        title='select a part of the tube'
+                        onClick={this.selectSelect.bind(this)} readOnly/>
+                    <img
+                        id='QBEDeselectTT'
+                        className='selectorIcon'
+                        name='QBESelectorTT'
+                        value='Deselect'
+                        src='img/icons/eraser.png'
+                        alt='eraser'
+                        width='30'
+                        height='30'
+                        title='deselect a part of the tube'
+                        onClick={this.selectDeselect.bind(this)} readOnly/>
+                </form>
+                {/* <div className="form-check">
+                    <input
+                        className="form-check-input"
+                        type="checkbox"
+                        id="checkboxDragTube"
+                        value="option1"
+                        checked={this.state.dragSelection}
+                        onChange={this.switchDragSelection.bind(this)}/>
+                    <label
+                        className="form-check-label"
+                        htmlFor="inlineCheckbox1">
+                        Selection by drag
+                    </label>
+                </div> */}
+            </div>
+        );
+    }
+
+    selectorOptionsSP() {
+        return (
+            <div id='selectorForQBESP'>
+                <h5>Selection options for scatterplots</h5>
+                <form className="form-check form-check-inline selector featureRow"
+                    id='QBESelectorSP'>
+                    <img
+                        id='QBESelectRegionSP'
+                        className='selectorIcon selected'
+                        name='QBESelectorSP'
+                        value='SelectRegion'
+                        src='img/icons/selectRegion.png'
+                        alt='select region'
+                        width='30'
+                        height='30'
+                        title='select a part of the scatterplot'
+                        onClick={this.selectSelectRegion.bind(this)} readOnly/>
+                    <img
+                        id='QBEMoveSP'
+                        className='selectorIcon'
+                        name='QBESelectorSP'
+                        value='Move'
+                        src='img/icons/move.png'
+                        alt='move'
+                        width='30'
+                        height='30'
+                        title='move the scatteplot'
+                        onClick={this.selectMove.bind(this)} readOnly/>
+                    <img
+                        id='QBEResetSP'
+                        className='selectorIcon'
+                        name='QBESelectorSP'
+                        value='Reset'
+                        src='img/icons/reset.png'
+                        alt='reset'
+                        width='30'
+                        height='30'
+                        title='reset changes on the scatterplot'
+                        onClick={this.selectReset.bind(this)} readOnly/>
+                </form>
+            </div>
+        );
+    }
+
+    selectTimeInterval() {
+        let val = $('#selectTimeIntervalInput').val();
+        if (!isNaN(val) && val != '') {
+            FeatureAction.selectTimeInterval(val);
+        }
+    }
+
+    // switchDragSelection() {
+    //     this.setState({dragSelection: !this.state.dragSelection});
+    //     FeatureAction.switchDragSelection();
+    // }
+    
+    resetSelection() {
+        FeatureAction.resetSelection();
+    }
     selectSelect() {
         $('img[name=QBESelectorTT]').each(function() {
             $(this).removeClass('selected');

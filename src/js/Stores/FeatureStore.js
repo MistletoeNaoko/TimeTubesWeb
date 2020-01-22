@@ -180,28 +180,31 @@ class FeatureStore extends EventEmitter {
 
     selectTimeInterval(value) {
         let id = this.source;
+        let valueNum = Number(value);
         let currentPos = TimeTubesStore.getFocused(Number(id)) + DataStore.getData(Number(id)).data.meta.min.z;
-        if (this.selectedPeriod[0] !== -1 && this.selectedPeriod[1] !== -1) {
-            // previous period: [], selected period: ()
-            if (this.selectedPeriod[0] <= currentPos && currentPos <= this.selectedPeriod[1]) {
-                // case 1: [(]) or [()]
-                this.selectedPeriod[1] = Math.max(this.selectedPeriod[1], currentPos + valueNum);
-            } else if (this.selectedPeriod[0] <= currentPos + valueNum && currentPos + valueNum <= this.selectedPeriod[1]) {
-                // case 2: ([)] or [()]
-                this.selectedPeriod[0] = Math.min(this.selectedPeriod[0], currentPos);
-            } else if (currentPos + valueNum < this.selectedPeriod[0]) {
-                // case 3: ()[]
-                this.selectedPeriod[0] = currentPos;
-            } else if (this.selectedPeriod[1] < currentPos) {
-                // case 4: []()
-                this.selectedPeriod[1] = currentPos + valueNum;
-            } else if (currentPos < this.selectedPeriod[0] && this.selectedPeriod[1] < currentPos + valueNum) {
-                // case 5: ([])
-                this.selectedPeriod = [currentPos, currentPos + valueNum];
-            }
-        } else if (this.selectedPeriod[0] === -1 && this.selectedPeriod[1] === -1) {
-            this.selectedPeriod = [currentPos, currentPos + valueNum];
-        }
+        this.selectedPeriod = [currentPos, currentPos + valueNum];
+        // if (this.selectedPeriod[0] && this.selectedPeriod[1]) {
+        // // if (this.selectedPeriod[0] !== -1 && this.selectedPeriod[1] !== -1) {
+        //     // previous period: [], selected period: ()
+        //     if (this.selectedPeriod[0] <= currentPos && currentPos <= this.selectedPeriod[1]) {
+        //         // case 1: [(]) or [()]
+        //         this.selectedPeriod[1] = Math.max(this.selectedPeriod[1], currentPos + valueNum);
+        //     } else if (this.selectedPeriod[0] <= currentPos + valueNum && currentPos + valueNum <= this.selectedPeriod[1]) {
+        //         // case 2: ([)] or [()]
+        //         this.selectedPeriod[0] = Math.min(this.selectedPeriod[0], currentPos);
+        //     } else if (currentPos + valueNum < this.selectedPeriod[0]) {
+        //         // case 3: ()[]
+        //         this.selectedPeriod[0] = currentPos;
+        //     } else if (this.selectedPeriod[1] < currentPos) {
+        //         // case 4: []()
+        //         this.selectedPeriod[1] = currentPos + valueNum;
+        //     } else if (currentPos < this.selectedPeriod[0] && this.selectedPeriod[1] < currentPos + valueNum) {
+        //         // case 5: ([])
+        //         this.selectedPeriod = [currentPos, currentPos + valueNum];
+        //     }
+        // } else {
+        //     this.selectedPeriod = [currentPos, currentPos + valueNum];
+        // }
         this.emit('selectTimeInterval', id, valueNum);
     }
 

@@ -62,6 +62,14 @@ export default class VisualQuery extends React.Component {
                 this.updateSelectedInterval();
             }
         });
+        FeatureStore.on('selectTimeInterval', (id, val) => {
+            if (Number(this.state.source) === id) {
+                this.setState({
+                    selectedInterval: FeatureStore.getSelectedPeriod()
+                });
+                this.updateSelectedInterval();
+            }
+        });
         FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
             this.setState({
                 source: id,

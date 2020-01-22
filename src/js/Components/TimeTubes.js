@@ -26,7 +26,7 @@ export default class TimeTubes extends React.Component{
         this.currentHighlightedPlot = 0;
         this.drag = false;
         this.visualQuery = false;
-        this.dragSelection = true;
+        this.dragSelection = false;
         this.selector = true;
         this.averagePeriod = 0;
         this.animationPara = {flag: false, dep: 0, dst:0, speed: 40, now: 0};
@@ -407,7 +407,7 @@ export default class TimeTubes extends React.Component{
             if (mode === 'QBE' && sourceId !== 'default') {
                 this.visualQuery = (Number(sourceId) === this.id);
                 this.setQBEView();
-                this.updateControls();
+                // this.updateControls();
                 this.resetSelection();
             } else {
                 this.deselectAll();
@@ -419,7 +419,7 @@ export default class TimeTubes extends React.Component{
             if (mode === 'QBE' && sourceId !== 'default') {
                 this.visualQuery = (Number(sourceId) === this.id);
                 this.setQBEView();
-                this.updateControls();
+                // this.updateControls();
                 this.resetSelection();
             }
         });
@@ -454,7 +454,7 @@ export default class TimeTubes extends React.Component{
             if (FeatureStore.getMode() === 'QBE' && id === this.id) {
                 this.visualQuery = (Number(id) === this.id);
                 this.setQBEView();
-                this.updateControls();
+                // this.updateControls();
                 this.resetSelection();
                 this.paintSelectedPeriod();
             }
@@ -607,6 +607,7 @@ export default class TimeTubes extends React.Component{
                     let pos = this.controls.object.position;
                     TimeTubesAction.synchronizeTubes(this.id, 0, pos, deg);
                 }
+                // if (this.visualQuery && this.dragSelection) {
                 if (this.visualQuery && this.dragSelection) {
                     let face = this.getIntersectedIndex(event);
                     if (face !== undefined && this.tube) {
@@ -686,53 +687,56 @@ export default class TimeTubes extends React.Component{
                 cameraPropNow.zpos = this.camera.position.z;
                 this.cameraProp = cameraPropNow;
             }
-            this.drag = false;
+            // this.drag = false;
         }
     }
 
     onMouseClick() {
         return function (event) {
-            if (this.visualQuery && !this.dragSelection) {
+            if (!this.drag && this.visualQuery && !this.dragSelection) {
                 let face = this.getIntersectedIndex(event);
                 let firstIdx, lastIdx;
-                if (face !== undefined && this.tube) {
-                    this.tube.geometry.colorsNeedUpdate = true;
-                    this.tube.geometry.attributes.selected.needsUpdate = true;
-                    let startIdx = Math.floor(Math.min(face.a, face.b, face.c) / this.segment);
-                    let startJD = Math.floor(startIdx / this.segment) * (1 / this.division) + this.data.meta.min.z;
-                    let setValue;
-                    if (this.selector) {
-                        setValue = 1;
-                    } else {
-                        setValue = 0;
-                    }
+                if (face !== undefined) {
+                    if (this.tube) {
+                        this.tube.geometry.colorsNeedUpdate = true;
+                        this.tube.geometry.attributes.selected.needsUpdate = true;
+                        let startIdx = Math.floor(Math.min(face.a, face.b, face.c) / this.segment);
+                        let startJD = Math.floor(startIdx / this.segment) * (1 / this.division) + this.data.meta.min.z;
+                        let setValue;
+                        if (this.selector) {
+                            setValue = 1;
+                        } else {
+                            setValue = 0;
+                        }
 
-                    // highlight a tube at one observation
-                    for (let i = 0; i < this.segment; i++) {
-                        this.tube.geometry.attributes.selected.array[startIdx * this.segment + i] = setValue;
-                        this.tube.geometry.attributes.selected.array[(startIdx + 1) * this.segment + i] = setValue;
-                    }
+                        // highlight a tube at one observation
+                        for (let i = 0; i < this.segment; i++) {
+                            this.tube.geometry.attributes.selected.array[startIdx * this.segment + i] = setValue;
+                            this.tube.geometry.attributes.selected.array[(startIdx + 1) * this.segment + i] = setValue;
+                        }
 
-                    // fill between selections
-                    let arraySize = this.tube.geometry.attributes.selected.array.length / this.tubeNum;
-                    //  'idx - arraySize * (this.tubeNum - 1) / this.tubeNum' is because only the most outside tube is highlighted in red
-                    firstIdx = this.tube.geometry.attributes.selected.array.indexOf(1) % arraySize;
-                    lastIdx = this.tube.geometry.attributes.selected.array.lastIndexOf(1) % arraySize;
-                    for (let i = firstIdx; i <= lastIdx; i++) {
-                        this.tube.geometry.attributes.selected.array[arraySize * (this.tubeNum - 1) + i] = 1;
+                        // fill between selections
+                        let arraySize = this.tube.geometry.attributes.selected.array.length / this.tubeNum;
+                        //  'idx - arraySize * (this.tubeNum - 1) / this.tubeNum' is because only the most outside tube is highlighted in red
+                        firstIdx = this.tube.geometry.attributes.selected.array.indexOf(1) % arraySize;
+                        lastIdx = this.tube.geometry.attributes.selected.array.lastIndexOf(1) % arraySize;
+                        for (let i = firstIdx; i <= lastIdx; i++) {
+                            this.tube.geometry.attributes.selected.array[arraySize * (this.tubeNum - 1) + i] = 1;
+                        }
+                        this.renderer.render(this.scene, this.camera);
+                        if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
+
+                        if (firstIdx >= lastIdx) {
+                            FeatureAction.updateSelectedPeriod([-1, -1]);
+                        } else {
+                            let minJD = this.data.meta.min.z;
+                            let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
+                            let lastJD = (Math.floor(lastIdx / this.segment) + 1) * (1 / this.division) + minJD;
+                            FeatureAction.updateSelectedPeriod([firstJD, lastJD]);
+                        }
                     }
-                    this.renderer.render(this.scene, this.camera);
-                    if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
                 }
-                if (firstIdx >= lastIdx) {
-                    FeatureAction.updateSelectedPeriod([-1, -1]);
-                } else {
-                    let minJD = this.data.meta.min.z;
-                    let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
-                    let lastJD = (Math.floor(lastIdx / this.segment) + 1) * (1 / this.division) + minJD;
-                    FeatureAction.updateSelectedPeriod([firstJD, lastJD]);
-                }
-            } else {
+            } else if (!this.visualQuery) {
                 // activate the viewport
                 // remove borders from all viewports
                 let viewports = document.getElementsByClassName('TimeTubes_viewport');
@@ -745,6 +749,7 @@ export default class TimeTubes extends React.Component{
                 currentViewport.style.boxSizing = 'border-box';
                 TimeTubesAction.activateViewport(this.id);
             }
+            this.drag = false;
         }
     }
 
