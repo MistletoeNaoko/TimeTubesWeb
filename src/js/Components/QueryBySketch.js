@@ -122,6 +122,7 @@ export default class QueryBySketch extends React.Component{
                 this.yAxisText
                     .text(this.state.lookup[this.state.yItem]);
                 this.updateAxis();
+                this.updateWidthVariable();
             }
         });
         FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
@@ -971,7 +972,7 @@ export default class QueryBySketch extends React.Component{
                 }
                 this.tool.minDistance = 15;
             }
-            this.convertSketchIntoQuery();
+            this.convertSketchIntoQuery(this.state.xItem, this.state.yItem);
         };
     }
 
@@ -1030,7 +1031,7 @@ export default class QueryBySketch extends React.Component{
         }
     }
 
-    convertSketchIntoQuery() {
+    convertSketchIntoQuery(xItem, yItem) {
         // if the x or y axis is not JD
         // divide path into small segments with the same length
         // the number of segments is decided by the user-input query length
@@ -1064,7 +1065,7 @@ export default class QueryBySketch extends React.Component{
                 }
             }
 
-            if (this.state.xItem !== 'z' && this.state.yItem !== 'z') {
+            if (xItem !== 'z' && yItem !== 'z') {
                 // if the x or y axis is not JD
                 // get total length of the path
                 let totalLength = this.path.length;
@@ -1101,10 +1102,10 @@ export default class QueryBySketch extends React.Component{
                         let point = this.path.getPointAt(del * i);
                         if (point) {
                             for (let key in query) {
-                                if (key === this.state.xItem) {
+                                if (key === xItem) {
                                     // convert x pos to value
                                     query[key].push(this.xScale.invert(point.x));
-                                } else if (key === this.state.yItem) {
+                                } else if (key === yItem) {
                                     // convert y pos to value
                                     query[key].push(this.yScale.invert(point.y));
                                 } else if (key === this.widthVar) {
@@ -1159,7 +1160,7 @@ export default class QueryBySketch extends React.Component{
                 } else {
                     // alert says 'input time length of the input query'
                 }
-            } else if (this.state.xItem === 'z') {
+            } else if (xItem === 'z') {
                 // get time range and set the value to $periodOfSketchQuery
                 let minX = this.controlPoints[0].position.x,
                     maxX = this.controlPoints[this.controlPoints.length - 1].position.x;
@@ -1260,7 +1261,7 @@ export default class QueryBySketch extends React.Component{
                         query[key][query[key].length - 1] = lastPoint[key];
                     }
                 }
-            } else if (this.state.yItem === 'z') {
+            } else if (yItem === 'z') {
                 // get time range and set the value to $periodOfSketchQuery
                 let minY = this.controlPoints[0].position.y,
                     maxY = this.controlPoints[this.controlPoints.length - 1].position.y;
@@ -1294,7 +1295,7 @@ export default class QueryBySketch extends React.Component{
                     let hitResult = this.path.getIntersections(hitTestPath);
                     let offset = this.path.getOffsetOf(hitResult[0].point);
                     for (let key in query) {
-                        if (key === this.state.xItem) {
+                        if (key === xItem) {
                             query[key].push(this.xScale.invert(hitResult[0].point.x));
                         } else if (key === this.widthVar) {
                             let width =  (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
@@ -1645,7 +1646,7 @@ export default class QueryBySketch extends React.Component{
         if (this.state.xItemonPanel !== 'z' && this.state.yItem !== 'z') {
             $('#periodOfSketchQuery').val(20);
         }
-        this.convertSketchIntoQuery();
+        this.convertSketchIntoQuery(this.state.xItemonPanel, this.state.yItem);
     }
 
     changeYAxis() {
@@ -2112,7 +2113,7 @@ export default class QueryBySketch extends React.Component{
                         this.controlPoints[i].label.insertAbove(this.controlPoints[i].labelRect);
                     }
                 }
-                this.convertSketchIntoQuery();
+                this.convertSketchIntoQuery(query.xItem, query.yItem);
             } else {
                 alert('This file is not for a query-by-sketch.');
             }
@@ -2230,7 +2231,7 @@ export default class QueryBySketch extends React.Component{
             if (this.pathWidth) {
                 this.pathWidth.remove();
             }
-            this.convertSketchIntoQuery();
+            this.convertSketchIntoQuery(this.state.xItem, this.state.yItem);
             $('img[name=QBSSelector]').each(function() {
                 if ($(this).attr('value') === 'changeWidth') {
                     $(this).addClass('disabled');
@@ -2257,7 +2258,7 @@ export default class QueryBySketch extends React.Component{
             $('#sketchWidthSlider').on('slidestop', this.stopSlidingWidthSlider().bind(this));
             $('#sketchWidthSlider').slider('option', 'disabled', !this.state.detectWidth);
             this.widthVar = selectedVal;
-            this.convertSketchIntoQuery();
+            this.convertSketchIntoQuery(this.state.xItem, this.state.yItem);
         }
     }
 
@@ -2278,7 +2279,7 @@ export default class QueryBySketch extends React.Component{
 
     stopSlidingWidthSlider() {
         return function (event, ui) {
-            this.convertSketchIntoQuery();
+            this.convertSketchIntoQuery(this.state.xItem, this.state.yItem);
         };
     }
 
@@ -2321,7 +2322,7 @@ export default class QueryBySketch extends React.Component{
                     maxY = this.controlPoints[this.controlPoints.length - 1].position.y;
                 this.updateYAxisValue(0, formatValue(val / (maxY - minY) * canvasSize));
             }
-            this.convertSketchIntoQuery();
+            this.convertSketchIntoQuery(this.state.xItem, this.state.yItem);
         }
     }
 
@@ -2396,7 +2397,7 @@ export default class QueryBySketch extends React.Component{
             this.controlPoints[this.highlightedPointIdx].labelRect.strokeColor = 'white';
             this.controlPoints[this.highlightedPointIdx].label.insertAbove(this.controlPoints[this.highlightedPointIdx].labelRect);
         }
-        this.convertSketchIntoQuery();
+        this.convertSketchIntoQuery(this.state.xItem, this.state.yItem);
     }
 
     setValueSlider(id, min, max) {
