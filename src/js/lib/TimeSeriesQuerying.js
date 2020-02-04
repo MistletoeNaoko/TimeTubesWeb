@@ -867,21 +867,23 @@ export function setDefaltOrderOfResults() {
     // select the default order of the results
     let mode = FeatureStore.getMode();
     let options = document.getElementById('resultOrderList').options;
+    let i = 0;
     if (mode === 'AE') {
-        for (let i = 0; i < options.length; i++) {
+        for (i = 0; i < options.length; i++) {
             if (options[i].value === 'timeStamp') {
                 document.getElementById('resultOrderList').selectedIndex = i;
                 break;
             }
         }
     } else if (mode === 'QBE' || mode === 'QBS') {
-        for (let i = 0; i < options.length; i++) {
+        for (i = 0; i < options.length; i++) {
             if (options[i].value === 'distance') {
                 document.getElementById('resultOrderList').selectedIndex = i;
                 break;
             }
         }
     }
+    FeatureAction.updateOrder(options[i].value);
 }
 
 export function showExtractionResults() {
@@ -892,14 +894,11 @@ export function showExtractionResults() {
     }
     // get the options for showing results
     // order of the results
-    let resultOrderList = document.getElementById('resultOrderList');
-    let selectedIdx = resultOrderList.selectedIndex;
-    let resultOrder = resultOrderList.options[selectedIdx].value;
+    let resultOrder = FeatureStore.getOrder();
     // k value
-    let kValue = $('#topKResults').val();
+    let kValue = FeatureStore.getKValue();
     // distance threshold
-    let distTh = $('#distanceThreshold').val();
-
+    let distTh = FeatureStore.getDistanceThreshold();
     // filter results according to the input options
     // sort results
     let results = FeatureStore.getExtractionResults();

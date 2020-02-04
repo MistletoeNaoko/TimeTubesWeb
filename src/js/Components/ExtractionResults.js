@@ -8,6 +8,7 @@ import * as TimeSeriesQuerying from '../lib/TimeSeriesQuerying';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import * as AppAction from '../Actions/AppAction';
 import * as DataAction from '../Actions/DataAction';
+import * as FeatureAction from '../Actions/FeatureAction';
 import FeatureStore from '../Stores/FeatureStore';
 import DataStore from '../Stores/DataStore';
 import { formatValue } from '../lib/2DGraphLib';
@@ -100,14 +101,20 @@ export default class ExtractionResults extends React.Component {
     }
 
     updateOrder() {
+        let resultOrderList = document.getElementById('resultOrderList');
+        let selectedIdx = resultOrderList.selectedIndex;
+        let resultOrder = resultOrderList.options[selectedIdx].value;
+        FeatureAction.updateOrder(resultOrder);
         TimeSeriesQuerying.showExtractionResults();
     }
 
     updateKValue() {
+        FeatureAction.updateKValue(Number($('#topKResults').val()));
         TimeSeriesQuerying.showExtractionResults();
     }
 
     updateDistanceThreshold() {
+        FeatureAction.updateDistanceThreshold($('#distanceThreshold').val());
         TimeSeriesQuerying.showExtractionResults();
     }
 
@@ -449,7 +456,9 @@ export default class ExtractionResults extends React.Component {
                 <div id='mainResultArea'>
                     <div
                         id='distanceHistogramArea'
-                        className='resultAreaElem'>
+                        className='resultAreaElem'
+                        style={{display: (this.state.mode === 'QBE' || this.state.mode === 'QBS')? 'block': 'none'}}>
+                        <h5>Distance distribution (number vs. distance)</h5>
                         <DistanceHistogram/>
                     </div>
                     <div

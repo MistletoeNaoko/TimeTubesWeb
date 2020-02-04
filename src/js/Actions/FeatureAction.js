@@ -85,3 +85,15 @@ export function selectResultFromTimeline(result) {
 export function switchQBESelectorSP(selector) {
     dispatcher.dispatch({type: 'SWITCH_QBE_SELECTOR_SP', selector});
 }
+
+export function updateKValue(k) {
+    dispatcher.dispatch({type: 'UPDATE_K_VALUE', k});
+}
+
+export function updateOrder(order) {
+    dispatcher.dispatch({type: 'UPDATE_ORDER', order});
+}
+
+export function updateDistanceThreshold(threshold) {
+    dispatcher.dispatch({type: 'UPDATE_DISTANCE_THRESHOLD', threshold});
+}

@@ -24,6 +24,9 @@ class FeatureStore extends EventEmitter {
         this.query = {};
         this.ignored = [];
         this.parameters = {};
+        this.kValue = 20;
+        this.order = 'timeStamp';
+        this.distanceThreshold = '';
     }
 
     handleActions(action) {
@@ -94,6 +97,15 @@ class FeatureStore extends EventEmitter {
             case 'SWITCH_QBE_SELECTOR_SP':
                 this.switchQBESelectorSP(action.selector);
                 break;
+            case 'UPDATE_K_VALUE':
+                this.updateKValue(action.k);
+                break;
+            case 'UPDATE_ORDER':
+                this.updateOrder(action.order);
+                break;
+            case 'UPDATE_DISTANCE_THRESHOLD':
+                this.updateDistanceThreshold(action.threshold);
+                break;
             default:
         }
     }
@@ -152,6 +164,18 @@ class FeatureStore extends EventEmitter {
 
     getParameters() {
         return this.parameters;
+    }
+
+    getKValue() {
+        return this.kValue;
+    }
+
+    getOrder() {
+        return this.order;
+    }
+
+    getDistanceThreshold() {
+        return this.distanceThreshold;
     }
 
     updateSource(id) {
@@ -298,6 +322,21 @@ class FeatureStore extends EventEmitter {
 
     switchQBESelectorSP(selector) {
         this.emit('switchQBESelectorSP', selector);
+    }
+
+    updateKValue(k) {
+        this.kValue = k;
+        this.emit('updateKValue');
+    }
+
+    updateOrder(order) {
+        this.order = order;
+        this.emit('updateOrder');
+    }
+
+    updateDistanceThreshold(threshold) {
+        this.distanceThreshold = threshold;
+        this.emit('updateDistanceThreshold');
     }
 }
 
