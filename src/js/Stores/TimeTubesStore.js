@@ -78,6 +78,7 @@ class TimeTubesStore extends EventEmitter{
             this.opacityCurves[key] = new THREE.SplineCurve(points);
         }
         this.averagePeriod = 0;
+        this.wheelInterval = 1;
     }
 
     handleActions(action) {
@@ -183,6 +184,9 @@ class TimeTubesStore extends EventEmitter{
                 break;
             case 'SWITCH_COMMENT':
                 this.switchComment(action.id, action.state);
+                break;
+            case 'UPDATE_WHEEL_INTERVAL':
+                this.updateWheelInterval(action.interval);
                 break;
             default:
         }
@@ -294,6 +298,10 @@ class TimeTubesStore extends EventEmitter{
 
     getAveragePeriod() {
         return this.averagePeriod;
+    }
+
+    getWheelInterval() {
+        return this.wheelInterval;
     }
 
     setPlotColor(id, color) {
@@ -505,6 +513,11 @@ class TimeTubesStore extends EventEmitter{
 
     switchComment(id, state) {
         this.emit('switchComment', id, state);
+    }
+
+    updateWheelInterval(interval) {
+        this.wheelInterval = interval;
+        this.emit('updateWheelInterval');
     }
 }
 

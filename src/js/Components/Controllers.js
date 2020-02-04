@@ -3,6 +3,7 @@ import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import * as DataAction from '../Actions/DataAction';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import DataStore from '../Stores/DataStore';
+import TimeTubes from './TimeTubes';
 
 export default class Controllers extends React.Component{
     constructor() {
@@ -285,7 +286,21 @@ export default class Controllers extends React.Component{
                            aria-haspopup="true"
                            aria-expanded="false"
                            style={{fontSize: '1rem'}}>&#9881;</label>
-                    <div className="dropdown-menu" aria-labelledby="navbarDropdown">
+                    <div className="dropdown-menu controllersElem" aria-labelledby="navbarDropdown">
+                        {/* <a className='dropdown-item'>&#10004;&#65039; 1 day</a>
+                        <a className='dropdown-item'>3 day</a>
+                        <a className='dropdown-item'>7 day</a> */}
+                        <h6>Wheel interval</h6>
+                        <select
+                            id='wheelIntervalList'
+                            className="form-control custom-select"
+                            onChange={this.updateWheelInterval.bind(this)}
+                            style={{fontSize: '0.8rem', height: '1.5rem', width: '5rem'}}>
+                            <option value='1'>1 day</option>
+                            <option value='3'>3 days</option>
+                            <option value='5'>5 days</option>
+                            <option value='7'>7 days</option>
+                        </select>
                     </div>
                 </li>
             </ul>
@@ -374,6 +389,13 @@ export default class Controllers extends React.Component{
                 </div>
             </div>
         );
+    }
+
+    updateWheelInterval(e) {
+        let wheelIntervalList = document.getElementById('wheelIntervalList');
+        let selectedIdx = wheelIntervalList.selectedIndex;
+        let selectedInterval = wheelIntervalList.options[selectedIdx].value;
+        TimeTubesAction.updateWheelInterval(Number(selectedInterval));
     }
 
     displayMenu() {

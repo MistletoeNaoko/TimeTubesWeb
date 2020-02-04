@@ -138,3 +138,7 @@ export function showRotationCenter(id, period, center) {
 export function switchComment(id, state) {
     dispatcher.dispatch({type: 'SWITCH_COMMENT', id, state});
 }
+
+export function updateWheelInterval(interval) {
+    dispatcher.dispatch({type: 'UPDATE_WHEEL_INTERVAL', interval});
+}
