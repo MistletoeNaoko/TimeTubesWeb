@@ -61,7 +61,7 @@ class TimeTubesStore extends EventEmitter{
         this.minmaxV = [];
         this.minmaxH = [];
         this.plotColor = [];
-        this.gridSize = 15;
+        this.gridSize = 18;
         this.tubeNum = 16;
         this.segment = 16;
         this.division = 5;

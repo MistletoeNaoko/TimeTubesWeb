@@ -866,7 +866,7 @@ export default class TimeTubes extends React.Component{
     setCameras(width, height) {
         // initialize camera properties
         let fov = 45;
-        let far = Math.ceil(this.data.spatial[this.data.spatial.length - 1].z - this.data.spatial[0].z);
+        let far = Math.ceil(this.data.spatial[this.data.spatial.length - 1].z - this.data.spatial[0].z + 50);
         let depth = Math.tan(fov / 2.0 * Math.PI / 180.0) * 2;
         let aspect = width / height;
 
