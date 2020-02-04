@@ -20,6 +20,7 @@
     "react-bootstrap": "^1.0.0-beta.12",
     "react-color": "^2.18.0",
     "react-event-listener": "^0.6.6",
+    "svg-z-order": "^1.2.1",
     "three": "^0.108.0",
     "three-orbitcontrols": "^2.110.3",
     "three.textsprite": "^20.0.0"

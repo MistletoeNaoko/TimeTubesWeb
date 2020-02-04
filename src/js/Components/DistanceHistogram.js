@@ -2,12 +2,17 @@ import React from 'react';
 import * as d3 from 'd3';
 import FeatureStore from '../Stores/FeatureStore';
 
+let svgz = require('svg-z-order');
+
 export default class DistanceHistogram extends React.Component {
     constructor(prop) {
         super();
         this.height = 100;
         this.margin = {left: 25, right: 10, top: 10, bottom: 22};
         this.results = [];
+        this.bins = [];
+        this.dragFlag = false;
+        this.handleFlag = false;
     }
 
     render() {
@@ -45,11 +50,23 @@ export default class DistanceHistogram extends React.Component {
             .append('g')
             .attr('class', 'y-axis');
 
-        this.tooltip = d3.select('#distanceHistogram')
-            .append('div')
-            .attr('class', 'tooltip')
-            .attr('id', 'tooltipDistanceHistogram')
-            .style('opacity', 0.75)
+        this.brushRect = this.svg
+            .append('rect')
+            .attr('id', 'brushingRectHistogram')
+            .style('fill', 'rgb(119, 119, 119)')
+            .style('fill-opacity', 0.3);
+        this.brushLine = this.svg
+            .append('line')
+            .attr('id', 'brushingLineHistogram')
+            .attr('stroke', '#80b139')
+            .attr('stroke-width', 2);
+
+        this.horizontalLine = this.svg
+            .append('line')
+            .attr('id', 'horizontalLineHistogram')
+            .attr('stroke', 'orange')
+            .attr('stroke-width', 2)
+            .attr("fill", "none")
             .style('visibility', 'hidden');
     }
 
@@ -78,13 +95,12 @@ export default class DistanceHistogram extends React.Component {
                 return d.distance;
             })
             .domain(this.xScale.domain())
-            .thresholds(this.xScale.ticks(Math.floor(this.results.length / 4)));
+            .thresholds(this.xScale.ticks(Math.min(20, Math.floor(this.results.length / 4))));
         
-        let bins = histogram(this.results);
-
+        this.bins = histogram(this.results);
         this.yScale
             .range([height, 0])
-            .domain([0, d3.max(bins, function(d) {
+            .domain([0, d3.max(this.bins, function(d) {
                 return d.length;
             })]);
         this.yLabel = d3.axisLeft(this.yScale)
@@ -99,7 +115,7 @@ export default class DistanceHistogram extends React.Component {
             .remove();
         this.bars = this.svg
             .selectAll('rect')
-            .data(bins)
+            .data(this.bins)
             .enter()
             .append('rect')
             .attr('class', 'histogramRect')
@@ -114,6 +130,110 @@ export default class DistanceHistogram extends React.Component {
                 return height - this.yScale(d.length);
             }.bind(this))
             .style('fill', "#284a6c")
-            .style('opacity', 0.75);
+            .style('opacity', 0.75)
+            .on('mouseover', this.mouseOverOnHistogram())
+            .on('mouseout', this.mouseOutFromHistogram());
+
+        // decide the width of brushing rect
+        let currentKValue = FeatureStore.getKValue();
+        let sum = 0;
+        for (let i = 0; i < this.bins.length; i++) {
+            if (sum + this.bins[i].length >= currentKValue) {
+                let rightPos = this.xScale(
+                    this.bins[i].x0 + 
+                    (this.bins[i].x1 - this.bins[i].x0) / this.bins[i].length * (currentKValue - sum)
+                );
+                this.brushRect
+                    .attr('x', this.margin.left)
+                    .attr('y', this.margin.top)
+                    .attr('width', rightPos)
+                    .attr('height', this.yScale(0));
+                this.brushLine
+                    .attr('x1', rightPos + this.margin.left)
+                    .attr('y1', this.margin.top)
+                    .attr('x2', rightPos + this.margin.left)
+                    .attr('y2', this.yScale(0) + this.margin.top);
+                break;
+            } else {
+                sum += this.bins[i].length;
+                continue;
+            }
+        }
+        let drag = d3.drag()
+            .on('start', this.dragStartOnHistogram())
+            .on('drag', this.dragOnHistogram())
+            .on('end', this.dragEndOnHistogram());
+        this.brushLine
+            .call(drag);
+        svgz.element(this.brushLine.node()).toTop();
+    }
+
+    mouseOverOnHistogram() {
+        let horizontalLine = this.horizontalLine;
+        let xScale = this.xScale,
+            yScale = this.yScale;
+        let margin = this.margin;
+        return function(d) {
+            d3.selectAll('rect.histogramRect')
+                .style('fill', '#7b7971');
+            d3.select(this)
+                .style('fill', '#284a6c');
+            
+            horizontalLine
+                .attr('x1', xScale(xScale.domain()[0]) + margin.left)
+                .attr('y1', yScale(d.length) + margin.top)
+                .attr('x2', xScale(d.x1) + margin.left)
+                .attr('y2', yScale(d.length) + margin.top)
+                .style('visibility', 'visible');
+            svgz.element(horizontalLine.node()).toTop();
+        };
+    }
+
+    mouseOutFromHistogram() {
+        let horizontalLine = this.horizontalLine;
+        return function(d) {
+            d3.selectAll('rect.histogramRect')
+                .style('fill', '#284a6c');
+            horizontalLine
+                .style('visibility', 'hidden');
+        };
+    }
+
+    dragStartOnHistogram() {
+        return function() {
+            d3.select(this)
+                .classed('brushingLineHistogram', true);
+        };
+    }
+
+    dragOnHistogram() {
+        let margin = this.margin;
+        let graphWidth = this.xScale.range();
+        return function() {
+            let line = d3.select('#brushingLineHistogram');
+            let pos = d3.event.x;
+            if (pos <= margin.left) {
+                pos = margin.left;
+            } else if (margin.left + graphWidth[1] <= pos) {
+                pos = margin.left + graphWidth[1];
+            }
+            line
+                .attr('x1', pos)
+                .attr('x2', pos);
+
+            d3.select('rect#brushingRectHistogram')
+                .attr('width', pos - margin.left);
+        };
+    }
+
+    dragEndOnHistogram() {
+        return function() {
+            d3.select(this)
+                .classed('brushingLineHistogram', true);
+        };
+    }
+
+    getHandle(mouse) {
+
     }
 }
