@@ -436,6 +436,7 @@ export default class VisualQuery extends React.Component {
     }
 
     clickRunButton() {
+        $('#topKLabelResults').text('Top ' + FeatureStore.getKValue() + ' results');
         $('#matchingStatus').text('searching...');
         setTimeout(function() {
             this.runMatching();

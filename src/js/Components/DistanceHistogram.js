@@ -1,5 +1,7 @@
 import React from 'react';
 import * as d3 from 'd3';
+import * as FeatureAction from '../Actions/FeatureAction';
+import {showExtractionResults} from '../lib/TimeSeriesQuerying';
 import FeatureStore from '../Stores/FeatureStore';
 
 let svgz = require('svg-z-order');
@@ -8,7 +10,7 @@ export default class DistanceHistogram extends React.Component {
     constructor(prop) {
         super();
         this.height = 100;
-        this.margin = {left: 25, right: 10, top: 10, bottom: 22};
+        this.margin = {left: 25, right: 10, top: 5, bottom: 22};
         this.results = [];
         this.bins = [];
         this.dragFlag = false;
@@ -209,6 +211,8 @@ export default class DistanceHistogram extends React.Component {
     dragOnHistogram() {
         let margin = this.margin;
         let graphWidth = this.xScale.range();
+        let xScale = this.xScale;
+        let bins = this.bins;
         return function() {
             let line = d3.select('#brushingLineHistogram');
             let pos = d3.event.x;
@@ -223,17 +227,52 @@ export default class DistanceHistogram extends React.Component {
 
             d3.select('rect#brushingRectHistogram')
                 .attr('width', pos - margin.left);
+
+            let rectWidth = d3.select('rect#brushingRectHistogram')
+                .attr('width');
+            let rightEdgePos = xScale.invert(rectWidth);
+            let displayedNum = 0;
+            for (let i = 0; i < bins.length; i++) {
+                if (bins[i].x1 <= rightEdgePos) {
+                    displayedNum += bins[i].length;
+                } else if (bins[i].x0 <= rightEdgePos && rightEdgePos <= bins[i].x1) {
+                    let diff = rightEdgePos - bins[i].x0;
+                    displayedNum += Math.ceil(bins[i].length * diff / (bins[i].x1 - bins[i].x0));
+                    break;
+                }
+            }
+
+            $('#topKLabelResults').text('Top ' + displayedNum + ' results');
         };
     }
 
     dragEndOnHistogram() {
+        let xScale = this.xScale;
+        let bins = this.bins;
         return function() {
             d3.select(this)
                 .classed('brushingLineHistogram', true);
+                
+            let rectWidth = d3.select('rect#brushingRectHistogram')
+                .attr('width');
+            let rightEdgePos = xScale.invert(rectWidth);
+            let displayedNum = 0;
+            for (let i = 0; i < bins.length; i++) {
+                if (bins[i].x1 <= rightEdgePos) {
+                    displayedNum += bins[i].length;
+                } else if (bins[i].x0 <= rightEdgePos && rightEdgePos <= bins[i].x1) {
+                    let diff = rightEdgePos - bins[i].x0;
+                    displayedNum += Math.ceil(bins[i].length * diff / (bins[i].x1 - bins[i].x0));
+                    break;
+                }
+            }
+            FeatureAction.updateKValue(displayedNum);
+            $('#topKResults').val(displayedNum);
+            $('#topKLabelResults').text('Top ' + displayedNum + ' results');
+            $('#matchingStatus').text('searching...');
+            setTimeout(function() {
+                showExtractionResults();
+            }.bind(this), 0);
         };
-    }
-
-    getHandle(mouse) {
-
     }
 }

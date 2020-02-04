@@ -110,6 +110,7 @@ export default class ExtractionResults extends React.Component {
 
     updateKValue() {
         FeatureAction.updateKValue(Number($('#topKResults').val()));
+        $('#topKLabelResults').text('Top ' + $('#topKResults').val() + ' results');
         TimeSeriesQuerying.showExtractionResults();
     }
 
@@ -459,6 +460,7 @@ export default class ExtractionResults extends React.Component {
                         className='resultAreaElem'
                         style={{display: (this.state.mode === 'QBE' || this.state.mode === 'QBS')? 'block': 'none'}}>
                         <h5>Distance distribution (number vs. distance)</h5>
+                        <label id='topKLabelResults'></label>
                         <DistanceHistogram/>
                     </div>
                     <div
