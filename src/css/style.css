@@ -414,6 +414,15 @@ img.selectorIcon:active {
     line-height: 2rem;
 }
 
+.resultAreaElem {
+    background-color: #fff;
+    border: 1px solid #DFD7CA;
+    border-radius: 5px;
+    padding: 0.5rem 1rem;
+    width: 100%;
+    max-width: 100%;
+}
+
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
@@ -517,14 +526,14 @@ img.selectorIcon:active {
     font-size: 0.8rem;
 }
 
-#resultTimelinesArea {
+/* #resultTimelinesArea {
     background-color: #fff;
     border: 1px solid #DFD7CA;
     border-radius: 5px;
     padding: 0.5rem 1rem;
     width: 100%;
     max-width: 100%;
-}
+} */
 
 #loading {
     display: table;

@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from "react-dom";
 import LineChart from './LineChart';
 import ResultTimeline from './ResultTimeline';
+import DistanceHistogram from './DistanceHistogram';
 import * as domActions from '../lib/domActions';
 import * as TimeSeriesQuerying from '../lib/TimeSeriesQuerying';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
@@ -447,8 +448,13 @@ export default class ExtractionResults extends React.Component {
                 </div>
                 <div id='mainResultArea'>
                     <div
+                        id='distanceHistogramArea'
+                        className='resultAreaElem'>
+                        <DistanceHistogram/>
+                    </div>
+                    <div
                         id='resultTimelinesArea'
-                        className='container'>
+                        className='container resultAreaElem'>
                         {timelines}
                     </div>
                     <div id='resultDetail' style={{position: 'relative', height: '1.5rem', marginBottom: '0px'}}>
