@@ -61,6 +61,12 @@ export default class ResultTimeline extends React.Component {
             });
             this.resizeTimeLine();
         });
+        AppStore.on('resizeExtractionResultsArea', () => {
+            this.setState({
+                width: $('#resultTimelineArea_' + this.state.id).width()
+            });
+            this.resizeTimeLine();
+        });
     }
 
     componentWillUnmount() {

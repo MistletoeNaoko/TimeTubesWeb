@@ -2,6 +2,7 @@ import React from 'react';
 import * as d3 from 'd3';
 import * as FeatureAction from '../Actions/FeatureAction';
 import {showExtractionResults} from '../lib/TimeSeriesQuerying';
+import AppStore from '../Stores/AppStore';
 import FeatureStore from '../Stores/FeatureStore';
 
 let svgz = require('svg-z-order');
@@ -28,6 +29,9 @@ export default class DistanceHistogram extends React.Component {
     componentDidMount() {
         this.initHistogram();
 
+        AppStore.on('resizeExtractionResultsArea', () => {
+            this.updateHistogram();
+        });
         FeatureStore.on('updateShownResults', () => {
             let parameters = FeatureStore.getParameters();
             if ('QBE' in parameters || 'QBS' in parameters) {

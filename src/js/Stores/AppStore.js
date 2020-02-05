@@ -12,6 +12,9 @@ class AppStore extends EventEmitter {
             case 'SELECT_MENU':
                 this.selectMenu(action.menu);
                 break;
+            case 'RESIZE_EXTRACTION_RESULTS_AREA':
+                this.emit('resizeExtractionResultsArea');
+                break;
             default:
                 break;
         }

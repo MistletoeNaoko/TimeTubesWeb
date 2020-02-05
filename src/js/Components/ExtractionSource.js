@@ -1,5 +1,6 @@
 import React from 'react';
 import * as d3 from 'd3';
+import {resizeExtractionResultsArea} from '../Actions/AppAction';
 import * as domActions from '../lib/domActions';
 import * as FeatureAction from '../Actions/FeatureAction';
 import DataStore from '../Stores/DataStore';
@@ -88,13 +89,17 @@ export default class ExtractionSource extends React.Component {
                     id='collapseSourcePanel'
                     className="btn btn-primary btn-sm"
                     style={{width: '4rem', height: '1.5rem',position: 'absolute', top: '0px', right: '-4rem'}}
-                    onClick={domActions.toggleSourcePanel}>
+                    onClick={this.clickCloseSourcePanelBtn}>
                         Close
                 </button>
             </div>
         );
     }
 
+    clickCloseSourcePanelBtn() {
+        domActions.toggleSourcePanel();
+        resizeExtractionResultsArea();
+    }
 
     QBESelector() {
         return (

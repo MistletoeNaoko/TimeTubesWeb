@@ -15,7 +15,6 @@ export function toggleSourcePanel() {
         $('#extractionResults').css('width', '40%');
         $('#collapseSourcePanel').text('Close');
     }
-    // resizeExtractionResultsArea();
 }
 
 export function toggleExtractionDetailPanel() {
