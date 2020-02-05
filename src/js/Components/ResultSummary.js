@@ -1,6 +1,7 @@
 import React from 'react';
 import * as domActions from '../lib/domActions';
 import {formatValue} from '../lib/2DGraphLib';
+import {resizeExtractionResultsArea} from '../Actions/AppAction';
 import * as FeatureAction from '../Actions/FeatureAction';
 import * as d3 from 'd3';
 import * as lodash from 'lodash';
@@ -310,6 +311,7 @@ export default class ResultSummary extends React.Component {
                             // convert the result into a new query
                             if ($('#QBESourceMain').css('display') === 'none') {
                                 domActions.toggleSourcePanel();
+                                resizeExtractionResultsArea();
                             }
                             FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
                             if ($('#resultDetailArea').css('display') === 'block') {

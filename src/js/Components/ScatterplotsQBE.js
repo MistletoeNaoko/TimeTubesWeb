@@ -72,16 +72,16 @@ export default class ScatterplotsQBE extends React.Component{
             if (FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id) {
                 this.selectedPeriod = FeatureStore.getSelectedPeriod();
                 this.highlightSelectedTimePeriod();
-                this.spBrusher
-                    .call(this.brush.move, [this.xScale(this.selectedPeriod[0]), this.xScale(this.selectedPeriod[1])]);
+                this.timeRange = [this.selectedPeriod[0] - 10, this.selectedPeriod[1] + 10];
+                this.updateTimeRange();
             }
         });
         FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
             if (FeatureStore.getMode() === 'QBE' && Number(id) === this.id) {
                 this.selectedPeriod = FeatureStore.getSelectedPeriod();
                 this.highlightSelectedTimePeriod();
-                this.spBrusher
-                    .call(this.brush.move, [this.xScale(this.selectedPeriod[0]), this.xScale(this.selectedPeriod[1])]);
+                this.timeRange = [this.selectedPeriod[0] - 10, this.selectedPeriod[1] + 10];
+                this.updateTimeRange();
             }            
         });
         FeatureStore.on('switchQBESelectorSP', (selector) => {
