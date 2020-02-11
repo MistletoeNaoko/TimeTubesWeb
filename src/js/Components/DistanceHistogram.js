@@ -11,7 +11,7 @@ export default class DistanceHistogram extends React.Component {
     constructor(prop) {
         super();
         this.height = 100;
-        this.margin = {left: 25, right: 10, top: 5, bottom: 22};
+        this.margin = {left: 30, right: 10, top: 5, bottom: 22};
         this.results = [];
         this.bins = [];
         this.dragFlag = false;
@@ -65,7 +65,7 @@ export default class DistanceHistogram extends React.Component {
             .append('line')
             .attr('id', 'brushingLineHistogram')
             .attr('stroke', '#80b139')
-            .attr('stroke-width', 2);
+            .attr('stroke-width', 4);
 
         this.horizontalLine = this.svg
             .append('line')
