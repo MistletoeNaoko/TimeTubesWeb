@@ -84,10 +84,11 @@ export default class DistanceHistogram extends React.Component {
         this.svg
             .attr('width', outerWidth)
             .attr('height', this.height);
-        
+
         let xRange = d3.extent(this.results, d => d.distance);
         xRange[0] = Math.floor(xRange[0]);
         xRange[1] = Math.ceil(xRange[1]);
+
         this.xScale
             .domain(xRange)
             .range([0, width]);

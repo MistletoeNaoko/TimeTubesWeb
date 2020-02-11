@@ -459,7 +459,7 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
                             }
                             if (!flag) break;
                         }
-                        if (flag) {
+                        if (flag && minVal !== Infinity) {
                             result.push({
                                 id: targetId,
                                 start: i + minJD,
@@ -528,7 +528,7 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
                             }
                             if (!flag) break;
                         }
-                        if (flag) {
+                        if (flag && minVal !== Infinity) {
                             result.push({
                                 id: targetId,
                                 start: i + minJD,

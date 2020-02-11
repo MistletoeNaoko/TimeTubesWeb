@@ -200,11 +200,11 @@ export default class QueryBySketch extends React.Component{
             yMin = Math.min.apply(null, minList[this.state.yItem]),
             yMax = Math.max.apply(null, maxList[this.state.yItem]);
         if (this.state.xItem === 'z') {
-            xMax = xMax - xMin;
+            xMax = Math.min(xMax - xMin, 50);
             xMin = 0;
         }
         if (this.state.yItem === 'z') {
-            yMax = yMax - yMin;
+            yMax = Math.min(yMax - yMin, 50);
             yMin = 0;
         }
         return {xMinMax: [xMin, xMax], yMinMax: [yMin, yMax]};
@@ -1462,7 +1462,7 @@ export default class QueryBySketch extends React.Component{
             let minVal = Math.min.apply(null, this.state.minList[value]),
                 maxVal = Math.max.apply(null, this.state.maxList[value]);
             if (value === 'z') {
-                maxVal = maxVal - minVal;
+                maxVal = Math.min(maxVal - minVal, 50);
                 minVal = 0;
             }
 
@@ -1499,7 +1499,7 @@ export default class QueryBySketch extends React.Component{
             let minVal = Math.min.apply(null, this.state.minList[value]),
                 maxVal = Math.max.apply(null, this.state.maxList[value]);
             if (value === 'z') {
-                maxVal = maxVal - minVal;
+                maxVal = Math.min(maxVal - minVal, 50);
                 minVal = 0;
             }
 
@@ -1536,7 +1536,7 @@ export default class QueryBySketch extends React.Component{
         let minVal = Math.min.apply(null, this.state.minList[value]),
             maxVal = Math.max.apply(null, this.state.maxList[value]);
         if (value === 'z') {
-            maxVal = maxVal - minVal;
+            maxVal = Math.min(maxVal - minVal, 50);
             minVal = 0;
         }
         this.setValueSlider('sketchPadXRangeSlider', minVal, maxVal);
@@ -1549,7 +1549,7 @@ export default class QueryBySketch extends React.Component{
         let minVal = Math.min.apply(null, this.state.minList[value]),
             maxVal = Math.max.apply(null, this.state.maxList[value]);
         if (value === 'z') {
-            maxVal = maxVal - minVal;
+            maxVal = Math.min(maxVal - minVal, 50);
             minVal = 0;
         }
         this.setValueSlider('sketchPadYRangeSlider', minVal, maxVal);
@@ -1631,7 +1631,7 @@ export default class QueryBySketch extends React.Component{
         let min = Math.min.apply(null, this.state.minList[this.state.xItemonPanel]),
             max = Math.max.apply(null, this.state.maxList[this.state.xItemonPanel]);
         if (this.state.xItemonPanel === 'z') {
-            max = max - min;
+            max = Math.min(max - min, 50);
             min = 0;
         }
         let sliderRange = $('#sketchPadXRangeSlider').slider('option', 'values');
@@ -1660,7 +1660,7 @@ export default class QueryBySketch extends React.Component{
         let min = Math.min.apply(null, this.state.minList[this.state.yItemonPanel]),
             max = Math.max.apply(null, this.state.maxList[this.state.yItemonPanel]);
         if (this.state.yItemonPanel === 'z') {
-            max = max - min;
+            max = Math.min(max - min, 50);
             min = 0;
         }
         let sliderRange = $('#sketchPadYRangeSlider').slider('option', 'values');
@@ -2412,16 +2412,19 @@ export default class QueryBySketch extends React.Component{
             max: 100,
             values: [ 0, 100 ],
             slide: function (event, ui) {
-                sliderMin.css('display', 'initial');
-                sliderMax.css('display', 'initial');
                 let minVal = ui.values[0] / 100 * (max - min) + min;
                 let maxVal = ui.values[1] / 100 * (max - min) + min;
                 sliderMin.val(formatValue(minVal));
                 sliderMax.val(formatValue(maxVal));
                 let minPos = -8 + 150 * ui.values[0] / 100;
                 let maxPos = - 8 + 150 - 150 * ui.values[1] / 100;
-                sliderMin.css('left', minPos + 'px');
-                sliderMax.css('right', maxPos + 'px');
+                if (ui.handleIndex === 0) {
+                    sliderMin.css('display', 'initial');
+                    sliderMin.css('left', minPos + 'px');
+                } else if (ui.handleIndex === 1) {
+                    sliderMax.css('display', 'initial');
+                    sliderMax.css('right', maxPos + 'px');
+                }
             }.bind(this),
             stop: function () {
                 sliderMin.css('display', 'none');
