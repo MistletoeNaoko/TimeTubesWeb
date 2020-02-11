@@ -140,6 +140,8 @@ class DataStore extends EventEmitter {
             let err = this.data[id].data.splines.radius.getPoint(tPos);
             // VJ, Flx(V), JD
             let col = this.data[id].data.splines.color.getPoint(tCol);
+            // PD, PA, JD
+            let PDPA = this.data[id].data.splines.PDPA.getPoint(tPos);
 
             return {
                 z: pos.z,
@@ -148,7 +150,9 @@ class DataStore extends EventEmitter {
                 y: pos.y,
                 r_y: err.y,
                 V: col.y,
-                H: col.x
+                H: col.x,
+                PD: PDPA.x,
+                PA: PDPA.y
             };
         }
     }

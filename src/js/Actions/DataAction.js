@@ -12,14 +12,18 @@ const dataHeaders = {
         r_x: 'E_Q/I',
         r_y: 'E_U/I',
         H: 'V-J',
-        V: 'Flx(V)'
+        V: 'Flx(V)',
+        PA: 'PA',
+        PD: 'PD'
     },
     AUPolar: {
         x: '< q >',
         y: '< u >',
         z: 'JD',
         r_x: 'rms(q)',
-        r_y: 'rms(u)'
+        r_y: 'rms(u)',
+        PA: 'PA',
+        PD: 'PD'
     },
     AUPhoto: {
         z: 'JD',
@@ -27,7 +31,7 @@ const dataHeaders = {
     }
 }
 
-const spatialVar = ['x', 'y', 'z', 'r_x', 'r_y', 'H', 'V'];
+const spatialVar = ['x', 'y', 'z', 'r_x', 'r_y', 'H', 'V', 'PA', 'PD'];
 
 export function uploadData(file) {
     // import data in a proper format
@@ -95,30 +99,6 @@ export function mergeData(ids) {
                 }
             });
         });
-}
-
-function runMergeData(ids) {
-    let mergedData = [];
-    let files = [];
-
-    for (let i = 0; i < ids.length; i++) {
-        let data = DataStore.getData(ids[i]);
-        mergedData = mergedData.concat(data.data.data);
-        files.push(data.name);
-    }
-    let fileNames = files.join(',');
-    mergedData.sort(function (a, b) {
-        let atmp = a.JD, btmp = b.JD;
-        if (Math.log10(a.JD) > 4)
-            atmp -= 2450000;
-        if (Math.log10(b.JD) > 4)
-            btmp -= 2450000;
-        return (atmp < btmp) ? -1 : 1;
-    })
-    let [spatialData, lookup] = extractData(mergedData);
-    let metaData = computeStats(spatialVar, spatialData);
-    let splines = computeSplines(spatialData);
-    return {fileName: fileNames, data: mergedData, spatial: spatialData, lookup: lookup, meta: metaData, splines: splines};
 }
 
 function loadFile(file) {
@@ -189,7 +169,18 @@ function extractData(data) {
         let photo = 'Flx(V)' in data[i] || 'V' in data[i];
         if (polar && photo) {
             for (let key in dataHeaders['HU']) {
-                result[i][key] = data[i][dataHeaders['HU'][key]];
+                if (dataHeaders['HU'][key] in data[i]) {
+                    result[i][key] = data[i][dataHeaders['HU'][key]];
+                } else if (dataHeaders['HU'][key] === 'PA') {
+                    let PAtmp = 0.5 * Math.atan2(data[i]['U/I'], data[i]['Q/I']) * 180 / Math.PI;
+                    if (PAtmp < 0) {
+                        PAtmp += 180;
+                    }
+                    result[i][key] = PAtmp;
+                } else if (dataHeaders['HU'][key] === 'PD') {
+                    result[i][key] = Math.sqrt(Math.pow(data[i]['Q/I'], 2) + Math.pow(data[i]['U/I'], 2)) * 100;
+                }
+
                 if (!lookup[key] || lookup[key].indexOf(dataHeaders['HU'][key]) < 0) {
                     if (!lookup[key])
                         lookup[key] = [];
@@ -206,7 +197,18 @@ function extractData(data) {
                         lookup[key].push(dataHeaders['AUPolar'][key]);
                     }
                 } else {
-                    result[i][key] = data[i][dataHeaders['AUPolar'][key]] || 0;
+                    if (dataHeaders['AUPolar'][key] in data[i]) {
+                        result[i][key] = data[i][dataHeaders['AUPolar'][key]] || 0;
+                    } else if (dataHeaders['AUPolar'][key] === 'PA') {
+                        let PAtmp = 0.5 * Math.atan2(data[i]['< u >'], data[i]['< q >']) * 180 / Math.PI;
+                        if (PAtmp < 0) {
+                            PAtmp += 180;
+                        }
+                        result[i][key] = PAtmp;
+                    } else if (dataHeaders['AUPolar'][key] === 'PD') {
+                        result[i][key] = Math.sqrt(Math.pow(data[i]['< q >'], 2) + Math.pow(data[i]['< u >'], 2)) * 100;
+                    }
+
                     if (!lookup[key] || lookup[key].indexOf(dataHeaders['AUPolar'][key]) < 0) {
                         if (!lookup[key])
                             lookup[key] = [];
@@ -287,11 +289,12 @@ function computeStats(lookup, data) {
 function computeSplines(data) {
     let line = [];
     let minZ = data[0].z;
-    let position = [], radius = [], color = [];
+    let position = [], radius = [], color = [], PDPA = [];
     data.forEach(function (e) {
         if ('x' in e) {
             position.push(new THREE.Vector3(e.x, e.y, e.z));
             radius.push(new THREE.Vector3(e.r_x, e.r_y, e.z));
+            PDPA.push(new THREE.Vector3(e.PD, e.PA, e.z));
         }
         if ('V' in e) {
             color.push(new THREE.Vector3(e.H, e.V, e.z));
@@ -303,6 +306,7 @@ function computeSplines(data) {
     spline.radius = new THREE.CatmullRomCurve3(radius, false, 'catmullrom');
     spline.color = new THREE.CatmullRomCurve3(color, false, 'catmullrom');
     spline.line = new THREE.CatmullRomCurve3(line, false, 'catmullrom');
+    spline.PDPA = new THREE.CatmullRomCurve3(PDPA, false, 'catmullrom');
     return {position: position, radius: radius, color: color, spline:spline};
 }
 

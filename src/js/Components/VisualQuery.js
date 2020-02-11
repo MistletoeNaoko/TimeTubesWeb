@@ -247,7 +247,7 @@ export default class VisualQuery extends React.Component {
                 } else {
                     label = lookup[key];
                 }
-                if (key !== 'z') {
+                if (key !== 'z' && key !== 'PA' && key !== 'PD') {
                     items.push(
                         <div className="form-check form-check-inline"
                              key={key}>
@@ -273,7 +273,7 @@ export default class VisualQuery extends React.Component {
                 <h5 onClick={this.collapseMatchingOptions}>Matching</h5>
                 <div id='matchingOptionsMain'>
                     <div id='ignoredVariablesArea' style={{display: (this.state.queryMode === 'QBE')? 'block': 'none'}}>
-                        <h6>Ignored variables</h6>
+                        <h6>Inactive variables</h6>
                         <form id='QBEIgnoredVariables' onChange={this.updateIgnoredVariables.bind(this)}>
                             {items}
                         </form>
@@ -472,6 +472,9 @@ export default class VisualQuery extends React.Component {
                     let period = FeatureStore.getSelectedPeriod();
                     // get what to ignore: this.getIgnoredVariables
                     let ignored = domActions.getIgnoredVariables();
+                    // PA,PD should always be inactive because PDPA and QIUI means same
+                    ignored.push('PD');
+                    ignored.push('PA');
                     let parameters = {};
                     parameters.QBE = {
                         normalize: normalization,

@@ -280,7 +280,7 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                             id: targetId,
                             start: i + minJD,
                             period: period[0] + minIdx,
-                            distancec: minVal,
+                            distance: minVal,
                             path: path
                         });//[targetId, i + minJD, period[0] + minIdx, minVal, path]);
                         i += step;
@@ -497,7 +497,6 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
                                 minIdx = j;
                             }
                         }
-
                         let minDist = [];
                         for (let j = 0; j < dist.length; j++) {
                             minDist.push(dist[j].slice(0, target.arrayLength - 1 - targetPeriod + (minIdx + 1) + 1));
