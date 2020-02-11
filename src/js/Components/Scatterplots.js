@@ -62,6 +62,10 @@ export default class Scatterplots extends React.Component{
         TimeTubesStore.on('changePlotColor', (id) => {
             if (id === this.id) {
                 this.changePlotColor(TimeTubesStore.getPlotColor(id));
+            } else if (this.data.data.merge) {
+                if (this.data.data.name.indexOf(DataStore.getData(id).data.name) >= 0) {
+                    this.changePlotColorMerge(DataStore.getData(id).data.name, TimeTubesStore.getPlotColor(id));
+                }
             }
         });
         TimeTubesStore.on('showRotationCenter', (id, period, center) => {
@@ -545,6 +549,17 @@ export default class Scatterplots extends React.Component{
     changePlotColor(color) {
         d3.select('#' + this.divID)
             .selectAll('circle')
+            .attr('fill', function(d) {
+                return color;
+            });
+    }
+
+    changePlotColorMerge(sourceName, color) {
+        d3.select('#' + this.divID)
+            .selectAll('circle')
+            .filter(function(d) {
+                return sourceName.indexOf(d.source) >= 0;
+            })
             .attr('fill', color);
     }
 
