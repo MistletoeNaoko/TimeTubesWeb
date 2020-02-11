@@ -9,7 +9,6 @@ export default class Controllers extends React.Component{
     constructor() {
         super();
         this.state = {
-            data: DataStore.getAllData(),
             fileType: 'csv',
             grid: true,
             label: true,
@@ -27,10 +26,7 @@ export default class Controllers extends React.Component{
         this.setAverageSlider();
 
         DataStore.on('upload', () => {
-            this.setState({
-                data: DataStore.getAllData()
-            });
-            if (document.getElementsByClassName('TimeTubes').length > 1) {
+            if (DataStore.getAllData().length > 1) {
                 this.setState({
                     multiOptions: true
                 });

@@ -185,8 +185,8 @@ function extractData(data) {
     let result = [], lookup = {};
     for (let i = 0; i < data.length; i++) {
         result[i] = {};
-        let polar = data[i]['Q/I'] || data[i]['< q >'];
-        let photo = data[i]['Flx(V)'] || data[i]['V'];
+        let polar = 'Q/I' in data[i] || '< q >' in data[i];
+        let photo = 'Flx(V)' in data[i] || 'V' in data[i];
         if (polar && photo) {
             for (let key in dataHeaders['HU']) {
                 result[i][key] = data[i][dataHeaders['HU'][key]];
