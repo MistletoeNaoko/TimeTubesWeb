@@ -468,8 +468,8 @@ export default class QueryBySketch extends React.Component{
                                 // show a value from the current width
                                 $('#valueAssignmentCheckbox_' + key).prop('disabled', true);
                                 $('#slider_' + key).css('display', 'none');
-                                let minRad = Math.min.apply(null, this.radiuses),
-                                    maxRad = Math.max.apply(null, this.radiuses);
+                                
+                                let [minRad, maxRad] = d3.extent(this.controlPoints, d => d.radius);
                                 let minVal = Math.min.apply(null, this.state.minList[key]),
                                     maxVal = Math.max.apply(null, this.state.maxList[key]);
                                 let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
@@ -477,7 +477,7 @@ export default class QueryBySketch extends React.Component{
                                     maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
 
                                 $('#widthValue_' + key).css('display', 'block');
-                                $('#widthValue_' + key).text(formatValue((maxRange - minRange) / (maxRad - minRad) * (this.radiuses[this.highlightedPointIdx] - minRad) + minRange));
+                                $('#widthValue_' + key).text(formatValue((maxRange - minRange) / (maxRad - minRad) * (this.controlPoints[this.highlightedPointIdx].radius - minRad) + minRange));
                             }
                         } else {
                             // if some variables are already assigned
@@ -516,8 +516,8 @@ export default class QueryBySketch extends React.Component{
                                 // show a value from the current width
                                 $('#valueAssignmentCheckbox_' + key).prop('disabled', true);
                                 $('#slider_' + key).css('display', 'none');
-                                let minRad = Math.min.apply(null, this.radiuses),
-                                    maxRad = Math.max.apply(null, this.radiuses);
+                                
+                                let [minRad, maxRad] = d3.extent(this.controlPoints, d => d.radius);
                                 let minVal = Math.min.apply(null, this.state.minList[key]),
                                     maxVal = Math.max.apply(null, this.state.maxList[key]);
                                 let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
@@ -525,7 +525,7 @@ export default class QueryBySketch extends React.Component{
                                     maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
 
                                 $('#widthValue_' + key).css('display', 'block');
-                                $('#widthValue_' + key).text(formatValue((maxRange - minRange) / (maxRad - minRad) * (this.radiuses[this.highlightedPointIdx] - minRad) + minRange));
+                                $('#widthValue_' + key).text(formatValue((maxRange - minRange) / (maxRad - minRad) * (this.controlPoints[this.highlightedPointIdx].radius - minRad) + minRange));
                             }
                         }
                     }
@@ -583,10 +583,10 @@ export default class QueryBySketch extends React.Component{
                             }
 
                             if (this.state.detectWidth) {
-                                let r0 = this.radiuses[curve.segment1.index],
-                                    r2 = this.radiuses[curve.segment2.index];
+                                let r0 = this.controlPoints[curve.segment1.index].radius,
+                                    r2 = this.controlPoints[curve.segment2.index + 1].radius;
                                 let r1 = (r2 - r0) * curve.length / originalCurveLen + r0;
-                                this.radiuses.splice(curve.segment2.index, 0, r1);
+                                this.controlPoints[curve.segment2.index].radius = r1;
                                 this.pathWidth.remove();
                                 this.pathWidth = null;
                                 this.drawPathWidth();
@@ -601,7 +601,6 @@ export default class QueryBySketch extends React.Component{
                             this.path.removeSegment(removedIdx);
                             this.controlPoints.splice(removedIdx, 1);
                             if (this.state.detectWidth) {
-                                this.radiuses.splice(removedIdx, 1);
                                 this.pathWidth.remove();
                                 this.pathWidth = null;
                                 this.drawPathWidth();
@@ -741,9 +740,9 @@ export default class QueryBySketch extends React.Component{
                                 for (let i = 0; i < this.selectedIdx - 1; i++) {
                                     curveLen += this.path.curves[i].length;
                                 }
-                                let r0 = this.radiuses[this.selectedIdx - 1],
-                                    r1 = this.radiuses[this.selectedIdx],
-                                    r2 = this.radiuses[this.selectedIdx + 1];
+                                let r0 = this.controlPoints[this.selectedIdx - 1].radius,
+                                    r1 = this.controlPoints[this.selectedIdx].radius,
+                                    r2 = this.controlPoints[this.selectedIdx + 1].radius;
                                 // change the one before the point
                                 let currentCurveLen = this.path.curves[this.selectedIdx - 1].length;
                                 for (let i = 1; i < this.curveSegment; i++) {
@@ -789,8 +788,8 @@ export default class QueryBySketch extends React.Component{
                                 }
                             } else if (this.selectedIdx === 0) {
                                 // move the curve after the point
-                                let r0 = this.radiuses[0],
-                                    r1 = this.radiuses[1];
+                                let r0 = this.controlPoints[0].radius,
+                                    r1 = this.controlPoints[1].radius;
                                 let currentCurveLen = this.path.curves[0].length;
                                 for (let i = 0; i < this.curveSegment; i++) {
                                     let rj = (r1 - r0) * i / this.curveSegment + r0;
@@ -821,8 +820,8 @@ export default class QueryBySketch extends React.Component{
                                     curveLen += this.path.curves[i].length;
                                 }
                                 // move the curve before the point
-                                let r0 = this.radiuses[this.selectedIdx - 1],
-                                    r1 = this.radiuses[this.selectedIdx];
+                                let r0 = this.controlPoints[this.selectedIdx - 1].radius,
+                                    r1 = this.controlPoints[this.selectedIdx].radius;
                                 // change the one before the point
                                 let currentCurveLen = this.path.curves[this.selectedIdx - 1].length;
                                 for (let i = 1; i <= this.curveSegment; i++) {
@@ -938,7 +937,6 @@ export default class QueryBySketch extends React.Component{
 
                             // get the radius value of each point on the simplified path
                             let idxOriginal = 0, idxSimple = 0;
-                            let radiusesSimple = [];
                             while (idxOriginal < segments.length && idxSimple < this.path.segments.length) {
                                 if (segments[idxOriginal].point.x === this.path.segments[idxSimple].point.x
                                     && segments[idxOriginal].point.y === this.path.segments[idxSimple].point.y) {
@@ -952,15 +950,14 @@ export default class QueryBySketch extends React.Component{
                                         count++;
                                     }
                                     radTmp /= count;
-                                    radiusesSimple.push(radTmp);
+                                    this.controlPoints[idxSimple].radius = radTmp;
                                     idxOriginal++;
                                     idxSimple++;
                                     continue;
                                 }
                                 idxOriginal++;
                             }
-                            this.radiuses = radiusesSimple;
-
+                            this.radiuses = [];
                             // compute the upper/lower points of the simplified curve
                             this.drawPathWidth();
                             this.penSizeCircle.remove();
@@ -979,7 +976,7 @@ export default class QueryBySketch extends React.Component{
                             let delX = this.penSizeCircle.segments[0].point.x - this.selectedPoint.point.x,
                                 delY = this.penSizeCircle.segments[0].point.y - this.selectedPoint.point.y;
                             let size = Math.sqrt(delX * delX + delY * delY);
-                            this.radiuses[this.selectedIdx] = size;
+                            this.controlPoints[this.selectedIdx].radius = size;
                             this.selectedHandle = null;
                             this.selectedPoint = null;
                             this.selectedIdx = -1;
@@ -1003,14 +1000,14 @@ export default class QueryBySketch extends React.Component{
             let upperPoints = [], lowerPoints = [];
             let curveLen = 0;
             for (let i = 0; i < this.path.curves.length; i++) {
-                let r0 = this.radiuses[i],
-                    r1 = this.radiuses[i + 1];
+                let r0 = this.controlPoints[i].radius,
+                    r1 = this.controlPoints[i + 1].radius;
                 let currentCurveLen = this.path.curves[i].length;
                 for (let j = 0; j < this.curveSegment; j++) {
                     let rj = (r1 - r0) * j / this.curveSegment + r0;
                     let p = this.path.getPointAt(curveLen + currentCurveLen / this.curveSegment * j);
                     let delta;
-                    if (j === 0 || ( this.path.segments[i].handleOut.x !== 0 && this.path.segments[i].handleOut.y !== 0) ) {
+                    if (j === 0 && this.path.segments[i].handleOut.x !== 0 && this.path.segments[i].handleOut.y !== 0) {
                         delta = new paper.Point(this.path.segments[i].handleOut.x, this.path.segments[i].handleOut.y);
                     } else {
                         let p0 = this.segPoints[this.segPoints.length - 1];
@@ -1025,7 +1022,7 @@ export default class QueryBySketch extends React.Component{
                 curveLen += currentCurveLen;
             }
             // add the last point of the path
-            let rj = this.radiuses[this.radiuses.length - 1];
+            let rj = this.controlPoints[this.controlPoints.length - 1].radius;
             let p = this.path.segments[this.path.segments.length - 1].point;
             let p0 = this.segPoints[this.segPoints.length - 1];
             let delta = new paper.Point(p.x - p0.x, p.y - p0.y);
@@ -1101,8 +1098,7 @@ export default class QueryBySketch extends React.Component{
                         pointBefore;
                     let radRange = [], valueRange = [];
                     if (this.widthVar) {
-                        let minRad = Math.min.apply(null, this.radiuses),
-                            maxRad = Math.max.apply(null, this.radiuses);
+                        let [minRad, maxRad] = d3.extent(this.controlPoints, d => d.radius);
                         let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
                             maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
                         let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
@@ -1130,8 +1126,8 @@ export default class QueryBySketch extends React.Component{
                                     query[key].push(this.yScale.invert(point.y));
                                 } else if (key === this.widthVar) {
                                     // convert width into value
-                                    let width = (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
-                                        * (del * i - totalCurveLen) / currentLen + this.radiuses[curveIdx];
+                                    let width = (this.controlPoints[curveIdx + 1].radius - this.controlPoints[curveIdx].radius)
+                                        * (del * i - totalCurveLen) / currentLen + this.controlPoints[curveIdx].radius;
                                     query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
                                 } else {
                                     query[key].push(null);
@@ -1195,8 +1191,7 @@ export default class QueryBySketch extends React.Component{
                 // for converting the width into value
                 let radRange = [], valueRange = [];
                 if (this.widthVar) {
-                    let minRad = Math.min.apply(null, this.radiuses),
-                        maxRad = Math.max.apply(null, this.radiuses);
+                    let [minRad, maxRad] = d3.extent(this.controlPoints, d => d.radius);
                     let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
                         maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
                     let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
@@ -1226,8 +1221,8 @@ export default class QueryBySketch extends React.Component{
                             if (key === this.state.yItem) {
                                 query[key].push(this.yScale.invert(hitResult[0].point.y));
                             } else if (key === this.widthVar) {
-                                let width =  (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
-                                        * (offset - totalCurveLen) / currentLen + this.radiuses[curveIdx];
+                                let width =  (this.controlPoints[curveIdx + 1].radius - this.controlPoints[curveIdx].radius)
+                                        * (offset - totalCurveLen) / currentLen + this.controlPoints[curveIdx].radius;
                                 // convert width into value
                                 query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
                             } else if (key !== 'z') {
@@ -1294,8 +1289,7 @@ export default class QueryBySketch extends React.Component{
                 // for converting the width into value
                 let radRange = [], valueRange = [];
                 if (this.widthVar) {
-                    let minRad = Math.min.apply(null, this.radiuses),
-                        maxRad = Math.max.apply(null, this.radiuses);
+                    let [minRad, maxRad] = d3.extent(this.controlPoints, d => d.radius);
                     let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
                         maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
                     let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
@@ -1318,8 +1312,8 @@ export default class QueryBySketch extends React.Component{
                         if (key === xItem) {
                             query[key].push(this.xScale.invert(hitResult[0].point.x));
                         } else if (key === this.widthVar) {
-                            let width =  (this.radiuses[curveIdx + 1] - this.radiuses[curveIdx])
-                                    * (offset - totalCurveLen) / currentLen + this.radiuses[curveIdx];
+                            let width =  (this.controlPoints[curveIdx + 1].radius - this.controlPoints[curveIdx].radius)
+                                    * (offset - totalCurveLen) / currentLen + this.controlPoints[curveIdx].radius;
                             // convert width into value
                             query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
                         } else if (key !== 'z') {
@@ -1450,7 +1444,6 @@ export default class QueryBySketch extends React.Component{
 
             // get the radius value of each point on the simplified path
             let idxOriginal = 0, idxSimple = 0;
-            let radiusesSimple = [];
             while (idxOriginal < segments.length && idxSimple < this.path.segments.length) {
                 if (segments[idxOriginal].point.x === this.path.segments[idxSimple].point.x
                     && segments[idxOriginal].point.y === this.path.segments[idxSimple].point.y) {
@@ -1464,14 +1457,14 @@ export default class QueryBySketch extends React.Component{
                         count++;
                     }
                     radTmp /= count;
-                    radiusesSimple.push(radTmp);
+                    this.controlPoints[idxSimple].radius = radTmp;
                     idxOriginal++;
                     idxSimple++;
                     continue;
                 }
                 idxOriginal++;
             }
-            this.radiuses = radiusesSimple;
+            this.radiuses = [];
             this.drawPathWidth();
         }
     }
@@ -2132,8 +2125,10 @@ export default class QueryBySketch extends React.Component{
                 }
                 if (query.widthVar) {
                     this.widthVar = query.widthVar;
-                    this.changeWidthVariable(this.widthVar);
-                    this.radiuses = query.radiuses;
+                    this.changeWidthVariable(this.widthVar, query.widthRange);
+                    for (let i = 0; i < this.controlPoints.length; i++) {
+                        this.controlPoints[i].radius = query.controlPoints[i].radius;
+                    }
                     this.drawPathWidth();
                 }
                 for (let i = 0; i < this.controlPoints.length; i++) {
@@ -2170,6 +2165,11 @@ export default class QueryBySketch extends React.Component{
 
     exportQuery() {
         if (this.path) {
+            let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
+                maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
+            let widthRange = $('#sketchWidthSlider').slider('option', 'values');
+            let minRange = widthRange[0] / 100 * (maxVal - minVal) + minVal,
+                maxRange = widthRange[1] / 100 * (maxVal - minVal) + minVal;
             let query = {
                 type: 'Query-by-sketch',
                 xItem: this.state.xItem,
@@ -2178,7 +2178,7 @@ export default class QueryBySketch extends React.Component{
                 yRange: this.yScale.domain(),
                 controlPoints: this.controlPoints,
                 widthVar: this.widthVar,
-                radiuses: this.radiuses,
+                widthRange: [minRange, maxRange],
                 path: this.path.segments,
                 queryLength: Number($('#periodOfSketchQuery').val()),
                 size: this.state.size
@@ -2312,7 +2312,7 @@ export default class QueryBySketch extends React.Component{
         }
     }
 
-    changeWidthVariable(value) {
+    changeWidthVariable(value, range) {
         let variableList = document.getElementById('widthVariables');
         let idx = -1;
         if (variableList && variableList.options.length > 0) {
@@ -2324,6 +2324,13 @@ export default class QueryBySketch extends React.Component{
         }
         if (idx < variableList.options.length) {
             variableList.selectedIndex = idx;
+        }
+        if (range !== undefined) {
+            let minVal = Math.min.apply(null, this.state.minList[value]),
+                maxVal = Math.max.apply(null, this.state.maxList[value]);
+            let minPos = (range[0] - minVal) / (maxVal - minVal) * 100,
+                maxPos = (range[1] - minVal) / (maxVal - minVal) * 100;
+            $('#sketchWidthSlider').slider('option', 'values', [minPos, maxPos]);
         }
     }
 
