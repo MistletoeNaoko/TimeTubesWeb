@@ -71,6 +71,8 @@ export default class QueryBySketch extends React.Component{
         // for setup sliders and pass the slider values to scale
         this.xMinMax = [];
         this.yMinMax= [];
+        // store time slice information when performing result querying
+        this.queryData = {};
     }
 
     componentDidMount() {
@@ -129,12 +131,15 @@ export default class QueryBySketch extends React.Component{
             if (FeatureStore.getMode() === 'QBS') {
                 if (this.path) {
                     this.path.remove();
+                    this.path = null;
                 }
                 if (this.pathWidth) {
                     this.pathWidth.remove();
+                    this.pathWidth = null;
                 }
                 if (this.penSizeCircle) {
                     this.penSizeCircle.remove();
+                    this.penSizeCircle = null;
                 }
                 for (let i = 0; i < this.controlPoints.length; i++) {
                     if (this.controlPoints[i].label) {
@@ -150,7 +155,13 @@ export default class QueryBySketch extends React.Component{
                 this.pathUpper = null;
                 this.pathLower = null;
                 this.segPoints = [];
-                this.transformDataIntoSketch(id, period, ignored);
+                
+                this.queryData = {
+                    id: id,
+                    period: period,
+                    targetData: DataStore.getDataArray(id, 1)
+                };
+                this.transformDataIntoSketch(this.state.xItem, this.state.yItem);
             }
         });
     }
@@ -298,12 +309,15 @@ export default class QueryBySketch extends React.Component{
     clearCanvas() {
         if (this.path) {
             this.path.remove();
+            this.path = null;
         }
         if (this.pathWidth) {
             this.pathWidth.remove();
+            this.pathWidth = null;
         }
         if (this.penSizeCircle) {
             this.penSizeCircle.remove();
+            this.penSizeCircle = null;
         }
         for (let i = 0; i < this.controlPoints.length; i++) {
             if (this.controlPoints[i].label) {
@@ -317,6 +331,7 @@ export default class QueryBySketch extends React.Component{
         this.controlPoints = [];
         this.timeStamps = [];
         this.radiuses = [];
+        this.queryData = {};
     }
 
     CanvasOnTouchMove() {
@@ -573,6 +588,7 @@ export default class QueryBySketch extends React.Component{
                                 let r1 = (r2 - r0) * curve.length / originalCurveLen + r0;
                                 this.radiuses.splice(curve.segment2.index, 0, r1);
                                 this.pathWidth.remove();
+                                this.pathWidth = null;
                                 this.drawPathWidth();
                             }
                         }
@@ -587,6 +603,7 @@ export default class QueryBySketch extends React.Component{
                             if (this.state.detectWidth) {
                                 this.radiuses.splice(removedIdx, 1);
                                 this.pathWidth.remove();
+                                this.pathWidth = null;
                                 this.drawPathWidth();
                             }
                         }
@@ -837,6 +854,7 @@ export default class QueryBySketch extends React.Component{
                             let mergedPoints = this.pathUpper.concat(reversedLower);
 
                             this.pathWidth.remove();
+                            this.pathWidth = null;
                             this.pathWidth = new paper.Path({
                                 segments: mergedPoints,
                                 strokeColor: '#325D88',
@@ -912,6 +930,7 @@ export default class QueryBySketch extends React.Component{
 
                             // remove the temporal width path
                             this.pathWidth.remove();
+                            this.pathWidth = null;
 
                             // simplificationDeg should be odd (- - * + +: * is the value of the point)
                             let simplificationDeg = segments.length / this.path.segments.length;
@@ -965,6 +984,7 @@ export default class QueryBySketch extends React.Component{
                             this.selectedPoint = null;
                             this.selectedIdx = -1;
                             this.pathWidth.remove();
+                            this.pathWidth = null;
                             this.drawPathWidth();
                             this.penSizeCircle.remove();
                         }
@@ -990,7 +1010,7 @@ export default class QueryBySketch extends React.Component{
                     let rj = (r1 - r0) * j / this.curveSegment + r0;
                     let p = this.path.getPointAt(curveLen + currentCurveLen / this.curveSegment * j);
                     let delta;
-                    if (j === 0 && this.path.segments[i].handleOut.x !== 0 && this.path.segments[i].handleOut.y !== 0) {
+                    if (j === 0 || ( this.path.segments[i].handleOut.x !== 0 && this.path.segments[i].handleOut.y !== 0) ) {
                         delta = new paper.Point(this.path.segments[i].handleOut.x, this.path.segments[i].handleOut.y);
                     } else {
                         let p0 = this.segPoints[this.segPoints.length - 1];
@@ -1358,14 +1378,14 @@ export default class QueryBySketch extends React.Component{
         }
     }
 
-    transformDataIntoSketch(id, period) {
-        let targetData = DataStore.getDataArray(id, 1);
-        let minIdx = targetData.z.indexOf(period[0]),
-            maxIdx = targetData.z.indexOf(period[1]);
+    transformDataIntoSketch(xItem, yItem) {
+        let targetData = this.queryData.targetData;
+        let minIdx = targetData.z.indexOf(this.queryData.period[0]),
+            maxIdx = targetData.z.indexOf(this.queryData.period[1]);
 
-        if (this.state.xItem !== 'z' && this.state.yItem !== 'z') {
-            let xData = targetData[this.state.xItem].slice(minIdx, maxIdx + 1),
-                yData = targetData[this.state.yItem].slice(minIdx, maxIdx + 1);
+        if (xItem !== 'z' && yItem !== 'z') {
+            let xData = targetData[xItem].slice(minIdx, maxIdx + 1),
+                yData = targetData[yItem].slice(minIdx, maxIdx + 1);
             
             this.path = new paper.Path();
             this.path.strokeColor = 'black';
@@ -1374,8 +1394,8 @@ export default class QueryBySketch extends React.Component{
             for (let i = 0; i < xData.length; i++) {
                 this.path.add(new paper.Point(this.xScale(xData[i]), this.yScale(yData[i])));
             }
-        } else if (this.state.xItem === 'z') {
-            let yData = targetData[this.state.yItem].slice(minIdx, maxIdx + 1);
+        } else if (xItem === 'z') {
+            let yData = targetData[yItem].slice(minIdx, maxIdx + 1);
 
             // put the sketch at the center in the horizontal direction
             let delta = Math.floor(this.xScale.domain()[1] / 2) - Math.floor(yData.length / 2);
@@ -1386,8 +1406,8 @@ export default class QueryBySketch extends React.Component{
             for (let i = 0; i < yData.length; i++) {
                 this.path.add(new paper.Point(this.xScale(i + delta), this.yScale(yData[i])));
             }
-        } else if (this.state.yItem === 'z') {
-            let xData = targetData[this.state.xItem].slice(minIdx, maxIdx + 1);
+        } else if (yItem === 'z') {
+            let xData = targetData[xItem].slice(minIdx, maxIdx + 1);
 
             // put the sketch at the center in the horizontal direction
             let delta = Math.floor(this.yScale.domain()[1] / 2) - Math.floor(xData.length / 2);
@@ -1647,6 +1667,7 @@ export default class QueryBySketch extends React.Component{
             $('#periodOfSketchQuery').val(20);
         }
         this.convertSketchIntoQuery(this.state.xItemonPanel, this.state.yItem);
+        this.recoverStroke(this.state.xItemonPanel, this.state.yItem);
     }
 
     changeYAxis() {
@@ -1676,6 +1697,33 @@ export default class QueryBySketch extends React.Component{
             $('#periodOfSketchQuery').val(20);
         }
         this.convertSketchIntoQuery();
+        this.recoverStroke(this.state.xItem, this.state.yItemonPanel);
+    }
+
+    recoverStroke(xItem, yItem) {
+        if (Object.keys(this.queryData).length === 0) {
+            if (this.path) {
+                let path = this.path;
+                this.path = new paper.Path({
+                    segments: path.segments,
+                    strokeColor: 'black',
+                    strokeWidth: 5
+                });
+            }
+            if (this.pathWidth) {
+                let pathWidth = this.pathWidth;
+                this.pathWidth = new paper.Path({
+                    segments: pathWidth.segments,
+                    strokeColor: '#325D88',
+                    strokeWidth: 1,
+                    fillColor: '#29ABE0',
+                    opacity: 0.5
+                });
+                this.pathWidth.sendToBack();
+            }
+        } else {
+            this.transformDataIntoSketch(xItem, yItem);
+        }
     }
 
     selectPen() {
@@ -2230,7 +2278,9 @@ export default class QueryBySketch extends React.Component{
             // if path width is already assigned, remove the width
             if (this.pathWidth) {
                 this.pathWidth.remove();
+                this.pathWidth = null;
             }
+
             this.convertSketchIntoQuery(this.state.xItem, this.state.yItem);
             $('img[name=QBSSelector]').each(function() {
                 if ($(this).attr('value') === 'changeWidth') {
