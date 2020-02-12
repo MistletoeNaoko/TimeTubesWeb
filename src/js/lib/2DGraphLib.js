@@ -1,7 +1,7 @@
 export function tickFormatting(value) {
     let result = value;
     if (Math.log10(Math.abs(value)) < -2 && value !== 0) {
-        result = value.toExponential(0);
+        result = value.toExponential(1);
     }
     return result;
 }
