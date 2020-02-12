@@ -1,6 +1,7 @@
 import React from 'react';
 import * as d3 from 'd3';
 import * as FeatureAction from '../Actions/FeatureAction';
+import {tickFormatting} from '../lib/2DGraphLib';
 import {showExtractionResults} from '../lib/TimeSeriesQuerying';
 import AppStore from '../Stores/AppStore';
 import FeatureStore from '../Stores/FeatureStore';
@@ -86,13 +87,15 @@ export default class DistanceHistogram extends React.Component {
             .attr('height', this.height);
 
         let xRange = d3.extent(this.results, d => d.distance);
-        xRange[0] = Math.floor(xRange[0]);
-        xRange[1] = Math.ceil(xRange[1]);
+        // xRange[0] = Math.floor(xRange[0]);
+        // xRange[1] = Math.ceil(xRange[1]);
 
         this.xScale
             .domain(xRange)
-            .range([0, width]);
-        this.xLabel = d3.axisBottom(this.xScale);
+            .range([0, width])
+            .nice();
+        this.xLabel = d3.axisBottom(this.xScale)
+            .tickFormat(tickFormatting);
         this.xAxis
             .attr('transform', 'translate(' + this.margin.left + ',' + (this.margin.top + height) + ')')
             .call(this.xLabel);
@@ -105,6 +108,7 @@ export default class DistanceHistogram extends React.Component {
             .thresholds(this.xScale.ticks(Math.min(20, Math.floor(this.results.length / 4))));
         
         this.bins = histogram(this.results);
+
         this.yScale
             .range([height, 0])
             .domain([0, d3.max(this.bins, function(d) {
