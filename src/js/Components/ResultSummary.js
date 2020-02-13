@@ -4,7 +4,7 @@ import {formatValue} from '../lib/2DGraphLib';
 import {resizeExtractionResultsArea} from '../Actions/AppAction';
 import * as FeatureAction from '../Actions/FeatureAction';
 import * as d3 from 'd3';
-import * as lodash from 'lodash';
+import {isEqual} from 'lodash';
 import FeatureStore from '../Stores/FeatureStore';
 import DataStore from '../Stores/DataStore';
 
@@ -59,13 +59,13 @@ export default class ResultSummary extends React.Component {
             // check the focused result is the same with this result
             if (result.V !== undefined && this.result.flares) {
                 for (let i = 0; i < this.result.flares.length; i++) {
-                    if (lodash.isEqual(this.result.flares[i], result)) {
+                    if (isEqual(this.result.flares[i], result)) {
                         flag = true;
                         break;
                     }
                 }
             } else {
-                if (lodash.isEqual(this.result, result)) {
+                if (isEqual(this.result, result)) {
                     flag = true;
                 }
             }
@@ -86,13 +86,13 @@ export default class ResultSummary extends React.Component {
             // check the focused result is the same with this result
             if (result.V !== undefined && this.result.flares) {
                 for (let i = 0; i < this.result.flares.length; i++) {
-                    if (lodash.isEqual(this.result.flares[i], result)) {
+                    if (isEqual(this.result.flares[i], result)) {
                         flag = true;
                         break;
                     }
                 }
             } else {
-                if (lodash.isEqual(this.result, result)) {
+                if (isEqual(this.result, result)) {
                     flag = true;
                 }
             }
