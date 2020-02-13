@@ -14,7 +14,7 @@ export function makeQueryfromQBE(source, period, ignored, coordinates) {
     let roundedPeriod = [Math.floor(period[0]), Math.ceil(period[1])];
     let minJD = DataStore.getData(source).data.meta.min.z;
     let lookup = DataStore.getData(source).data.lookup;
-    let query = {}, keys = [];
+    let queryVal = {}, keys = [];
     for (let key in lookup) {
         if (ignored.indexOf(key) < 0) {
             keys.push(key);
@@ -22,20 +22,20 @@ export function makeQueryfromQBE(source, period, ignored, coordinates) {
     }
     if (coordinates === 'rectangular') {
         for (let keyIdx = 0; keyIdx < keys.length; keyIdx++) {
-            query[keys[keyIdx]] = [];
+            queryVal[keys[keyIdx]] = [];
         }
         for (let i = roundedPeriod[0]; i <= roundedPeriod[1]; i++) {
             let values = DataStore.getValues(source, i - minJD);
-            for (let key in query) {
+            for (let key in queryVal) {
                 if (key !== 'z') {
-                    query[key].push(values[key]);
+                    queryVal[key].push(values[key]);
                 } else if (key === 'z') {
-                    query[key].push(i);
+                    queryVal[key].push(i);
                 }
             }
         }
-        query['minJD'] = roundedPeriod[0];
-        query['arrayLength'] = roundedPeriod[1] - roundedPeriod[0] + 1;
+        queryVal['minJD'] = roundedPeriod[0];
+        queryVal['arrayLength'] = roundedPeriod[1] - roundedPeriod[0] + 1;
     } else if (coordinates === 'polar') {
         // to use polar coordinate, both of x and y axis information are necessary
         if (keys.indexOf('x') < 0 || keys.indexOf('y') < 0) {
@@ -43,33 +43,43 @@ export function makeQueryfromQBE(source, period, ignored, coordinates) {
         } else {
             for (let keyIdx = 0; keyIdx < keys.length; keyIdx++) {
                 if (keys[keyIdx] === 'x') {
-                    query.r = [];
+                    queryVal.r = [];
                 } else if (keys[keyIdx] === 'y') {
-                    query.theta = [];
+                    queryVal.theta = [];
                 } else {
-                    query[keys[keyIdx]] = [];
+                    queryVal[keys[keyIdx]] = [];
                 }
             }
             for (let i = roundedPeriod[0]; i <= roundedPeriod[1]; i++) {
                 let values = DataStore.getValues(source, i - minJD);
                 let r = Math.sqrt(Math.pow(values.x, 2) + Math.pow(values.y, 2));
-                let theta = convertRadToDeg(Math.atan2(values.x, values.y));
-                for (let key in query) {
+                let theta = convertRadToDeg(Math.atan2(values.y, values.x));
+                for (let key in queryVal) {
                     if (key === 'r') {
-                        query[key].push(r);
+                        queryVal[key].push(r);
                     } else if (key === 'theta') {
-                        query[key].push(theta);
+                        queryVal[key].push(theta);
                     } else if (key !== 'z') {
-                        query[key].push(values[key]);
+                        queryVal[key].push(values[key]);
                     } else if (key === 'z') {
-                        query[key].push(i);
+                        queryVal[key].push(i);
                     }
                 }
             }
-            query['minJD'] = roundedPeriod[0];
-            query['arrayLength'] = roundedPeriod[1] - roundedPeriod[0] + 1;
+            queryVal['minJD'] = roundedPeriod[0];
+            queryVal['arrayLength'] = roundedPeriod[1] - roundedPeriod[0] + 1;
         }
     }
+    let query = {
+        mode: 'visual query',
+        option: 'query-by-example',
+        query: {
+            source: DataStore.getData(Number(FeatureStore.getSource())).name,
+            period: roundedPeriod,
+            inactiveVariables: ignored
+        },
+        values: queryVal
+    };
     return query;
 }
 
@@ -85,7 +95,7 @@ export function makeQueryPolarQBS(query) {
             let r = [], theta = [];
             for (let i = 0; i < query.arrayLength; i++) {
                 let rValue = Math.sqrt(Math.pow(query.x[i], 2) + Math.pow(query.y[i], 2));
-                let thetaValue = convertRadToDeg(Math.atan2(query.x[i], query.y[i]));
+                let thetaValue = convertRadToDeg(Math.atan2(query.y[i], query.x[i]));
                 r.push(rValue);
                 theta.push(thetaValue);
             }
@@ -125,7 +135,7 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
             let r = [], theta = [];
             for (let i = 0; i < targetData.arrayLength; i++) {
                 r.push(Math.sqrt(Math.pow(targetData.x[i], 2) + Math.pow(targetData.y[i], 2)));
-                theta.push(convertRadToDeg(Math.atan2(targetData.x[i], targetData.y[i])));
+                theta.push(convertRadToDeg(Math.atan2(targetData.y[i], targetData.x[i])));
             }
             newTargetData.r = r;
             newTargetData.theta = theta;
@@ -382,7 +392,7 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
             let r = [], theta = [];
             for (let i = 0; i < targetData.arrayLength; i++) {
                 r.push(Math.sqrt(Math.pow(targetData.x[i], 2) + Math.pow(targetData.y[i], 2)));
-                theta.push(convertRadToDeg(Math.atan2(targetData.x[i], targetData.y[i])));
+                theta.push(convertRadToDeg(Math.atan2(targetData.y[i], targetData.x[i])));
             }
             newTargetData.r = r;
             newTargetData.theta = theta;
@@ -1499,7 +1509,7 @@ export function convertRadToDeg(rad) {
     if (rad >= 0) {
         deg = rad * 180 / Math.PI;
     } else {
-        deg = (2 * Math.PI + rad) * 180 / Math.PI;
+        deg = (Math.PI * 2 + rad) * 180 / Math.PI;
     }
     return deg;
 }
