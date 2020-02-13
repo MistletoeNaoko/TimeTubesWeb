@@ -240,8 +240,7 @@ export default class ExtractionResults extends React.Component {
     submitComment(e) {
         // e.preventDefault();
         let options = {year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', hour12: false};
-        let id = dataLib.getUniqueId(),
-            userName = $('#userNameComment').val(),
+        let userName = $('#userNameComment').val(),
             accessibility = this.state.accessibility,
             comment = $('#textareaComment').val(),
             timeStamp = new Date().toLocaleString("en-US", options);
@@ -250,15 +249,15 @@ export default class ExtractionResults extends React.Component {
         let selectedColor = colorList.options[selectedIdx].value;
         if (accessibility === 'private') {
             let data = {
-                id: id,
                 timeStamp: timeStamp,
                 fileName: DataStore.getData(this.state.selected.id).name,
                 userName: userName,
                 labelColor: selectedColor,
                 start: this.state.selected.start,
+                period: ('period' in this.state.selected)? this.state.selected.period: undefined,
                 comment: comment,
             }
-            dataLib.addCommentData(data);
+            dataLib.addCommentData(data, FeatureStore.getQuery());
         } else if (accessibility == 'public') {
             // ToDo: Store in the database
         }

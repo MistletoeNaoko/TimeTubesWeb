@@ -27,17 +27,17 @@ export default class Comment extends React.Component {
     privateCommentListTr() {
         let table = [];
         if (this.state.privateComments) {
-            for (let i = 0; i < this.state.privateComments.length; i++) {
+            for (let id in this.state.privateComments) {
                 table.push(
-                    <tr key={i} className='privateCommentBody' id={this.state.privateComments[i].id}>
+                    <tr key={id} className='privateCommentBody' id={id}>
                         <td style={{textAlign: 'center'}}>
-                            <input type="checkbox" className={this.state.privateComments[i].id + ' selectComment'} name='privateCommentSelector'/>
+                            <input type="checkbox" className={id + ' selectComment'} name='privateCommentSelector'/>
                         </td>
-                        <td>{this.state.privateComments[i].timeStamp.toLocaleString('en-US')}</td>
-                        <td>{this.state.privateComments[i].fileName}</td>
-                        <td>{this.state.privateComments[i].start}</td>
-                        <td>{this.state.privateComments[i].comment}</td>
-                        <td>{this.state.privateComments[i].userName}</td>
+                        <td>{this.state.privateComments[id].timeStamp.toLocaleString('en-US')}</td>
+                        <td>{this.state.privateComments[id].fileName}</td>
+                        <td>{this.state.privateComments[id].start}</td>
+                        <td>{this.state.privateComments[id].comment}</td>
+                        <td>{this.state.privateComments[id].userName}</td>
                         {/* <td>
                             <button
                                 className='btn btn-primary btn-sm'

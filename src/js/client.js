@@ -4,8 +4,11 @@ import Layout from "./Pages/Layout";
 
 const app = document.getElementById('app');
 ReactDOM.render(<Layout/>, app);
-if (localStorage.privateComment === undefined) {
-    localStorage.setItem('privateComment', JSON.stringify([]));
+if (localStorage.getItem('privateComment') === null || localStorage.getItem('privateComment') === '[]') {
+    localStorage.setItem('privateComment', JSON.stringify({}));
+}
+if (localStorage.getItem('queryTable') === null || localStorage.getItem('queryTable') === '[]') {
+    localStorage.setItem('queryTable', JSON.stringify({}));
 }
 
 // const mongoose = require('mongoose');

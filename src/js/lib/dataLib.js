@@ -1,3 +1,4 @@
+import {isEqual} from 'lodash';
 // import * as fs from 'fs';
 
 // const fs = require('browserfs');
@@ -16,10 +17,64 @@
 //     httpObj.send(null);
 // }
 let privateComment = JSON.parse(localStorage.getItem('privateComment'));
+let queryTable = JSON.parse(localStorage.getItem('queryTable'));
 
-export function addCommentData(data) {
-    privateComment = JSON.parse(localStorage.getItem('privateComment'));
-    privateComment.push(data);
+export function addCommentData(comment, query) {
+    // Need to update privateComment and queryTable here 
+    // for the first time users
+    let commentId = getUniqueId();
+    if (privateComment === null) {
+        privateComment = JSON.parse(localStorage.getItem('privateComment'));
+    }
+    if (queryTable === null) {
+        queryTable = JSON.parse(localStorage.getItem('queryTable'));
+    } 
+    
+    // check whether the query has already existed or not
+    let queryFlag = false;
+    let id;
+    for (id in queryTable) {
+        // because id is assigned to the query in queryTable,
+        // the system has to check each property in the query
+
+        // check only when mode and option are the same for simplicity
+        if (queryTable[id].mode === query.mode 
+            && JSON.stringify(queryTable[id].option) === JSON.stringify(query.option)) {
+            let flagProperty = true;
+            for (let key in queryTable[id]) {
+                // if query and queryTable[i] is not the same
+                if (key === 'id') continue;
+                if (!(key in query) || !isEqual(query[key], queryTable[id][key])) {
+                    flagProperty = false;
+                    break;
+                }
+            }
+            if (flagProperty) {
+                queryFlag = true;
+                break;
+            } else {
+                continue;
+            }
+        }
+    }
+    
+    if (queryFlag) {
+        // the query have already been registered
+        comment.queryId = id;
+    } else {
+        // the query have not registered yet
+        let queryForRegister = {};
+        let queryId = getUniqueId();
+        for (let key in query) {
+            if (key !== 'values') {
+                queryForRegister[key] = query[key];
+            }
+        }
+        queryTable[queryId] = queryForRegister;
+        localStorage.setItem('queryTable', JSON.stringify(queryTable));
+        comment.queryId = queryId;
+    }
+    privateComment[commentId] = comment;
     localStorage.setItem('privateComment', JSON.stringify(privateComment));
 }
 
@@ -33,25 +88,35 @@ export function getDataFromLocalStorage(key) {
 }
 
 export function deletePrivateComment(id) {
+    let queryId;
     let flag = false;
-    for (let i = 0; i < privateComment.length; i++) {
-        if (privateComment[i].id === id) {
-            privateComment.splice(i, 1);
-            flag = true;
-            break;
-        }
+    if (id in privateComment) {
+        queryId = privateComment[id].queryId;
+        delete privateComment[id];
+        flag = true;
     }
     localStorage.setItem('privateComment', JSON.stringify(privateComment));
+
+    if (queryId) {
+        // check whether there are any queries which are no more used
+        let deleteQueryFlag = true;
+        for (let commentId in privateComment) {
+            if (privateComment[commentId].queryId === queryId) {
+                deleteQueryFlag = false;
+                break;
+            }
+        }
+        if (deleteQueryFlag) {
+            // delete a query because no comments refer to the query
+            delete queryTable[queryId];
+            localStorage.setItem('queryTable', JSON.stringify(queryTable));
+        }
+    }
     return flag;
 }
 
 export function getPrivateCommentFromId(id) {
-    for (let i = 0; i < privateComment.length; i++) {
-        if (privateComment[i].id === id) {
-            return privateComment[i];
-        }
-    }
-    return -1;
+    return privateComment[id];
 }
 
 export function exportPrivateComment(idList) {
