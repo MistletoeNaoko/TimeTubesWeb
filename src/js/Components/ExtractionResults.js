@@ -245,12 +245,16 @@ export default class ExtractionResults extends React.Component {
             accessibility = this.state.accessibility,
             comment = $('#textareaComment').val(),
             timeStamp = new Date().toLocaleString("en-US", options);
+        let colorList = document.getElementById('commentLabelColorList');
+        let selectedIdx = colorList.selectedIndex;
+        let selectedColor = colorList.options[selectedIdx].value;
         if (accessibility === 'private') {
             let data = {
                 id: id,
                 timeStamp: timeStamp,
                 fileName: DataStore.getData(this.state.selected.id).name,
                 userName: userName,
+                labelColor: selectedColor,
                 start: this.state.selected.start,
                 comment: comment,
             }
@@ -319,48 +323,38 @@ export default class ExtractionResults extends React.Component {
             if (this.state.selected.period && !this.state.selected.angle) {
                 let targetData = DataStore.getDataArray(this.state.selected.id, 1);
                 let query = FeatureStore.getQuery();
-                if (query.r) {
-                    // convert x and y to r and theta
-                    let r = [], theta = [];
-                    for (let i = 0; i < targetData.arrayLength; i++) {
-                        let rValue = Math.sqrt(Math.pow(targetData.x[i], 2) + Math.pow(targetData.y[i], 2));
-                        let thetaValue = TimeSeriesQuerying.convertRadToDeg(Math.atan2(targetData.x[i], targetData.y[i]));
-                        r.push(rValue);
-                        theta.push(thetaValue);
-                    }
-                    let newTargetData = {};
-                    newTargetData.r = r;
-                    newTargetData.theta = theta;
-                    for (let key in targetData) {
-                        if (key !== 'x' && key !== 'y') {
-                            newTargetData[key] = targetData[key];
-                        }
-                    }
-                    targetData = newTargetData;
-                }
-                let timeSlice = {};
+                let timeSlice;
                 let minIdx = targetData.z.indexOf(this.state.selected.start),
                     maxIdx = targetData.z.indexOf(this.state.selected.start + this.state.selected.period);
-                for (let key in query) {
-                    if (Array.isArray(query[key]) && Array.isArray(targetData[key]) && key !== 'z') {
-                        if (query[key].indexOf(null) >= 0) {
+                for (let key in query.values) {
+                    if (Array.isArray(query.values[key]) && (Array.isArray(targetData[key]) || key == 'r' || key === 'theta') && key !== 'z') {
+                        if (query.values[key].indexOf(null) >= 0) {
                             let flag = false;
-                            for (let i = 0; i < query[key].length; i++) {
-                                if (query[key][i]) {
+                            for (let i = 0; i < query.values[key].length; i++) {
+                                if (query.values[key][i]) {
                                     flag = true;
                                     break;
                                 }
                             }
                             if (!flag) continue;
                         }
-                        timeSlice[key] = targetData[key].slice(minIdx, maxIdx + 1);
+                        let propertyName = key;
+                        if (key === 'r') {
+                            timeSlice = targetData['PD'].slice(minIdx, maxIdx + 1);
+                            propertyName = 'PD';
+                        } else if (key === 'theta') {
+                            timeSlice = targetData['PA'].slice(minIdx, maxIdx + 1);
+                            propertyName = 'PA';
+                        } else {
+                            timeSlice = targetData[key].slice(minIdx, maxIdx + 1);
+                        }
                         lineCharts.push(
                             <LineChart
                                 key={key}
                                 id={this.state.selected.id}
-                                item={key}
-                                query={query[key]}
-                                target={timeSlice[key]}
+                                item={propertyName}
+                                query={query.values[key]}
+                                target={timeSlice}
                                 width={this.LCWidth}
                                 height={this.LCHeight}
                                 path={(typeof(this.optimalWarpPath) === 'Object')? this.optimalWarpPath[key]: this.optimalWarpPath}/>);
@@ -538,7 +532,7 @@ export default class ExtractionResults extends React.Component {
                                             Private
                                         </label>
                                     </div>
-                                    <div className="custom-control custom-radio"
+                                    {/* <div className="custom-control custom-radio"
                                         style={{marginLeft: '1.5rem'}}>
                                         <input type="radio" id="publicComment" name="accessibility" value='public'
                                             checked={(this.state.accessibility === 'public')? true: false}
@@ -547,7 +541,21 @@ export default class ExtractionResults extends React.Component {
                                         <label className="custom-control-label" htmlFor="publicComment">
                                             Public
                                         </label>
-                                    </div>
+                                    </div> */}
+                                </div>
+                                <h6>Label</h6>
+                                <div className="form-check form-check-inline menuItem">
+                                    <select
+                                        className="form-control custom-select"
+                                        id='commentLabelColorList'
+                                        style={{fontSize: '0.8rem', height: '1.5rem', width: '7rem'}}>
+                                        <option value='0x29ABE0' style={{color: '#29ABE0'}}>Blue</option>
+                                        <option value='0x80b139' style={{color: '#80b139'}}>Green</option>
+                                        <option value='0xffd700' style={{color: '#ffd700'}}>Yellow</option>
+                                        <option value='0xF47C3C' style={{color: '#F47C3C'}}>Orange</option>
+                                        <option value='0xd9534f' style={{color: '#d9534f'}}>Red</option>
+                                        <option value='0xba55d3' style={{color: '#ba55d3'}}>Purple</option>
+                                    </select>
                                 </div>
                                 <h6>Comment</h6>
                                 <textarea 

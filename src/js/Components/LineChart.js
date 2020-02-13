@@ -24,9 +24,15 @@ export default class LineChart extends React.Component {
         }
         this.yMinMax;
         if (!this.filter) {
+            let minQuery = Math.min.apply(null, this.query),
+                maxQuery = Math.max.apply(null, this.query);
+            if (this.item === 'PA') {
+                minQuery /= 2;
+                maxQuery /= 2;
+            }
             this.yMinMax = [
-                Math.min(Math.min.apply(null, this.query), Math.min.apply(null, this.target)),
-                Math.max(Math.max.apply(null, this.query), Math.max.apply(null, this.target))
+                Math.min(minQuery, Math.min.apply(null, this.target)),
+                Math.max(maxQuery, Math.max.apply(null, this.target))
             ];
         } else {
             // get the bigggest/smallest value in the filtering value ranges
@@ -130,7 +136,9 @@ export default class LineChart extends React.Component {
                         return this.xScale(i);
                     }.bind(this))
                     .y(function(d) {
-                        return this.yScale(d);
+                        let dNum = d;
+                        if (this.item === 'PA') dNum /= 2;
+                        return this.yScale(dNum);
                     }.bind(this))
                 )
                 .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
@@ -300,7 +308,9 @@ export default class LineChart extends React.Component {
                         return this.xScale(i);
                     }.bind(this))
                     .y(function(d) {
-                        return this.yScale(d);
+                        let dNum = d;
+                        if (this.item === 'PA') dNum /= 2;
+                        return this.yScale(dNum);
                     }.bind(this))
                 );
         } else {
