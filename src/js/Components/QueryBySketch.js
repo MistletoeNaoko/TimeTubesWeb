@@ -1075,10 +1075,10 @@ export default class QueryBySketch extends React.Component{
         if (this.state.targetList.length > 0 && this.path && this.path.curves.length > 0) {
             // only when something is on the sketch pad
 
-            let query = {};
+            let queryVal = {};
             for (let key in this.state.lookup) {
                 if (key !== 'z') {
-                    query[key] = [];
+                    queryVal[key] = [];
                 }
             }
 
@@ -1107,9 +1107,9 @@ export default class QueryBySketch extends React.Component{
                         radRange = [minRad, maxRad];
                         valueRange = [minRange, maxRange];
                     }
-                    for (let key in query) {
+                    for (let key in queryVal) {
                         if (this.controlPoints[0].assignedVariables[key].length > 0) {
-                            query[key].push(this.controlPoints[0].assignedVariables[key]);
+                            queryVal[key].push(this.controlPoints[0].assignedVariables[key]);
                         }
                     }
                     pointBefore = this.controlPoints[0].position;
@@ -1117,20 +1117,20 @@ export default class QueryBySketch extends React.Component{
                         // convert x and y pos into values
                         let point = this.path.getPointAt(del * i);
                         if (point) {
-                            for (let key in query) {
+                            for (let key in queryVal) {
                                 if (key === xItem) {
                                     // convert x pos to value
-                                    query[key].push(this.xScale.invert(point.x));
+                                    queryVal[key].push(this.xScale.invert(point.x));
                                 } else if (key === yItem) {
                                     // convert y pos to value
-                                    query[key].push(this.yScale.invert(point.y));
+                                    queryVal[key].push(this.yScale.invert(point.y));
                                 } else if (key === this.widthVar) {
                                     // convert width into value
                                     let width = (this.controlPoints[curveIdx + 1].radius - this.controlPoints[curveIdx].radius)
                                         * (del * i - totalCurveLen) / currentLen + this.controlPoints[curveIdx].radius;
-                                    query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
+                                    queryVal[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
                                 } else {
-                                    query[key].push(null);
+                                    queryVal[key].push(null);
                                 }
                             }
 
@@ -1144,16 +1144,16 @@ export default class QueryBySketch extends React.Component{
                                     distCurrent = Math.sqrt(Math.pow(controlPoint.x - point.x, 2) + Math.pow(controlPoint.y - point.y, 2));
                                 if (distBefore <= distCurrent) {
                                     // assign variables to before point
-                                    for (let key in query) {
+                                    for (let key in queryVal) {
                                         if (assignedVariables[key].length > 0) {
-                                            query[key][query[key].length - 2] = assignedVariables[key];
+                                            queryVal[key][queryVal[key].length - 2] = assignedVariables[key];
                                         }
                                     }
                                 } else {
                                     // assign variables to the current point
-                                    for (let key in query) {
+                                    for (let key in queryVal) {
                                         if (assignedVariables[key].length > 0) {
-                                            query[key][query[key].length - 1] = assignedVariables[key];
+                                            queryVal[key][queryVal[key].length - 1] = assignedVariables[key];
                                         }
                                     }
                                 }
@@ -1170,7 +1170,7 @@ export default class QueryBySketch extends React.Component{
                     let lastPoint = this.controlPoints[this.controlPoints.length - 1].assignedVariables;
                     for (let key in lastPoint) {
                         if (lastPoint[key].length > 0) {
-                            query[key][query[key].length - 1] = lastPoint[key];
+                            queryVal[key][queryVal[key].length - 1] = lastPoint[key];
                         }
                     }
                 } else {
@@ -1217,16 +1217,16 @@ export default class QueryBySketch extends React.Component{
                     let hitResult = this.path.getIntersections(hitTestPath);
                     if (hitResult.length > 0) {
                         let offset = this.path.getOffsetOf(hitResult[0].point);
-                        for (let key in query) {
+                        for (let key in queryVal) {
                             if (key === this.state.yItem) {
-                                query[key].push(this.yScale.invert(hitResult[0].point.y));
+                                queryVal[key].push(this.yScale.invert(hitResult[0].point.y));
                             } else if (key === this.widthVar) {
                                 let width =  (this.controlPoints[curveIdx + 1].radius - this.controlPoints[curveIdx].radius)
                                         * (offset - totalCurveLen) / currentLen + this.controlPoints[curveIdx].radius;
                                 // convert width into value
-                                query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
+                                queryVal[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
                             } else if (key !== 'z') {
-                                query[key].push(null);
+                                queryVal[key].push(null);
                             }
                         }
 
@@ -1238,16 +1238,16 @@ export default class QueryBySketch extends React.Component{
                                 distCurrent = Math.sqrt(Math.pow(controlPoint.x - hitResult[0].point.x, 2) + Math.pow(controlPoint.y - hitResult[0].point.y, 2));
                             if (distBefore <= distCurrent) {
                                 // assign variables to before point
-                                for (let key in query) {
+                                for (let key in queryVal) {
                                     if (assignedVariables[key].length > 0) {
-                                        query[key][query[key].length - 2] = assignedVariables[key];
+                                        queryVal[key][queryVal[key].length - 2] = assignedVariables[key];
                                     }
                                 }
                             } else {
                                 // assign variables to the current point
-                                for (let key in query) {
+                                for (let key in queryVal) {
                                     if (assignedVariables[key].length > 0) {
-                                        query[key][query[key].length - 1] = assignedVariables[key];
+                                        queryVal[key][queryVal[key].length - 1] = assignedVariables[key];
                                     }
                                 }
                             }
@@ -1265,15 +1265,15 @@ export default class QueryBySketch extends React.Component{
                 hitTestPath.remove();
                 // check whether the first/last point has assigned variables or not
                 let firstPoint = this.controlPoints[0].assignedVariables;
-                for (let key in query) {
+                for (let key in queryVal) {
                     if (firstPoint[key].length > 0) {
-                        query[key][0] = firstPoint[key];
+                        queryVal[key][0] = firstPoint[key];
                     }
                 }
                 let lastPoint = this.controlPoints[this.controlPoints.length - 1].assignedVariables;
                 for (let key in lastPoint) {
                     if (lastPoint[key].length > 0) {
-                        query[key][query[key].length - 1] = lastPoint[key];
+                        queryVal[key][queryVal[key].length - 1] = lastPoint[key];
                     }
                 }
             } else if (yItem === 'z') {
@@ -1308,16 +1308,16 @@ export default class QueryBySketch extends React.Component{
                     // get the position on the path
                     let hitResult = this.path.getIntersections(hitTestPath);
                     let offset = this.path.getOffsetOf(hitResult[0].point);
-                    for (let key in query) {
+                    for (let key in queryVal) {
                         if (key === xItem) {
-                            query[key].push(this.xScale.invert(hitResult[0].point.x));
+                            queryVal[key].push(this.xScale.invert(hitResult[0].point.x));
                         } else if (key === this.widthVar) {
                             let width =  (this.controlPoints[curveIdx + 1].radius - this.controlPoints[curveIdx].radius)
                                     * (offset - totalCurveLen) / currentLen + this.controlPoints[curveIdx].radius;
                             // convert width into value
-                            query[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
+                            queryVal[key].push((valueRange[1] - valueRange[0]) / (radRange[1] - radRange[0]) * (width - radRange[0]) + valueRange[0]);
                         } else if (key !== 'z') {
-                            query[key].push(null);
+                            queryVal[key].push(null);
                         }
                     }
 
@@ -1329,16 +1329,16 @@ export default class QueryBySketch extends React.Component{
                             distCurrent = Math.sqrt(Math.pow(controlPoint.x - hitResult[0].point.x, 2) + Math.pow(controlPoint.y - hitResult[0].point.y, 2));
                         if (distBefore <= distCurrent) {
                             // assign variables to before point
-                            for (let key in query) {
+                            for (let key in queryVal) {
                                 if (assignedVariables[key].length > 0) {
-                                    query[key][query[key].length - 2] = assignedVariables[key];
+                                    queryVal[key][queryVal[key].length - 2] = assignedVariables[key];
                                 }
                             }
                         } else {
                             // assign variables to the current point
-                            for (let key in query) {
+                            for (let key in queryVal) {
                                 if (assignedVariables[key].length > 0) {
-                                    query[key][query[key].length - 1] = assignedVariables[key];
+                                    queryVal[key][queryVal[key].length - 1] = assignedVariables[key];
                                 }
                             }
                         }
@@ -1355,19 +1355,47 @@ export default class QueryBySketch extends React.Component{
                 hitTestPath.remove();
                 // check whether the first/last point has assigned variables or not
                 let firstPoint = this.controlPoints[0].assignedVariables;
-                for (let key in query) {
+                for (let key in queryVal) {
                     if (firstPoint[key].length > 0) {
-                        query[key][0] = firstPoint[key];
+                        queryVal[key][0] = firstPoint[key];
                     }
                 }
                 let lastPoint = this.controlPoints[this.controlPoints.length - 1].assignedVariables;
                 for (let key in lastPoint) {
                     if (lastPoint[key].length > 0) {
-                        query[key][query[key].length - 1] = lastPoint[key];
+                        queryVal[key][queryVal[key].length - 1] = lastPoint[key];
                     }
                 }
             }
-            query['arrayLength'] = query[Object.keys(query)[0]].length;
+            queryVal['arrayLength'] = queryVal[Object.keys(queryVal)[0]].length;
+            
+            let widthRange = null;
+            if (this.widthVar) {
+                let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
+                    maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
+                let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
+                let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
+                    maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
+                widthRange = [minRange, maxRange];
+            }
+            let query = {
+                mode: 'visual query',
+                option: 'query-by-sketch',
+                query: {
+                    xItem: this.state.xItem,
+                    yItem: this.state.yItem,
+                    xRange: this.xScale.domain(),
+                    yRange: this.yScale.domain(),
+                    widthVar: this.widthVar,
+                    widthRange: widthRange,
+                    controlPoints: this.controlPoints,
+                    path: this.path.segments,
+                    size: this.state.size,
+                    length: queryVal['arrayLength']
+                },
+                values: queryVal,
+                // parameters are determined after running matching
+            };
             FeatureAction.setQuery(query);
         }
     }
@@ -2165,11 +2193,15 @@ export default class QueryBySketch extends React.Component{
 
     exportQuery() {
         if (this.path) {
-            let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
-                maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
-            let widthRange = $('#sketchWidthSlider').slider('option', 'values');
-            let minRange = widthRange[0] / 100 * (maxVal - minVal) + minVal,
-                maxRange = widthRange[1] / 100 * (maxVal - minVal) + minVal;
+            let widthRange = null;
+            if (this.widthVar) {
+                let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
+                    maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
+                let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
+                let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
+                    maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
+                widthRange = [minRange, maxRange];
+            }
             let query = {
                 type: 'Query-by-sketch',
                 xItem: this.state.xItem,
@@ -2178,7 +2210,7 @@ export default class QueryBySketch extends React.Component{
                 yRange: this.yScale.domain(),
                 controlPoints: this.controlPoints,
                 widthVar: this.widthVar,
-                widthRange: [minRange, maxRange],
+                widthRange: widthRange,
                 path: this.path.segments,
                 queryLength: Number($('#periodOfSketchQuery').val()),
                 size: this.state.size

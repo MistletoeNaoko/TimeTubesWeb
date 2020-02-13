@@ -135,7 +135,12 @@ export default class AutomaticExtraction extends React.Component {
         let targets = FeatureStore.getTarget();
         let flares, rotations, anomalies;
         let parameters = {};
+        let query = {};
+        query.mode = 'automatic extraction'
+        query.option = [];
+        query.query = {};
         if (this.state.flare) {
+            query.option.push('flare');
             let mode = this.state.flareOption.split(' ')[0];
             if (mode === 'automatic') {
                 let method = this.state.flareOption.split(' ')[1];
@@ -146,21 +151,16 @@ export default class AutomaticExtraction extends React.Component {
                     sensitivity = Number(sensitivity);   
                     flares = TimeSeriesQuerying.extractFlares(targets, method, lookaround, sensitivity);
                 }
-                parameters.flare = {
-                    mode: mode,
-                    peakFunction: this.state.flareOption.split(' ')[1],
-                    lookaround: lookaround,
-                    sensitivity: sensitivity
-                };
+                query.query.lookaround = lookaround;
+                query.query.sensitivity = sensitivity;
+                query.query.peakFunction = method;
             } else if (mode === 'manual') {
                 flares = TimeSeriesQuerying.extractFlaresManual(targets, Number($('#flareThreshold').val()));
-                parameters.flare = {
-                    mode: mode,
-                    threshold: Number($('#flareThreshold').val())
-                };
+                query.query.threshold = Number($('#flareThreshold').val());
             }
         }
         if (this.state.rotation) {
+            query.option.push('rotation');
             let period = [Number($('#rotationPeriodMin').val()), Number($('#rotationPeriodMax').val())],
                 diameter = $('#rotationDiameter').val(),
                 angle = $('#rotationAngle').val();
@@ -176,15 +176,14 @@ export default class AutomaticExtraction extends React.Component {
             let selectedSigma = Number(weightList.options[selectedIdx].value);
 
             rotations = TimeSeriesQuerying.extractRotations(targets, period, diameter, angle, selectedSigma, selectedStdConstraint);
-            parameters.rotation = {
-                period: period,
-                diameter: diameter,
-                angle: angle,
-                stdOfthePeriod: selectedStdConstraint,
-                weightForAverage: (selectedSigma === 0)? 'flat': selectedSigma
-            };
+            query.query.rotationPeriod = period;
+            query.query.rotationDiameter = diameter;
+            query.query.rotationAngle = angle;
+            query.query.stdOfthePeriod = selectedStdConstraint;
+            query.query.weightForAverage = (selectedSigma === 0)? 'flat': selectedSigma;
         }
         if (this.state.anomaly) {
+            query.option.push('anomaly');
             anomalies = TimeSeriesQuerying.extractAnomalies(targets);
         }
 
@@ -236,7 +235,7 @@ export default class AutomaticExtraction extends React.Component {
         }
 
         // set the extraction results
-        FeatureAction.setExtractionResults(parameters, results);
+        FeatureAction.setExtractionResults(undefined, results, query);
         // show the result thumbnails
         TimeSeriesQuerying.setDefaltOrderOfResults();
         TimeSeriesQuerying.showExtractionResults();

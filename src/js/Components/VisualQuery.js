@@ -491,15 +491,8 @@ export default class VisualQuery extends React.Component {
                         // compute distance between time slices!
                         // scores of matching with starting JD and period will be returned
                         // result stores {id, start, period, dtw distance, path} (not sorted)
-                        let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored, 'rectangular');
-                        if (this.state.coordinate === 'rectangular') {
-                            results = TimeSeriesQuerying.runMatching(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
-                            // FeatureAction.setExtractionResults(results, query, ignored);
-                        } else if (this.state.coordinate === 'polar') {
-                            let queryPolar = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored, this.state.coordinate);
-                            results = TimeSeriesQuerying.runMatching(queryPolar, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
-                            // FeatureAction.setExtractionResults(results, queryPolar, ignored);
-                        }
+                        let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored, this.state.coordinate);
+                        results = TimeSeriesQuerying.runMatching(query.values, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
                         results = TimeSeriesQuerying.removeOverlappingQBE(source, period, results);
                         FeatureAction.setExtractionResults(parameters, results, query, ignored);
                         TimeSeriesQuerying.setDefaltOrderOfResults();
@@ -510,14 +503,14 @@ export default class VisualQuery extends React.Component {
                 if (targets.length > 0) {
                     let query = FeatureStore.getQuery();
                     let ignored = [];
-                    for (let key in query) {
-                        if (Array.isArray(query[key])) {
-                            if (query[key].indexOf(null) < 0) {
+                    for (let key in query.values) {
+                        if (Array.isArray(query.values[key])) {
+                            if (query.values[key].indexOf(null) < 0) {
                                 continue;
                             }
                             let flag = true;
-                            for (let i = 0; i < query[key].length; i++) {
-                                if (query[key][i] !== null) {
+                            for (let i = 0; i < query.values[key].length; i++) {
+                                if (query.values[key][i] !== null) {
                                     flag = false;
                                     break;
                                 }
@@ -525,13 +518,13 @@ export default class VisualQuery extends React.Component {
                             if (flag) ignored.push(key);
                         }
                     }
-                    let variableList = document.getElementById('widthVariables');
-                    let selectedIdx = variableList.selectedIndex;
-                    let selectedText = variableList.options[selectedIdx].innerText;
+                    // let variableList = document.getElementById('widthVariables');
+                    // let selectedIdx = variableList.selectedIndex;
+                    // let selectedText = variableList.options[selectedIdx].innerText;
                     let parameters = {};
                     parameters.QBS = {
-                        width: ($('#widthDetectionSwitch').prop('checked'))? selectedText: false,
-                        sketchLength: $('#periodOfSketchQuery').val(),
+                        // width: ($('#widthDetectionSwitch').prop('checked'))? selectedText: false,
+                        // sketchLength: $('#periodOfSketchQuery').val(),
                         normalize: normalization,
                         coordinate: this.state.coordinate,
                         distanceMetric: selectedDist,
@@ -541,15 +534,11 @@ export default class VisualQuery extends React.Component {
                         DTWType: DTWType
                     };
                     let results;
-                    if (this.state.coordinate === 'rectangular') {
-                        results = TimeSeriesQuerying.runMatchingSketch(query, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
-                        // FeatureAction.setExtractionResults(results, query, ignored);
-                    } else if (this.state.coordinate === 'polar') {
+                    if (this.state.coordinate === 'polar') {
                         // convert query to polar coordinate
-                        let queryPolar = TimeSeriesQuerying.makeQueryPolarQBS(query);
-                        results = TimeSeriesQuerying.runMatchingSketch(queryPolar, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
-                        // FeatureAction.setExtractionResults(results, queryPolar, ignored);
+                        query.values = TimeSeriesQuerying.makeQueryPolarQBS(query.values);
                     }
+                    results = TimeSeriesQuerying.runMatchingSketch(query.values, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
                     FeatureAction.setExtractionResults(parameters, results, query, ignored);
                     TimeSeriesQuerying.setDefaltOrderOfResults();
                 }
