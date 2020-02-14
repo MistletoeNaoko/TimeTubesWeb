@@ -587,8 +587,8 @@ export default class QueryBySketch extends React.Component{
                                     r2 = this.controlPoints[curve.segment2.index + 1].radius;
                                 let r1 = (r2 - r0) * curve.length / originalCurveLen + r0;
                                 this.controlPoints[curve.segment2.index].radius = r1;
-                                this.pathWidth.remove();
-                                this.pathWidth = null;
+                                // this.pathWidth.remove();
+                                // this.pathWidth = null;
                                 this.drawPathWidth();
                             }
                         }
@@ -601,8 +601,8 @@ export default class QueryBySketch extends React.Component{
                             this.path.removeSegment(removedIdx);
                             this.controlPoints.splice(removedIdx, 1);
                             if (this.state.detectWidth) {
-                                this.pathWidth.remove();
-                                this.pathWidth = null;
+                                // this.pathWidth.remove();
+                                // this.pathWidth = null;
                                 this.drawPathWidth();
                             }
                         }
@@ -928,8 +928,8 @@ export default class QueryBySketch extends React.Component{
                             this.radiuses.push(t);
 
                             // remove the temporal width path
-                            this.pathWidth.remove();
-                            this.pathWidth = null;
+                            // this.pathWidth.remove();
+                            // this.pathWidth = null;
 
                             // simplificationDeg should be odd (- - * + +: * is the value of the point)
                             let simplificationDeg = segments.length / this.path.segments.length;
@@ -980,8 +980,8 @@ export default class QueryBySketch extends React.Component{
                             this.selectedHandle = null;
                             this.selectedPoint = null;
                             this.selectedIdx = -1;
-                            this.pathWidth.remove();
-                            this.pathWidth = null;
+                            // this.pathWidth.remove();
+                            // this.pathWidth = null;
                             this.drawPathWidth();
                             this.penSizeCircle.remove();
                         }
@@ -996,6 +996,10 @@ export default class QueryBySketch extends React.Component{
     drawPathWidth() {
         // compute the upper/lower points of the simplified curve
         if (this.path.curves.length > 0) {
+            if (this.pathWidth) {
+                this.pathWidth.remove();
+                this.pathWidth = null;
+            }
             this.segPoints = [];
             let upperPoints = [], lowerPoints = [];
             let curveLen = 0;
@@ -1401,6 +1405,12 @@ export default class QueryBySketch extends React.Component{
     }
 
     transformDataIntoSketch(xItem, yItem) {
+        if (this.path) {
+            this.path.remove();
+            this.path = null;
+        }
+        this.controlPoints = [];
+
         let targetData = this.queryData.targetData;
         let minIdx = targetData.z.indexOf(this.queryData.period[0]),
             maxIdx = targetData.z.indexOf(this.queryData.period[1]);
@@ -1408,7 +1418,6 @@ export default class QueryBySketch extends React.Component{
         if (xItem !== 'z' && yItem !== 'z') {
             let xData = targetData[xItem].slice(minIdx, maxIdx + 1),
                 yData = targetData[yItem].slice(minIdx, maxIdx + 1);
-            
             this.path = new paper.Path();
             this.path.strokeColor = 'black';
             this.path.strokeWidth = 5;
@@ -1465,7 +1474,6 @@ export default class QueryBySketch extends React.Component{
             for (let i = 0; i < widthData.length; i++) {
                 this.radiuses.push((widthData[i] - minVal) / (maxVal - minVal) * (maxWidth - minWidth) + minWidth);
             }
-
             // simplificationDeg should be odd (- - * + +: * is the value of the point)
             let simplificationDeg = segments.length / this.path.segments.length;
             simplificationDeg = (Math.floor(simplificationDeg) % 2 === 1) ? Math.floor(simplificationDeg) : Math.ceil(simplificationDeg);
@@ -1687,8 +1695,14 @@ export default class QueryBySketch extends React.Component{
         if (this.state.xItemonPanel !== 'z' && this.state.yItem !== 'z') {
             $('#periodOfSketchQuery').val(20);
         }
+
+        if (Object.keys(this.queryData).length <= 0) {
+            this.recoverStroke(this.state.xItemonPanel, this.state.yItem);
+        } else {
+            this.transformDataIntoSketch(this.state.xItemonPanel, this.state.yItem);
+        }
+
         this.convertSketchIntoQuery(this.state.xItemonPanel, this.state.yItem);
-        this.recoverStroke(this.state.xItemonPanel, this.state.yItem);
     }
 
     changeYAxis() {
@@ -1717,8 +1731,15 @@ export default class QueryBySketch extends React.Component{
         if (this.state.xItem !== 'z' && this.state.yItemonPanel !== 'z') {
             $('#periodOfSketchQuery').val(20);
         }
-        this.convertSketchIntoQuery();
-        this.recoverStroke(this.state.xItem, this.state.yItemonPanel);
+        // this.convertSketchIntoQuery();
+        // this.recoverStroke(this.state.xItem, this.state.yItemonPanel);
+        if (Object.keys(this.queryData).length <= 0) {
+            this.recoverStroke(this.state.xItem, this.state.yItemonPanel);
+        } else {
+            this.transformDataIntoSketch(this.state.xItem, this.state.yItemonPanel);
+        }
+
+        this.convertSketchIntoQuery(this.state.xItem, this.state.yItemonPanel);
     }
 
     recoverStroke(xItem, yItem) {
@@ -2340,6 +2361,9 @@ export default class QueryBySketch extends React.Component{
             $('#sketchWidthSlider').on('slidestop', this.stopSlidingWidthSlider().bind(this));
             $('#sketchWidthSlider').slider('option', 'disabled', !this.state.detectWidth);
             this.widthVar = selectedVal;
+            if (Object.keys(this.queryData).length > 0) {
+                this.transformDataIntoSketch(this.state.xItem, this.state.yItem);
+            }
             this.convertSketchIntoQuery(this.state.xItem, this.state.yItem);
         }
     }
