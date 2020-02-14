@@ -1412,42 +1412,49 @@ export default class TimeTubes extends React.Component{
 
         let planeSize = 2;
         let gridSize = TimeTubesStore.getGridSize();
-        let planePositions = [];
-        for (let i = 0; i < comments.length; i++) {
-            if (comments[i].fileName === filename) {
-                this.commentList.push(comments[i].id);
-
+        let planePositions = [], planeColors = [];
+        for (let id in comments) {
+            if (comments[id].fileName === filename) {
+                this.commentList.push(id);
+                let color = new THREE.Color(Number(comments[id].labelColor));
                 // first triangle
                 planePositions.push(gridSize + planeSize + 1);
                 planePositions.push(gridSize);
-                planePositions.push(comments[i].start - this.data.meta.min.z);
+                planePositions.push(comments[id].start - this.data.meta.min.z);
+                planeColors.push(color.r, color.g, color.b);
 
                 planePositions.push(gridSize + 1);
                 planePositions.push(gridSize);
-                planePositions.push(comments[i].start - this.data.meta.min.z);
+                planePositions.push(comments[id].start - this.data.meta.min.z);
+                planeColors.push(color.r, color.g, color.b);
 
                 planePositions.push(gridSize + planeSize + 1);
                 planePositions.push(gridSize - planeSize);
-                planePositions.push(comments[i].start - this.data.meta.min.z);
+                planePositions.push(comments[id].start - this.data.meta.min.z);
+                planeColors.push(color.r, color.g, color.b);
 
                 // second triangle
                 planePositions.push(gridSize + 1);
                 planePositions.push(gridSize);
-                planePositions.push(comments[i].start - this.data.meta.min.z);
+                planePositions.push(comments[id].start - this.data.meta.min.z);
+                planeColors.push(color.r, color.g, color.b);
 
                 planePositions.push(gridSize + planeSize + 1);
                 planePositions.push(gridSize - planeSize);
-                planePositions.push(comments[i].start - this.data.meta.min.z);
+                planePositions.push(comments[id].start - this.data.meta.min.z);
+                planeColors.push(color.r, color.g, color.b);
 
                 planePositions.push(gridSize + 1);
                 planePositions.push(gridSize - planeSize);
-                planePositions.push(comments[i].start - this.data.meta.min.z);
+                planePositions.push(comments[id].start - this.data.meta.min.z);
+                planeColors.push(color.r, color.g, color.b);
             }
         }
         let planeGeometry = new THREE.BufferGeometry();
         planeGeometry.addAttribute('position', new THREE.Float32BufferAttribute(planePositions, 3));
+        planeGeometry.addAttribute('color', new THREE.Float32BufferAttribute(planeColors, 3));
         let planeMaterial = new THREE.MeshBasicMaterial({
-            color: 0x80b139, 
+            vertexColors: THREE.VertexColors,
             side: THREE.DoubleSide,
             clippingPlanes: [this.clippingPlane]
         });
