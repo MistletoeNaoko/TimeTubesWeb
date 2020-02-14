@@ -28,11 +28,13 @@ export default class Comment extends React.Component {
         let table = [];
         if (this.state.privateComments) {
             for (let id in this.state.privateComments) {
+                let color = this.state.privateComments[id].labelColor.replace('0x', '#');
                 table.push(
                     <tr key={id} className='privateCommentBody' id={id}>
                         <td style={{textAlign: 'center'}}>
                             <input type="checkbox" className={id + ' selectComment'} name='privateCommentSelector'/>
                         </td>
+                        <td><span style={{color: color}}>■</span></td>
                         <td>{this.state.privateComments[id].timeStamp.toLocaleString('en-US')}</td>
                         <td>{this.state.privateComments[id].fileName}</td>
                         <td>{this.state.privateComments[id].start}</td>
@@ -68,10 +70,11 @@ export default class Comment extends React.Component {
             <thead>
                 <tr id='privateCommentHeader'>
                     <th className='col-1'>Select</th>
+                    <th className='col-1'>Label color</th>
                     <th className='col-2 num' value='timeStamp'>Date (GMT)</th>
                     <th className='col-2 case' value='fileName'>File name</th>
                     <th className='col-1 num' value='start'>JD</th>
-                    <th className='col-4' value='comment'>Comment</th>
+                    <th className='col-3' value='comment'>Comment</th>
                     <th className='col-2 case' value='userName'>User name</th>
                     {/* <th className='col-1'>Edit</th> */}
                 </tr>
