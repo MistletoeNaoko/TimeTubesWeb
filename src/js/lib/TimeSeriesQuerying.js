@@ -70,13 +70,17 @@ export function makeQueryfromQBE(source, period, ignored, coordinates) {
             queryVal['arrayLength'] = roundedPeriod[1] - roundedPeriod[0] + 1;
         }
     }
+    let inactiveVarName = [];
+    for (let i = 0; i < ignored.length; i++) {
+        inactiveVarName.push(lookup[ignored[i]]);
+    }
     let query = {
         mode: 'visual query',
         option: 'query-by-example',
         query: {
             source: DataStore.getData(Number(FeatureStore.getSource())).name,
             period: roundedPeriod,
-            inactiveVariables: ignored
+            inactiveVariables: inactiveVarName
         },
         values: queryVal
     };
