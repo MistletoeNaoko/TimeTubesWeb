@@ -1,5 +1,7 @@
 import React from 'react';
 import * as dataLib from '../lib/dataLib';
+import {transformCamelToSentence} from '../lib/domActions';
+import {formatValue} from '../lib/2DGraphLib';
 import * as DataAction from '../Actions/DataAction';
 import AppStore from '../Stores/AppStore';
 
@@ -8,7 +10,9 @@ export default class Comment extends React.Component {
         super();
 
         this.state = {
-            privateComments: dataLib.getDataFromLocalStorage('privateComment')
+            privateComments: dataLib.getDataFromLocalStorage('privateComment'),
+            selectedComment: {},
+            selectedQuery: {}
         };
     }
 
@@ -30,7 +34,7 @@ export default class Comment extends React.Component {
             for (let id in this.state.privateComments) {
                 let color = this.state.privateComments[id].labelColor.replace('0x', '#');
                 table.push(
-                    <tr key={id} className='privateCommentBody' id={id}>
+                    <tr key={id} className='privateCommentBody' id={id} onClick={this.onClickCommentTableRow.bind(this)}>
                         <td style={{textAlign: 'center'}}>
                             <input type="checkbox" className={id + ' selectComment'} name='privateCommentSelector'/>
                         </td>
@@ -63,6 +67,92 @@ export default class Comment extends React.Component {
             }
         }
         return table;
+    }
+
+    commentDetailTr() {
+        let table = [];
+        for (let key in this.state.selectedComment) {
+            if (key === 'labelColor') {
+                table.push(
+                    <tr key={key} className='commentDetailTableTr' id={key}>
+                        <td>{transformCamelToSentence(key)}</td>
+                        <td><span style={{color: this.state.selectedComment[key].replace('0x', '#')}}>■</span></td>
+                    </tr>
+                );
+            } else if (key !== 'query' && key !== 'parameters' && key !== 'queryId') {
+                table.push(
+                    <tr key={key} className='commentDetailTableTr' id={key}>
+                        <td>{transformCamelToSentence(key)}</td>
+                        <td>{this.state.selectedComment[key]}</td>
+                    </tr>
+                );
+            } 
+        }
+        return table;
+    }
+
+    queryDetailTr() {
+        let table = [];
+        for (let key in this.state.selectedQuery) {
+            if (typeof(this.state.selectedQuery[key]) !== 'object') {
+                table.push(
+                    <tr key={key} className='queryDetailTableTr' id={key}>
+                        <td>{transformCamelToSentence(key)}</td>
+                        <td>{this.state.selectedQuery[key]}</td>
+                    </tr>
+                );
+            }
+        }
+        for (let key in this.state.selectedQuery.query) {
+            if (key !== 'path' && key !== 'controlPoints') {
+                let text = this.state.selectedQuery.query[key];
+                if (Array.isArray(this.state.selectedQuery.query[key]) && this.state.selectedQuery.query[key].length > 1) {
+                    if (Number(this.state.selectedQuery.query[key][0])) {
+                        text = '';
+                        for (let i = 0; i < this.state.selectedQuery.query[key].length; i++) {
+                            text += formatValue(Number(this.state.selectedQuery.query[key][i])) + ', ';
+                        }
+                        text = text.substr(0, text.length - 2);
+                    } else {
+                        text = text.join(', ');
+                    }
+                }
+                table.push(
+                    <tr key={key} className='queryDetailTableTr' id={key}>
+                        <td>{transformCamelToSentence(key)}</td>
+                        <td>{text}</td>
+                    </tr>
+                );
+            }
+        }
+        return table;
+    }
+
+    queryParametersDetailTr() {
+        let table = [];
+        for (let key in this.state.selectedQuery.parameters) {
+            table.push(
+                <tr key={key} className='queryParameterDetailTableTr' id={key}>
+                    <td>{transformCamelToSentence(key)}</td>
+                    <td>{this.state.selectedQuery.parameters[key]}</td>
+                </tr>
+            );
+        }
+        return table;
+    }
+
+    onClickCommentTableRow(e) {
+        // console.log(e.target.parentNode.id);
+        this.updateCommentDetail(e.target.parentNode.id);
+    }
+
+    updateCommentDetail(id) {
+        let comment = dataLib.getPrivateCommentFromId(id);
+        let query = dataLib.getQueryFromId(comment.queryId);
+        this.setState({
+            selectedComment: comment,
+            selectedQuery: query
+        });
     }
 
     privateCommentListHeader() {
@@ -126,54 +216,78 @@ export default class Comment extends React.Component {
     render() {
         let tableHeader = this.privateCommentListHeader();
         let tableContents = this.privateCommentListTr();
+        let detailContents = this.commentDetailTr();
+        let queryDetailContents = this.queryDetailTr();
+        let queryParametersDetailContentes = this.queryParametersDetailTr();
         return (
             <div
-                className='contents'
+                className='contents commentRow'
                 id='mainCommentsArea'>
-                {/* style={{display: 'flex'}}> */}
-                <ul className="nav nav-tabs">
-                    <li className="nav-item">
-                        <a className="nav-link active" data-toggle="tab" href="#private">Private comments</a>
-                    </li>
-                    <li className="nav-item">
-                        <a className="nav-link disabled" data-toggle="tab" href="#public">Public comments</a>
-                    </li>
-                </ul>
-                <div id="myTabContent" className="tab-content">
-                    <div className="tab-pane fade active show commentsArea" id="private">
-                        <div id='privateCommentMenu' style={{float: 'right', marginBottom: '15px'}}>
-                            <button
-                                className='btn btn-primary btn-sm'
-                                type='button'
-                                id='selectAllPrivateCommentBtn'
-                                onClick={this.selectAllPrivateComment.bind(this)}>
-                                Select All
-                            </button>
-                            <button
-                                className='btn btn-danger btn-sm'
-                                type='button'
-                                id={'deleteCommentBtn'}
-                                onClick={this.deletePrivateComment.bind(this)}>
-                                Delete
-                            </button>
-                            <button
-                                className='btn btn-primary btn-sm'
-                                type='button'
-                                id='exportPrivateCommentBtn'
-                                onClick={this.exportPrivateComment.bind(this)}>
-                                Export
-                            </button>
+                    {/* style={{display: 'flex'}}> */}
+                <div className='commentColumn' id='commentTableArea'>
+                    <ul className="nav nav-tabs">
+                        <li className="nav-item">
+                            <a className="nav-link active" data-toggle="tab" href="#private">Private comments</a>
+                        </li>
+                        <li className="nav-item">
+                            <a className="nav-link disabled" data-toggle="tab" href="#public">Public comments</a>
+                        </li>
+                    </ul>
+                    <div id="myTabContent" className="tab-content">
+                        <div className="tab-pane fade active show commentsArea" id="private">
+                            <div id='privateCommentMenu' style={{float: 'right', marginBottom: '15px'}}>
+                                <button
+                                    className='btn btn-primary btn-sm'
+                                    type='button'
+                                    id='selectAllPrivateCommentBtn'
+                                    onClick={this.selectAllPrivateComment.bind(this)}>
+                                    Select All
+                                </button>
+                                <button
+                                    className='btn btn-danger btn-sm'
+                                    type='button'
+                                    id={'deleteCommentBtn'}
+                                    onClick={this.deletePrivateComment.bind(this)}>
+                                    Delete
+                                </button>
+                                <button
+                                    className='btn btn-primary btn-sm'
+                                    type='button'
+                                    id='exportPrivateCommentBtn'
+                                    onClick={this.exportPrivateComment.bind(this)}>
+                                    Export
+                                </button>
+                            </div>
+                            <table id='privateCommentTable' className="table table-hover tablesorter">
+                                {tableHeader}
+                                <tbody id='privateCommentBody'>
+                                    {tableContents}
+                                </tbody>
+                            </table>
                         </div>
-                        <table id='privateCommentTable' className="table table-hover tablesorter">
-                            {tableHeader}
-                            <tbody id='privateCommentBody'>
-                                {tableContents}
-                            </tbody>
-                        </table>
+                        <div className="tab-pane fade commentsArea" id="public">
+                            Public comments will be here.
+                        </div>
                     </div>
-                    <div className="tab-pane fade commentsArea" id="public">
-                        Public comments will be here.
-                    </div>
+                </div>
+                <div className='commentColumn' id='commentDetailArea'>
+                    <h5>Comment</h5>
+                    <table id='commentDetailTable' className="table table-hover">
+                        <tbody id='commentDetailBody'>
+                            {detailContents}
+                        </tbody>
+                    </table>
+                    <h5>Query</h5>
+                    <table id='queryDetailTable' className="table table-hover">
+                        <tbody id='queryDetailBody'>
+                            {queryDetailContents}
+                        </tbody>
+                    </table>
+                    <table id='queryParametersDetailTable' className="table table-hover">
+                        <tbody id='queryParametersDetailBody'>
+                            {queryParametersDetailContentes}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         );

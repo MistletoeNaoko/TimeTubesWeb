@@ -423,6 +423,16 @@ img.selectorIcon:active {
     max-width: 100%;
 }
 
+.commentRow:after {
+    content: '';
+    display: table;
+    clear: both;
+}
+
+.commentColumn {
+    float: left;
+}
+
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
@@ -555,6 +565,30 @@ img.selectorIcon:active {
     /* background-color: #F8F5F0; */
     font-size: 0.8rem;
     min-height: 100vh;
+}
+
+#commentTableArea {
+    width: 70%;
+    min-height: 100vh;
     padding-top: 15px;
     padding-bottom: 15px;
+}
+
+#commentDetailArea {
+    width: 30%;
+    min-height: 100vh;
+    background-color: #F8F5F0;
+    padding: 15px;
+}
+
+#commentDetailBody {
+    background-color: white;
+}
+
+#queryDetailTable {
+    background-color: white;
+}
+
+#queryParametersDetailTable {
+    background-color: white;
 }
