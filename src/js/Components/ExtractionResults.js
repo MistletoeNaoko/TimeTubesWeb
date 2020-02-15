@@ -257,7 +257,7 @@ export default class ExtractionResults extends React.Component {
                 period: ('period' in this.state.selected)? this.state.selected.period: undefined,
                 comment: comment,
             }
-            dataLib.addCommentData(data, FeatureStore.getQuery());
+            dataLib.addCommentData(data, FeatureStore.getQuery(), FeatureStore.getParameters());
         } else if (accessibility == 'public') {
             // ToDo: Store in the database
         }

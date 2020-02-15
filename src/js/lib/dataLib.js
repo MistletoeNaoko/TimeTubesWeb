@@ -19,7 +19,7 @@ import {isEqual} from 'lodash';
 let privateComment = JSON.parse(localStorage.getItem('privateComment'));
 let queryTable = JSON.parse(localStorage.getItem('queryTable'));
 
-export function addCommentData(comment, query) {
+export function addCommentData(comment, query, parameters) {
     // Need to update privateComment and queryTable here 
     // for the first time users
     let commentId = getUniqueId();
@@ -70,6 +70,7 @@ export function addCommentData(comment, query) {
                 queryForRegister[key] = query[key];
             }
         }
+        queryForRegister.parameters = parameters;
         queryTable[queryId] = queryForRegister;
         localStorage.setItem('queryTable', JSON.stringify(queryTable));
         comment.queryId = queryId;
@@ -119,18 +120,22 @@ export function getPrivateCommentFromId(id) {
     return privateComment[id];
 }
 
+export function getQueryFromId(id) {
+    return queryTable[id];
+}
+
 export function exportPrivateComment(idList) {
     let selected = [];
     for (let i = 0; i < idList.length; i++) {
-        selected.push(privateComment.filter(d => {
-            if (d.id === idList[i]) return true;
-        })[0]);
+        selected.push(privateComment[idList[i]]);
     }
     let contents = '';
     for (let i = 0; i < selected.length; i++) {
         for (let key in selected[i]) {
             if (key === 'timeStamp') {
                 contents += selected[i][key].replace(', ', '_');
+            } else if (key === 'queryId') {
+
             } else {
                 contents += selected[i][key] + ',';
             }
