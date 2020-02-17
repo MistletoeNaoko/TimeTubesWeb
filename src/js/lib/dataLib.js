@@ -18,7 +18,6 @@ import {isEqual} from 'lodash';
 // }
 let privateComment = JSON.parse(localStorage.getItem('privateComment'));
 let queryTable = JSON.parse(localStorage.getItem('queryTable'));
-
 export function addCommentData(comment, query, parameters) {
     // Need to update privateComment and queryTable here 
     // for the first time users
@@ -44,7 +43,12 @@ export function addCommentData(comment, query, parameters) {
             for (let key in queryTable[id]) {
                 // if query and queryTable[i] is not the same
                 if (key === 'id') continue;
-                if (!(key in query) || !isEqual(query[key], queryTable[id][key])) {
+                if (key === 'parameters') {
+                    if (!isEqual(parameters, queryTable[id][key])) {
+                        flagProperty = false;
+                        break;
+                    }
+                } else if (!(key in query) || !isEqual(query[key], queryTable[id][key])) {
                     flagProperty = false;
                     break;
                 }
