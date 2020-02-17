@@ -67,6 +67,14 @@ export default class ResultTimeline extends React.Component {
             });
             this.resizeTimeLine();
         });
+        FeatureStore.on('recoverQuery', (query) => {
+            if (FeatureStore.getMode() === 'QBE' && this.state.results.length > 0) {
+                this.setState({
+                    width: Math.max($('#resultTimelineArea_' + this.state.id).width(), 400)
+                });
+                this.resizeTimeLine();
+            }
+        });
     }
 
     componentWillUnmount() {

@@ -31,13 +31,20 @@ export default class DistanceHistogram extends React.Component {
         this.initHistogram();
 
         AppStore.on('resizeExtractionResultsArea', () => {
-            this.updateHistogram();
+            if (this.results.length > 0) {
+                this.updateHistogram();
+            }
         });
         FeatureStore.on('updateShownResults', () => {
             let parameters = FeatureStore.getParameters();
             let query = FeatureStore.getQuery();
             if (parameters && query.mode === 'visual query') {
                 this.results = FeatureStore.getExtractionResults();
+                this.updateHistogram();
+            }
+        });
+        FeatureStore.on('recoverQuery', (query) => {
+            if (FeatureStore.getMode() === 'QBE' && this.results.length > 0) {
                 this.updateHistogram();
             }
         });
@@ -79,7 +86,7 @@ export default class DistanceHistogram extends React.Component {
     }
 
     updateHistogram() {
-        let outerWidth = $('#distanceHistogram').width();
+        let outerWidth = Math.max($('#distanceHistogram').width(), 400);
         let width = outerWidth - this.margin.left - this.margin.right,
             height = this.height - this.margin.top - this.margin.bottom;
 
