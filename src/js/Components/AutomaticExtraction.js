@@ -64,7 +64,7 @@ export default class AutomaticExtraction extends React.Component {
                     }
                     let weightList = document.getElementById('weightForAverageList');
                     let weightOptions = weightList.options;
-                    for (let i = 0; i < options.length; i++) {
+                    for (let i = 0; i < weightOptions.length; i++) {
                         if (weightOptions[i].value === query.query.weightForAverage) {
                             weightList.selectedIndex = i;
                             break;
