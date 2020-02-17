@@ -133,7 +133,7 @@ export default class DistanceHistogram extends React.Component {
             .selectAll('rect.histogramRect')
             .remove();
         this.bars = this.svg
-            .selectAll('rect')
+            .selectAll('rect.histogramRect')
             .data(this.bins)
             .enter()
             .append('rect')

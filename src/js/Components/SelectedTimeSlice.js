@@ -135,7 +135,6 @@ export default class SelectedTimeSlice extends React.Component {
             }
         });
         FeatureStore.on('recoverQuery', (query) => {
-            console.log('recoverQuery, selectedtimeslice');
             if (FeatureStore.getMode() === 'QBE') {
                 this.sourceId = FeatureStore.getSource();
                 this.selectedPeriod = FeatureStore.getSelectedPeriod();

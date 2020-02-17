@@ -125,7 +125,6 @@ export function getQueryFromId(id) {
 }
 
 export function exportPrivateComment(idList) {
-    console.log(idList);
     let selected = [];
     let queryList = [];
     for (let i = 0; i < idList.length; i++) {
