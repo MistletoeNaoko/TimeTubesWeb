@@ -35,11 +35,10 @@ export default class DistanceHistogram extends React.Component {
         });
         FeatureStore.on('updateShownResults', () => {
             let parameters = FeatureStore.getParameters();
-            if (parameters) {
-                if ('QBE' in parameters || 'QBS' in parameters) {
-                    this.results = FeatureStore.getExtractionResults();
-                    this.updateHistogram();
-                }
+            let query = FeatureStore.getQuery();
+            if (parameters && query.mode === 'visual query') {
+                this.results = FeatureStore.getExtractionResults();
+                this.updateHistogram();
             }
         });
     }
