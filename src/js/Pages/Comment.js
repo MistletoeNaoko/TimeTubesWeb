@@ -2,6 +2,7 @@ import React from 'react';
 import * as dataLib from '../lib/dataLib';
 import {transformCamelToSentence} from '../lib/domActions';
 import {formatValue} from '../lib/2DGraphLib';
+import {selectMenu} from '../Actions/AppAction';
 import * as DataAction from '../Actions/DataAction';
 import * as FeatureAction from '../Actions/FeatureAction';
 import AppStore from '../Stores/AppStore';
@@ -198,28 +199,23 @@ export default class Comment extends React.Component {
 
     recoverTheQuery() {
         // do something!
-        let flag = true;
-        if (this.state.selectedQuery.mode === 'visual query' && this.state.selectedQuery.option === 'query-by-example') {
-            // check whether the source file is opened or not
-            let fileExist = DataStore.getIdFromName(this.state.selectedQuery.query.source);
-            if (fileExist < 0) {
-                alert('You have to open the file whose file name is ' + this.state.selectedQuery.query.source);
-                flag = false;
+        if (Object.keys(this.state.selectedQuery).length > 0) {
+            let flag = true;
+            if (this.state.selectedQuery.mode === 'visual query' && this.state.selectedQuery.option === 'query-by-example') {
+                // check whether the source file is opened or not
+                let fileExist = DataStore.getIdFromName(this.state.selectedQuery.query.source);
+                if (fileExist < 0) {
+                    alert('You have to open the file whose file name is ' + this.state.selectedQuery.query.source);
+                    flag = false;
+                }
+            } else if (this.state.selectedQuery.mode === 'visual query' && this.state.selectedQuery.option === 'query-by-sketch') {
+                // format variable name (e.g. Q/I -> x, V-J -> H)
             }
-        } else if (this.state.selectedQuery.mode === 'visual query' && this.state.selectedQuery.option === 'query-by-sketch') {
-            // format variable name (e.g. Q/I -> x, V-J -> H)
+            if (flag) {
+                FeatureAction.recoverQuery(this.state.selectedQuery);
+                selectMenu('feature');
+            }
         }
-        if (flag) {
-            FeatureAction.recoverQuery(this.state.selectedQuery);
-        }
-        // switch (this.selectedQuery.mode) {
-        //     case 'automatic extraction':
-        //         break;
-        //     case 'visual query':
-        //         break;
-        //     default:
-        //         break;
-        // }
     }
 
     exportPrivateComment() {
