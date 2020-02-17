@@ -30,6 +30,10 @@ export default class LineChart extends React.Component {
                 minQuery /= 2;
                 maxQuery /= 2;
             }
+            if (this.item === 'PD') {
+                minQuery *= 100;
+                maxQuery *= 100;
+            }
             this.yMinMax = [
                 Math.min(minQuery, Math.min.apply(null, this.target)),
                 Math.max(maxQuery, Math.max.apply(null, this.target))
@@ -138,6 +142,7 @@ export default class LineChart extends React.Component {
                     .y(function(d) {
                         let dNum = d;
                         if (this.item === 'PA') dNum /= 2;
+                        if (this.item === 'PD') dNum *= 100;
                         return this.yScale(dNum);
                     }.bind(this))
                 )
@@ -310,6 +315,7 @@ export default class LineChart extends React.Component {
                     .y(function(d) {
                         let dNum = d;
                         if (this.item === 'PA') dNum /= 2;
+                        if (this.item === 'PD') dNum *= 100;
                         return this.yScale(dNum);
                     }.bind(this))
                 );
