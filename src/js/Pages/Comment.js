@@ -118,6 +118,14 @@ export default class Comment extends React.Component {
         for (let key in this.state.selectedQuery.parameters) {
             let label = (key === 'DTWType')? 'DTW Type': transformCamelToSentence(key);
             let val = (typeof(this.state.selectedQuery.parameters[key]) === 'boolean')? this.state.selectedQuery.parameters[key].toString(): this.state.selectedQuery.parameters[key];
+            if (Array.isArray(val)) {
+                let text = '';
+                for (let i = 0; i < val.length; i++) {
+                    text += formatValue(Number(val[i])) + ', ';
+                }
+                text = text.substr(0, text.length - 2);
+                val = text;
+            }
             table.push(
                 <tr key={key} className='queryParameterDetailTableTr' id={key}>
                     <td>{label}</td>
@@ -205,7 +213,7 @@ export default class Comment extends React.Component {
                 // check whether the source file is opened or not
                 let fileExist = DataStore.getIdFromName(this.state.selectedQuery.query.source);
                 if (fileExist < 0) {
-                    alert('You have to open the file whose file name is ' + this.state.selectedQuery.query.source);
+                    alert('You have to open the file whose file name is ' + this.state.selectedQuery.query.source + 'to recover the query-by-example.');
                     flag = false;
                 }
             } else if (this.state.selectedQuery.mode === 'visual query' && this.state.selectedQuery.option === 'query-by-sketch') {
