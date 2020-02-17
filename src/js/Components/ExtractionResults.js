@@ -201,11 +201,9 @@ export default class ExtractionResults extends React.Component {
     }
 
     exportResults() {
-        let results = {};//JSON.stringify(this.state.shownResults, null, '\t');
-        results.parameters = FeatureStore.getParameters();
-        if (FeatureStore.getMode !== 'AE') {
-            results.query = FeatureStore.getQuery();
-        }
+        let results = {};
+        results.query = FeatureStore.getQuery();
+        results.query.parameters = FeatureStore.getParameters();
         results.results = [];
         for (let i = 0; i < this.state.shownResults.length; i++) {
             let result = {};
