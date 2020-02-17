@@ -34,9 +34,9 @@ export default class VisualQuery extends React.Component {
             this.setState({
                 queryMode: mode
             });
-                if ($('#resultDetailArea').css('display') === 'block') {
-                    domActions.toggleExtractionDetailPanel();
-                }
+            if ($('#resultDetailArea').css('display') === 'block') {
+                domActions.toggleExtractionDetailPanel();
+            }
             if (mode === 'QBS') {
                 this.setState({
                     DTWMode: 'DTWD'
