@@ -86,6 +86,9 @@ export default class VisualQuery extends React.Component {
                         coordinate: query.parameters.coordinate,
                         DTWMode: query.parameters.DTWType
                     });
+                    if ($('#QBESourceMain').css('display') === 'none') {
+                        domActions.toggleSourcePanel();
+                    }
                 } else if (mode === 'QBS') {
                     this.setState({
                         coordinate: query.parameters.coordinate,

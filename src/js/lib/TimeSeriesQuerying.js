@@ -132,8 +132,9 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
     if (normalization) {
         query = normalizeTimeSeries(query);
     }
-    for (let targetId = 0; targetId < targets.length; targetId++) {
-        let targetData = DataStore.getDataArray(targets[targetId], 1);
+    for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
+        let targetId = targets[targetIdx];
+        let targetData = DataStore.getDataArray(targetId, 1);
         if (query.r) {
             let newTargetData = {};
             let r = [], theta = [];
@@ -1205,8 +1206,8 @@ function significanceAveDist(targetId, dataId, lookaround) {
 
 export function extractFlaresGESD(targets, alpha) {
     let results = [];
-    for (let targetId = 0; targetId < targets.length; targetId++) {
-        let targetData = DataStore.getData(targetId);
+    for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
+        let targetData = DataStore.getData(targets[targetIdx]);
         let thd = targetData.data.meta.mean.V + targetData.data.meta.std.V;
         let rValue = 0;
         for (let i = 0; i < targetData.color.length; i++) {
