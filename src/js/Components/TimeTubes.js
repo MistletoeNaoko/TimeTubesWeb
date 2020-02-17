@@ -463,6 +463,17 @@ export default class TimeTubes extends React.Component{
                 this.paintSelectedPeriod();
             }
         });
+        FeatureStore.on('recoverQuery', (query) => {
+            if (FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id) {
+                this.visualQuery = true;
+                setTimeout(function() {
+                    this.setQBEView();
+                    // this.updateControls();
+                    this.resetSelection();
+                    this.paintSelectedPeriod();
+                }.bind(this), 0);
+            }
+        });
     }
 
     start() {

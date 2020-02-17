@@ -592,3 +592,11 @@ img.selectorIcon:active {
 #queryParametersDetailTable {
     background-color: white;
 }
+
+#privateCommentMenu::after {
+    clear: both;
+}
+
+#commentMenu::after {
+    clear: both;
+}

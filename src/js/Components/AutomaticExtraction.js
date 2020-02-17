@@ -25,6 +25,63 @@ export default class AutomaticExtraction extends React.Component {
         this.setGaussCurve();
         // set default values to input forms
         this.setDefaultValues();
+
+        FeatureStore.on('recoverQuery', (query) => {
+            if (FeatureStore.getMode() === 'AE') {
+                let flare = false, 
+                    flareOption = this.state.flareOption, 
+                    rotation = false, 
+                    anomaly = false;
+
+                if (query.option.indexOf('flare') >= 0) {
+                    flare = true;
+                    if ('threshold' in query.query) {
+                        flareOption = 'manual';
+                        $('#flareThreshold').val(query.query.threshold);
+                    } else {
+                        flareOption = 'automatic ' + query.query.peakFunction;
+                        $('#flareLookaround').val(query.query.lookaround);
+                        $('#flareSensitivity').val(query.query.sensitivity);
+                        $('img[name=peakFunction]').each(function() {
+                            $(this).removeClass('selected');
+                        });
+                        $('#peak' + query.query.peakFunction).addClass('selected');
+                    }
+                }
+                if (query.option.indexOf('rotation') >= 0) {
+                    rotation = true;
+                    $('#rotationPeriodMin').val(query.query.rotationPeriod[0]);
+                    $('#rotationPeriodMax').val(query.query.rotationPeriod[1]);
+                    $('#rotationDiameter').val(query.query.rotationDiameter);
+                    $('#rotationAngle').val(query.query.rotationAngle);
+                    let stdList = document.getElementById('stdConstraintsList');
+                    let stdOptions = stdList.options;
+                    for (let i = 0; i < stdOptions.length; i++) {
+                        if (stdOptions[i].value === query.query.stdOfthePeriod) {
+                            stdList.selectedIndex = i;
+                            break;
+                        }
+                    }
+                    let weightList = document.getElementById('weightForAverageList');
+                    let weightOptions = weightList.options;
+                    for (let i = 0; i < options.length; i++) {
+                        if (weightOptions[i].value === query.query.weightForAverage) {
+                            weightList.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+                if (query.option.indexOf('anomaly') >= 0) {
+                    anomaly = true;
+                }
+                this.setState({
+                    flare: flare,
+                    flareOption: flareOption,
+                    rotation: rotation,
+                    anomaly: anomaly
+                });
+            }
+        });
     }
 
     setDefaultValues() {
@@ -322,66 +379,6 @@ export default class AutomaticExtraction extends React.Component {
                             title='Average signed distance from the averages of k neightbors'
                             onClick={this.selectFlareAveDist.bind(this)} readOnly/>
                     </div>
-                    {/* <div className="custom-control custom-checkbox">
-                        <input 
-                            type="checkbox" 
-                            className="custom-control-input" 
-                            id="AveMaximumCheck"
-                            disabled={!this.state.flare}
-                            onChange={this.selectFlareAveMaximum.bind(this)}
-                            checked={this.state.flareOption.indexOf('AveMaximum') >= 0}/>
-                        <label className="custom-control-label" htmlFor="AveMaximumCheck">
-                            Average of the maximums among k left & right neightbors
-                        </label>
-                    </div>
-                    <div className="custom-control custom-checkbox">
-                        <input 
-                            type="checkbox" 
-                            className="custom-control-input" 
-                            id="AveAveCheck"
-                            disabled={!this.state.flare}
-                            onChange={this.selectFlareAveAve.bind(this)}
-                            checked={this.state.flareOption.indexOf('AveAve') >= 0}/>
-                        <label className="custom-control-label" htmlFor="AveAveCheck">
-                            Average of the averages of the signed distance from k left & right neightbors
-                        </label>
-                    </div>
-                    <div className="custom-control custom-checkbox">
-                        <input 
-                            type="checkbox" 
-                            className="custom-control-input" 
-                            id="AveDistCheck"
-                            disabled={!this.state.flare}
-                            onChange={this.selectFlareAveDist.bind(this)}
-                            checked={this.state.flareOption.indexOf('AveDist') >= 0}/>
-                        <label className="custom-control-label" htmlFor="AveDistCheck">
-                            Average signed distance from the averages of k neightbors
-                        </label>
-                    </div> */}
-
-                    {/* <div className="custom-control custom-checkbox">
-                        <input 
-                            type="checkbox" 
-                            className="custom-control-input" 
-                            id="GESDCheck"
-                            disabled={!this.state.flare}
-                            onChange={this.selectAutomaticFlareExtractionMode.bind(this)}
-                            checked={this.state.flareOption.indexOf('GESD') >= 0}/>
-                        <label className="custom-control-label" htmlFor="GESDCheck">Generalized ESD</label>
-                    </div>
-                    <div className='row matchingOption'>
-                        <div className='col-5'>
-                            Significance level (α)
-                        </div>
-                        <div className='col'>
-                            <input className="form-control form-control-sm"
-                                type="text"
-                                placeholder="α value"
-                                id="alphaValueForGESD"
-                                disabled={!this.state.flare}
-                                style={{width: '40%', marginRight: '0.5rem'}}/>
-                        </div>
-                    </div> */}
                 </div>
                 <div className="custom-control custom-radio">
                     <input type="radio" id="flareManual" name="flareOptions" value='manual'
@@ -507,16 +504,17 @@ export default class AutomaticExtraction extends React.Component {
  
     switchFlareOption() {
         let flareOption = $('input[name=flareOptions]:checked').val();
+        if (flareOption === 'automatic') {
+            $('img[name=peakFunction]').each(function(i, val) {
+                if ($(this).attr('class').indexOf('selected') >= 0) {
+                    let id = $(val).attr('id');
+                    flareOption += ' ' + id.slice(4, id.length);
+                }
+            });
+        }
         this.setState({
             flareOption: flareOption
         });
-    }
-
-    selectFlareMethod() {
-        let flareMethod = $('input[name=flareMethods]:checked').val();
-        this.setState({
-            flareOption: 'automatic ' + flareMethod
-        })
     }
 
     selectFlareAveMaximum() {

@@ -1,14 +1,29 @@
 import React from 'react';
 import * as FeatureAction from '../Actions/FeatureAction';
 import DataStore from '../Stores/DataStore';
-import { func } from 'prop-types';
+import FeatureStore from '../Stores/FeatureStore';
 
 export default class QueryByExample extends React.Component {
     constructor(props) {
         super();
         this.state = {
             dragSelection: true,
+            source: -1
         };
+    }
+
+    componentDidMount() {
+        FeatureStore.on('recoverQuery', (query) => {
+            if (FeatureStore.getMode() === 'QBE') {
+                let sourceList = document.getElementById('sourceList');
+                for (let i = 0; i < sourceList.options.length; i++) {
+                    if (Number(sourceList.options[i].value) === Number(FeatureStore.getSource())) {
+                        sourceList.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+        });
     }
 
     extractionSource() {

@@ -106,6 +106,9 @@ class FeatureStore extends EventEmitter {
             case 'UPDATE_DISTANCE_THRESHOLD':
                 this.updateDistanceThreshold(action.threshold);
                 break;
+            case 'RECOVER_QUERY':
+                this.recoverQuery(action.query);
+                break;
             default:
         }
     }
@@ -200,6 +203,12 @@ class FeatureStore extends EventEmitter {
 
     resetSelection() {
         this.emit('resetSelection');
+    }
+
+    resetAEOptions() {
+        for (let key in this.AEOptions) {
+            this.AEOptions[key] = false;
+        }
     }
 
     selectTimeInterval(value) {
@@ -337,6 +346,39 @@ class FeatureStore extends EventEmitter {
     updateDistanceThreshold(threshold) {
         this.distanceThreshold = threshold;
         this.emit('updateDistanceThreshold');
+    }
+
+    recoverQuery(query) {
+        if (query.mode === 'automatic extraction') {
+            this.mode = 'AE';
+            this.resetAEOptions();
+            for (let i = 0; i < query.option.length; i++) {
+                this.AEOptions[query.option[i]] = true;
+            }
+        } else if (query.mode === 'visual query') {
+            if (query.option === 'query-by-example') {
+                this.mode = 'QBE';
+                this.selectedPeriod = query.query.period;
+                this.source = DataStore.getIdFromName(query.query.source);
+                // set ignored variable
+                let lookup = DataStore.getData(this.source).data.lookup;
+                let ignoredTmp = [];
+
+                for (let i = 0; i < query.query.inactiveVariables.length; i++) { 
+                    for (let key in lookup) {
+                        if (lookup[key].indexOf(query.query.inactiveVariables[i][0]) >= 0) {
+                            ignoredTmp.push(key);
+                        }
+                    }
+                }
+                this.ignored = ignoredTmp;
+                this.parameters = query.parameters;
+            } else if (query.option === 'query-by-sketch') {
+                this.mode = 'QBS';
+                this.parameters = query.parameters;
+            }
+        }
+        this.emit('recoverQuery', query);
     }
 }
 

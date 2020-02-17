@@ -14,7 +14,7 @@ export default class SelectedTimeSlice extends React.Component {
         this.texture = TimeTubesStore.getTexture();
         this.segment = TimeTubesStore.getSegment();
         this.division = TimeTubesStore.getDivision();
-        this.ignoredVariables = [];
+        this.ignoredVariables = FeatureStore.getIgnored();
     }
 
     render() {
@@ -41,6 +41,16 @@ export default class SelectedTimeSlice extends React.Component {
     componentDidMount() {
         this.initializeScene();
 
+        // for the case when 'recoverQuery' is called before selected time slice is monted
+        // Eventlistener does not work before the components are mounted
+        if (this.sourceId >= 0 && this.selectedPeriod[0] >= 0 && this.selectedPeriod[1] >= 0) {
+            if (!this.tube) {
+                this.setUpScene();
+            }
+            this.updateTimePeriod();
+            this.redrawTube();
+        }
+
         TimeTubesStore.on('switch', () => {
            if (this.camera) {
                this.switchCamera();
@@ -50,7 +60,9 @@ export default class SelectedTimeSlice extends React.Component {
             if (mode !== 'QBE') {
                 this.sourceId = FeatureStore.getSource();
                 this.ignoredVariables = [];
-                this.deselectAll();
+                if (this.tube) {
+                    this.deselectAll();
+                }
             }
         });
         FeatureStore.on('updateSource', () => {
@@ -118,9 +130,23 @@ export default class SelectedTimeSlice extends React.Component {
                         }
                     });
                 }
+                this.updateTimePeriod();
+                this.redrawTube();
             }
-            this.updateTimePeriod();
-            this.redrawTube();
+        });
+        FeatureStore.on('recoverQuery', (query) => {
+            console.log('recoverQuery, selectedtimeslice');
+            if (FeatureStore.getMode() === 'QBE') {
+                this.sourceId = FeatureStore.getSource();
+                this.selectedPeriod = FeatureStore.getSelectedPeriod();
+                this.ignoredVariables = FeatureStore.getIgnored();
+                this.data = DataStore.getData(this.sourceId);
+                if (!this.tube) {
+                    this.setUpScene();
+                }
+                this.updateTimePeriod();
+                this.redrawTube();
+            }
         });
     }
 

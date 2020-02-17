@@ -10,8 +10,7 @@ export default class FeatureExtraction extends React.Component{
         super();
         // FeatureAction.switchQueryMode('AE');
         this.state = {
-            queryMode: FeatureStore.getMode(),
-            menu: 'Visualization'
+            queryMode: FeatureStore.getMode()
         };
     }
     
@@ -22,6 +21,21 @@ export default class FeatureExtraction extends React.Component{
                     queryMode: mode
                 })
             );
+            if (mode === 'QBE') {
+                $('#extractionResults').css({
+                    width: (100 - 30 * 2) + '%'
+                });
+            } else {
+                $('#extractionResults').css({
+                    width: (100 - 30) + '%'
+                });
+            }
+        });
+        FeatureStore.on('recoverQuery', (query) => {
+            let mode = FeatureStore.getMode();
+            this.setState({
+                queryMode: mode
+            });
             if (mode === 'QBE') {
                 $('#extractionResults').css({
                     width: (100 - 30 * 2) + '%'

@@ -31,7 +31,7 @@ export default class ScatterplotsQBE extends React.Component{
         this.slicedData = this.data.data.spatial;
         this.xMinMax = [0, 0];
         this.yMinMax = [0, 0];
-        this.selectedPeriod = [-1, -1];
+        this.selectedPeriod = FeatureStore.getSelectedPeriod();
         this.selector = 'selectRegion';
         this.state = {
             yItem: props.yItem,
@@ -45,6 +45,14 @@ export default class ScatterplotsQBE extends React.Component{
         this.initalizeElements();
         this.computeRange(this.state.yItem);
         this.drawScatterplots();
+
+        // for the case when 'recoverQuery' is called before selected time slice is monted
+        // Eventlistener does not work before the components are mounted
+        if (this.selectedPeriod[0] > 0 && this.selectedPeriod[1] > 0) {
+            this.highlightSelectedTimePeriod();
+            this.timeRange = [this.selectedPeriod[0] - 10, this.selectedPeriod[1] + 10];
+            this.updateTimeRange();
+        }
 
         TimeTubesStore.on('updateFocus', (id, zpos, flag) => {
             // when flag is true, change the color of the plot

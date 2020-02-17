@@ -98,6 +98,11 @@ export default class ExtractionResults extends React.Component {
                 AEOptions: FeatureStore.getAEOptions()
             });
         });
+        FeatureStore.on('recoverQuery', (query) => {
+            this.setState({
+                mode: FeatureStore.getMode()
+            });
+        });
     }
 
     updateOrder() {

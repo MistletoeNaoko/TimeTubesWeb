@@ -4,6 +4,7 @@ import Visualization from "./Visualization";
 import FeatureExtraction from './FeatureExtraction';
 import Comment from './Comment';
 import AppStore from '../Stores/AppStore';
+import FeatureStore from '../Stores/FeatureStore';
 
 // Layout menu, visualization, feature form, etc.
 export default class Layout extends React.Component {
@@ -21,6 +22,11 @@ export default class Layout extends React.Component {
                 menu: menu
             });
             this.selectMainView();
+        });
+        FeatureStore.on('recoverQuery', (query) => {
+            this.setState({
+                menu: 'feature'
+            });
         });
     }
 

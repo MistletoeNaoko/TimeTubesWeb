@@ -20,6 +20,29 @@ export default class ExtractionMenu extends React.Component {
                queryMode: mode
            });
         });
+        FeatureStore.on('recoverQuery', (query) => {
+            let mode = FeatureStore.getMode();
+            this.setState({
+                queryMode: mode
+            });
+            let AETab = $('#automaticExtraction'),
+                VQTab = $('#visualQuery');
+            if (mode === 'AE') {
+                if (!AETab.hasClass('active')) {
+                    AETab.addClass('show').addClass('active');
+                }
+                if (VQTab.hasClass('active')) {
+                    VQTab.removeClass('show').removeClass('active');
+                }
+            } else if (mode === 'QBE' || mode === 'QBS') {
+                if (!VQTab.hasClass('active')) {
+                    VQTab.addClass('show').addClass('active');
+                }
+                if (AETab.hasClass('active')) {
+                    AETab.removeClass('show').removeClass('active');
+                }
+            }
+        });
     }
 
     selectTab() {

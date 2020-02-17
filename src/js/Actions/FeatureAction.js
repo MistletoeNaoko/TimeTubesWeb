@@ -97,3 +97,7 @@ export function updateOrder(order) {
 export function updateDistanceThreshold(threshold) {
     dispatcher.dispatch({type: 'UPDATE_DISTANCE_THRESHOLD', threshold});
 }
+
+export function recoverQuery(query) {
+    dispatcher.dispatch({type: 'RECOVER_QUERY', query});
+}

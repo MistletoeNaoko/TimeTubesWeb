@@ -13,7 +13,7 @@ export default class ExtractionSource extends React.Component {
         super();
         this.state = {
             data: DataStore.getAllData(),
-            source: -1
+            source: FeatureStore.getSource()
         };
     }
     
@@ -40,6 +40,13 @@ export default class ExtractionSource extends React.Component {
         //         });
         //     }
         // });
+        FeatureStore.on('recoverQuery', (query) => {
+            if (FeatureStore.getMode() === 'QBE') {
+                this.setState({
+                    source: FeatureStore.getSource()
+                });
+            }
+        });
     }
 
     render() {

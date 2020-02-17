@@ -12,7 +12,6 @@ export default class VisualQuery extends React.Component {
     constructor() {
         super();
         this.state = {
-            visualQuery: false,
             dragSelection: true,
             queryMode: FeatureStore.getMode(),
             selector: true,
@@ -76,6 +75,43 @@ export default class VisualQuery extends React.Component {
                 selectedInterval: period
             });
         });
+        FeatureStore.on('recoverQuery', (query) => {
+            let mode = FeatureStore.getMode();
+            if (mode !== 'AE') {
+                if (mode === 'QBE') {
+                    let interval = FeatureStore.getSelectedPeriod();
+                    this.setState({
+                        source: FeatureStore.getSource(),
+                        selectedInterval: interval,
+                        coordinate: query.parameters.coordinate,
+                        DTWMode: query.parameters.DTWType
+                    });
+                } else if (mode === 'QBS') {
+                    this.setState({
+                        coordinate: query.parameters.coordinate,
+                        DTWMode: query.parameters.DTWType
+                    });
+                }
+
+                // recover parameters status for matching
+                let parameters = FeatureStore.getParameters();
+                $('#QBENormalizeSwitch').prop('checked', parameters.normalize);
+                let distanceMetric = document.getElementById('distanceMetric');
+                for (let i = 0; i < distanceMetric.options.length; i++) {
+                    if (distanceMetric.options[i].value === parameters.distanceMetric) {
+                        distanceMetric.selectedIndex = i;
+                        break;
+                    }
+                }
+                $('#warpingWindowSize').val(parameters.warpingWindowSize);
+                $('#targetLengthMin').val(parameters.timeSliceLength[0]);
+                $('#targetLengthMax').val(parameters.timeSliceLength[1]);
+                $('#stepSizeOfSlidingWindow').val(parameters.slidingWindow);
+            }
+            this.setState({
+                queryMode: mode
+            });
+        });
     }
 
     switchSelector() {
@@ -118,13 +154,6 @@ export default class VisualQuery extends React.Component {
         }
     }
 
-    updateSource() {
-        let sourceList = document.getElementById('sourceList');
-        let selectedIdx = sourceList.selectedIndex;
-        let selectedId = sourceList.options[selectedIdx].value; // get id
-        FeatureAction.updateSource(selectedId);
-    }
-
     updateSelectedInterval() {
         $('#selectedInterval').text('JD: ' + this.state.selectedInterval[0].toFixed(3) + ' - ' + this.state.selectedInterval[1].toFixed(3));
         $('#targetLengthMin').val(Math.floor(this.state.selectedInterval[1]) - Math.ceil(this.state.selectedInterval[0]));
@@ -134,27 +163,6 @@ export default class VisualQuery extends React.Component {
     updateIgnoredVariables() {
         let ignored = domActions.getIgnoredVariables();
         FeatureAction.setIgnoredVariables(ignored);
-    }
-
-    extractionSource() {
-        let idFile = DataStore.getAllIdsFileNames();
-        let sourceList = idFile.map((data) => {
-            return <option value={data.id} key={data.id}>{data.name}</option>;
-        });
-        sourceList.unshift(<option value='default' key='default'>Select a source</option>)
-        return (
-            <div className='featureElem'
-                 style={{display: (this.state.queryMode === 'QBE') ? 'block': 'none'}}>
-                <h5>Source</h5>
-                <select
-                    className="custom-select custom-select-sm"
-                    id='sourceList'
-                    style={{width: '40%'}}
-                    onChange={this.updateSource.bind(this)}>
-                        {sourceList}
-                </select>
-            </div>
-        );
     }
 
     queryModes() {
@@ -208,7 +216,6 @@ export default class VisualQuery extends React.Component {
             <div className='featureElem' id='QBSArea'
                 style={{display: (this.state.queryMode === 'QBS')? 'block': 'none'}}>
                 <QueryBySketch
-                    id={this.state.source}
                     xItem={'z'}
                     yItem={'V'}/>
             </div>
@@ -223,10 +230,15 @@ export default class VisualQuery extends React.Component {
         }
         let selectionDetail;
         if (this.state.queryMode === 'QBE') {
+            let timeIntervalText = '';
+            if (this.state.selectedInterval[0] > 0 && this.state.selectedInterval[1] > 0) {
+                timeIntervalText = 'JD: ' + this.state.selectedInterval[0].toFixed(3) + ' - ' + this.state.selectedInterval[1].toFixed(3);
+            }
+            
             selectionDetail = (
                 <div className='featureElem' style={{position: 'relative'}}>
                     <h5>Selection Detail</h5>
-                    <span id='selectedInterval'></span>
+                    <span id='selectedInterval'>{timeIntervalText}</span>
                     <div id='selectedIntervalViewArea'>
                         {selectedTimeSlice}
                     </div>
@@ -240,31 +252,65 @@ export default class VisualQuery extends React.Component {
         let items = [];
         if (this.state.source >= 0) {
             let lookup = DataStore.getData(Number(this.state.source)).data.lookup;
-            for (let key in lookup) {
-                let label = '';
-                if (lookup[key].length > 1) {
-                    label = lookup[key].join(',');
-                } else {
-                    label = lookup[key];
+            let inactiveVariables = FeatureStore.getIgnored();
+            // if inactive variables are already determined, check the checkboxes
+            if (inactiveVariables.length === 0) {
+                for (let key in lookup) {
+                    let label = '';
+                    if (lookup[key].length > 1) {
+                        label = lookup[key].join(',');
+                    } else {
+                        label = lookup[key];
+                    }
+                    if (key !== 'z' && key !== 'PA' && key !== 'PD') {
+                        items.push(
+                            <div className="form-check form-check-inline"
+                                key={key}>
+                                <input
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    name='QBEIgnored'
+                                    value={key}
+                                    id={"QBEIgnored_" + key}
+                                />
+                                <label
+                                    className="form-check-label"
+                                    htmlFor={"QBEIgnored_" + key}>
+                                    {label}
+                                </label>
+                            </div>
+                        );
+                    }
                 }
-                if (key !== 'z' && key !== 'PA' && key !== 'PD') {
-                    items.push(
-                        <div className="form-check form-check-inline"
-                             key={key}>
-                            <input
-                                className="form-check-input"
-                                type="checkbox"
-                                name='QBEIgnored'
-                                value={key}
-                                id={"QBEIgnored_" + key}
-                            />
-                            <label
-                                className="form-check-label"
-                                htmlFor={"QBEIgnored_" + key}>
-                                {label}
-                            </label>
-                        </div>
-                    );
+            } else if (inactiveVariables.length > 0) {
+                for (let key in lookup) {
+                    let label = '';
+                    if (lookup[key].length > 1) {
+                        label = lookup[key].join(',');
+                    } else {
+                        label = lookup[key];
+                    }
+                    if (key !== 'z' && key !== 'PA' && key !== 'PD') {
+                        let defaultChecked = (inactiveVariables.indexOf(key) >= 0)? true: false;
+                        items.push(
+                            <div className="form-check form-check-inline"
+                                key={key}>
+                                <input
+                                    className="form-check-input"
+                                    type="checkbox"
+                                    name='QBEIgnored'
+                                    value={key}
+                                    defaultChecked={defaultChecked}
+                                    id={"QBEIgnored_" + key}
+                                />
+                                <label
+                                    className="form-check-label"
+                                    htmlFor={"QBEIgnored_" + key}>
+                                    {label}
+                                </label>
+                            </div>
+                        );
+                    }
                 }
             }
         }
@@ -476,7 +522,7 @@ export default class VisualQuery extends React.Component {
                     ignored.push('PD');
                     ignored.push('PA');
                     let parameters = {};
-                    parameters.QBE = {
+                    parameters = {
                         normalize: normalization,
                         coordinate: this.state.coordinate,
                         distanceMetric: selectedDist,
@@ -522,7 +568,7 @@ export default class VisualQuery extends React.Component {
                     // let selectedIdx = variableList.selectedIndex;
                     // let selectedText = variableList.options[selectedIdx].innerText;
                     let parameters = {};
-                    parameters.QBS = {
+                    parameters = {
                         // width: ($('#widthDetectionSwitch').prop('checked'))? selectedText: false,
                         // sketchLength: $('#periodOfSketchQuery').val(),
                         normalize: normalization,
@@ -558,7 +604,6 @@ export default class VisualQuery extends React.Component {
         return (
             <div id='featureArea' className='controllersElem featureArea'>
                 {this.queryModes()}
-                {/*{this.extractionSource()}*/}
                 <div id='queryModes'>
                     {this.QBESelection()}
                     {this.QBSSelection()}
