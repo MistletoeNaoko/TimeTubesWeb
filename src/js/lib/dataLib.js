@@ -125,26 +125,21 @@ export function getQueryFromId(id) {
 }
 
 export function exportPrivateComment(idList) {
+    console.log(idList);
     let selected = [];
+    let queryList = [];
     for (let i = 0; i < idList.length; i++) {
-        selected.push(privateComment[idList[i]]);
-    }
-    let contents = '';
-    for (let i = 0; i < selected.length; i++) {
-        for (let key in selected[i]) {
-            if (key === 'timeStamp') {
-                contents += selected[i][key].replace(', ', '_');
-            } else if (key === 'queryId') {
-
-            } else {
-                contents += selected[i][key] + ',';
-            }
+        let comment = privateComment[idList[i]];
+        selected.push(comment);
+        if (queryList.indexOf(comment.queryId) < 0) {
+            queryList.push(queryTable[comment.queryId]);
         }
-        contents = contents.substring(0, contents.length - 1);
-        contents += '\n';
     }
-    let filename = 'privateComment_' + createDateLabel() + '.csv';
-    let blob = new Blob([contents], {type: 'text/csv'});
+
+    let contents = {comments: selected, query: queryList};
+    contents = JSON.stringify(contents, null, '\t');
+    let filename = 'privateComment_' + createDateLabel() + '.json';
+    let blob = new Blob([contents], {type: 'application/json'});
     let url = window.URL || window.webkitURL;
     let blobURL = url.createObjectURL(blob);
     let a = document.createElement('a');
