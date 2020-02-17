@@ -6,6 +6,7 @@ import * as FeatureAction from '../Actions/FeatureAction';
 import {createDateLabel} from '../lib/dataLib';
 import FeatureStore from '../Stores/FeatureStore';
 import DataStore from '../Stores/DataStore';
+import AppStore from '../Stores/AppStore';
 
 export default class QueryBySketch extends React.Component{
     constructor(props) {
@@ -62,6 +63,7 @@ export default class QueryBySketch extends React.Component{
         this.controlPoints = [];
         // what variable is assigned to the path width
         this.widthVar = null;
+        this.widthRange = [];
         // for converting drawing speed into the path width
         this.timeStamps = [];
         // for hit tests
@@ -88,29 +90,29 @@ export default class QueryBySketch extends React.Component{
         FeatureStore.on('updateTarget', () => {
             // if (FeatureStore.getMode() === 'QBS') {
                 let targets = FeatureStore.getTarget();
-                let lists = this.extractMinMaxList(targets);
                 let lookup = this.updateLookup();
+                let lists = this.extractMinMaxList(lookup, targets);
                 this.setState({
                     targetList: targets,
                     minList: lists.minList,
                     maxList: lists.maxList,
                     lookup: lookup
                 });
-                let minmax = this.computeMinMaxValue(lists.minList, lists.maxList);
-                this.xMinMax = minmax.xMinMax;
-                this.yMinMax = minmax.yMinMax;
-                this.xAxisText
-                    .text(this.state.lookup[this.state.xItem]);
-                this.yAxisText
-                    .text(this.state.lookup[this.state.yItem]);
-                this.updateAxis();
-                this.updateWidthVariable();
+                // let minmax = this.computeMinMaxValue(lists.minList, lists.maxList);
+                // this.xMinMax = minmax.xMinMax;
+                // this.yMinMax = minmax.yMinMax;
+                // this.xAxisText
+                //     .text(this.state.lookup[this.state.xItem]);
+                // this.yAxisText
+                //     .text(this.state.lookup[this.state.yItem]);
+                // this.updateAxis();
+                // this.updateWidthVariable();
             // }
         });
         FeatureStore.on('switchQueryMode', (mode) => {
             if (mode === 'QBS') {
                 let targets = FeatureStore.getTarget();
-                let lists = this.extractMinMaxList(targets);
+                let lists = this.extractMinMaxList(this.state.lookup, targets);
                 this.setState({
                     targetList: targets,
                     minList: lists.minList,
@@ -164,6 +166,72 @@ export default class QueryBySketch extends React.Component{
                 this.transformDataIntoSketch(this.state.xItem, this.state.yItem);
             }
         });
+        FeatureStore.on('recoverQuery', (query) => {
+            setTimeout(function() {
+                if (FeatureStore.getMode() === 'QBS') {
+                    let lookup = this.updateLookup();
+                    this.initCanvas();
+                    this.clearCanvas();
+                    this.xMinMax = query.query.xRange;
+                    this.yMinMax = query.query.yRange;
+                    this.updateAxis();
+                    let targets = FeatureStore.getTarget();
+                    let lists = this.extractMinMaxList(lookup, targets);
+                    let xItem, yItem;
+                    for (let i = 0; i < query.query.xItem.length; i++) {
+                        for (let key in lookup) {
+                            if (lookup[key].indexOf(query.query.xItem[i]) >= 0) {
+                                xItem = key;
+                                break;
+                            }
+                        }
+                    }
+                    for (let i = 0; i < query.query.yItem.length; i++) {
+                        for (let key in lookup) {
+                            if (lookup[key].indexOf(query.query.yItem[i]) >= 0) {
+                                yItem = key;
+                                break;
+                            }
+                        }
+                    }
+                    if (query.query.widthVar) {
+                        for (let i = 0; i < query.query.widthVar.length; i++) {
+                            for (let key in lookup) {
+                                if (lookup[key].indexOf(query.query.widthVar[i]) >= 0) {
+                                    this.widthVar = key;
+                                    break;
+                                }
+                            }
+                        }
+                        this.widthRange = query.query.widthRange;
+                        this.changeWidthVariable(this.widthVar, this.widthRange);
+                        $('#sketchWidthSlider').slider('option', 'disabled', !this.state.detectWidth);
+                    }
+                    if (this.xAxisText) {
+                        this.xAxisText
+                            .text(lookup[xItem]);
+                    }
+                    if (this.yAxisText) {
+                        this.yAxisText
+                            .text(lookup[yItem]);
+                    }
+                    $('#periodOfSketchQuery').val(query.query.length);
+                    this.recoverQuery(query, xItem, yItem);
+                    this.setState({
+                        targetList: targets,
+                        lookup: lookup,
+                        xItem: xItem,
+                        xItemonPanel: xItem,
+                        yItem: yItem,
+                        yItemonPanel: yItem,
+                        detectWidth: (this.widthVar)? true: false,
+                        minList: lists.minList,
+                        maxList: lists.maxList,
+                    });
+                }
+            }.bind(this), 0);
+            
+        });
     }
 
     updateLookup() {
@@ -189,10 +257,10 @@ export default class QueryBySketch extends React.Component{
         return lookup;
     }
 
-    extractMinMaxList(targets) {
+    extractMinMaxList(lookup, targets) {
         let minList = {}, maxList = {};
         let minTmp = [], maxTmp = [];
-        for (let key in this.state.lookup) {
+        for (let key in lookup) {
             minTmp = [];
             maxTmp = [];
             for (let i = 0; i < targets.length; i++) {
@@ -312,6 +380,7 @@ export default class QueryBySketch extends React.Component{
             this.path = null;
         }
         if (this.pathWidth) {
+            this.widthVar = null;
             this.pathWidth.remove();
             this.pathWidth = null;
         }
@@ -472,12 +541,13 @@ export default class QueryBySketch extends React.Component{
                                 let [minRad, maxRad] = d3.extent(this.controlPoints, d => d.radius);
                                 let minVal = Math.min.apply(null, this.state.minList[key]),
                                     maxVal = Math.max.apply(null, this.state.maxList[key]);
-                                let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
-                                let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
-                                    maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
+                                // let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
+                                // let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
+                                //     maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
 
                                 $('#widthValue_' + key).css('display', 'block');
-                                $('#widthValue_' + key).text(formatValue((maxRange - minRange) / (maxRad - minRad) * (this.controlPoints[this.highlightedPointIdx].radius - minRad) + minRange));
+                                // $('#widthValue_' + key).text(formatValue((maxRange - minRange) / (maxRad - minRad) * (this.controlPoints[this.highlightedPointIdx].radius - minRad) + minRange));
+                                $('#widthValue_' + key).text(formatValue((this.widthRange[1] - this.widthRange[0]) / (maxRad - minRad) * (this.controlPoints[this.highlightedPointIdx].radius - minRad) + this.widthRange[0]));
                             }
                         } else {
                             // if some variables are already assigned
@@ -520,12 +590,13 @@ export default class QueryBySketch extends React.Component{
                                 let [minRad, maxRad] = d3.extent(this.controlPoints, d => d.radius);
                                 let minVal = Math.min.apply(null, this.state.minList[key]),
                                     maxVal = Math.max.apply(null, this.state.maxList[key]);
-                                let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
-                                let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
-                                    maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
+                                // let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
+                                // let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
+                                //     maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
 
                                 $('#widthValue_' + key).css('display', 'block');
-                                $('#widthValue_' + key).text(formatValue((maxRange - minRange) / (maxRad - minRad) * (this.controlPoints[this.highlightedPointIdx].radius - minRad) + minRange));
+                                // $('#widthValue_' + key).text(formatValue((maxRange - minRange) / (maxRad - minRad) * (this.controlPoints[this.highlightedPointIdx].radius - minRad) + minRange));
+                                $('#widthValue_' + key).text(formatValue((this.widthRange[1] - this.widthRange[0]) / (maxRad - minRad) * (this.controlPoints[this.highlightedPointIdx].radius - minRad) + this.widthRange[0]));
                             }
                         }
                     }
@@ -1103,13 +1174,14 @@ export default class QueryBySketch extends React.Component{
                     let radRange = [], valueRange = [];
                     if (this.widthVar) {
                         let [minRad, maxRad] = d3.extent(this.controlPoints, d => d.radius);
-                        let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
-                            maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
-                        let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
-                        let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
-                            maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
+                        // let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
+                        //     maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
+                        // let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
+                        // let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
+                        //     maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
                         radRange = [minRad, maxRad];
-                        valueRange = [minRange, maxRange];
+                        // valueRange = [minRange, maxRange];
+                        valueRange = this.widthRange;
                     }
                     for (let key in queryVal) {
                         if (this.controlPoints[0].assignedVariables[key].length > 0) {
@@ -1198,11 +1270,11 @@ export default class QueryBySketch extends React.Component{
                     let [minRad, maxRad] = d3.extent(this.controlPoints, d => d.radius);
                     let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
                         maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
-                    let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
-                    let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
-                        maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
+                    // let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
+                    // let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
+                    //     maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
                     radRange = [minRad, maxRad];
-                    valueRange = [minRange, maxRange];
+                    valueRange = this.widthRange;//[minRange, maxRange];
                 }
                 // create a vertical line to run hit test
                 let del = this.xScale(1); // 1 day === del px
@@ -1296,11 +1368,11 @@ export default class QueryBySketch extends React.Component{
                     let [minRad, maxRad] = d3.extent(this.controlPoints, d => d.radius);
                     let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
                         maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
-                    let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
-                    let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
-                        maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
+                    // let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
+                    // let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
+                    //     maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
                     radRange = [minRad, maxRad];
-                    valueRange = [minRange, maxRange];
+                    valueRange = this.widthRange;//[minRange, maxRange];
                 }
                 // create a vertical line to run hit test
                 let del = this.state.size - this.yScale(1); // 1 day === del px
@@ -1373,25 +1445,25 @@ export default class QueryBySketch extends React.Component{
             }
             queryVal['arrayLength'] = queryVal[Object.keys(queryVal)[0]].length;
             
-            let widthRange = null;
-            if (this.widthVar) {
-                let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
-                    maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
-                let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
-                let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
-                    maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
-                widthRange = [minRange, maxRange];
-            }
+            // let widthRange = null;
+            // if (this.widthVar) {
+            //     let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
+            //         maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
+            //     let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
+            //     let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
+            //         maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
+            //     widthRange = [minRange, maxRange];
+            // }
             let query = {
                 mode: 'visual query',
                 option: 'query-by-sketch',
                 query: {
-                    xItem: this.state.lookup[this.state.xItem],
-                    yItem: this.state.lookup[this.state.yItem],
+                    xItem: this.state.lookup[xItem],
+                    yItem: this.state.lookup[yItem],
                     xRange: this.xScale.domain(),
                     yRange: this.yScale.domain(),
                     widthVar: this.state.lookup[this.widthVar],
-                    widthRange: widthRange,
+                    widthRange: this.widthRange,
                     controlPoints: this.controlPoints,
                     path: this.path.segments,
                     size: this.state.size,
@@ -2131,29 +2203,46 @@ export default class QueryBySketch extends React.Component{
         reader.onload = function() {
             let contents = reader.result;
             let query = JSON.parse(contents);
-            if (query.type === 'Query-by-sketch') {
+            if (query.option === 'query-by-sketch') {
                 this.clearCanvas();
+                let xItem, yItem;
+                for (let i = 0; i < query.query.xItem.length; i++) {
+                    for (let key in this.state.lookup) {
+                        if (this.state.lookup[key].indexOf(query.query.xItem[i]) >= 0) {
+                            xItem = key;
+                            break;
+                        }
+                    }
+                }
+                for (let i = 0; i < query.query.yItem.length; i++) {
+                    for (let key in this.state.lookup) {
+                        if (this.state.lookup[key].indexOf(query.query.yItem[i]) >= 0) {
+                            yItem = key;
+                            break;
+                        }
+                    }
+                }
                 this.setState({
-                    xItem: query.xItem,
-                    yItem: query.yItem
+                    xItem: xItem,
+                    yItem: yItem
                 });
                 if (this.xAxisText) {
                     this.xAxisText
-                        .text(this.state.lookup[query.xItem]);
+                        .text(this.state.lookup[xItem]);
                 }
                 if (this.yAxisText) {
                     this.yAxisText
-                        .text(this.state.lookup[query.yItem]);
+                        .text(this.state.lookup[yItem]);
                 }
-                this.xMinMax = query.xRange;
-                this.yMinMax = query.yRange;
+                this.xMinMax = query.query.xRange;
+                this.yMinMax = query.query.yRange;
                 this.updateAxis();
-                $('#periodOfSketchQuery').val(query.queryLength);
+                $('#periodOfSketchQuery').val(query.query.length);
 
                 // for the case, the size of sketch pad is different
-                let ratio = this.state.size / query.size;
-                for (let i = 0; i < query.controlPoints.length; i++) {
-                    this.controlPoints.push(query.controlPoints[i]);
+                let ratio = this.state.size / query.query.size;
+                for (let i = 0; i < query.query.controlPoints.length; i++) {
+                    this.controlPoints.push(query.query.controlPoints[i]);
                     this.controlPoints[this.controlPoints.length - 1].position.x = this.controlPoints[this.controlPoints.length - 1].position.x * ratio;
                     this.controlPoints[this.controlPoints.length - 1].position.y = this.controlPoints[this.controlPoints.length - 1].position.y * ratio;
                 }
@@ -2161,22 +2250,30 @@ export default class QueryBySketch extends React.Component{
                 this.path = new paper.Path();
                 this.path.strokeColor = 'black';
                 this.path.strokeWidth = 5;
-                for (let i = 0; i < query.path.length; i++) {
+                for (let i = 0; i < query.query.path.length; i++) {
                     // query.path[i][0]: "segment"
                     // query.path[i][1]: position of the point [x, y]
                     // query.path[i][2]: position of the handlein [x, y]
                     // query.path[i][3]: position of the handleout [x, y]
-                    this.path.add(new paper.Point(query.path[i][1][0] * ratio, query.path[i][1][1] * ratio));
-                    this.path.segments[this.path.segments.length - 1].handleIn.x = query.path[i][2][0] * ratio;
-                    this.path.segments[this.path.segments.length - 1].handleIn.y = query.path[i][2][1] * ratio;
-                    this.path.segments[this.path.segments.length - 1].handleOut.x = query.path[i][3][0] * ratio;
-                    this.path.segments[this.path.segments.length - 1].handleOut.y = query.path[i][3][1] * ratio;
+                    this.path.add(new paper.Point(query.query.path[i][1][0] * ratio, query.query.path[i][1][1] * ratio));
+                    this.path.segments[this.path.segments.length - 1].handleIn.x = query.query.path[i][2][0] * ratio;
+                    this.path.segments[this.path.segments.length - 1].handleIn.y = query.query.path[i][2][1] * ratio;
+                    this.path.segments[this.path.segments.length - 1].handleOut.x = query.query.path[i][3][0] * ratio;
+                    this.path.segments[this.path.segments.length - 1].handleOut.y = query.query.path[i][3][1] * ratio;
                 }
-                if (query.widthVar) {
-                    this.widthVar = query.widthVar;
-                    this.changeWidthVariable(this.widthVar, query.widthRange);
+                if (query.query.widthVar) {
+                    for (let i = 0; i < query.query.widthVar.length; i++) {
+                        for (let key in this.state.lookup) {
+                            if (this.state.lookup[key].indexOf(query.query.widthVar[i]) >= 0) {
+                                this.widthVar = key;
+                                break;
+                            }
+                        }
+                    }
+                    this.widthRange = query.query.widthRange;
+                    this.changeWidthVariable(this.widthVar, this.widthRange);
                     for (let i = 0; i < this.controlPoints.length; i++) {
-                        this.controlPoints[i].radius = query.controlPoints[i].radius;
+                        this.controlPoints[i].radius = query.query.controlPoints[i].radius;
                     }
                     this.drawPathWidth();
                 }
@@ -2205,7 +2302,7 @@ export default class QueryBySketch extends React.Component{
                         this.controlPoints[i].label.insertAbove(this.controlPoints[i].labelRect);
                     }
                 }
-                this.convertSketchIntoQuery(query.xItem, query.yItem);
+                this.convertSketchIntoQuery(xItem, yItem);
             } else {
                 alert('This file is not for a query-by-sketch.');
             }
@@ -2215,38 +2312,86 @@ export default class QueryBySketch extends React.Component{
     exportQuery() {
         if (this.path) {
             let widthRange = null;
-            if (this.widthVar) {
-                let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
-                    maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
-                let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
-                let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
-                    maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
-                widthRange = [minRange, maxRange];
+            // if (this.widthVar) {
+            //     let minVal = Math.min.apply(null, this.state.minList[this.widthVar]),
+            //         maxVal = Math.max.apply(null, this.state.maxList[this.widthVar]);
+            //     let sliderRange = $('#sketchWidthSlider').slider('option', 'values');
+            //     let minRange = sliderRange[0] / 100 * (maxVal - minVal) + minVal,
+            //         maxRange = sliderRange[1] / 100 * (maxVal - minVal) + minVal;
+            //     widthRange = [minRange, maxRange];
+            // }
+            let query = FeatureStore.getQuery();
+            if (query.option === 'query-by-sketch') {
+                query = JSON.stringify(query, null , '\t');
+                let filename = 'sketchQuery_' + createDateLabel() + '.json';
+                let blob = new Blob([query], {type: 'application/json'});
+                let url = window.URL || window.webkitURL;
+                let blobURL = url.createObjectURL(blob);
+                let a = document.createElement('a');
+                a.download = decodeURI(filename);
+                a.href = blobURL;
+            
+                a.click();
+            } else {
+                alert('You can export only a query-by-sketch.');
             }
-            let query = {
-                type: 'Query-by-sketch',
-                xItem: this.state.xItem,
-                yItem: this.state.yItem,
-                xRange: this.xScale.domain(),
-                yRange: this.yScale.domain(),
-                controlPoints: this.controlPoints,
-                widthVar: this.widthVar,
-                widthRange: widthRange,
-                path: this.path.segments,
-                queryLength: Number($('#periodOfSketchQuery').val()),
-                size: this.state.size
-            };
-            query = JSON.stringify(query, null , '\t');
-            let filename = 'sketchQuery_' + createDateLabel() + '.json';
-            let blob = new Blob([query], {type: 'application/json'});
-            let url = window.URL || window.webkitURL;
-            let blobURL = url.createObjectURL(blob);
-            let a = document.createElement('a');
-            a.download = decodeURI(filename);
-            a.href = blobURL;
-        
-            a.click();
         }
+    }
+
+    recoverQuery(query, xItem, yItem) {
+        let ratio = this.state.size / query.query.size;
+        for (let i = 0; i < query.query.controlPoints.length; i++) {
+            this.controlPoints.push(query.query.controlPoints[i]);
+            this.controlPoints[this.controlPoints.length - 1].position.x *= ratio;
+            this.controlPoints[this.controlPoints.length - 1].position.y *= ratio;
+        }
+
+        this.path = new paper.Path();
+        this.path.strokeColor = 'black';
+        this.path.strokeWidth = 5;
+        for (let i = 0; i < query.query.path.length; i++) {
+            // query.path[i][0]: "segment"
+            // query.path[i][1]: position of the point [x, y]
+            // query.path[i][2]: position of the handlein [x, y]
+            // query.path[i][3]: position of the handleout [x, y]
+            this.path.add(new paper.Point(query.query.path[i][1][0] * ratio, query.query.path[i][1][1] * ratio));
+            this.path.segments[this.path.segments.length - 1].handleIn.x = query.query.path[i][2][0] * ratio;
+            this.path.segments[this.path.segments.length - 1].handleIn.y = query.query.path[i][2][1] * ratio;
+            this.path.segments[this.path.segments.length - 1].handleOut.x = query.query.path[i][3][0] * ratio;
+            this.path.segments[this.path.segments.length - 1].handleOut.y = query.query.path[i][3][1] * ratio;
+        }
+        if (this.widthVar) {
+            for (let i = 0; i < this.controlPoints.length; i++) {
+                this.controlPoints[i].radius = query.query.controlPoints[i].radius;
+            }
+            this.drawPathWidth();
+        }
+        for (let i = 0; i < this.controlPoints.length; i++) {
+            let label = '';
+            for (let key in this.controlPoints[i].assignedVariables) {
+                if (this.controlPoints[i].assignedVariables[key].length > 0) {
+                    label += this.state.lookup[key] + ', ';
+                }
+            }
+            if (label !== '') {
+                this.controlPoints[i].label = new paper.PointText({
+                    position: {x: this.controlPoints[i].position.x, y: this.controlPoints[i].position.y},
+                    fillColor: '#7b7971',
+                    justification: 'center',
+                    fontSize: 8
+                });
+                label = label.slice(0, -2);
+                this.controlPoints[i].label.content = label;
+
+                this.controlPoints[i].labelRect = new paper.Path.Rectangle(
+                    this.controlPoints[i].label.bounds
+                );
+                this.controlPoints[i].labelRect.fillColor = 'white';
+                this.controlPoints[i].labelRect.strokeColor = 'white';
+                this.controlPoints[i].label.insertAbove(this.controlPoints[i].labelRect);
+            }
+        }
+        // this.convertSketchIntoQuery(xItem, yItem);
     }
 
     collapseQBSSketchOptions() {
@@ -2265,9 +2410,15 @@ export default class QueryBySketch extends React.Component{
                     label = this.state.lookup[key];
                 }
                 if (key !== 'z') {
-                    items.push(
-                        <option key={key} value={key}>{label}</option>
-                    );
+                    if (key === this.widthVar) {
+                        items.push(
+                            <option key={key} value={key} selected={true}>{label}</option>
+                        );
+                    } else {
+                        items.push(
+                            <option key={key} value={key}>{label}</option>
+                        );
+                    }
                 }
             }
         }
@@ -2300,6 +2451,7 @@ export default class QueryBySketch extends React.Component{
                             id='widthVariables'
                             style={{width: '40%'}}
                             disabled={!this.state.detectWidth}
+                            defaultValue={this.widthVar}
                             onChange={this.updateWidthVariable.bind(this)}>
                             {items}
                         </select>
@@ -2357,7 +2509,8 @@ export default class QueryBySketch extends React.Component{
         if (variableList && variableList.options.length > 0) {
             let selectedIdx = variableList.selectedIndex;
             let selectedVal = variableList.options[selectedIdx].value;
-            this.setValueSlider('sketchWidthSlider', Math.min.apply(null, this.state.minList[selectedVal]), Math.max.apply(null, this.state.maxList[selectedVal]));
+            this.widthRange = [Math.min.apply(null, this.state.minList[selectedVal]), Math.max.apply(null, this.state.maxList[selectedVal])];
+            this.setValueSlider('sketchWidthSlider', this.widthRange[0], this.widthRange[1]);
             $('#sketchWidthSlider').on('slidestop', this.stopSlidingWidthSlider().bind(this));
             $('#sketchWidthSlider').slider('option', 'disabled', !this.state.detectWidth);
             this.widthVar = selectedVal;
@@ -2386,7 +2539,11 @@ export default class QueryBySketch extends React.Component{
                 maxVal = Math.max.apply(null, this.state.maxList[value]);
             let minPos = (range[0] - minVal) / (maxVal - minVal) * 100,
                 maxPos = (range[1] - minVal) / (maxVal - minVal) * 100;
-            $('#sketchWidthSlider').slider('option', 'values', [minPos, maxPos]);
+            this.widthRange = range;
+            this.setValueSlider('sketchWidthSlider', range[0], range[1]);
+            if (minPos || maxPos) {
+                $('#sketchWidthSlider').slider('option', 'values', [minPos, maxPos]);
+            }
         }
     }
 
@@ -2529,6 +2686,9 @@ export default class QueryBySketch extends React.Component{
                 let maxVal = ui.values[1] / 100 * (max - min) + min;
                 sliderMin.val(formatValue(minVal));
                 sliderMax.val(formatValue(maxVal));
+                if (id === 'sketchWidthSlider') {
+                    this.widthRange = [minVal, maxVal];
+                }
                 let minPos = -8 + 150 * ui.values[0] / 100;
                 let maxPos = - 8 + 150 - 150 * ui.values[1] / 100;
                 if (ui.handleIndex === 0) {
@@ -2615,6 +2775,9 @@ export default class QueryBySketch extends React.Component{
 
     render() {
         let axisSelection = this.axisSelectionPanel();
+        if (AppStore.getMenu() === 'feature') {
+            this.convertSketchIntoQuery(this.state.xItem, this.state.yItem);
+        }
         return (
             <div id='QBSQuerying'>
                 {this.sketchMenu()}

@@ -102,6 +102,9 @@ export default class ExtractionResults extends React.Component {
             this.setState({
                 mode: FeatureStore.getMode()
             });
+            if ($('#resultDetailArea').css('display') === 'block') {
+                domActions.toggleExtractionDetailPanel();
+            }
         });
     }
 

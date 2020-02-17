@@ -378,6 +378,12 @@ class FeatureStore extends EventEmitter {
                 this.parameters = query.parameters;
             }
         }
+        let targetList = [];
+        let datasets = DataStore.getAllData();
+        for (let i = 0; i < datasets.length; i++) {
+            targetList.push(datasets[i].id);
+        }
+        this.target = targetList;
         this.emit('recoverQuery', query);
     }
 }

@@ -42,6 +42,11 @@ export default class ExtractionMenu extends React.Component {
                     AETab.removeClass('show').removeClass('active');
                 }
             }
+            // select all data sets as target
+            let targets = $('input[name=targetList]');
+            for (let i = 0; i < targets.length; i++) {
+                targets[i].checked = true;
+            }
         });
     }
 
