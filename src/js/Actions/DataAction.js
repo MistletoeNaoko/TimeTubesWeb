@@ -4,34 +4,9 @@ import dispatcher from '../Dispatcher/dispatcher';
 import DataStore from '../Stores/DataStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 
-const dataHeaders = {
-    HU: {
-        x: 'Q/I',
-        y: 'U/I',
-        z: 'JD',
-        r_x: 'E_Q/I',
-        r_y: 'E_U/I',
-        H: 'V-J',
-        V: 'Flx(V)',
-        PA: 'PA',
-        PD: 'PD'
-    },
-    AUPolar: {
-        x: '< q >',
-        y: '< u >',
-        z: 'JD',
-        r_x: 'rms(q)',
-        r_y: 'rms(u)',
-        PA: 'PA',
-        PD: 'PD'
-    },
-    AUPhoto: {
-        z: 'JD',
-        V: 'V'
-    }
-}
+const dataHeaders = DataStore.getDataHeaders();
 
-const spatialVar = ['x', 'y', 'z', 'r_x', 'r_y', 'H', 'V', 'PA', 'PD'];
+const spatialVar = DataStore.getSpatialVar();
 
 export function uploadData(file) {
     // import data in a proper format
