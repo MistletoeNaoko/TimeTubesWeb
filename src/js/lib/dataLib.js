@@ -91,7 +91,7 @@ export function convertPreviousCommentsIntoNewFormat() {
             fileName: privateComment[i].fileName,
             userName: privateComment[i].userName,
             labelColor: '0x80b139',
-            start: privateComment[i].userName,
+            start: privateComment[i].start,
             period: undefined,
             comment: privateComment[i].comment,
             queryId: ''
