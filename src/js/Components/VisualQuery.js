@@ -541,10 +541,12 @@ export default class VisualQuery extends React.Component {
                         // scores of matching with starting JD and period will be returned
                         // result stores {id, start, period, dtw distance, path} (not sorted)
                         let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored, this.state.coordinate);
-                        results = TimeSeriesQuerying.runMatching(query.values, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
-                        results = TimeSeriesQuerying.removeOverlappingQBE(source, period, results);
-                        FeatureAction.setExtractionResults(parameters, results, query, ignored);
-                        TimeSeriesQuerying.setDefaltOrderOfResults();
+                        if (query) {
+                            results = TimeSeriesQuerying.runMatching(query.values, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
+                            results = TimeSeriesQuerying.removeOverlappingQBE(source, period, results);
+                            FeatureAction.setExtractionResults(parameters, results, query, ignored);
+                            TimeSeriesQuerying.setDefaltOrderOfResults();
+                        }
                     }
                 }
                 break;
@@ -587,9 +589,11 @@ export default class VisualQuery extends React.Component {
                         // convert query to polar coordinate
                         query.values = TimeSeriesQuerying.makeQueryPolarQBS(query.values);
                     }
-                    results = TimeSeriesQuerying.runMatchingSketch(query.values, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
-                    FeatureAction.setExtractionResults(parameters, results, query, ignored);
-                    TimeSeriesQuerying.setDefaltOrderOfResults();
+                    if (query.values) {
+                        results = TimeSeriesQuerying.runMatchingSketch(query.values, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
+                        FeatureAction.setExtractionResults(parameters, results, query, ignored);
+                        TimeSeriesQuerying.setDefaltOrderOfResults();
+                    }
                 }
                 break;
         }
