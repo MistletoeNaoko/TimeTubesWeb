@@ -15,7 +15,9 @@ export default class Comment extends React.Component {
         this.state = {
             privateComments: dataLib.getDataFromLocalStorage('privateComment'),
             selectedComment: {},
-            selectedQuery: {}
+            selectedQuery: {},
+            selectedCommentId: '',
+            selectedQueryId: '',
         };
     }
 
@@ -148,7 +150,7 @@ export default class Comment extends React.Component {
                 selectedCommentId: id,
                 selectedComment: comment,
                 selectedQueryId: comment.queryId,
-                selectedQuery: query
+                selectedQuery: (query)? query: {}
             });
         }
     }
@@ -222,6 +224,12 @@ export default class Comment extends React.Component {
             if (flag) {
                 FeatureAction.recoverQuery(this.state.selectedQuery);
                 selectMenu('feature');
+            }
+        } else {
+            if (Object.keys(this.state.selectedQuery).length > 0) {
+                alert('No query information is stored with this comment.');
+            } else {
+                alert('Please select a comment from the left table.');
             }
         }
     }

@@ -83,6 +83,24 @@ export function addCommentData(comment, query, parameters) {
     localStorage.setItem('privateComment', JSON.stringify(privateComment));
 }
 
+export function convertPreviousCommentsIntoNewFormat() {
+    let newComments = {};
+    for (let i = 0; i < privateComment.length; i++) {
+        newComments[privateComment[i].id] = {
+            timeStamp: privateComment[i].timeStamp,
+            fileName: privateComment[i].fileName,
+            userName: privateComment[i].userName,
+            labelColor: '0x80b139',
+            start: privateComment[i].userName,
+            period: undefined,
+            comment: privateComment[i].comment,
+            queryId: ''
+        };
+    }
+    privateComment = newComments;
+    localStorage('privateComment', JSON.stringify(privateComment));
+}
+
 export function getUniqueId() {
     let strong = 1000;
     return new Date().getTime().toString(16) + Math.floor(strong * Math.random()).toString(16);

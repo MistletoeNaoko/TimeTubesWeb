@@ -1,11 +1,15 @@
 import React from "react";
 import ReactDOM from "react-dom";
 import Layout from "./Pages/Layout";
+import {convertPreviousCommentsIntoNewFormat} from './lib/dataLib';
 
 const app = document.getElementById('app');
 ReactDOM.render(<Layout/>, app);
 if (localStorage.getItem('privateComment') === null || localStorage.getItem('privateComment') === '[]') {
     localStorage.setItem('privateComment', JSON.stringify({}));
+}
+if (Array.isArray(JSON.parse(localStorage.getItem('privateComment')))) {
+    convertPreviousCommentsIntoNewFormat();
 }
 if (localStorage.getItem('queryTable') === null || localStorage.getItem('queryTable') === '[]') {
     localStorage.setItem('queryTable', JSON.stringify({}));
