@@ -75,6 +75,9 @@ export default class QueryBySketch extends React.Component{
         this.yMinMax= [];
         // store time slice information when performing result querying
         this.queryData = {};
+
+        // for recover a query (due to setTimeout, the system has to update the query in render function)
+        this.updateQueryFlag = false;
     }
 
     componentDidMount() {
@@ -131,32 +134,7 @@ export default class QueryBySketch extends React.Component{
         });
         FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
             if (FeatureStore.getMode() === 'QBS') {
-                if (this.path) {
-                    this.path.remove();
-                    this.path = null;
-                }
-                if (this.pathWidth) {
-                    this.pathWidth.remove();
-                    this.pathWidth = null;
-                }
-                if (this.penSizeCircle) {
-                    this.penSizeCircle.remove();
-                    this.penSizeCircle = null;
-                }
-                for (let i = 0; i < this.controlPoints.length; i++) {
-                    if (this.controlPoints[i].label) {
-                        this.controlPoints[i].label.remove();
-                        this.controlPoints[i].label = null;
-                        this.controlPoints[i].labelRect.remove();
-                        this.controlPoints[i].labelRect = null;
-                    }
-                }
-                this.controlPoints = [];
-                this.timeStamps = [];
-                this.radiuses = [];
-                this.pathUpper = null;
-                this.pathLower = null;
-                this.segPoints = [];
+                this.clearCanvas();
                 
                 this.queryData = {
                     id: id,
@@ -171,6 +149,7 @@ export default class QueryBySketch extends React.Component{
                 if (FeatureStore.getMode() === 'QBS') {
                     let lookup = this.updateLookup();
                     this.initCanvas();
+                    
                     this.clearCanvas();
                     this.xMinMax = query.query.xRange;
                     this.yMinMax = query.query.yRange;
@@ -216,7 +195,7 @@ export default class QueryBySketch extends React.Component{
                             .text(lookup[yItem]);
                     }
                     $('#periodOfSketchQuery').val(query.query.length);
-                    this.recoverQuery(query, xItem, yItem);
+                    this.recoverQuery(query, lookup);
                     this.setState({
                         targetList: targets,
                         lookup: lookup,
@@ -290,6 +269,7 @@ export default class QueryBySketch extends React.Component{
     }
 
     initCanvas() {
+        console.log('initCanvas')
         let paddingLeft = Number($('#featureArea').css('padding-left').replace('px', '')),
             paddingRight = Number($('#featureArea').css('padding-right').replace('px', ''));
         let outerSize = Math.floor($('#mainFeatureArea').width() * 0.3 - paddingLeft - paddingRight);
@@ -299,11 +279,15 @@ export default class QueryBySketch extends React.Component{
         let parentArea = d3.select('#QBSCanvasArea')
             .style('position', 'relative')
             .style('padding-bottom', outerSize + 'px');
+        d3.select('#QBSSketchPadSVG')
+            .remove();
         this.svg = parentArea.append('svg')
             .attr('id', 'QBSSketchPadSVG')
             .attr('width', outerSize)
             .attr('height', outerSize)
             .style('position', 'absolute');
+        d3.select('#QBSSketchPad')
+            .remove();
         this.canvas = parentArea.append('canvas')
             .attr('width', outerSize + 'px !important')
             .attr('height', outerSize + 'px !important')
@@ -312,9 +296,14 @@ export default class QueryBySketch extends React.Component{
             .style('border', '1px solid lightgray');
         paper.setup(this.canvas.node());
 
+
+        this.svg.select('g.x_axis')
+            .remove();
         this.xAxis = this.svg
             .append('g')
             .attr('class', 'x_axis');
+        d3.select('#sketchPadXLabel')
+            .remove();
         this.xAxisText = parentArea
             .append('text')
             .attr('class', 'axisLabel')
@@ -330,9 +319,13 @@ export default class QueryBySketch extends React.Component{
             .on('click', this.CanvasXLabelOnClick().bind(this));
         this.xScale = d3.scaleLinear();
 
+        this.svg.select('g.y_axis')
+            .remove();
         this.yAxis = this.svg
             .append('g')
             .attr('class', 'y_axis');
+        d3.select('#sketchPadYLabel')
+            .remove();
         this.yAxisText = parentArea
             .append('text')
             .attr('class', 'axisLabel')
@@ -380,13 +373,15 @@ export default class QueryBySketch extends React.Component{
             this.path = null;
         }
         if (this.pathWidth) {
-            this.widthVar = null;
             this.pathWidth.remove();
             this.pathWidth = null;
         }
         if (this.penSizeCircle) {
             this.penSizeCircle.remove();
             this.penSizeCircle = null;
+        }
+        if (this.highlightedPoint) {
+            this.highlightedPoint.remove();
         }
         for (let i = 0; i < this.controlPoints.length; i++) {
             if (this.controlPoints[i].label) {
@@ -401,6 +396,9 @@ export default class QueryBySketch extends React.Component{
         this.timeStamps = [];
         this.radiuses = [];
         this.queryData = {};
+        this.pathUpper = null;
+        this.pathLower = null;
+        this.segPoints = [];
     }
 
     CanvasOnTouchMove() {
@@ -1474,6 +1472,7 @@ export default class QueryBySketch extends React.Component{
             };
             FeatureAction.setQuery(query);
         }
+        this.updateQueryFlag = false;
     }
 
     transformDataIntoSketch(xItem, yItem) {
@@ -2224,7 +2223,10 @@ export default class QueryBySketch extends React.Component{
                 }
                 this.setState({
                     xItem: xItem,
-                    yItem: yItem
+                    xItemonPanel: xItem,
+                    yItem: yItem,
+                    yItemonPanel: yItem,
+                    detectWidth: (query.query.widthVar)? true: false
                 });
                 if (this.xAxisText) {
                     this.xAxisText
@@ -2338,7 +2340,7 @@ export default class QueryBySketch extends React.Component{
         }
     }
 
-    recoverQuery(query, xItem, yItem) {
+    recoverQuery(query, lookup) {
         let ratio = this.state.size / query.query.size;
         for (let i = 0; i < query.query.controlPoints.length; i++) {
             this.controlPoints.push(query.query.controlPoints[i]);
@@ -2370,7 +2372,7 @@ export default class QueryBySketch extends React.Component{
             let label = '';
             for (let key in this.controlPoints[i].assignedVariables) {
                 if (this.controlPoints[i].assignedVariables[key].length > 0) {
-                    label += this.state.lookup[key] + ', ';
+                    label += lookup[key] + ', ';
                 }
             }
             if (label !== '') {
@@ -2391,6 +2393,7 @@ export default class QueryBySketch extends React.Component{
                 this.controlPoints[i].label.insertAbove(this.controlPoints[i].labelRect);
             }
         }
+        this.updateQueryFlag = true;
         // this.convertSketchIntoQuery(xItem, yItem);
     }
 
@@ -2775,7 +2778,9 @@ export default class QueryBySketch extends React.Component{
 
     render() {
         let axisSelection = this.axisSelectionPanel();
-        if (AppStore.getMenu() === 'feature') {
+
+        if (this.updateQueryFlag && AppStore.getMenu() === 'feature') {
+            // only when a query-by-sketch is recovered from a comment, update query here
             this.convertSketchIntoQuery(this.state.xItem, this.state.yItem);
         }
         return (
