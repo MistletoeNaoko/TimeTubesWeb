@@ -327,7 +327,6 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                                 minIdx = j;
                             }
                         }
-
                         let minDist = [];
                         for (let j = 0; j < dist.length; j++) {
                             minDist.push(dist[j].slice(0, target.arrayLength - 1 - targetPeriod + (minIdx + 1) + 1));
@@ -579,7 +578,7 @@ function normalizeTimeSeries(data) {
                     let min = Math.min.apply(null, data[key]),
                         max = Math.max.apply(null, data[key]);
                     let tmp = data[key].map(function (num) {
-                        return (num - min) / (max - min);
+                        return (max - min !== 0)? (num - min) / (max - min): 0;
                     });
                     result[key] = tmp;
                 } else {
