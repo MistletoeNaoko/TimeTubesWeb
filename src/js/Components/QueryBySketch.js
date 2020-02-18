@@ -269,7 +269,6 @@ export default class QueryBySketch extends React.Component{
     }
 
     initCanvas() {
-        console.log('initCanvas')
         let paddingLeft = Number($('#featureArea').css('padding-left').replace('px', '')),
             paddingRight = Number($('#featureArea').css('padding-right').replace('px', ''));
         let outerSize = Math.floor($('#mainFeatureArea').width() * 0.3 - paddingLeft - paddingRight);

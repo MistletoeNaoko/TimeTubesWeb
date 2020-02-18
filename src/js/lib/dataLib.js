@@ -98,7 +98,8 @@ export function convertPreviousCommentsIntoNewFormat() {
         };
     }
     privateComment = newComments;
-    localStorage('privateComment', JSON.stringify(privateComment));
+    localStorage.setItem('privateComment', JSON.stringify(privateComment));
+    return privateComment;
 }
 
 export function getUniqueId() {
@@ -143,7 +144,7 @@ export function getPrivateCommentFromId(id) {
 }
 
 export function getQueryFromId(id) {
-    return queryTable[id];
+    return (queryTable[id])? queryTable[id]: {};
 }
 
 export function exportPrivateComment(idList) {

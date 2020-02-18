@@ -11,9 +11,12 @@ import DataStore from '../Stores/DataStore';
 export default class Comment extends React.Component {
     constructor() {
         super();
-
+        let privateComments = dataLib.getDataFromLocalStorage('privateComment');
+        if (Array.isArray(privateComments)) {
+            privateComments = dataLib.convertPreviousCommentsIntoNewFormat();
+        }
         this.state = {
-            privateComments: dataLib.getDataFromLocalStorage('privateComment'),
+            privateComments: privateComments,
             selectedComment: {},
             selectedQuery: {},
             selectedCommentId: '',
@@ -150,7 +153,7 @@ export default class Comment extends React.Component {
                 selectedCommentId: id,
                 selectedComment: comment,
                 selectedQueryId: comment.queryId,
-                selectedQuery: (query)? query: {}
+                selectedQuery: query
             });
         }
     }
@@ -226,7 +229,7 @@ export default class Comment extends React.Component {
                 selectMenu('feature');
             }
         } else {
-            if (Object.keys(this.state.selectedQuery).length > 0) {
+            if (Object.keys(this.state.selectedComment).length > 0) {
                 alert('No query information is stored with this comment.');
             } else {
                 alert('Please select a comment from the left table.');
