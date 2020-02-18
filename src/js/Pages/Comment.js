@@ -190,24 +190,40 @@ export default class Comment extends React.Component {
 
     deletePrivateComment(e) {
         let selectedIds = this.getSelectedPrivateComment();
+        let cleanDetailTableFlag = false;
         for (let i = 0; i < selectedIds.length; i++) {
             dataLib.deletePrivateComment(selectedIds[i]);
+            if (selectedIds[i] === this.state.selectedCommentId) {
+                cleanDetailTableFlag = true;
+            }
         }
         // update table
-        this.setState({
-            privateComments: dataLib.getDataFromLocalStorage('privateComment')
-        });
+        if (cleanDetailTableFlag) {
+            this.setState({
+                privateComments: dataLib.getDataFromLocalStorage('privateComment'),
+                selectedCommentId: '',
+                selectedComment: {},
+                selectedQueryId: '',
+                selectedQuery: {}
+            });
+        } else {
+            this.setState({
+                privateComments: dataLib.getDataFromLocalStorage('privateComment')
+            });
+        }
         DataAction.updatePrivateComment();
     }
 
     deleteThisComment() {
         dataLib.deletePrivateComment(this.state.selectedCommentId);
         this.setState({
+            privateComments: dataLib.getDataFromLocalStorage('privateComment'),
             selectedCommentId: '',
             selectedComment: {},
             selectedQueryId: '',
             selectedQuery: {}
         });
+        DataAction.updatePrivateComment();
     }
 
     recoverTheQuery() {
