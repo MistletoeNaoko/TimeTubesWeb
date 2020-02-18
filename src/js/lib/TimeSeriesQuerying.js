@@ -40,6 +40,7 @@ export function makeQueryfromQBE(source, period, ignored, coordinates) {
         // to use polar coordinate, both of x and y axis information are necessary
         if (keys.indexOf('x') < 0 || keys.indexOf('y') < 0) {
             alert('To use the polar coordinate for computing similarities, you cannot ignore the Stokes parameters (Q/I and U/I).');
+            return false;
         } else {
             for (let keyIdx = 0; keyIdx < keys.length; keyIdx++) {
                 if (keys[keyIdx] === 'x') {
@@ -92,9 +93,11 @@ export function makeQueryPolarQBS(query) {
     let queryPolar = {};
     if (keys.indexOf('x') < 0 || keys.indexOf('y') < 0) {
         alert('To use the polar coordinate for computing similarities, you cannot ignore the Stokes parameters (Q/I and U/I).');
+        return false;
     } else {
         if (query.x.indexOf(null) >= 0 || query.y.indexOf(null) >= 0) {
             alert('To use the polar coordinate for computing similarities, you have to assign Q/I and U/I to x axis, y axis, or width.');
+            return false;
         } else {
             let r = [], theta = [];
             for (let i = 0; i < query.arrayLength; i++) {
