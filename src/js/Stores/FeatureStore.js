@@ -280,10 +280,10 @@ class FeatureStore extends EventEmitter {
     }
 
     setExtractionResults(parameters, results, query, ignored) {
-        this.parameters = parameters;
+        this.parameters = (parameters !== undefined)? parameters: {};
         this.extractionResults = results;
         this.query = query;
-        this.ignored = ignored;
+        this.ignored = (ignored !== undefined)? ignored: [];
         this.emit('setExtractionResults');
     }
 
