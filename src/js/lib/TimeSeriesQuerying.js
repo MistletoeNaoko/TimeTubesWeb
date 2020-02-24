@@ -43,14 +43,17 @@ export function makeQueryfromQBE(source, period, ignored, coordinates) {
             return false;
         } else {
             for (let keyIdx = 0; keyIdx < keys.length; keyIdx++) {
-                if (keys[keyIdx] === 'x') {
-                    queryVal.r = [];
-                } else if (keys[keyIdx] === 'y') {
-                    queryVal.theta = [];
-                } else {
-                    queryVal[keys[keyIdx]] = [];
-                }
+                queryVal[keys[keyIdx]] = [];
+                // if (keys[keyIdx] === 'x') {
+                //     queryVal.r = [];
+                // } else if (keys[keyIdx] === 'y') {
+                //     queryVal.theta = [];
+                // } else {
+                //     queryVal[keys[keyIdx]] = [];
+                // }
             }
+            queryVal.r = [];
+            queryVal.theta = [];
             for (let i = roundedPeriod[0]; i <= roundedPeriod[1]; i++) {
                 let values = DataStore.getValues(source, i - minJD);
                 let r = Math.sqrt(Math.pow(values.x, 2) + Math.pow(values.y, 2));
@@ -91,6 +94,7 @@ export function makeQueryfromQBE(source, period, ignored, coordinates) {
 export function makeQueryPolarQBS(query) {
     let keys = Object.keys(query);
     let queryPolar = {};
+    console.log(query, keys)
     if (keys.indexOf('x') < 0 || keys.indexOf('y') < 0) {
         alert('To use the polar coordinate for computing similarities, you cannot ignore the Stokes parameters (Q/I and U/I).');
         return false;
@@ -109,9 +113,9 @@ export function makeQueryPolarQBS(query) {
             queryPolar.r = r;
             queryPolar.theta = theta;
             for (let key in query) {
-                if (key !== 'x' && key !== 'y') {
+                // if (key !== 'x' && key !== 'y') {
                     queryPolar[key] = query[key];
-                }
+                // }
             }
         }
     }
@@ -148,13 +152,30 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
             newTargetData.r = r;
             newTargetData.theta = theta;
             for (let key in targetData) {
-                if (key !== 'x' && key !== 'y') {
-                    newTargetData[key] = targetData[key];
-                }
+                // if (key !== 'x' && key !== 'y') {
+                newTargetData[key] = targetData[key];
+                // }
             }
             targetData = newTargetData;
         }
         let minJD = targetData.z[0];
+
+        let keys = [];
+        if (query.r) {
+            for (let key in query) {
+                if (key !== 'x' && key !== 'y') { 
+                    if (Array.isArray(query[key]) && key !== 'z') {
+                        keys.push(key);
+                    }
+                }
+            }
+        } else {
+            for (let key in query) {
+                if (Array.isArray(query[key]) && key !== 'z') {
+                    keys.push(key);
+                }
+            }
+        }
 
         switch (DTWType) {
             case 'DTWI':
@@ -166,7 +187,7 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                         for (let j = period[0]; j <= period[1]; j++) {
                             if (i + j > targetData.arrayLength - 1) break;
                             let dtwSum = 0, paths = {};
-                            for (let key in query) {
+                            keys.forEach(function (key) {
                                 if (Array.isArray(targetData[key]) && key !== 'z') {
                                     let target = targetData[key].slice(i, i + j);
                                     if (normalization) {
@@ -181,7 +202,7 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                                     paths[key] = path;
                                     dtwSum += dtw[query[key].length - 1][target.length - 1];
                                 }
-                            }
+                            });
                             dtws.push({dist: dtwSum, path: paths});
                         }
                         let minIdx = 0;
@@ -207,7 +228,7 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                     while (i < targetData.arrayLength - period[0]) {
                         let dists = {};
                         let maxLen = (i + period[1] < targetData.arrayLength - 1) ? period[1] : targetData.arrayLength - i;
-                        for (let key in query) {
+                        keys.forEach(function (key) {
                             if (Array.isArray(targetData[key]) && key !== 'z') {
                                 let target = targetData[key].slice(i, i + maxLen);
                                 if (normalization) {
@@ -220,7 +241,7 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                                 let dist = DTWSimple(query[key], target, distFunc);
                                 dists[key] = dist;
                             }
-                        }
+                        });
                         // Choose a collection of dtw which minimize the sum
                         let targetPeriod = maxLen - period[0] + 1, 
                             dtws = [];
@@ -261,12 +282,6 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                 }
                 break;
             case 'DTWD':
-                let keys = [];
-                for (let key in query) {
-                    if (Array.isArray(query[key]) && key !== 'z') {
-                        keys.push(key);
-                    }
-                }
                 if (window > 0) {
                     // use DTW
                     let i = 0;
@@ -404,9 +419,7 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
             newTargetData.r = r;
             newTargetData.theta = theta;
             for (let key in targetData) {
-                if (key !== 'x' && key !== 'y') {
-                    newTargetData[key] = targetData[key];
-                }
+                newTargetData[key] = targetData[key];
             }
             targetData = newTargetData;
         }
@@ -416,13 +429,26 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
         switch (DTWType) {
             case 'DTWD':
                 let keys = [], keysFilter = [];
-                for (let key in query) {
-                    if (Array.isArray(query[key]) && query[key].indexOf(null) < 0 && key !== 'z') {
-                        keys.push(key);
-                    } else if (Array.isArray(query[key]) && query[key].indexOf(null) >= 0) {
-                        keysFilter.push(key);
+                if (query.r) {
+                    for (let key in query) {
+                        if (key !== 'x' && key !== 'y') { 
+                            if (Array.isArray(query[key]) && query[key].indexOf(null) < 0 && key !== 'z') {
+                                keys.push(key);
+                            } else if (Array.isArray(query[key]) && query[key].indexOf(null) >= 0) {
+                                keysFilter.push(key);
+                            }
+                        }
+                    }
+                } else {
+                    for (let key in query) {
+                        if (Array.isArray(query[key]) && query[key].indexOf(null) < 0 && key !== 'z') {
+                            keys.push(key);
+                        } else if (Array.isArray(query[key]) && query[key].indexOf(null) >= 0) {
+                            keysFilter.push(key);
+                        }
                     }
                 }
+                console.log(keys);
 
                 if (window > 0) {
                     // use DTW
@@ -1359,87 +1385,99 @@ export function extractRotations(targets, period, diameter, angle, sigma, stdCon
 
                 // check whether the period has larger variation
                 if (!missingFlg && ((maxVal.x - minVal.x) > diameter || (maxVal.y - minVal.y) > diameter)) {
+                    // std of the whole dataset
                     let stdX = DataStore.getData(targetId).data.meta.std.x,
                         stdY = DataStore.getData(targetId).data.meta.std.y;
+                    let flag = false;
                     switch(stdConst) {
                         case 'no':
                             // do nothing
+                            flag = true;
                             break;
                         case 'and':
-                            if (!(stdX < std.x && stdY < std.y)) {
-                                continue;
+                            if ((stdX < std.x && stdY < std.y)) {
+                                flag = true;
+                                // continue;
                             }
                             break;
                         case 'or':
-                            if (!(stdX < std.x || stdY < std.y)) {
-                                continue;
+                            if ((stdX < std.x || stdY < std.y)) {
+                                flag = true;
+                                // continue;
                             }
                             break;
                         case 'x':
-                            if (!(stdX < std.x)) {
-                                continue;
+                            if ((stdX < std.x)) {
+                                flag = true;
+                                // continue;
                             }
                             break;
                         case 'y':
-                            if (!(stdY < std.y)) {
-                                continue;
+                            if ((stdY < std.y)) {
+                                flag = true;
+                                // continue;
                             }
                             break;
+                        default:
+                            flag = false;
+                            break;
                     }
-                    let rotationAng = 0,
-                        before = angList[0],
-                        alpha = 0.1,
-                        predAngBef = angList[0].angle;
-                    for (let j = 0; j < i; j++) {
-                        // sum up the differences of angle between two data points
-                        // use the exponential smoothing to find the tendency of the time series
-                        // according to the prediction by the exponential smoothing, 
-                        // decide how to compute the difference
-                        let divDeg;
-                        let predAng = alpha * before.angle + (1 - alpha) * predAngBef;
-                        if (Math.abs(angList[j].angle - before.angle) > 180) {
-                            if (predAng - predAngBef < 0) {
-                                // clockwise
-                                if (before.angle > angList[j].angle) {
-                                    divDeg = -1 * (before.angle - angList[j].angle);
+                    if (flag) {
+                        let rotationAng = 0,
+                            before = angList[0],
+                            alpha = 0.1,
+                            predAngBef = angList[0].angle;
+                        for (let j = 0; j < i; j++) {
+                            // sum up the differences of angle between two data points
+                            // use the exponential smoothing to find the tendency of the time series
+                            // according to the prediction by the exponential smoothing, 
+                            // decide how to compute the difference
+                            let divDeg;
+                            let predAng = alpha * before.angle + (1 - alpha) * predAngBef;
+                            if (Math.abs(angList[j].angle - before.angle) > 180) {
+                                if (predAng - predAngBef < 0) {
+                                    // clockwise
+                                    if (before.angle > angList[j].angle) {
+                                        divDeg = -1 * (before.angle - angList[j].angle);
+                                    } else {
+                                        divDeg = -1 * (before.angle + 360 - angList[j].angle);
+                                    }
                                 } else {
-                                    divDeg = -1 * (before.angle + 360 - angList[j].angle);
+                                    // counterclockwise
+                                    if (before.angle > angList[j].angle) {
+                                        divDeg = angList[j].angle + 360 - before.angle;
+                                    } else {
+                                        divDeg = angList[j].angle - before.angle;
+                                    }
+                                }
+                                // if the current data locates at the first/forth quadrant, reset the exponential smoothing
+                                if ((getQuadrantAngle(angList[j].angle) === 1 && getQuadrantAngle(angList[j - 1].angle) === 4)
+                                || (getQuadrantAngle(angList[j].angle) === 4 && getQuadrantAngle(angList[j - 1].angle) === 1)) {
+                                    predAngBef = angList[j].angle;
+                                } else {
+                                    predAngBef = predAng;
                                 }
                             } else {
-                                // counterclockwise
-                                if (before.angle > angList[j].angle) {
-                                    divDeg = angList[j].angle + 360 - before.angle;
-                                } else {
-                                    divDeg = angList[j].angle - before.angle;
-                                }
-                            }
-                            // if the current data locates at the first/forth quadrant, reset the exponential smoothing
-                            if ((getQuadrantAngle(angList[j].angle) === 1 && getQuadrantAngle(angList[j - 1].angle) === 4)
-                            || (getQuadrantAngle(angList[j].angle) === 4 && getQuadrantAngle(angList[j - 1].angle) === 1)) {
-                                predAngBef = angList[j].angle;
-                            } else {
+                                divDeg = angList[j].angle - before.angle;
                                 predAngBef = predAng;
                             }
-                        } else {
-                            divDeg = angList[j].angle - before.angle;
-                            predAngBef = predAng;
+
+                            rotationAng += divDeg;
+                            before = angList[j];
                         }
 
-                        rotationAng += divDeg;
-                        before = angList[j];
-                    }
-
-                    // check whether the total rotation angle is more than the threshold
-                    if (Math.abs(rotationAng) > angle) {
-                        rotationList.push({
-                            id: targetId,
-                            start: targetData[firstIdx].z, 
-                            angle: Math.abs(rotationAng),
-                            period: i,
-                            center: center,
-                            diameter: {x: maxVal.x - minVal.x, y: maxVal.y - minVal.y},
-                            direction: (rotationAng < 0)? 'clockwise': 'counterclockwise'
-                        });
+                        // check whether the total rotation angle is more than the threshold
+                        if (Math.abs(rotationAng) > angle) {
+                            rotationList.push({
+                                id: targetId,
+                                start: targetData[firstIdx].z, 
+                                angle: Math.abs(rotationAng),
+                                period: i,
+                                center: center,
+                                diameter: {x: maxVal.x - minVal.x, y: maxVal.y - minVal.y},
+                                direction: (rotationAng < 0)? 'clockwise': 'counterclockwise'
+                            });
+                        }
                     }
                 }
             }
@@ -1459,24 +1497,70 @@ export function extractRotations(targets, period, diameter, angle, sigma, stdCon
         }
         // remove redundancies from computationResults
         if (computationResults.length > 0) {
-            let rotationStart = 0;
-            for (let i = 1; i < computationResults.length; i++) {
-                if (computationResults[i].start - computationResults[i - 1].start < period[0]) {
-                    // if the difference between the current rotation angle and the previous one is less than period[1],
-                    // these rotations are considered to be the same rotation and take the one with larger angle
-                    if (computationResults[rotationStart].angle < computationResults[i].angle) {
-                        rotationStart = i;
+            let focusedRotationIdx = 0;
+            let maxAngIdx = 0,
+                maxAng = computationResults[focusedRotationIdx].angle;
+            let i = 1;
+            while (i < computationResults.length) {
+                if ((computationResults[focusedRotationIdx].start <= computationResults[i].start 
+                    && computationResults[focusedRotationIdx].start + computationResults[focusedRotationIdx].period <= computationResults[i].start + computationResults[i].period) 
+                    || (computationResults[focusedRotationIdx].start <= computationResults[i].start
+                    && computationResults[i].start + computationResults[i].period <= computationResults[focusedRotationIdx].start + computationResults[focusedRotationIdx].period)) {
+                    let minJD = Math.max(computationResults[focusedRotationIdx].start, computationResults[i].start),
+                        maxJD = Math.min(computationResults[focusedRotationIdx].start + computationResults[focusedRotationIdx].period, computationResults[i].start + computationResults[i].period);
+                    
+                    if (maxJD - minJD > computationResults[focusedRotationIdx].period * 0.5) {
+                        // overlapping
+                        if (computationResults[i].angle < maxAng) {
+                            maxAng = computationResults[i].angle;
+                            maxAngIdx = i;
+                        } 
+                        i++;
+                    } else {
+                        results.push(computationResults[maxAngIdx]);
+                        maxAngIdx = i;
+                        focusedRotationIdx = maxAngIdx;
+                        maxAng = computationResults[maxAngIdx];
+                        i++;
                     }
-                    continue;
-                } else {
-                    // if the difference is larger than period[1], register to the result array
-                    results.push(computationResults[rotationStart]);
-                    rotationStart = i;
                 }
+                // if (computationResults[focusedRotationIdx].start <= computationResults[i].start
+                //     && computationResults[i].start <= computationResults[focusedRotationIdx].start + computationResults[focusedRotationIdx].period / 2) {
+                //     if (computationResults[i].angle < maxAng) {
+                //         maxAng = computationResults[i].angle;
+                //         maxAngIdx = i;
+                //     }
+                //     i++;
+                // } else {
+                //     results.push(computationResults[maxAngIdx]);
+                //     maxAngIdx = i;
+                //     focusedRotationIdx = maxAngIdx;
+                //     maxAng = computationResults[maxAngIdx];
+                //     i++;
+                // }
             }
-            // add the last one to the result
-            results.push(computationResults[rotationStart]);
+            results.push(computationResults[maxAngIdx]);
         }
+
+        // if (computationResults.length > 0) {
+        //     let rotationStart = 0;
+        //     for (let i = 1; i < computationResults.length; i++) {
+        //         if (computationResults[i].start - computationResults[i - 1].start < period[0]) {
+        //             // if the difference between the current rotation angle and the previous one is less than period[1],
+        //             // these rotations are considered to be the same rotation and take the one with larger angle
+        //             if (computationResults[rotationStart].angle < computationResults[i].angle) {
+        //                 rotationStart = i;
+        //             }
+        //             continue;
+        //         } else {
+        //             // if the difference is larger than period[1], register to the result array
+        //             results.push(computationResults[rotationStart]);
+        //             rotationStart = i;
+        //         }
+        //     }
+        //     // add the last one to the result
+        //     results.push(computationResults[rotationStart]);
+        // }
     }
 
     return results;

@@ -281,13 +281,47 @@ export default class AutomaticExtraction extends React.Component {
             if (resultTmp) {
                 results.push(resultTmp);
             }
+        } else if (this.state.anomaly && this.state.rotation) {
+            // rotations with an anomaly
+            // only rotations which include an anomaly in its period
+            let i = 0, j = 0;
+            let resultTmp;
+            while (i < anomalies.length && j < rotations.length) {
+                if (rotations[j].id < anomalies[i].id) {
+                    j++;
+                    continue;
+                } else if (anomalies[i].id < rotations[j].id) {
+                    i++;
+                    continue;
+                } else if (rotations[j].start <= anomalies[i].start
+                    && anomalies[i].start <= rotations[j].start + rotations[j].period) {
+                    resultTmp = rotations[j];
+                    if (resultTmp.anomalies === undefined) {
+                        resultTmp.anomalies = [];
+                    }
+                    resultTmp.anomalies.push(anomalies[i]);
+                    i++;
+                    continue;
+                } else if (anomalies[i].start < rotations[j].start) {
+                    i++;
+                    continue;
+                } else if (rotations[j].start + rotations[j].period < anomalies[i].start) {
+                    if (resultTmp) {
+                        results.push(resultTmp);
+                        resultTmp = null;
+                    }
+                    j++;
+                    continue;
+                }
+            }
+            if (resultTmp) {
+                results.push(resultTmp);
+            }
         } else if (this.state.flare) {
             results = flares;
         } else if (this.state.rotation) {
             results = rotations;
-        }
-
-        if (this.state.anomaly) {
+        } else if (this.state.anomaly) {
             results = anomalies;
         }
 
