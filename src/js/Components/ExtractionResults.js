@@ -12,6 +12,7 @@ import * as FeatureAction from '../Actions/FeatureAction';
 import FeatureStore from '../Stores/FeatureStore';
 import DataStore from '../Stores/DataStore';
 import { formatValue } from '../lib/2DGraphLib';
+import {transformCamelToSentence} from '../lib/domActions';
 import * as dataLib from '../lib/dataLib';
 
 export default class ExtractionResults extends React.Component {
@@ -28,7 +29,8 @@ export default class ExtractionResults extends React.Component {
             selected: {},
             accessibility: 'private',
             mode: FeatureStore.getMode(),
-            AEOptions: FeatureStore.getAEOptions()
+            AEOptions: FeatureStore.getAEOptions(),
+            importedResults: {}
         };
     }
 
@@ -185,6 +187,31 @@ export default class ExtractionResults extends React.Component {
         );
     }
 
+    importResultsButton() {
+        return (
+            <div
+                className="form-group form-inline resultMenu"
+                style={{float: 'right'}}>
+                <button
+                    id='importResultsBtn'
+                    className='btn btn-primary btn-sm'
+                    onClick={this.importResultsClick.bind(this)}>
+                    Import
+                </button>
+            </div>
+        );
+    }
+
+    importResultsClick() {
+        // from file or storage
+        let popupForm = document.getElementById('importResultsForm');
+        if (popupForm.style.display === 'block') {
+            document.getElementById('importResultsForm').style.display = 'none';
+        } else {
+            document.getElementById('importResultsForm').style.display = 'block';
+        }
+    }
+
     exportResultsButton() {
         return (
             <div
@@ -226,6 +253,169 @@ export default class ExtractionResults extends React.Component {
         a.href = blobURL;
     
         a.click();
+    }
+    
+    popupCommentForm() {
+        return (
+            <div className='formPopup' id='commentFormFeatureExtraction'>
+                <form className='formContainer'>
+                    <h6>User name</h6>
+                    <input 
+                        type="text" 
+                        id='userNameComment'
+                        className='form-control form-control-sm' 
+                        placeholder="Enter Name" 
+                        name="name" required/>
+                    <h6>Accessibility</h6>
+                    <div
+                        className="form-check form-inline"
+                        id='accessibility'
+                        onChange={this.updateAccessibility.bind(this)}
+                        style={{paddingLeft: '0px'}}>
+                        <div className="custom-control custom-radio">
+                            <input type="radio" id="privateComment" name="accessibility" value='private'
+                                checked={(this.state.accessibility === 'private')? true: false}
+                                className="custom-control-input" readOnly/>
+                            <label className="custom-control-label" htmlFor="privateComment">
+                                Private
+                            </label>
+                        </div>
+                        {/* <div className="custom-control custom-radio"
+                            style={{marginLeft: '1.5rem'}}>
+                            <input type="radio" id="publicComment" name="accessibility" value='public'
+                                checked={(this.state.accessibility === 'public')? true: false}
+                                disabled={true}
+                                className="custom-control-input" readOnly/>
+                            <label className="custom-control-label" htmlFor="publicComment">
+                                Public
+                            </label>
+                        </div> */}
+                    </div>
+                    <h6>Label</h6>
+                    <div className="form-check form-check-inline menuItem">
+                        <select
+                            className="form-control custom-select"
+                            id='commentLabelColorList'
+                            style={{fontSize: '0.8rem', height: '1.5rem', width: '7rem'}}>
+                            <option value='0x29ABE0' style={{color: '#29ABE0'}}>Blue</option>
+                            <option value='0x80b139' style={{color: '#80b139'}}>Green</option>
+                            <option value='0xffd700' style={{color: '#ffd700'}}>Yellow</option>
+                            <option value='0xF47C3C' style={{color: '#F47C3C'}}>Orange</option>
+                            <option value='0xd9534f' style={{color: '#d9534f'}}>Red</option>
+                            <option value='0xba55d3' style={{color: '#ba55d3'}}>Purple</option>
+                        </select>
+                    </div>
+                    <h6>Comment</h6>
+                    <textarea 
+                        className="form-control" 
+                        id="textareaComment" 
+                        placeholder="Enter comment" 
+                        rows="3"
+                        style={{marginBottom: '0.5rem'}}/>
+                    <button
+                        className='btn btn-primary btn-sm'
+                        type='button'
+                        id='submitCommentBtn'
+                        onClick={this.submitComment.bind(this)}
+                        style={{float: 'right'}}>
+                        Submit
+                    </button>
+                    <button
+                        className='btn btn-secondary btn-sm'
+                        type='button'
+                        id='cancelCommentBtn'
+                        style={{float: 'right'}}
+                        onClick={this.cancelComment.bind(this)}>
+                        Cancel
+                    </button>
+                </form>
+            </div>
+        );
+    }
+
+    popupImportResultsForm() {
+        let queryInfoTable = [];
+        if (Object.keys(this.state.importedResults).length > 0) {
+            for (let key in this.state.importedResults.query) {
+                if (key === 'mode' || key === 'option') {
+                    let text = this.state.importedResults.query[key];
+                    if (Array.isArray(text)) {
+                        text = text.join(', ');
+                    }
+                    queryInfoTable.push(
+                        <tr key={key}>
+                            <td>{transformCamelToSentence(key)}</td>
+                            <td>{text}</td>
+                        </tr>
+                    );
+                } else if (key === 'query') {
+                    for (let keyQuery in this.state.importedResults.query.query) {
+                        if (keyQuery !== 'controlPoints' && keyQuery !== 'path' && keyQuery !== 'size' && keyQuery !== 'length') {
+                            let textQuery = this.state.importedResults.query.query[keyQuery];
+                            if (keyQuery === 'inactiveVariables') {
+                                let textTmp = [];
+                                for (let i = 0; i < this.state.importedResults.query.query[keyQuery].length; i++) {
+                                    textTmp.push(this.state.importedResults.query.query[keyQuery][i].join(', '));
+                                }
+                                textQuery = textTmp.join(', ');
+                            } else if (Array.isArray(textQuery)) {
+                                textQuery = textQuery.join(', ');
+                            }
+                            queryInfoTable.push(
+                                <tr key={keyQuery}>
+                                    <td>{transformCamelToSentence(keyQuery)}</td>
+                                    <td>{textQuery}</td>
+                                </tr>
+                            );
+                        }
+                    }
+                }
+            }
+        }
+        return (
+            <div className='formPopup' id='importResultsForm'>
+                <h6>From a file</h6>
+                    <div className="custom-file" style={{marginRight: '0.5rem'}}>
+                        <input type='file' id='importResultsFile' className='custom-file-input' onChange={this.importResultsFile.bind(this)}/>
+                        <label className='custom-file-label' htmlFor='importResultsFile' style={{justifyContent: 'start'}}>Import results</label>
+                    </div>
+                {/* <h6>From the browser storage</h6> */}
+                <div id='importedQueryInfo' style={{display: (Object.keys(this.state.importedResults).length > 0)? 'block': 'none'}}>
+                    <h6>Query information</h6>
+                    <table id='importedQueryInfoTable' className="table table-hover">
+                        <tbody id='importedQueryInfoBody'>
+                            {queryInfoTable}
+                        </tbody>
+                    </table>
+                    <div id='importedQueryMenu' style={{float: 'right'}}>
+                        <button
+                            className='btn btn-primary btn-sm'
+                            type='button'
+                            id='recoverTheImportedQueryBtn'
+                            onClick={this.recoverTheQuery.bind(this)}>
+                            Recover the query
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    importResultsFile() {
+        let file = document.getElementById('importResultsFile').files;
+        let reader = new FileReader();
+        reader.readAsText(file[0]);
+        reader.onload = function() {
+            let contents = JSON.parse(reader.result);
+            FeatureAction.importResultsFromFile(contents.results);
+            this.setState({
+                importedResults: contents
+            });
+        }.bind(this);
+    } 
+
+    recoverTheQuery() {
+
     }
 
     updateAccessibility() {
@@ -452,6 +642,8 @@ export default class ExtractionResults extends React.Component {
                     {this.distanceThreshold()}
                     {this.orderOfResults()}
                     {this.exportResultsButton()}
+                    {this.importResultsButton()}
+                    {this.popupImportResultsForm()}
                 </div>
                 <div id='mainResultArea'>
                     <div
@@ -514,79 +706,7 @@ export default class ExtractionResults extends React.Component {
                                 </div>
                             </div>
                         </div>
-                        <div className='formPopup' id='commentFormFeatureExtraction'>
-                            <form className='formContainer'>
-                                <h6>User name</h6>
-                                <input 
-                                    type="text" 
-                                    id='userNameComment'
-                                    className='form-control form-control-sm' 
-                                    placeholder="Enter Name" 
-                                    name="name" required/>
-                                <h6>Accessibility</h6>
-                                <div
-                                    className="form-check form-inline"
-                                    id='accessibility'
-                                    onChange={this.updateAccessibility.bind(this)}
-                                    style={{paddingLeft: '0px'}}>
-                                    <div className="custom-control custom-radio">
-                                        <input type="radio" id="privateComment" name="accessibility" value='private'
-                                            checked={(this.state.accessibility === 'private')? true: false}
-                                            className="custom-control-input" readOnly/>
-                                        <label className="custom-control-label" htmlFor="privateComment">
-                                            Private
-                                        </label>
-                                    </div>
-                                    {/* <div className="custom-control custom-radio"
-                                        style={{marginLeft: '1.5rem'}}>
-                                        <input type="radio" id="publicComment" name="accessibility" value='public'
-                                            checked={(this.state.accessibility === 'public')? true: false}
-                                            disabled={true}
-                                            className="custom-control-input" readOnly/>
-                                        <label className="custom-control-label" htmlFor="publicComment">
-                                            Public
-                                        </label>
-                                    </div> */}
-                                </div>
-                                <h6>Label</h6>
-                                <div className="form-check form-check-inline menuItem">
-                                    <select
-                                        className="form-control custom-select"
-                                        id='commentLabelColorList'
-                                        style={{fontSize: '0.8rem', height: '1.5rem', width: '7rem'}}>
-                                        <option value='0x29ABE0' style={{color: '#29ABE0'}}>Blue</option>
-                                        <option value='0x80b139' style={{color: '#80b139'}}>Green</option>
-                                        <option value='0xffd700' style={{color: '#ffd700'}}>Yellow</option>
-                                        <option value='0xF47C3C' style={{color: '#F47C3C'}}>Orange</option>
-                                        <option value='0xd9534f' style={{color: '#d9534f'}}>Red</option>
-                                        <option value='0xba55d3' style={{color: '#ba55d3'}}>Purple</option>
-                                    </select>
-                                </div>
-                                <h6>Comment</h6>
-                                <textarea 
-                                    className="form-control" 
-                                    id="textareaComment" 
-                                    placeholder="Enter comment" 
-                                    rows="3"
-                                    style={{marginBottom: '0.5rem'}}/>
-                                <button
-                                    className='btn btn-primary btn-sm'
-                                    type='button'
-                                    id='submitCommentBtn'
-                                    onClick={this.submitComment.bind(this)}
-                                    style={{float: 'right'}}>
-                                    Submit
-                                </button>
-                                <button
-                                    className='btn btn-secondary btn-sm'
-                                    type='button'
-                                    id='cancelCommentBtn'
-                                    style={{float: 'right'}}
-                                    onClick={this.cancelComment.bind(this)}>
-                                    Cancel
-                                </button>
-                            </form>
-                        </div>
+                        {this.popupCommentForm()}
                         <button
                             id='collapseResultDetailPanel'
                             className="btn btn-primary btn-sm"

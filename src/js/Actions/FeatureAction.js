@@ -101,3 +101,7 @@ export function updateDistanceThreshold(threshold) {
 export function recoverQuery(query) {
     dispatcher.dispatch({type: 'RECOVER_QUERY', query});
 }
+
+export function importResultsFromFile(results) {
+    dispatcher.dispatch({type: 'IMPORT_RESULTS_FROM_FILE', results});
+}

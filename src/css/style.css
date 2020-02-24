@@ -330,6 +330,12 @@ img.selectorIcon:active {
 
 .formPopup {
     display: none;
+    z-index: 1500;
+    padding: 10px;
+    filter:drop-shadow(5px 5px 5px #888888);
+}
+
+#commentFormFeatureExtraction {
     position: absolute;
     left: 50%;
     top: 50%;
@@ -337,9 +343,16 @@ img.selectorIcon:active {
     border: 3px solid #F47C3C;
     border-radius: 5px;
     background-color: white;
-    z-index: 1500;
-    padding: 10px;
-    filter:drop-shadow(5px 5px 5px #888888);
+}
+
+#importResultsForm {
+    position: absolute;
+    right: 140px;
+    top: 0px;
+    /* transform: translate(0%, -50%); */
+    border: 3px solid #DFD7CA;
+    border-radius: 5px;
+    background-color: white;
 }
 
 .formContainer {

@@ -109,6 +109,9 @@ class FeatureStore extends EventEmitter {
             case 'RECOVER_QUERY':
                 this.recoverQuery(action.query);
                 break;
+            case 'IMPORT_RESULTS_FROM_FILE':
+                this.importResultsFromFile(action.results);
+                break;
             default:
         }
     }
@@ -385,6 +388,10 @@ class FeatureStore extends EventEmitter {
         }
         this.target = targetList;
         this.emit('recoverQuery', query);
+    }
+
+    importResultsFromFile(results) {
+        this.emit('importResultsFromFile', results);
     }
 }
 
