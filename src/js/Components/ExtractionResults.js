@@ -71,12 +71,14 @@ export default class ExtractionResults extends React.Component {
         });
         FeatureStore.on('clearResults', () => {
             this.setState({
-                shownResults: []
+                shownResults: [],
+                importedResults: {}
             });
         });
         FeatureStore.on('updateShownResults', (results) => {
             this.setState({
-                shownResults: results
+                shownResults: results,
+                importedResults: {}
             });
         });
         FeatureStore.on('selectResultFromTimeline', (result) => {

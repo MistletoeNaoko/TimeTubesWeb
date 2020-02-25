@@ -389,13 +389,12 @@ export default class ResultTimeline extends React.Component {
                     return this.xScale(d.start + d.period);
                 }.bind(this))
                 .attr('y2', this.state.height / 2 - 5)
-                .attr('stroke', '#44b139')
+                .attr('stroke', '#b1a639')
                 .attr('stroke-width', 20)
                 .attr('opacity', 0.5)
                 .attr('transform', 'translate(' + this.margin.left + ',0)')
-                // .on('mouseover', this.timelineMouseOver())
-                // .on('mouseout', this.timelineMouseOut())
-                // .on('click', this.timelineClick());
+                .on('mouseover', this.timelineImportedResultsMouseOver())
+                .on('mouseout', this.timelineImportedReusltsMouseOut());
         }
         if (resultsFlare.length > 0) {
             this.svg
@@ -412,9 +411,8 @@ export default class ResultTimeline extends React.Component {
                 .attr('fill', '#f2d118')
                 .attr('opacity', 0.5)
                 .attr('transform', 'translate(' + margin.left + ',0)')
-                // .on('mouseover', this.timelineMouseOver())
-                // .on('mouseout', this.timelineMouseOut())
-                // .on('click', this.timelineClick());
+                .on('mouseover', this.timelineImportedResultsMouseOver())
+                .on('mouseout', this.timelineImportedReusltsMouseOut());
         }
         if (resultsAnomaly.length > 0) {
             this.svg
@@ -431,9 +429,8 @@ export default class ResultTimeline extends React.Component {
                 .attr('fill', '#f2d118')
                 .attr('opacity', 0.5)
                 .attr('transform', 'translate(' + this.margin.left + ',0)')
-                // .on('mouseover', this.timelineMouseOver())
-                // .on('mouseout', this.timelineMouseOut())
-                // .on('click', this.timelineClick());
+                .on('mouseover', this.timelineImportedResultsMouseOver())
+                .on('mouseout', this.timelineImportedReusltsMouseOut());
         }
     }
 
@@ -576,7 +573,7 @@ export default class ResultTimeline extends React.Component {
                     .attr('stroke', '#1d33c6');
             } else if (d.angle) {
                 selected
-                    .attr('stroke', '#44b139');
+                    .attr('stroke', '#b1a639');
             } else if (d.V) {
                 selected
                     .attr('fill', '#f2d118');
