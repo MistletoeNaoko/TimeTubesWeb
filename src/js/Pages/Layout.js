@@ -2,6 +2,7 @@ import React from 'react';
 import Menu from './Menu';
 import Visualization from "./Visualization";
 import FeatureExtraction from './FeatureExtraction';
+import About from './About';
 import Comment from './Comment';
 import AppStore from '../Stores/AppStore';
 import FeatureStore from '../Stores/FeatureStore';
@@ -49,6 +50,12 @@ export default class Layout extends React.Component {
         return (
             <div>
                 <Menu/>
+                <div
+                    className='maincontainer'
+                    id='about'
+                    style={{display: (this.state.menu === 'about') ? 'block': 'none'}}>
+                    <About/>
+                </div>
                 <div
                     className='maincontainer'
                     id='visualization'

@@ -446,6 +446,19 @@ img.selectorIcon:active {
     float: left;
 }
 
+.aboutContainer {
+    margin: 15px 0px;
+}
+
+.aboutIcons {
+    margin-left: 10px;
+    margin-right: 5px;
+}
+
+.authorList {
+    margin: 10px 5px;
+}
+
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
@@ -454,6 +467,11 @@ img.selectorIcon:active {
     /*width: 250px;*/
     /*float: left;*/
 /*}*/
+
+#about {
+    overflow: scroll; /* ここのscrollが効かない */
+    height: 100vh; /* これを追加 */
+}
 
 #scatterplotsArea {
     padding: 0px;
