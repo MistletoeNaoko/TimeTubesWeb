@@ -53,7 +53,7 @@ export default class Layout extends React.Component {
                 <div
                     className='maincontainer'
                     id='about'
-                    style={{display: (this.state.menu === 'about') ? 'block': 'none'}}>
+                    style={{display: (this.state.menu === 'about') ? 'block': 'none', height: ($(window).height() - $('#appHeader').outerHeight())}}>
                     <About/>
                 </div>
                 <div

@@ -9,6 +9,7 @@ export default class About extends React.Component{
         return (
             <div className='container'>
                 {this.overview()}
+                {this.demoVideo()}
                 {this.github()}
                 {this.authors()}
             </div>
@@ -26,7 +27,7 @@ export default class About extends React.Component{
                     It supports visual comparison of multiple datasets, feature extractions, etc.
                 </p>
                 <p>
-                For more detail information about TimeTubes, please refer the following papers.
+                For more detail information about TimeTubes project, please refer our prior papers.
                     <ul>
                         <li>
                             Naoko Sawada, Masanori Nakayama, Makoto Uemura, and Issei Fujishiro. 
@@ -60,6 +61,21 @@ export default class About extends React.Component{
         );
     }
 
+    demoVideo() {
+        return (
+            <div className='aboutContainer'>
+                <h2>Demo Videos</h2>
+                <iframe 
+                    width="560" height="315" 
+                    src="https://www.youtube.com/embed/izChQ4uKksQ" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+        );
+    }
+
     github() {
         return (
             <div className='aboutContainer'>
@@ -77,6 +93,7 @@ export default class About extends React.Component{
                 <h2>Authors</h2>
                 <div className='authorList'>
                     <h4>Naoko Sawada</h4>
+                    <p>Ph.D Student at Keio University, visiting scholar in Visual Computing Group (VCG) at Harvard University (2018-2020)</p>
                     <img className='aboutIcons' src='../../img/website.png' width='20px' height='20px'></img>
                     <a href='https://mistletoenaoko.github.io/'>https://mistletoenaoko.github.io/</a>
                     <img className='aboutIcons' src='../../img/Twitter_Logo_Blue.png' width='20px' height='20px'></img>
@@ -86,11 +103,13 @@ export default class About extends React.Component{
                 </div>
                 <div className='authorList'>
                     <h4>Makoto Uemura</h4>
+                    <p>Associate Professor in Hiroshima Astrophysical Science Center (HASC) at Hiroshima University</p>
                     <img className='aboutIcons' src='../../img/website.png' width='20px' height='20px'></img>
                     <a href='https://home.hiroshima-u.ac.jp/uemuram/'>https://home.hiroshima-u.ac.jp/uemuram/</a>
                 </div>
                 <div className='authorList'>
                     <h4>Johanna Beyer</h4>
+                    <p>Research Associate in Visual Computing Group (VCG) at Harvard University</p>
                     <img className='aboutIcons' src='../../img/website.png' width='20px' height='20px'></img>
                     <a href='https://johanna-b.github.io/'>https://johanna-b.github.io/</a>
                     <img className='aboutIcons' src='../../img/mail.png' width='20px' height='20px'></img>
@@ -98,6 +117,7 @@ export default class About extends React.Component{
                 </div>
                 <div className='authorList'>
                     <h4>Hanspeter Pfister</h4>
+                    <p>An Wang Professor of Computer Science at Harvard University</p>
                     <img className='aboutIcons' src='../../img/website.png' width='20px' height='20px'></img>
                     <a href='https://vcg.seas.harvard.edu/'>https://vcg.seas.harvard.edu/</a>
                     <img className='aboutIcons' src='../../img/Twitter_Logo_Blue.png' width='20px' height='20px'></img>
@@ -107,6 +127,7 @@ export default class About extends React.Component{
                 </div>
                 <div className='authorList'>
                     <h4>Issei Fujishiro</h4>
+                    <p>Professor of Information and Computer Science at Keio University, Hangzhou Dianzi University</p>
                     <img className='aboutIcons' src='../../img/website.png' width='20px' height='20px'></img>
                     <a href='http://fj.ics.keio.ac.jp/'>http://fj.ics.keio.ac.jp/</a>
                     <img className='aboutIcons' src='../../img/mail.png' width='20px' height='20px'></img>

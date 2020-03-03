@@ -469,8 +469,8 @@ img.selectorIcon:active {
 /*}*/
 
 #about {
-    overflow: scroll; /* ここのscrollが効かない */
-    height: 100vh; /* これを追加 */
+    overflow-y: scroll;
+    height: 100vh;
 }
 
 #scatterplotsArea {
