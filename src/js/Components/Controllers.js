@@ -383,8 +383,32 @@ export default class Controllers extends React.Component{
                     <input type='file' className="custom-file-input" id='uploadFileForm' onChange={this.uploadFile.bind(this)} multiple/>
                     <label className="custom-file-label" htmlFor="customFile"></label>
                 </div>
+                <div style={{display: 'flex', justifyContent: 'center', marginTop: '0.5rem'}}>
+                    <button type="button" className="btn btn-primary btn-sm" onClick={this.openTestData1.bind(this)}>testData1</button>
+                    <button type="button" className="btn btn-primary btn-sm" onClick={this.openTestData2.bind(this)}>testData2</button>
+                </div>
             </div>
         );
+    }
+
+    openTestData1() {
+        console.log('testData1');
+        $.ajax({
+            url: 'data/testdata4.csv',
+            success: function(data) {
+                DataAction.importDemoData('testdata4.csv', data);
+            }
+        });
+    }
+
+    openTestData2() {
+        console.log('testData2');
+        $.ajax({
+            url: 'data/testdata7.csv',
+            success: function(data) {
+                DataAction.importDemoData('testdata7.csv', data);
+            }
+        });
     }
 
     updateWheelInterval(e) {

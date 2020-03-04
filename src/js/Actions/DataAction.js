@@ -76,6 +76,49 @@ export function mergeData(ids) {
         });
 }
 
+export function importDemoData(fileName, data) {
+    let initLine = 2;
+    let dataset = [];
+    let blazarData = [];
+    let result = data;
+    let dataTmp;
+    dataTmp = d3.csvParse(result, function (d) {
+        // if (Object.keys(d).length = 0)
+        //     delete d;
+        Object.keys(d).forEach(function(value) {
+            if (!isNaN(d[value]))
+                d[value] = Number(d[value]);
+        }, d);
+        d.source = fileName;
+        return d;
+    });
+    let slicedData = dataTmp.splice(initLine - 2);
+    dataset.push(slicedData);
+    for (let j = 0; j < dataset.length; j++) {
+        blazarData = blazarData.concat(dataset[j]);
+    }
+    blazarData.sort(function (a, b) {
+        return (a['JD'] < b['JD']) ? -1 : 1;
+    });
+    let [spatialData, lookup] = extractData(blazarData);
+    let metaData = computeStats(spatialVar, spatialData);
+    let splines = computeSplines(spatialData);
+    dispatcher.dispatch({
+        type:'UPLOAD_DATA',
+        data: { name:fileName,
+            data:blazarData,
+            spatial: spatialData,
+            meta: metaData,
+            position: splines.position,
+            radius: splines.radius,
+            color: splines.color,
+            splines: splines.spline,
+            lookup: lookup,
+            merge: false
+        }
+    });
+}
+
 function loadFile(file) {
     let dataIDx = DataStore.getDataNum();
     let type = 'csv';
