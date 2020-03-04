@@ -65,9 +65,69 @@ export default class About extends React.Component{
         return (
             <div className='aboutContainer'>
                 <h2>Demo Videos</h2>
+                <h4>Conventional Visualization in Astronomy</h4>
                 <iframe 
-                    width="560" height="315" 
+                    width="448" height="252" 
                     src="https://www.youtube.com/embed/izChQ4uKksQ" 
+                    frameBorder="0" 
+                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen>
+                </iframe>
+                <h4>Automatic Feature Extraction</h4>
+                <iframe 
+                    width="448" height="252" 
+                    src="https://www.youtube.com/embed/B-0vTcWEc0s" 
+                    frameBorder="0" 
+                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen>
+                </iframe>
+                <iframe 
+                    width="448" height="252" 
+                    src="https://www.youtube.com/embed/L-5wIOhKko8" 
+                    frameBorder="0" 
+                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen>
+                </iframe>
+                <iframe 
+                    width="448" height="252" 
+                    src="https://www.youtube.com/embed/Ye7bqzJIjG4" 
+                    frameBorder="0" 
+                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen>
+                </iframe>
+                <h4>Interactive Feature Extraction</h4>
+                <iframe 
+                    width="448" height="252" 
+                    src="https://www.youtube.com/embed/NmSI1F3qKwY" 
+                    frameBorder="0" 
+                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen>
+                </iframe>
+                <iframe 
+                    width="448" height="252" 
+                    src="https://www.youtube.com/embed/0o1kqOZ4eBk" 
+                    frameBorder="0" 
+                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen>
+                </iframe>
+                <iframe 
+                    width="448" height="252" 
+                    src="https://www.youtube.com/embed/8vGVtYPibqo" 
+                    frameBorder="0" 
+                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen>
+                </iframe>
+                <h4>Auxiliary Functions</h4>
+                <iframe 
+                    width="448" height="252" 
+                    src="https://www.youtube.com/embed/CEMEJ9KDIpk" 
+                    frameBorder="0" 
+                    allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen>
+                </iframe>
+                <iframe 
+                    width="448" height="252" 
+                    src="https://www.youtube.com/embed/J0VlciD_ohs" 
                     frameBorder="0" 
                     allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
                     allowFullScreen>
