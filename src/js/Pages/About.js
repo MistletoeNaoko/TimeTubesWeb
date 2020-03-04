@@ -28,35 +28,35 @@ export default class About extends React.Component{
                 </p>
                 <p>
                 For more detail information about TimeTubes project, please refer our prior papers.
-                    <ul>
-                        <li>
-                            Naoko Sawada, Masanori Nakayama, Makoto Uemura, and Issei Fujishiro. 
-                            “TimeTubes: Automatic Extraction of Observable Blazar Features from Long-Term, Multi-Dimensional Datasets,” 
-                            in <em>Proceedings of 2018 IEEE Scientific Visualization Conference (SciVis),</em> Berlin, Germany, DOI: 10.1109/SciVis.2018.8823802, October 2018.
-                            <a href='https://ieeexplore.ieee.org/document/8823802'>IEEE Xplore</a>
-                        </li>
-                        <li>
-                            Issei Fujishiro, Naoko Sawada, Masanori Nakayama, Hsiang-Yun Wu, Kazuho Watanabe, Shigeo Takahashi, and Makoto Uemura. 
-                            “TimeTubes: Visual Exploration of Observed Blazar Datasets,” 
-                            <em>Journal of Physics: Conference Series (JPCS),</em> 
-                            Vol. 1036, No. 1, Article No. 012011, DOI: 10.1088/1742-6596/1036/1/012011, Kyoto, Japan, 2018. 
-                            <a href='http://iopscience.iop.org/article/10.1088/1742-6596/1036/1/012011'>IOPscience</a>
-                        </li>
-                        <li>
-                            Makoto Uemura, Ryosuke Itoh, Ioannis Liodakis, Dmitry Blinov, Masanori Nakayama, Longyin Xu, Naoko Sawada, Hsiang-Yun Wu, Issei Fujishiro. 
-                            “Optical polarization variations in the blazar PKS 1749+096,” 
-                            <em>Publications of the Astronomical Society of Japan (PASJ),</em> Vol. 69, No. 6, Article No. 96, DOI: 10.1093/pasj/psx111, November 2017. 
-                            <a href='https://academic.oup.com/pasj/article/69/6/96/4609697'>Oxford Academic</a>
-                        </li>
-                        <li>
-                            Naoko Sawada, Masanori Nakayama, Hsiang-Yun Wu, Makoto Uemura, and Issei Fujishiro. 
-                            “TimeTubes: Visual Fusion and Validation for Ameliorating Uncertainty of Blazar Datasets from Different Observatories,” 
-                            Short papers, in <em>Proceedings of the Computer Graphics International Conference (CGI 2017),</em> Article No. 14, Yokohama, Japan, DOI: 10.1145/3095140.3095154, June 2017.
-                            <a href='http://dl.acm.org/citation.cfm?id=3095154'>ACM Digital Library</a>
-                        </li>
-                    
-                    </ul>
                 </p>
+                <ul>
+                    <li>
+                        Naoko Sawada, Masanori Nakayama, Makoto Uemura, and Issei Fujishiro. 
+                        “TimeTubes: Automatic Extraction of Observable Blazar Features from Long-Term, Multi-Dimensional Datasets,” 
+                        in <em>Proceedings of 2018 IEEE Scientific Visualization Conference (SciVis),</em> Berlin, Germany, DOI: 10.1109/SciVis.2018.8823802, October 2018.
+                        <a href='https://ieeexplore.ieee.org/document/8823802'>IEEE Xplore</a>
+                    </li>
+                    <li>
+                        Issei Fujishiro, Naoko Sawada, Masanori Nakayama, Hsiang-Yun Wu, Kazuho Watanabe, Shigeo Takahashi, and Makoto Uemura. 
+                        “TimeTubes: Visual Exploration of Observed Blazar Datasets,” 
+                        <em>Journal of Physics: Conference Series (JPCS),</em> 
+                        Vol. 1036, No. 1, Article No. 012011, DOI: 10.1088/1742-6596/1036/1/012011, Kyoto, Japan, 2018. 
+                        <a href='http://iopscience.iop.org/article/10.1088/1742-6596/1036/1/012011'>IOPscience</a>
+                    </li>
+                    <li>
+                        Makoto Uemura, Ryosuke Itoh, Ioannis Liodakis, Dmitry Blinov, Masanori Nakayama, Longyin Xu, Naoko Sawada, Hsiang-Yun Wu, Issei Fujishiro. 
+                        “Optical polarization variations in the blazar PKS 1749+096,” 
+                        <em>Publications of the Astronomical Society of Japan (PASJ),</em> Vol. 69, No. 6, Article No. 96, DOI: 10.1093/pasj/psx111, November 2017. 
+                        <a href='https://academic.oup.com/pasj/article/69/6/96/4609697'>Oxford Academic</a>
+                    </li>
+                    <li>
+                        Naoko Sawada, Masanori Nakayama, Hsiang-Yun Wu, Makoto Uemura, and Issei Fujishiro. 
+                        “TimeTubes: Visual Fusion and Validation for Ameliorating Uncertainty of Blazar Datasets from Different Observatories,” 
+                        Short papers, in <em>Proceedings of the Computer Graphics International Conference (CGI 2017),</em> Article No. 14, Yokohama, Japan, DOI: 10.1145/3095140.3095154, June 2017.
+                        <a href='http://dl.acm.org/citation.cfm?id=3095154'>ACM Digital Library</a>
+                    </li>
+                
+                </ul>
             </div>
         );
     }
@@ -68,9 +68,9 @@ export default class About extends React.Component{
                 <iframe 
                     width="560" height="315" 
                     src="https://www.youtube.com/embed/izChQ4uKksQ" 
-                    frameborder="0" 
+                    frameBorder="0" 
                     allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
-                    allowfullscreen>
+                    allowFullScreen>
                 </iframe>
             </div>
         );
