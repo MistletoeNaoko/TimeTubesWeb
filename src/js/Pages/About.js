@@ -127,7 +127,7 @@ export default class About extends React.Component{
                 </div>
                 <div className='authorList'>
                     <h4>Issei Fujishiro</h4>
-                    <p>Professor of Information and Computer Science at Keio University, Hangzhou Dianzi University</p>
+                    <p>Professor of Information and Computer Science at Keio University, adjunct Professor at School of Computer Science and Engineering at Hangzhou Dianzi University</p>
                     <img className='aboutIcons' src='../../img/website.png' width='20px' height='20px'></img>
                     <a href='http://fj.ics.keio.ac.jp/'>http://fj.ics.keio.ac.jp/</a>
                     <img className='aboutIcons' src='../../img/mail.png' width='20px' height='20px'></img>
