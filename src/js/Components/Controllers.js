@@ -340,6 +340,7 @@ export default class Controllers extends React.Component{
                             name="fileType"
                             value="tsv"
                             className="custom-control-input"
+                            disabled={true}
                             checked={this.state.fileType === 'tsv'} readOnly/>
                         <label className="custom-control-label" htmlFor="inlineCheckbox1">tsv</label>
                     </div>
@@ -349,6 +350,7 @@ export default class Controllers extends React.Component{
                             type="radio"
                             name="fileType"
                             value="space"
+                            disabled={true}
                             className="custom-control-input"
                             checked={this.state.fileType === 'space'} readOnly/>
                         <label className="custom-control-label" htmlFor="inlineCheckbox1">space</label>

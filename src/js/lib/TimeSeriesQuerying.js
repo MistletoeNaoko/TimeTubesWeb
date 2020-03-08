@@ -94,7 +94,6 @@ export function makeQueryfromQBE(source, period, ignored, coordinates) {
 export function makeQueryPolarQBS(query) {
     let keys = Object.keys(query);
     let queryPolar = {};
-    console.log(query, keys)
     if (keys.indexOf('x') < 0 || keys.indexOf('y') < 0) {
         alert('To use the polar coordinate for computing similarities, you cannot ignore the Stokes parameters (Q/I and U/I).');
         return false;
@@ -448,7 +447,6 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
                         }
                     }
                 }
-                console.log(keys);
 
                 if (window > 0) {
                     // use DTW
@@ -1088,21 +1086,21 @@ export function extractAnomalies(targets) {
                 Math.pow((data2.x - data1.x) / (targetData.data.meta.max.x - targetData.data.meta.min.x), 2.0)
                 + Math.pow((data2.y - data1.y) / (targetData.data.meta.max.y - targetData.data.meta.min.y), 2.0)
             ) * 100 / (z2 - z1);
-            if (polar === 0) {
+            if (polar === 0 || isNaN(polar)) {
                 polar = 1;
             }
 
             let intensity = Math.abs(data2.V - data1.V) 
                 / (targetData.data.meta.max.V - targetData.data.meta.min.V) 
                 * 100 / (z2 - z1);
-            if (intensity === 0) {
+            if (intensity === 0 || isNaN(intensity))  {
                 intensity = 1;
             }
 
             let color = Math.abs(data2.H - data1.H) 
                 / (targetData.data.meta.max.H - targetData.data.meta.min.H) 
                 * 100 / (z2 - z1);
-            if (color === 0) {
+            if (color === 0 || isNaN(color)) {
                 color = 1;
             }
 

@@ -138,7 +138,7 @@ export default class ResultSummary extends React.Component {
                         <label>Period</label>
                     </div>
                     <div className='col'>
-                        {formatValue(this.result.start)} - {formatValue(this.result.start + this.result.period)}
+                        {Math.floor(this.result.start)} - {Math.ceil(this.result.start + this.result.period)}
                     </div>
                 </div>
             );
@@ -149,7 +149,7 @@ export default class ResultSummary extends React.Component {
                         <label>JD</label>
                     </div>
                     <div className='col'>
-                        {formatValue(this.result.start)}
+                        {Math.floor(this.result.start)}
                     </div>
                 </div>
             );

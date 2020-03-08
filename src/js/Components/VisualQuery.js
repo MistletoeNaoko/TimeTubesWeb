@@ -219,8 +219,8 @@ export default class VisualQuery extends React.Component {
             <div className='featureElem' id='QBSArea'
                 style={{display: (this.state.queryMode === 'QBS')? 'block': 'none'}}>
                 <QueryBySketch
-                    xItem={'z'}
-                    yItem={'V'}/>
+                    xItem={'x'}
+                    yItem={'y'}/>
             </div>
         );
     }
@@ -572,6 +572,7 @@ export default class VisualQuery extends React.Component {
                     // let variableList = document.getElementById('widthVariables');
                     // let selectedIdx = variableList.selectedIndex;
                     // let selectedText = variableList.options[selectedIdx].innerText;
+                    console.log(query);
                     let parameters = {};
                     parameters = {
                         // width: ($('#widthDetectionSwitch').prop('checked'))? selectedText: false,

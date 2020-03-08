@@ -350,6 +350,8 @@ export default class QueryBySketch extends React.Component{
         document.getElementById('QBSSketchPad').addEventListener('touchmove', this.CanvasOnTouchMove().bind(this));
 
         paper.view.onFrame = this.CanvasOnFrame().bind(this);
+
+        $('#periodOfSketchQuery').val(20);
     }
 
     CanvasOnFrame() {
@@ -2181,6 +2183,96 @@ export default class QueryBySketch extends React.Component{
         );
     }
 
+    sketchPadPreset() {
+        return (
+            <div className='featureElem form-inline' style={{float: 'left'}}>
+                <select
+                    className="custom-select custom-select-sm"
+                    id='sketchPadPreset'
+                    style={{width: '8rem'}}
+                    onChange={this.changeSketchPadAxes.bind(this)}>
+                    <option value={'Stokes'}>Stokes plane</option>
+                    <option value={'lightCurve'}>Light curve</option>
+                </select>
+            </div>
+        );
+    }
+
+    changeSketchPadAxes() {
+        let presetList = document.getElementById('sketchPadPreset');
+        if (presetList && presetList.options.length > 0) {
+            let selectedIdx = presetList.selectedIndex;
+            let selectedVal = presetList.options[selectedIdx].value;
+            let minX, maxX, minY, maxY;
+            switch(selectedVal) {
+                case 'Stokes':
+                    if (this.xAxisText) {
+                        this.xAxisText
+                            .text(this.state.lookup.x);
+                    }
+                    if (this.yAxisText) {
+                        this.yAxisText
+                            .text(this.state.lookup.y);
+                    }
+                    minX = Math.min.apply(null, this.state.minList.x);
+                    maxX = Math.max.apply(null, this.state.maxList.x);
+                    minY = Math.min.apply(null, this.state.minList.y);
+                    maxY = Math.max.apply(null, this.state.maxList.y);
+                    this.setValueSlider('sketchPadXRangeSlider', minX, maxX);
+                    this.updateXAxisValue(minX, maxX);
+                    this.setValueSlider('sketchPadYRangeSlider', minY, maxY);
+                    this.updateYAxisValue(minY, maxY);
+                    if (Object.keys(this.queryData).length <= 0) {
+                        this.recoverStroke('x', 'y');
+                    } else {
+                        this.transformDataIntoSketch('x', 'y');
+                    }
+                    this.convertSketchIntoQuery('x', 'y');
+                    this.setState({
+                        xItem: 'x',
+                        xItemonPanel: 'x',
+                        yItem: 'y',
+                        yItemonPanel: 'y'
+                    });
+                    break;
+                case 'lightCurve':
+                    if (this.xAxisText) {
+                        this.xAxisText
+                            .text(this.state.lookup.z);
+                    }
+                    if (this.yAxisText) {
+                        this.yAxisText
+                            .text(this.state.lookup.V);
+                    }
+                    minX = Math.min.apply(null, this.state.minList.z);
+                    maxX = Math.max.apply(null, this.state.maxList.z);
+                    maxX = Math.min(maxX - minX, 50);
+                    minX = 0;
+                    minY = Math.min.apply(null, this.state.minList.V);
+                    maxY = Math.max.apply(null, this.state.maxList.V);
+                    this.setValueSlider('sketchPadXRangeSlider', minX, maxX);
+                    this.updateXAxisValue(minX, maxX);
+                    this.setValueSlider('sketchPadYRangeSlider', minY, maxY);
+                    this.updateYAxisValue(minY, maxY);
+                    if (Object.keys(this.queryData).length <= 0) {
+                        this.recoverStroke('z', 'V');
+                    } else {
+                        this.transformDataIntoSketch('z', 'V');
+                    }
+                    this.convertSketchIntoQuery('z', 'V');
+                    this.setState({
+                        xItem: 'z',
+                        xItemonPanel: 'z',
+                        yItem: 'V',
+                        yItemonPanel: 'V'
+                    });
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
     importExportQueryMenu() {
         return (
             <div id='importExportQuery' className='featureElem form-inline' style={{float: 'right'}}>
@@ -2792,6 +2884,7 @@ export default class QueryBySketch extends React.Component{
                     <div className='overlayHidingPanel'></div>
                 </div>
                 <div id='QBSSketchMenuArea'>
+                    {this.sketchPadPreset()}
                     {this.importExportQueryMenu()}
                     <div style={{clear: 'both'}}></div>
                     {this.sketchOptions()}
