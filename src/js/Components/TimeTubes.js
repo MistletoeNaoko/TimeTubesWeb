@@ -100,7 +100,7 @@ export default class TimeTubes extends React.Component{
         this.setCameras(width, height);
 
         this.renderer = new THREE.WebGLRenderer({preserveDrawingBuffer: true}); //{ antialias: true }
-        this.renderer.setClearColor("#000000");
+        this.renderer.setClearColor(new THREE.Color(Number(TimeTubesStore.getBackgroundColor())));
         this.renderer.setSize(width, height);
         this.renderer.localClippingEnabled = true;
         this.renderer.domElement.id = 'TimeTubes_viewport_' + this.id;
@@ -219,10 +219,8 @@ export default class TimeTubes extends React.Component{
                 this.plot.visible = state;
             }
         });
-        TimeTubesStore.on('changeBackground', (id, color) => {
-           if (id === this.id) {
-               this.scene.background = new THREE.Color(Number(color));
-           }
+        TimeTubesStore.on('changeBackground', () => {
+            this.scene.background = new THREE.Color(Number(TimeTubesStore.getBackgroundColor()));
         });
         TimeTubesStore.on('clipTube', (id, state) => {
             if (id === this.id) {

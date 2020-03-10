@@ -38,6 +38,7 @@ const opacityDistSet = {
 class TimeTubesStore extends EventEmitter{
     constructor() {
         super();
+        this.backgroundColor = 0x000000;
         this.initColorIdx = 5;
         this.presetColors = ['#DC143C', '#FF6347', '#FFA500', '#FFFF00',
             '#00FF00', '#7FFFD4', '#00FFFF', '#00BFFF',
@@ -190,6 +191,10 @@ class TimeTubesStore extends EventEmitter{
                 break;
             default:
         }
+    }
+
+    getBackgroundColor() {
+        return this.backgroundColor;
     }
 
     getCameraProp(id) {
@@ -388,7 +393,8 @@ class TimeTubesStore extends EventEmitter{
     }
 
     changeBackground(id, color) {
-        this.emit('changeBackground', id, color);
+        this.backgroundColor = color;
+        this.emit('changeBackground');
     }
 
     clipTube(id, state) {
