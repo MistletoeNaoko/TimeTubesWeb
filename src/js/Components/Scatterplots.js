@@ -27,7 +27,9 @@ export default class Scatterplots extends React.Component{
         } else {
             this.timeRange = timeRange;
         }
-        this.slicedData = this.data.data.spatial;
+        this.slicedData = this.data.data.spatial.filter(function (d) {
+            return (props.xItem in d && props.yItem in d);
+        });
         this.xMinMax = [0, 0];
         this.yMinMax = [0, 0];
         this.state = {
@@ -162,9 +164,9 @@ export default class Scatterplots extends React.Component{
             .data(this.slicedData)
             .enter()
             .append("circle")
-            .select(function (d) {
-                return (xItem in d && yItem in d) ? this: null;
-            })
+            // .select(function (d) {
+            //     return (xItem in d && yItem in d) ? this: null;
+            // })
             .attr('opacity', 0.7)
             .attr('stroke-width', 0.5)
             .attr('stroke', 'dimgray')
@@ -256,8 +258,8 @@ export default class Scatterplots extends React.Component{
         if (!this.data.data.merge) {
             let plotColor = TimeTubesStore.getPlotColor(this.id);
             this.points
-                .attr("cx", function(d) { return this.xScale(d[xItem]); }.bind((this)))
-                .attr("cy", function(d) { return this.yScale(d[yItem]); }.bind((this)))
+                .attr("cx", function(d) { return this.xScale(d[xItem]); }.bind(this))
+                .attr("cy", function(d) { return this.yScale(d[yItem]); }.bind(this))
                 .attr("fill", plotColor)//d3.rgb(color[0], color[1], color[2]))
                 .on('mouseover', this.spMouseOver())
                 .on('mouseout', this.spMouseOut())
@@ -574,7 +576,7 @@ export default class Scatterplots extends React.Component{
     computeRange(xItem, yItem) {
         // this.data.data.spatial has all observation index by x, y, z, etc.
         this.slicedData = this.data.data.spatial.filter(function (d) {
-            return (this.timeRange[0] <= d.z) && (d.z <= this.timeRange[1]);
+            return (xItem in d && yItem in d) && ((this.timeRange[0] <= d.z) && (d.z <= this.timeRange[1]));
         }.bind(this));
         this.xMinMax = d3.extent(this.slicedData, function (d) {
             return d[xItem];
@@ -585,6 +587,7 @@ export default class Scatterplots extends React.Component{
     }
 
     updateScatterplots(xItem, yItem) {
+        console.log('updateScatterplots')
         // update domain
         this.xScale
             .domain(this.xMinMax)
@@ -596,29 +599,58 @@ export default class Scatterplots extends React.Component{
         this.yMinMax = this.yScale.domain();
 
         // update all circles
-        this.points.remove();
+        // this.points.remove();
         if (!this.data.data.merge) {
+            console.log(this.slicedData, this.points._groups[0].length);
             let plotColor = TimeTubesStore.getPlotColor(this.id);
-            this.points = this.point_g
-                .selectAll("circle")
-                .data(this.slicedData)
-                .enter()
-                .append('circle')
-                .attr('cx', function(d) { return this.xScale(d[xItem]); }.bind((this)))
-                .attr('cy', function(d) { return this.yScale(d[yItem]); }.bind((this)))
-                .select(function (d) {
-                    return (xItem in d && yItem in d) ? this: null;
-                })
-                .attr("fill", plotColor)//d3.rgb(color[0], color[1], color[2]))
-                .attr('opacity', 0.7)
-                .attr('stroke-width', 0.5)
-                .attr('stroke', 'dimgray')
-                .attr("r", 4)
-                .attr('class', this.divID + ' scatterplots' + this.id)
-                .on('mouseover', this.spMouseOver())
-                .on('mouseout', this.spMouseOut())
-                // .on('click', spClick)
-                .on('dblclick', this.spDblClick());
+            let currentPlotNum = this.points._groups[0].length;
+            if (currentPlotNum <= this.slicedData.length) {
+                let now = this.point_g
+                    .selectAll("circle")
+                    .data(this.slicedData);
+                let enter = now
+                    .enter()
+                    .append('circle');
+                this.points = enter.merge(now);
+                this.points
+                    .attr('cx', function(d) { 
+                        return this.xScale(d[xItem]); 
+                    }.bind(this))
+                    .attr('cy', function(d) { 
+                        return this.yScale(d[yItem]); 
+                    }.bind(this))
+                    .attr("fill", plotColor)//d3.rgb(color[0], color[1], color[2]))
+                    .attr('opacity', 0.7)
+                    .attr('stroke-width', 0.5)
+                    .attr('stroke', 'dimgray')
+                    .attr("r", 4)
+                    .attr('class', this.divID + ' scatterplots' + this.id)
+                    .on('mouseover', this.spMouseOver())
+                    .on('mouseout', this.spMouseOut())
+                    // .on('click', spClick)
+                    .on('dblclick', this.spDblClick());
+            } else {
+                this.points = this.point_g
+                    .selectAll("circle")
+                    .data(this.slicedData)
+                    .attr('cx', function(d) { 
+                        return this.xScale(d[xItem]); 
+                    }.bind(this))
+                    .attr('cy', function(d) { 
+                        return this.yScale(d[yItem]); 
+                    }.bind(this))
+                    .attr("fill", plotColor)//d3.rgb(color[0], color[1], color[2]))
+                    .attr('opacity', 0.7)
+                    .attr('stroke-width', 0.5)
+                    .attr('stroke', 'dimgray')
+                    .attr("r", 4)
+                    .attr('class', this.divID + ' scatterplots' + this.id)
+                    .on('mouseover', this.spMouseOver())
+                    .on('mouseout', this.spMouseOut())
+                    // .on('click', spClick)
+                    .on('dblclick', this.spDblClick());
+                this.points.exit().remove();
+            }
         } else {
             let idNameLookup = {};
             let fileNames = this.data.name.split(',');
@@ -662,6 +694,7 @@ export default class Scatterplots extends React.Component{
             .call(this.xLabel.scale(this.xScale));
         this.yAxis
             .call(this.yLabel.scale(this.yScale));
+            console.log(this.points);
     }
 
     onClickXAxisDone(e) {
