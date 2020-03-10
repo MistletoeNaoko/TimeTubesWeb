@@ -23,7 +23,7 @@ export default class Menu extends React.Component {
         // adding className 'active' to li elements in ul, the text will be highlighted
         return (
             <nav className="navbar navbar-expand-lg navbar-dark bg-primary" id='appHeader'>
-                <a className="navbar-brand" href="#">TimeTubes</a>
+                <a className="navbar-brand">TimeTubesX</a>
                 <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01"
                         aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
                     <span className="navbar-toggler-icon"></span>
@@ -42,12 +42,6 @@ export default class Menu extends React.Component {
                         </li>
                         <li className="nav-item mainMenu" value='comment'>
                             <label className="nav-link menuLabel">Comment</label>
-                        </li>
-                        {/* <li className="nav-item mainMenu" value='original'>
-                            <label className="nav-link menuLabel">Original Data</label>
-                        </li> */}
-                        <li className="nav-item mainMenu" value='contact'>
-                            <label className="nav-link menuLabel">Contact</label>
                         </li>
                     </ul>
                 </div>
