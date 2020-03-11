@@ -1,12 +1,11 @@
 import React from 'react';
 import * as d3 from 'd3';
 import {tickFormatting} from '../lib/2DGraphLib';
+import {getDataFromLocalStorage} from '../lib/dataLib';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
-import * as FeatureAction from '../Actions/FeatureAction';
 import DataStore from '../Stores/DataStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import ScatterplotsStore from '../Stores/ScatterplotsStore';
-import FeatureStore from '../Stores/FeatureStore';
 
 d3.selection.prototype.moveToFront =
     function() {
@@ -32,6 +31,18 @@ export default class Scatterplots extends React.Component{
         });
         this.xMinMax = [0, 0];
         this.yMinMax = [0, 0];
+        let comments = getDataFromLocalStorage('privateComment');
+        this.commentsList = [];
+        for (let key in comments) {
+            if (comments[key].fileName === this.data.name) {
+                let tmp = {};
+                tmp.id = key;
+                for (let keyinComment in comments[key]) {
+                    tmp[keyinComment] = comments[key][keyinComment];
+                }
+                this.commentsList.push(tmp);
+            }
+        }
         this.state = {
             xItem: props.xItem,
             yItem: props.yItem,
@@ -47,6 +58,40 @@ export default class Scatterplots extends React.Component{
         this.computeRange(this.state.xItem, this.state.yItem);
         this.drawScatterplots();
 
+        DataStore.on('updatePrivateComment', () => {
+            let currentCommentNum = this.commentsList.length;
+            let comments = getDataFromLocalStorage('privateComment');
+            this.commentsList = [];
+            for (let key in comments) {
+                if (comments[key].fileName === this.data.name) {
+                    let tmp = {};
+                    tmp.id = key;
+                    for (let keyinComment in comments[key]) {
+                        tmp[keyinComment] = comments[key][keyinComment];
+                    }
+                    this.commentsList.push(tmp);
+                }
+            }
+            if (this.commentsList.length < currentCommentNum) {
+                // delete extra triangles
+                this.commentMarks = this.commentMarks_g
+                    .selectAll('path')
+                    .data(this.commentsList);
+                this.commentMarks.exit().remove();
+            } else {
+                // add path
+                let now = this.commentMarks_g
+                    .selectAll('path')
+                    .data(this.commentsList);
+                let enter = now.enter().append('path')
+                    .attr('d', function(d) {
+                        this.symbolGenerator.type(d3['symbolTriangle']);
+                        return this.symbolGenerator();
+                    }.bind(this));
+                this.commentMarks = enter.merge(now);
+            }
+            this.updateScatterplots();
+        });
         TimeTubesStore.on('updateFocus', (id, zpos, flag) => {
             // when flag is true, change the color of the plot
             if (id === this.id) {
@@ -158,7 +203,7 @@ export default class Scatterplots extends React.Component{
             .attr('clip-path', 'url(#clipScatterplots_' + this.SPID + ')')
             .classed('points_g', true);
 
-        let xItem = this.state.xItem, yItem = this.state.yItem;
+        // let xItem = this.state.xItem, yItem = this.state.yItem;
         this.points = this.point_g
             .selectAll("circle")
             .data(this.slicedData)
@@ -172,6 +217,21 @@ export default class Scatterplots extends React.Component{
             .attr('stroke', 'dimgray')
             .attr("r", 4)
             .attr('class', this.divID + ' scatterplots' + this.id);
+
+        this.commentMarks_g = this.sp.append('g')
+            .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')')
+            .attr('clip-path', 'url(#clipScatterplots_' + this.SPID + ')')
+            .classed('comments_g', true);
+        this.symbolGenerator = d3.symbol().size(50);
+        this.commentMarks = this.commentMarks_g
+            .selectAll('path')
+            .data(this.commentsList)
+            .enter()
+            .append('path')
+            .attr('d', function(d) {
+                this.symbolGenerator.type(d3['symbolTriangle']);
+                return this.symbolGenerator();
+            }.bind(this));
     }
 
     drawScatterplots() {
@@ -292,6 +352,17 @@ export default class Scatterplots extends React.Component{
                 .on('dblclick', this.spDblClick());
         }
 
+        // draw commentmarkers
+        if (this.state.xItem === 'z' || this.state.yItem === 'z') {
+            this.commentMarks
+                .attr('transform', function(d) {
+                    return 'translate(' + this.xScale(d.start) + ', 6)';
+                }.bind(this))
+                .attr('fill', function(d) {
+                    return d.labelColor.replace('0x', '#');
+                });
+        }
+
         function zoomed() {
             // create new scale ojects based on event
             // let lineHPos, lineVPos;
@@ -327,6 +398,17 @@ export default class Scatterplots extends React.Component{
             this.points
                 .attr('cx', function(d) {return new_xScale(d[xItem])})
                 .attr('cy', function(d) {return new_yScale(d[yItem])});
+
+            // draw commentmarkers
+            if (this.state.xItem === 'z' || this.state.yItem === 'z') {
+                this.commentMarks
+                    .attr('transform', function(d) {
+                        return 'translate(' + new_xScale(d.start) + ', 6)';
+                    })
+                    .attr('fill', function(d) {
+                        return d.labelColor.replace('0x', '#');
+                    });
+            }
 
             let current = d3.select('circle.current.' + this.divID);
 
@@ -587,7 +669,6 @@ export default class Scatterplots extends React.Component{
     }
 
     updateScatterplots(xItem, yItem) {
-        console.log('updateScatterplots')
         // update domain
         this.xScale
             .domain(this.xMinMax)
@@ -601,7 +682,6 @@ export default class Scatterplots extends React.Component{
         // update all circles
         // this.points.remove();
         if (!this.data.data.merge) {
-            console.log(this.slicedData, this.points._groups[0].length);
             let plotColor = TimeTubesStore.getPlotColor(this.id);
             let currentPlotNum = this.points._groups[0].length;
             if (currentPlotNum <= this.slicedData.length) {
@@ -694,7 +774,18 @@ export default class Scatterplots extends React.Component{
             .call(this.xLabel.scale(this.xScale));
         this.yAxis
             .call(this.yLabel.scale(this.yScale));
-            console.log(this.points);
+
+        
+        // draw commentmarkers
+        if (this.state.xItem === 'z' || this.state.yItem === 'z') {
+            this.commentMarks
+                .attr('transform', function(d) {
+                    return 'translate(' + this.xScale(d.start) + ', 6)';
+                }.bind(this))
+                .attr('fill', function(d) {
+                    return d.labelColor.replace('0x', '#');
+                });
+        }
     }
 
     onClickXAxisDone(e) {
