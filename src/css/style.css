@@ -459,6 +459,23 @@ img.selectorIcon:active {
     margin: 10px 5px;
 }
 
+.colormapArea {
+    position: relative;
+}
+
+/* .colormap {
+    position: relative;
+} */
+
+.currentColor {
+    position: absolute;
+    height: 5px;
+    width: 5px;
+    background-color: #fff;
+    border-radius: 50%;
+    display: inline-block;
+}
+
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/

@@ -10,7 +10,8 @@ export default class Details extends React.Component{
     constructor() {
         super();
         this.id = DataStore.getTailID();
-        this.lookup = DataStore.getData(this.id).data.lookup;
+        this.data = DataStore.getData(this.id);
+        this.lookup = this.data.data.lookup;
         this.state = {
             // id: DataStore.getTailID(),
             fileName: DataStore.getFileName(this.id),
@@ -20,14 +21,18 @@ export default class Details extends React.Component{
         this.tubeNum = TimeTubesStore.getTubeNum();
         this.opacityDistSet = TimeTubesStore.getOpacityDistSet();
         this.opacityCurves = TimeTubesStore.getOpacityCurves();
+        this.colormapSize = 150;
     }
 
     componentDidMount() {
         this.setFarSlider();
         this.setColormapValueSlider();
         this.setColormapHueSlider();
+        this.setCurrentColotPlot();
         this.setOpacityCurve();
         this.setOpacityEllipse();
+        this.setCurrentColotPlot();
+
 
         // ToDo: at first file uploading, following 'upload' code cannot catch event emitter
         DataStore.on('upload', (id) => {
@@ -43,9 +48,34 @@ export default class Details extends React.Component{
         });
         DataStore.on('updateDetail', (id, zpos) => {
             if (this.id === id) {
+                let currentVal = DataStore.getValues(id, zpos);
                 this.setState({
-                    currentVal: DataStore.getValues(id, zpos)
+                    currentVal: currentVal
                 });
+                // 'currentColorPlot_' + this.id
+                let minH = this.data.data.meta.min.H, maxH = this.data.data.meta.max.H;
+                let minV = this.data.data.meta.min.V, maxV = this.data.data.meta.max.V;
+                let VRange = $('#colorValue_' + this.id).slider('option', 'values');
+                let HRange = $('#colorHue_' + this.id).slider('option', 'values');
+                let minVTmp = minV + (maxV - minV) * VRange[0] / 100,
+                    maxVTmp = minV + (maxV - minV) * VRange[1] / 100;
+                let minHTmp = minH + (maxH - minH) * HRange[0] / 100,
+                    maxHTmp = minH + (maxH - minH) * HRange[1] / 100;
+                let xPos = (currentVal.H - minHTmp) / (maxHTmp - minHTmp);
+                if (xPos < 0) {
+                    xPos = 0;
+                } else if (1 < xPos) {
+                    xPos = 1;
+                }
+                let yPos = (currentVal.V - minVTmp) / (maxVTmp - minVTmp);
+                if (yPos < 0) {
+                    yPos = 0;
+                } else if (1 < yPos) {
+                    yPos = 1;
+                }
+                $('#currentColorPlot_' + this.id)
+                    .css('left', (xPos * this.colormapSize) + 'px')
+                    .css('bottom', (yPos * this.colormapSize) + 'px');
             }
         });
         TimeTubesStore.on('updateChecked', (id) => {
@@ -175,6 +205,30 @@ export default class Details extends React.Component{
         });
         hMin.val(hue.slider('values', 0));
         hMax.val(hue.slider('values', 1));
+    }
+
+    setCurrentColotPlot() {
+        // set current color plot to the initial position
+        let currentVal = DataStore.getValues(this.id, 0);
+        let minH = this.data.data.meta.min.H, maxH = this.data.data.meta.max.H;
+        let minV = this.data.data.meta.min.V, maxV = this.data.data.meta.max.V;
+        let xPos = (currentVal.H - minH) / (maxH - minH);
+        if (maxH === minH) {
+            xPos = 0;
+        } else if (xPos < 0) {
+            xPos = 0;
+        } else if (1 < xPos) {
+            xPos = 1;
+        }
+        let yPos = (currentVal.V - minV) / (maxV - minV);
+        if (yPos < 0) {
+            yPos = 0;
+        } else if (1 < yPos) {
+            yPos = 1;
+        }
+        $('#currentColorPlot_' + this.id)
+            .css('left', (xPos * this.colormapSize) + 'px')
+            .css('bottom', (yPos * this.colormapSize) + 'px');
     }
 
     setOpacityCurve() {
@@ -577,17 +631,22 @@ export default class Details extends React.Component{
                     id={"changeColormap_" + this.id}
                     style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: 'auto', zIndex:'31'}}>
                     <div id={"colorFilter_" + this.id}>
-                        <div id={"colorValue_" + this.id} style={{float: 'left', height: '150px'}}>
+                        <div id={"colorValue_" + this.id} style={{float: 'left', height: this.colormapSize + 'px'}}>
                             <output id={"colorValueMax_" + this.id} style={{marginLeft: '1.3rem'}}></output>
                             <output id={"colorValueMin_" + this.id} style={{marginLeft: '1.3rem'}}></output>
                         </div>
-                        <div id={"colorMap_" + this.id} style={{float: 'left', marginLeft: '10px'}}>
+                        <div id={"colorMapArea_" + this.id}  className='colormapArea' style={{float: 'left', marginLeft: '10px'}}>
                             <img src="img/1_256.png" 
                                 id={'colormap_' + this.id}
-                                style={{width: '150px', height: '150px'}}/>
+                                className='colormap'
+                                style={{width: this.colormapSize + 'px', height: this.colormapSize + 'px'}}/>
+                            <span 
+                                className='currentColor' 
+                                id={'currentColorPlot_' + this.id}
+                                ></span>
                         </div>
                         <div style={{clear:'both'}}></div>
-                        <div id={"colorHue_" + this.id} style={{width: '150px', marginTop: '5px', marginLeft: '20px'}}>
+                        <div id={"colorHue_" + this.id} style={{width: this.colormapSize + 'px', marginTop: '5px', marginLeft: '20px'}}>
                             <output id={"colorHueMax_" + this.id} style={{bottom: '1.3rem'}}></output>
                             <output id={"colorHueMin_" + this.id} style={{bottom: '1.3rem'}}></output>
                         </div>
