@@ -1,4 +1,5 @@
 import React from "react";
+import * as d3 from 'd3';
 import * as AppAction from '../Actions/AppAction';
 import AppStore from '../Stores/AppStore';
 
@@ -11,7 +12,12 @@ export default class Menu extends React.Component {
 
     componentDidMount() {
         $("ul[id*=mainMenuList] li").click(function () {
-            AppAction.selectMenu($(this).attr('value'));
+            d3.selectAll('.mainMenu')
+                .classed('active', false);
+            let selectedVal = $(this).attr('value');
+            d3.select(this)
+                .classed('active', true);
+            AppAction.selectMenu(selectedVal);
         });
 
         AppStore.on('selectMenu', (menu) => {
@@ -29,12 +35,12 @@ export default class Menu extends React.Component {
                     <span className="navbar-toggler-icon"></span>
                 </button>
 
-                <div className="collapse navbar-collapse" id="navbarColor01">
+                <div className="collapse navbar-collapse" id="navbarMainMenu">
                     <ul className="navbar-nav mr-auto" id='mainMenuList'>
                         <li className="nav-item mainMenu" value='about'>
                             <label className="nav-link menuLabel">About</label>
                         </li>
-                        <li className="nav-item mainMenu" value='visualization'>
+                        <li className="nav-item mainMenu active" value='visualization'>
                             <label className="nav-link menuLabel">Visualization</label>
                         </li>
                         <li className="nav-item mainMenu" value='feature'>
