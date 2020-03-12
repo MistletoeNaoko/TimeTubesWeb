@@ -360,7 +360,10 @@ export default class Scatterplots extends React.Component{
                 }.bind(this))
                 .attr('fill', function(d) {
                     return d.labelColor.replace('0x', '#');
-                });
+                })
+                .on('mouseover', this.commentMarksMouseOver())
+                .on('mouseout', this.commentMarksMouseOut())
+                .on('dblclick', this.commentMarksDblClick());
         }
 
         function zoomed() {
@@ -546,6 +549,45 @@ export default class Scatterplots extends React.Component{
         let id = this.id;
         return function(d) {
             TimeTubesAction.searchTime(id, d.z);
+        }
+    }
+
+    commentMarksMouseOver() {
+        let tooltip = this.tooltip;
+        return function(d) {
+            // change the color of the stroke and 
+            // show summary of the comment information
+            d3.select(this)
+                .style('stroke-width', 1)
+                .style('stroke', 'black');
+            tooltip.transition()
+                .duration(50)
+                .style('visibility', 'visible');
+            tooltip.html(
+                '<i>Time stamp</i>: ' + d.timeStamp + '<br/>' +
+                '<i>User name</i>: ' + d.userName + '<br/>' + 
+                '<i>Comment</i>: ' + d.comment
+                )
+                .style('left', (d3.event.pageX + 20) + 'px')
+                .style('top', (d3.event.pageY - 30) + 'px');
+        };
+    }
+
+    commentMarksMouseOut() {
+        let tooltip = this.tooltip;
+        return function() {
+            d3.select(this)
+                .style('stroke-width', 0);
+            tooltip.transition()
+                .duration(150)
+                .style("visibility", 'hidden');
+        };
+    }
+
+    commentMarksDblClick() {
+        let id = this.id;
+        return function(d) {
+            TimeTubesAction.searchTime(id, d.start);
         }
     }
 
@@ -784,7 +826,10 @@ export default class Scatterplots extends React.Component{
                 }.bind(this))
                 .attr('fill', function(d) {
                     return d.labelColor.replace('0x', '#');
-                });
+                })
+                .on('mouseover', this.commentMarksMouseOver())
+                .on('mouseout', this.commentMarksMouseOut())
+                .on('dblclick', this.commentMarksDblClick());
         }
     }
 
