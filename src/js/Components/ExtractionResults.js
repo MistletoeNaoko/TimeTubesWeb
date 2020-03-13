@@ -3,6 +3,7 @@ import ReactDOM from "react-dom";
 import LineChart from './LineChart';
 import ResultTimeline from './ResultTimeline';
 import DistanceHistogram from './DistanceHistogram';
+import {selectMenu} from '../Actions/AppAction';
 import * as domActions from '../lib/domActions';
 import * as TimeSeriesQuerying from '../lib/TimeSeriesQuerying';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
@@ -393,6 +394,13 @@ export default class ExtractionResults extends React.Component {
                         <button
                             className='btn btn-primary btn-sm'
                             type='button'
+                            id='clearTheImportedResultsBtn'
+                            onClick={this.clearTheImportedResults.bind(this)}>
+                            Clear
+                        </button>
+                        <button
+                            className='btn btn-primary btn-sm'
+                            type='button'
                             id='recoverTheImportedQueryBtn'
                             onClick={this.recoverTheQuery.bind(this)}>
                             Recover the query
@@ -409,7 +417,7 @@ export default class ExtractionResults extends React.Component {
         reader.readAsText(file[0]);
         reader.onload = function() {
             let contents = JSON.parse(reader.result);
-            FeatureAction.importResultsFromFile(contents.results);
+            // FeatureAction.importResultsFromFile(contents.results);
             this.setState({
                 importedResults: contents
             });
@@ -417,7 +425,35 @@ export default class ExtractionResults extends React.Component {
     } 
 
     recoverTheQuery() {
+        // query information: this.state.importedResults.query
+        if (Object.keys(this.state.importedResults).length > 0) {
+            let flag = true;
+            if (this.state.importedResults.query.mode === 'visual query' && this.state.importedResults.query.option === 'query-by-example') {
+                // check whether the source file is opened or not
+                let fileExist = DataStore.getIdFromName(this.state.importedResults.query.query.source);
+                if (fileExist < 0) {
+                    alert('You have to open the file whose file name is ' + this.state.importedResults.query.query.source + 'to recover the query-by-example.');
+                    flag = false;
+                }
+            } else if (this.state.importedResults.query.mode === 'visual query' && this.state.importedResults.query.option === 'query-by-sketch') {
+                // format variable name (e.g. Q/I -> x, V-J -> H)
+            }
+            if (flag) {
+                FeatureAction.recoverQuery(this.state.importedResults.query);
+                selectMenu('feature');
+            }
+        }
+    }
 
+    clearTheImportedResults() {
+        this.setState({
+            importedResults: {}
+        });
+        // close the panel for the imported results
+        let popupForm = document.getElementById('importResultsForm');
+        if (popupForm.style.display === 'block') {
+            document.getElementById('importResultsForm').style.display = 'none';
+        }
     }
 
     updateAccessibility() {
@@ -505,6 +541,31 @@ export default class ExtractionResults extends React.Component {
                 currentData = [];
             } else {
                 currentData.push(sortedResults[i]);
+            }
+            i++;
+        }
+        if (currentData.length > 0) {
+            splitedResult[currentDataIdx] = currentData;
+        }
+        return splitedResult;
+    }
+
+    splitImportedResultsByData() {
+        let sortedResults = this.state.importedResults.results.slice().sort(TimeSeriesQuerying.sortResults('fileName'));
+        let splitedResult = {};
+        let i = 0;
+        let currentData = [],
+            currentDataFileName = sortedResults[0].fileName;
+        let currentDataIdx = DataStore.getIdFromName(currentDataFileName);
+        while (i < sortedResults.length) {
+            if (currentDataIdx >= 0) {
+                if (sortedResults[i].fileName !== currentDataFileName) {
+                    splitedResult[currentDataIdx] = currentData;
+                    currentDataFileName = sortedResults[i].fileName;
+                    currentDataIdx = DataStore.getIdFromName(currentDataFileName);
+                } else {
+                    currentData.push(sortedResults[i]);
+                }
             }
             i++;
         }
@@ -618,23 +679,48 @@ export default class ExtractionResults extends React.Component {
 
             // and then split results by data
             let splitedResult = this.splitResultsByData();
-            for (let key in splitedResult) {
-                timelines.push(
-                    <div className='row' key={key}>
-                        <div className='col-2' 
-                            style={{
-                                wordWrap: 'anywhere', 
-                                position: 'relative', 
-                                fontSize: '0.7rem',
-                                lineHeight: '90%'}}>
-                            <label style={{position: 'absolute', top: '50%', transform: 'translateY(-50%)'}}>
-                                {DataStore.getFileName(Number(key))}
-                            </label>
+            if (Object.keys(this.state.importedResults).length <= 0) {
+                for (let key in splitedResult) {
+                    timelines.push(
+                        <div className='row' key={key}>
+                            <div className='col-2' 
+                                style={{
+                                    wordWrap: 'anywhere', 
+                                    position: 'relative', 
+                                    fontSize: '0.7rem',
+                                    lineHeight: '90%'}}>
+                                <label style={{position: 'absolute', top: '50%', transform: 'translateY(-50%)'}}>
+                                    {DataStore.getFileName(Number(key))}
+                                </label>
+                            </div>
+                            <div className='col-10' id={'resultTimelineArea_' + key}>
+                                <ResultTimeline id={Number(key)} results={splitedResult[key]} importedFlag={false} height={40}/>
+                            </div>
+                        </div>);
+                }
+            } else {
+                // when any imported results exist
+                let splitedImportedResults = this.splitImportedResultsByData();
+                for (let key in splitedResult) {
+                    timelines.push(
+                        <div className='row' key={key}>
+                            <div className='col-2' 
+                                style={{
+                                    wordWrap: 'anywhere', 
+                                    position: 'relative', 
+                                    fontSize: '0.7rem',
+                                    lineHeight: '90%'}}>
+                                <label style={{position: 'absolute', top: '50%', transform: 'translateY(-50%)'}}>
+                                    {DataStore.getFileName(Number(key))}
+                                </label>
+                            </div>
+                            <div className='col-10' id={'resultTimelineArea_' + key}>
+                                <ResultTimeline id={Number(key)} results={splitedResult[key]} importedFlag={false} height={40}/>
+                                <ResultTimeline id={Number(key)} results={splitedImportedResults[key]} importedFlag={true} height={40}/>
+                            </div>
                         </div>
-                        <div className='col-10' id={'resultTimelineArea_' + key}>
-                            <ResultTimeline id={Number(key)} results={splitedResult[key]} height={40}/>
-                        </div>
-                    </div>);
+                    );
+                }
             }
         }
         return (

@@ -21,6 +21,8 @@ export default class ResultTimeline extends React.Component {
         this.margin = {left: 20, right: 20};
         // this.height = props.height;
         // this.width = 0;
+        this.importedFlag = props.importedFlag;
+        this.divId = (this.importedFlag)? 'resultTimeline_' + props.id + '_imported': 'resultTimeline_' + props.id;
         this.state = {
             id: props.id,
             results: props.results,
@@ -44,7 +46,7 @@ export default class ResultTimeline extends React.Component {
         // }
         return (
             <div
-                id={'resultTimeline_' + this.state.id}
+                id={this.divId}
                 className='timeline'>
             </div>
         );
@@ -77,28 +79,21 @@ export default class ResultTimeline extends React.Component {
                 this.resizeTimeLine();
             }
         });
-        FeatureStore.on('importResultsFromFile', (results) => {
-            let fileName = DataStore.getFileName(this.state.id);
-            let importedResults = results.filter(result => result.fileName === fileName);
-            this.setState({
-                importedResults: importedResults
-            });
-            this.overlapImportedResults(importedResults);
-        });
     }
 
     componentWillUnmount() {
-        let parent = document.getElementById('resultTimeline_' + this.state.id);
+        // imported resultsをクリアすると、ここが実行されて、今の結果も削除されちゃう！
+        let parent = document.getElementById(this.divId);
         if (parent) {
             while (parent.firstChild) {
                 parent.removeChild(parent.firstChild);
             }
-            parent.parentNode.removeChild(parent);
+            // parent.parentNode.removeChild(parent);
         }
     }
 
     initializeTimeline() {
-        this.svg = d3.select('#resultTimeline_' + this.state.id)
+        this.svg = d3.select('#' + this.divId)
             .append('svg')
             .attr('id', 'resultTimelineSVG_' + this.state.id);
         this.xScale = d3.scaleLinear()
@@ -107,7 +102,7 @@ export default class ResultTimeline extends React.Component {
             .append('g')
             .attr('class', 'x-axis');
 
-        this.tooltip = d3.select('#resultTimeline_' + this.state.id)
+        this.tooltip = d3.select('#' + this.divId)
             .append('div')
             .attr('class', 'tooltip')
             .attr('id', 'tooltipResultTimeline_' + this.state.id)
@@ -210,13 +205,13 @@ export default class ResultTimeline extends React.Component {
                     return this.xScale(d.start + d.period);
                 }.bind(this))
                 .attr('y2', height / 2 - 5)
-                .attr('stroke', '#1d95c6')
+                .attr('stroke', (!this.importedFlag)? '#1d95c6': '#1d33c6')
                 .attr('stroke-width', 20)
                 .attr('opacity', 0.5)
                 .attr('transform', 'translate(' + this.margin.left + ',0)')
-                .on('mouseover', this.timelineMouseOver())
-                .on('mouseout', this.timelineMouseOut())
-                .on('click', this.timelineClick());
+                .on('mouseover', (!this.importedFlag)? this.timelineMouseOver(): this.timelineImportedResultsMouseOver())
+                .on('mouseout', (!this.importedFlag)? this.timelineMouseOut(): this.timelineImportedReusltsMouseOut())
+                .on('click', (!this.importedFlag)? this.timelineClick(): null);
         }
         if (resultsRotation.length > 0) {
             this.resultsRotation = this.svg
@@ -233,13 +228,13 @@ export default class ResultTimeline extends React.Component {
                     return this.xScale(d.start + d.period);
                 }.bind(this))
                 .attr('y2', height / 2 - 5)
-                .attr('stroke', '#80b139')
+                .attr('stroke', (!this.importedFlag)? '#80b139': '#b1a639')
                 .attr('stroke-width', 20)
                 .attr('opacity', 0.5)
                 .attr('transform', 'translate(' + this.margin.left + ',0)')
-                .on('mouseover', this.timelineMouseOver())
-                .on('mouseout', this.timelineMouseOut())
-                .on('click', this.timelineClick());
+                .on('mouseover', (!this.importedFlag)? this.timelineMouseOver(): this.timelineImportedResultsMouseOver())
+                .on('mouseout', (!this.importedFlag)? this.timelineMouseOut(): this.timelineImportedReusltsMouseOut())
+                .on('click', (!this.importedFlag)? this.timelineClick(): null);
         }
         if (resultsFlare.length > 0) {
             this.resultsFlare = this.svg
@@ -253,12 +248,12 @@ export default class ResultTimeline extends React.Component {
                 }.bind(this))
                 .attr('cy', height / 2 - 5)
                 .attr('r', 10)
-                .attr('fill', '#f26418')
+                .attr('fill', (!this.importedFlag)? '#f26418': '#f2d118')
                 .attr('opacity', 0.5)
                 .attr('transform', 'translate(' + this.margin.left + ',0)')
-                .on('mouseover', this.timelineMouseOver())
-                .on('mouseout', this.timelineMouseOut())
-                .on('click', this.timelineClick());
+                .on('mouseover', (!this.importedFlag)? this.timelineMouseOver(): this.timelineImportedResultsMouseOver())
+                .on('mouseout', (!this.importedFlag)? this.timelineMouseOut(): this.timelineImportedReusltsMouseOut())
+                .on('click', (!this.importedFlag)? this.timelineClick(): null);
         }
         if (resultsAnomaly.length > 0) {
             this.resultsAnomaly = this.svg
@@ -272,12 +267,12 @@ export default class ResultTimeline extends React.Component {
                 }.bind(this))
                 .attr('cy', height / 2 - 5)
                 .attr('r', 10)
-                .attr('fill', '#d23430')
+                .attr('fill', (!this.importedFlag)? '#d23430': '#f2d118')
                 .attr('opacity', 0.5)
                 .attr('transform', 'translate(' + this.margin.left + ',0)')
-                .on('mouseover', this.timelineMouseOver())
-                .on('mouseout', this.timelineMouseOut())
-                .on('click', this.timelineClick());
+                .on('mouseover', (!this.importedFlag)? this.timelineMouseOver(): this.timelineImportedResultsMouseOver())
+                .on('mouseout', (!this.importedFlag)? this.timelineMouseOut(): this.timelineImportedReusltsMouseOut())
+                .on('click', (!this.importedFlag)? this.timelineClick(): null);
         }
     }
 
@@ -330,107 +325,6 @@ export default class ResultTimeline extends React.Component {
                 .attr('cx', function(d) {
                     return this.xScale(d.start);
                 }.bind(this));
-        }
-    }
-
-    overlapImportedResults(results) {
-
-        this.svg
-            .selectAll('.importedResults')
-            .remove();
-    
-        let resultsVQ = results.filter(d => d.distance !== undefined);
-        let resultsRotation = results.filter(d => d.angle);
-        let resultsFlare = [];
-        results.forEach(d => {
-            if (d.V) {
-                resultsFlare = resultsFlare.concat(d);
-            } else if (d.flares) {
-                resultsFlare = resultsFlare.concat(d.flares);
-            }
-        });
-        let resultsAnomaly = results.filter(d => d.anomalyDegree);
-
-        if (resultsVQ.length > 0) {
-            this.svg
-                .selectAll('line.resultsVQ.importedResults')
-                .data(resultsVQ)
-                .enter()
-                .append('line')
-                .attr('class', 'resultsVQ importedResults')
-                .attr('x1', function(d) {
-                    return this.xScale(d.start);
-                }.bind(this))
-                .attr('y1', this.state.height / 2 - 5)
-                .attr('x2', function(d) {
-                    return this.xScale(d.start + d.period);
-                }.bind(this))
-                .attr('y2', this.state.height / 2 - 5)
-                .attr('stroke', '#1d33c6')
-                .attr('stroke-width', 20)
-                .attr('opacity', 0.5)
-                .attr('transform', 'translate(' + this.margin.left + ',0)')
-                .on('mouseover', this.timelineImportedResultsMouseOver())
-                .on('mouseout', this.timelineImportedReusltsMouseOut());
-                // .on('click', this.timelineClick());
-        }
-        if (resultsRotation.length > 0) {
-            this.svg
-                .selectAll('line.resultsRotation.importedResults')
-                .data(resultsRotation)
-                .enter()
-                .append('line')
-                .attr('class', 'resultsRotation importedResults')
-                .attr('x1', function(d) {
-                    return this.xScale(d.start);
-                }.bind(this))
-                .attr('y1', this.state.height / 2 - 5)
-                .attr('x2', function(d) {
-                    return this.xScale(d.start + d.period);
-                }.bind(this))
-                .attr('y2', this.state.height / 2 - 5)
-                .attr('stroke', '#b1a639')
-                .attr('stroke-width', 20)
-                .attr('opacity', 0.5)
-                .attr('transform', 'translate(' + this.margin.left + ',0)')
-                .on('mouseover', this.timelineImportedResultsMouseOver())
-                .on('mouseout', this.timelineImportedReusltsMouseOut());
-        }
-        if (resultsFlare.length > 0) {
-            this.svg
-                .selectAll('circle.resultsFlare.importedResults')
-                .data(resultsFlare)
-                .enter()
-                .append('circle')
-                .attr('class', 'resultsFlare importedResults')
-                .attr('cx', function(d) {
-                    return this.xScale(d.start);
-                }.bind(this))
-                .attr('cy', this.state.height / 2 - 5)
-                .attr('r', 10)
-                .attr('fill', '#f2d118')
-                .attr('opacity', 0.5)
-                .attr('transform', 'translate(' + margin.left + ',0)')
-                .on('mouseover', this.timelineImportedResultsMouseOver())
-                .on('mouseout', this.timelineImportedReusltsMouseOut());
-        }
-        if (resultsAnomaly.length > 0) {
-            this.svg
-                .selectAll('circle.resultsAnomaly.importedResults')
-                .data(resultsAnomaly)
-                .enter()
-                .append('circle')
-                .attr('class', 'resultsAnomaly importedResults')
-                .attr('cx', function(d) {
-                    return this.xScale(d.start);
-                }.bind(this))
-                .attr('cy', this.state.height / 2 - 5)
-                .attr('r', 10)
-                .attr('fill', '#f2d118')
-                .attr('opacity', 0.5)
-                .attr('transform', 'translate(' + this.margin.left + ',0)')
-                .on('mouseover', this.timelineImportedResultsMouseOver())
-                .on('mouseout', this.timelineImportedReusltsMouseOut());
         }
     }
 

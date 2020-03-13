@@ -899,6 +899,18 @@ export function sortResults(resultOrder) {
                 return b.anomalyDegree - a.anomalyDegree;
             }
             break;
+        case 'fileName':
+            func = function (a, b) {
+                a = a.toString().toLowerCase();
+                b = a.toString().toLowerCase();
+                if (a < b) {
+                    return -1;
+                } else if (a > b) {
+                    return 1;
+                }
+                return 0;
+            }
+            break;
     }
     return func;
 }
