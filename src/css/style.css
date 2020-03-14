@@ -508,6 +508,11 @@ img.selectorIcon:active {
     border-left:1px solid white;
 }
 
+#resultTimelinesArea .row+.row {
+    border-top: 2px dotted #8E8C84;
+    margin-top: 5px;
+}
+
 #detailValueArea {
     background-color: rgba(0, 0, 0, 0.5);
 }

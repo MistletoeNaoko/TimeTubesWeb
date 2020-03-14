@@ -539,9 +539,8 @@ export default class ExtractionResults extends React.Component {
                 splitedResult[currentDataIdx] = currentData;
                 currentDataIdx = sortedResults[i].id;
                 currentData = [];
-            } else {
-                currentData.push(sortedResults[i]);
             }
+            currentData.push(sortedResults[i]);
             i++;
         }
         if (currentData.length > 0) {
@@ -563,9 +562,9 @@ export default class ExtractionResults extends React.Component {
                     splitedResult[currentDataIdx] = currentData;
                     currentDataFileName = sortedResults[i].fileName;
                     currentDataIdx = DataStore.getIdFromName(currentDataFileName);
-                } else {
-                    currentData.push(sortedResults[i]);
+                    currentData = [];
                 }
+                currentData.push(sortedResults[i]);
             }
             i++;
         }
@@ -696,30 +695,51 @@ export default class ExtractionResults extends React.Component {
                             <div className='col-10' id={'resultTimelineArea_' + key}>
                                 <ResultTimeline id={Number(key)} results={splitedResult[key]} importedFlag={false} height={40}/>
                             </div>
-                        </div>);
+                        </div>
+                    );
                 }
             } else {
                 // when any imported results exist
                 let splitedImportedResults = this.splitImportedResultsByData();
                 for (let key in splitedResult) {
-                    timelines.push(
-                        <div className='row' key={key}>
-                            <div className='col-2' 
-                                style={{
-                                    wordWrap: 'anywhere', 
-                                    position: 'relative', 
-                                    fontSize: '0.7rem',
-                                    lineHeight: '90%'}}>
-                                <label style={{position: 'absolute', top: '50%', transform: 'translateY(-50%)'}}>
-                                    {DataStore.getFileName(Number(key))}
-                                </label>
+                    if (splitedImportedResults[key]) {
+                        timelines.push(
+                            <div className='row' key={key}>
+                                <div className='col-2' 
+                                    style={{
+                                        wordWrap: 'anywhere', 
+                                        position: 'relative', 
+                                        fontSize: '0.7rem',
+                                        lineHeight: '90%'}}>
+                                    <label style={{position: 'absolute', top: '50%', transform: 'translateY(-50%)'}}>
+                                        {DataStore.getFileName(Number(key))}
+                                    </label>
+                                </div>
+                                <div className='col-10' id={'resultTimelineArea_' + key}>
+                                    <ResultTimeline id={Number(key)} results={splitedResult[key]} importedFlag={false} height={40}/>
+                                    <ResultTimeline id={Number(key)} results={splitedImportedResults[key]} importedFlag={true} height={40}/>
+                                </div>
                             </div>
-                            <div className='col-10' id={'resultTimelineArea_' + key}>
-                                <ResultTimeline id={Number(key)} results={splitedResult[key]} importedFlag={false} height={40}/>
-                                <ResultTimeline id={Number(key)} results={splitedImportedResults[key]} importedFlag={true} height={40}/>
+                        );
+                    } else {
+                        timelines.push(
+                            <div className='row' key={key}>
+                                <div className='col-2' 
+                                    style={{
+                                        wordWrap: 'anywhere', 
+                                        position: 'relative', 
+                                        fontSize: '0.7rem',
+                                        lineHeight: '90%'}}>
+                                    <label style={{position: 'absolute', top: '50%', transform: 'translateY(-50%)'}}>
+                                        {DataStore.getFileName(Number(key))}
+                                    </label>
+                                </div>
+                                <div className='col-10' id={'resultTimelineArea_' + key}>
+                                    <ResultTimeline id={Number(key)} results={splitedResult[key]} importedFlag={false} height={40}/>
+                                </div>
                             </div>
-                        </div>
-                    );
+                        );
+                    }
                 }
             }
         }
