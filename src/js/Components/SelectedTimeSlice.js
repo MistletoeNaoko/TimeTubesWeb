@@ -334,6 +334,7 @@ export default class SelectedTimeSlice extends React.Component {
         this.tube.geometry.attributes.normal = new THREE.BufferAttribute(new Float32Array(pos.length), 1);
         this.tube.geometry.index = new THREE.BufferAttribute(new Uint32Array(indices), 1);
         this.tube.geometry.computeVertexNormals();
+        this.redrawTube();
         this.renderer.render(this.scene, this.camera);
     }
 
