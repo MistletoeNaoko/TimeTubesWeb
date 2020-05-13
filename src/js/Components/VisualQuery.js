@@ -572,7 +572,6 @@ export default class VisualQuery extends React.Component {
                     // let variableList = document.getElementById('widthVariables');
                     // let selectedIdx = variableList.selectedIndex;
                     // let selectedText = variableList.options[selectedIdx].innerText;
-                    console.log(query);
                     let parameters = {};
                     parameters = {
                         // width: ($('#widthDetectionSwitch').prop('checked'))? selectedText: false,
