@@ -447,7 +447,7 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
                         }
                     }
                 }
-
+                console.log(keys, query);
                 if (window > 0) {
                     // use DTW
                     let i = 0;

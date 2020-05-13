@@ -386,7 +386,7 @@ export default class Controllers extends React.Component{
                     <label className="custom-file-label" htmlFor="customFile"></label>
                 </div>
                 <div style={{display: 'flex', justifyContent: 'center', marginTop: '0.5rem'}}>
-                    <button type="button" className="btn btn-primary btn-sm" onClick={this.openTestData.bind(this)}>Synthesis Data</button>
+                    <button type="button" className="btn btn-primary btn-sm" onClick={this.openTestData.bind(this)}>Synthetic Data</button>
                 </div>
             </div>
         );
