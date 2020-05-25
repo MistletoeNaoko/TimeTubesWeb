@@ -121,7 +121,7 @@ export function makeQueryPolarQBS(query) {
     return queryPolar;
 }
 
-export function runMatching(query, targets, DTWType, normalization, dist, window, step, period) {
+export function runMatching(query, targets, DTWType, normalization, normalizationOption, dist, window, step, period) {
     // make a nomalized query if the user select the normalized option (only think about relative shapes of variations)
     // slide a window and create a target array
     // normalize the target
@@ -136,7 +136,7 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
             break;
     }
     if (normalization) {
-        query = normalizeTimeSeries(query);
+        query = normalizeTimeSeries(normalizationOption, query);
     }
     for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
         let targetId = targets[targetIdx];
@@ -191,9 +191,9 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                                     let target = targetData[key].slice(i, i + j);
                                     if (normalization) {
                                         if (key !== 'theta') {
-                                            target = normalizeTimeSeries(target);
+                                            target = normalizeTimeSeries(normalizationOption, target);
                                         } else {
-                                            target = normalizeTheta(target);
+                                            target = normalizeTheta(normalizationOption, target);
                                         }
                                     }
                                     let dtw = DTW(query[key], target, window, distFunc);
@@ -232,9 +232,9 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                                 let target = targetData[key].slice(i, i + maxLen);
                                 if (normalization) {
                                     if (key !== 'theta') {
-                                        target = normalizeTimeSeries(target);
+                                        target = normalizeTimeSeries(normalizationOption, target);
                                     } else {
-                                        target = normalizeTheta(target);
+                                        target = normalizeTheta(normalizationOption, target);
                                     }
                                 }
                                 let dist = DTWSimple(query[key], target, distFunc);
@@ -294,7 +294,7 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                             });
                             target.arrayLength = j;
                             if (normalization) {
-                                target = normalizeTimeSeries(target);
+                                target = normalizeTimeSeries(normalizationOption, target);
                             }
                             // let distMat = DTWMD(query, target, window, keys, distFunc);
                             dtws.push(DTWMD(query, target, window, keys, distFunc));//distMat[distMat.length - 1][distMat[0].length - 1]);
@@ -328,7 +328,7 @@ export function runMatching(query, targets, DTWType, normalization, dist, window
                         });
                         target.arrayLength = maxLen;
                         if (normalization) {
-                            target = normalizeTimeSeries(target);
+                            target = normalizeTimeSeries(normalizationOption, target);
                         }
                         let dist = DTWSimpleMD(query, target, keys, distFunc);
                         let targetPeriod = maxLen - period[0] + 1,
@@ -394,7 +394,7 @@ export function removeOverlappingQBE(source, period, results) {
     return newResults;
 }
 
-export function runMatchingSketch(query, targets, DTWType, normalization, dist, window, step, period) {
+export function runMatchingSketch(query, targets, DTWType, normalization, normalizationOption, dist, window, step, period) {
     let result = [];
     let distFunc;
     switch (dist) {
@@ -403,7 +403,7 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
             break;
     }
     if (normalization) {
-        query = normalizeTimeSeries(query);
+        query = normalizeTimeSeries(normalizationOption, query);
     }
     for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
         let targetId = targets[targetIdx];
@@ -447,7 +447,6 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
                         }
                     }
                 }
-                console.log(keys, query);
                 if (window > 0) {
                     // use DTW
                     let i = 0;
@@ -461,7 +460,7 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
                             });
                             target.arrayLength = j;
                             if (normalization) {
-                                target = normalizeTimeSeries(target);
+                                target = normalizeTimeSeries(normalizationOption, target);
                             }
                             dtws.push(DTWMD(query, target, window, keys, distFunc));
                         }
@@ -522,7 +521,7 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
                         });
                         target.arrayLength = maxLen;
                         if (normalization) {
-                            target = normalizeTimeSeries(target);
+                            target = normalizeTimeSeries(normalizationOption, target);
                         }
                         let dist = DTWSimpleMD(query, target, keys, distFunc);
                         let targetPeriod = maxLen - period[0] + 1,
@@ -587,39 +586,87 @@ export function runMatchingSketch(query, targets, DTWType, normalization, dist, 
     return result;
 }
 
-function normalizeTimeSeries(data) {
+function normalizeTimeSeries(normalizationOption, data) {
     // array or object
     let result;
-    if (Array.isArray(data)) {
-        result = [];
-        let min = Math.min.apply(null, data),
-            max = Math.max.apply(null, data);
-        for (let i = 0; i < data.length; i++) {
-            result.push((data[i] - min) / (max - min));
-        }
-    } else if (typeof(data) === 'object') {
-        result = {};
-        for (let key in data) {
-            if (Array.isArray(data[key]) && data[key].indexOf(null) < 0) {
-                if (key !== 'theta') {
-                    let min = Math.min.apply(null, data[key]),
-                        max = Math.max.apply(null, data[key]);
-                    let tmp = data[key].map(function (num) {
-                        return (max - min !== 0)? (num - min) / (max - min): 0;
-                    });
-                    result[key] = tmp;
+    switch (normalizationOption) {
+        case 'minmax':
+            if (Array.isArray(data)) {
+                result = [];
+                let min = Math.min.apply(null, data),
+                    max = Math.max.apply(null, data);
+                if (max - min !== 0) {
+                    for (let i = 0; i < data.length; i++) {
+                        result.push((data[i] - min) / (max - min));
+                    }
                 } else {
-                    result[key] = normalizeTheta(data[key]);
+                    for (let i = 0; i < data.length; i++) {
+                        result.push(0);
+                    }
                 }
-            } else {
-                result[key] = data[key];
+            } else if (typeof(data) === 'object') {
+                result = {};
+                for (let key in data) {
+                    if (Array.isArray(data[key]) && data[key].indexOf(null) < 0) {
+                        if (key !== 'theta') {
+                            let min = Math.min.apply(null, data[key]),
+                                max = Math.max.apply(null, data[key]);
+                            result[key] = [];
+                            if (max - min !== 0) {
+                                for (let i = 0; i < data[key].length; i++) {
+                                    result[key].push((data[key][i] - min) / (max - min));
+                                }
+                            } else {
+                                for (let i = 0; i < data[key].length; i++) {
+                                    result[key].push(0);
+                                }
+                            }
+                            // let tmp = data[key].map(function (num) {
+                            //     return (max - min !== 0)? (num - min) / (max - min): 0;
+                            // });
+                            // result[key] = tmp;
+                        } else {
+                            result[key] = normalizeTheta(normalizationOption, data[key]);
+                        }
+                    } else {
+                        result[key] = data[key];
+                    }
+                }
             }
-        }
+            break;
+        case 'zScore':
+            if (Array.isArray(data)) {
+                result = [];
+                let mean = d3.mean(data),
+                    std = d3.deviation(data);
+                for (let i = 0; i < data.length; i++) {
+                    result.push((data[i] - mean) / std);
+                }
+            } else if (typeof(data) === 'object') {
+                result = {};
+                for (let key in data) {
+                    if (Array.isArray(data[key]) && data[key].indexOf(null) < 0) {
+                        if (key !== 'theta') {
+                            let mean = d3.mean(data[key]),
+                                std = d3.deviation(data[key]);
+                            result[key] = [];
+                            for (let i = 0; i < data[key].length; i++) {
+                                result[key].push((data[key][i] - mean) / std);
+                            }
+                        } else {
+                            result[key] = normalizeTheta(normalizationOption, data[key]);
+                        }
+                    } else {
+                        result[key] = data[key];
+                    }
+                }
+            }
+            break;
     }
     return result;
 }
 
-function normalizeTheta(data) {
+function normalizeTheta(normalizationOption, data) {
     let result = [], dataTmp = [];
     // parameters for the exponential smoothing
     let before = data[0], quadrantBef = getQuadrantAngle(data[0]), angDelSum = 0;
@@ -640,10 +687,21 @@ function normalizeTheta(data) {
         before = data[i] + angDelSum;
         quadrantBef = quadrantNow;
     }
-    let min = Math.min.apply(null, dataTmp),
-        max = Math.max.apply(null, dataTmp);
-    for (let i = 0; i < dataTmp.length; i++) {
-        result.push((dataTmp[i] - min) / (max - min));
+    switch (normalizationOption) {
+        case 'minmax':
+            let min = Math.min.apply(null, dataTmp),
+                max = Math.max.apply(null, dataTmp);
+            for (let i = 0; i < dataTmp.length; i++) {
+                result.push((dataTmp[i] - min) / (max - min));
+            }
+            break;
+        case 'zScore':
+            let mean = d3.mean(dataTmp),
+                std = d3.deviation(dataTmp);
+            for (let i = 0; i < dataTmp.length; i++) {
+                result.push((dataTmp[i] - mean) / std);
+            }
+            break;
     }
     return result;
 }

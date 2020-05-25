@@ -98,7 +98,20 @@ export default class VisualQuery extends React.Component {
 
                 // recover parameters status for matching
                 let parameters = FeatureStore.getParameters();
-                $('#QBENormalizeSwitch').prop('checked', parameters.normalize);
+                // recover normalization options
+                $('#NormalizeSwitch').prop('checked', parameters.normalize);
+                let normalizationOptionList = document.getElementById('normalizationOptions');
+                if (parameters.normalizationOption) {
+                    for (let i = 0; i < normalizationOptionList.options.length; i++) {
+                        if (normalizationOptionList.options[i].value === parameters.normalizationOption) {
+                            normalizationOptionList.selectedIndex = i;
+                            break;
+                        }
+                    }
+                } else {
+                    normalizationOptionList.selectedIndex = 0;
+                }
+                // recover distance metric
                 let distanceMetric = document.getElementById('distanceMetric');
                 for (let i = 0; i < distanceMetric.options.length; i++) {
                     if (distanceMetric.options[i].value === parameters.distanceMetric) {
@@ -106,6 +119,7 @@ export default class VisualQuery extends React.Component {
                         break;
                     }
                 }
+                // recover other parameters
                 $('#warpingWindowSize').val(parameters.warpingWindowSize);
                 $('#targetLengthMin').val(parameters.timeSliceLength[0]);
                 $('#targetLengthMax').val(parameters.timeSliceLength[1]);
@@ -331,10 +345,22 @@ export default class VisualQuery extends React.Component {
                     <div className='container'
                         style={{paddingRight: '0px', paddingLeft: '0px', marginBottom: '0.2rem'}}>
                         <div className='row matchingOption'
-                            style={{paddingLeft: '15px', paddingRight: '15px'}}>
-                            <div className="custom-control custom-switch">
-                                <input type="checkbox" className="custom-control-input" id="QBENormalizeSwitch"/>
-                                <label className="custom-control-label" htmlFor="QBENormalizeSwitch">Normalize</label>
+                            style={{paddingLeft: '15px', paddingRight: '15px'}}>   
+                            <div className='col-5'
+                            style={{paddingLeft: '0'}}>
+                                <div className="custom-control custom-switch">
+                                    <input type="checkbox" className="custom-control-input" id="NormalizeSwitch"/>
+                                    <label className="custom-control-label" htmlFor="NormalizeSwitch">Normalize</label>
+                                </div>
+                            </div>
+                            <div className='col'>
+                                <select
+                                    className="custom-select custom-select-sm"
+                                    id='normalizationOptions'
+                                    style={{width: '60%'}}>
+                                    <option value="minmax">Min-max</option>
+                                    <option value="zScore">z-score</option>
+                                </select>
                             </div>
                         </div>
                         <div className="row matchingOption">
@@ -494,11 +520,15 @@ export default class VisualQuery extends React.Component {
 
     runMatching() {
         // normalize
-        let normalization = $('#QBENormalizeSwitch').prop('checked');
+        let normalization = $('#NormalizeSwitch').prop('checked');
+        // normalization option
+        let normalizationList = document.getElementById('normalizationOptions');
+        let selectedNormalizeationIdx = normalizationList.selectedIndex;
+        let normlizationOption = normalizationList.options[selectedNormalizeationIdx].value;
         // distance metric
         let distList = document.getElementById('distanceMetric');
-        let selectedIdx = distList.selectedIndex;
-        let selectedDist = distList.options[selectedIdx].value;
+        let selectedDistIdx = distList.selectedIndex;
+        let selectedDist = distList.options[selectedDistIdx].value;
         // window size
         let windowSize = $('#warpingWindowSize').val();
         windowSize = (windowSize === '')? 0: Number(windowSize);
@@ -527,6 +557,7 @@ export default class VisualQuery extends React.Component {
                     let parameters = {};
                     parameters = {
                         normalize: normalization,
+                        normalizationOption: normlizationOption,
                         coordinate: this.state.coordinate,
                         distanceMetric: selectedDist,
                         warpingWindowSize: windowSize,
@@ -542,7 +573,7 @@ export default class VisualQuery extends React.Component {
                         // result stores {id, start, period, dtw distance, path} (not sorted)
                         let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored, this.state.coordinate);
                         if (query) {
-                            results = TimeSeriesQuerying.runMatching(query.values, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
+                            results = TimeSeriesQuerying.runMatching(query.values, targets, DTWType, normalization, normlizationOption, selectedDist, windowSize, step, [periodMin, periodMax]);
                             results = TimeSeriesQuerying.removeOverlappingQBE(source, period, results);
                             FeatureAction.setExtractionResults(parameters, results, query, ignored);
                             TimeSeriesQuerying.setDefaltOrderOfResults();
@@ -577,6 +608,7 @@ export default class VisualQuery extends React.Component {
                         // width: ($('#widthDetectionSwitch').prop('checked'))? selectedText: false,
                         // sketchLength: $('#periodOfSketchQuery').val(),
                         normalize: normalization,
+                        normalizationOption: normlizationOption,
                         coordinate: this.state.coordinate,
                         distanceMetric: selectedDist,
                         warpingWindowSize: windowSize,
@@ -590,7 +622,7 @@ export default class VisualQuery extends React.Component {
                         query.values = TimeSeriesQuerying.makeQueryPolarQBS(query.values);
                     }
                     if (query.values) {
-                        results = TimeSeriesQuerying.runMatchingSketch(query.values, targets, DTWType, normalization, selectedDist, windowSize, step, [periodMin, periodMax]);
+                        results = TimeSeriesQuerying.runMatchingSketch(query.values, targets, DTWType, normalization, normlizationOption, selectedDist, windowSize, step, [periodMin, periodMax]);
                         FeatureAction.setExtractionResults(parameters, results, query, ignored);
                         TimeSeriesQuerying.setDefaltOrderOfResults();
                     }
