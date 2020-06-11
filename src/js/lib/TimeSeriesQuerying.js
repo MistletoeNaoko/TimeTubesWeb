@@ -197,7 +197,7 @@ export function runMatching(query, targets, DTWType, normalization, normalizatio
                                         }
                                     }
                                     let dtw = DTW(query[key], target, window, distFunc);
-                                    let path = OptimalWarpPath(dtw);
+                                    let path = OptimalWarpingPath(dtw);
                                     paths[key] = path;
                                     dtwSum += dtw[query[key].length - 1][target.length - 1];
                                 }
@@ -266,7 +266,7 @@ export function runMatching(query, targets, DTWType, normalization, normalizatio
                             for (let j = 0; j < dists[key].length; j++) {
                                 minDist.push(dists[key].slice(0, dists[key][j].length - 1 - targetPeriod + (minIdx + 1) + 1));
                             }
-                            paths[key] = OptimalWarpPath(minDist);
+                            paths[key] = OptimalWarpingPath(minDist);
                         }
                         // result is a collection of [start JD, the length of period, dtw value]
                         result.push({
@@ -307,7 +307,7 @@ export function runMatching(query, targets, DTWType, normalization, normalizatio
                                 minIdx = j;
                             }
                         }
-                        let path = OptimalWarpPath(dtws[minIdx]);
+                        let path = OptimalWarpingPath(dtws[minIdx]);
                         result.push({
                             id: targetId,
                             start: i + minJD,
@@ -348,7 +348,7 @@ export function runMatching(query, targets, DTWType, normalization, normalizatio
                         for (let j = 0; j < dist.length; j++) {
                             minDist.push(dist[j].slice(0, target.arrayLength - 1 - targetPeriod + (minIdx + 1) + 1));
                         }
-                        let path = OptimalWarpPath(minDist);
+                        let path = OptimalWarpingPath(minDist);
                         result.push({
                             id: targetId,
                             start: i + minJD,
@@ -473,7 +473,7 @@ export function runMatchingSketch(query, targets, DTWType, normalization, normal
                             }
                         }
                         // check whether the time slice is filtered out or not
-                        let path = OptimalWarpPath(dtws[minIdx]);
+                        let path = OptimalWarpingPath(dtws[minIdx]);
                         let flag = true;
                         for (let key in keysFilter) {
                             for (let j = 0; j < query[keysFilter[key]].length; j++) {
@@ -542,7 +542,7 @@ export function runMatchingSketch(query, targets, DTWType, normalization, normal
                             minDist.push(dist[j].slice(0, target.arrayLength - 1 - targetPeriod + (minIdx + 1) + 1));
                         }
                         // check whether the time slice is filtered out or not
-                        let path = OptimalWarpPath(minDist);
+                        let path = OptimalWarpingPath(minDist);
                         let flag = true;
                         for (let key in keysFilter) {
                             for (let j = 0; j < query[keysFilter[key]].length; j++) {
@@ -857,7 +857,7 @@ export function DTWMD(s, t, w, keys, distFunc) {
     return dist;
 }
 
-function OptimalWarpPath(cost) {
+function OptimalWarpingPath(cost) {
     let path = [];
     let i = cost.length - 1,    // y: source
         j = cost[0].length - 1; // x: target
