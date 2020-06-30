@@ -409,6 +409,24 @@ export default class VisualQuery extends React.Component {
                             </div>
                         </div>
                         <div className="row matchingOption">
+                            <div className="col-5">
+                                Distance normalization
+                            </div>
+                            <div className='col'>
+                                <select
+                                    className='custom-select custom-select-sm'
+                                    id='distanceNormalization'
+                                    style={{width: '60%'}}>
+                                    <option value='none'>None</option>
+                                    <option value='warpingPathLength'>Warping path length</option>
+                                    <option value='minLength'>Minimum length</option>
+                                    <option value='maxLength'>Maximum length</option>
+                                    {/* <option value='timeNormalization'>Time normalization</option> */}
+                                    <option value='pathLengthRatio'>Warping path ratio</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="row matchingOption">
                             <div className='col-5'>
                                 Warping window size
                             </div>
@@ -529,6 +547,10 @@ export default class VisualQuery extends React.Component {
         let distList = document.getElementById('distanceMetric');
         let selectedDistIdx = distList.selectedIndex;
         let selectedDist = distList.options[selectedDistIdx].value;
+        // distance normalization
+        let distNormalizationList = document.getElementById('distanceNormalization');
+        let selectedDistNormalizationIdx = distNormalizationList.selectedIndex;
+        let distNormalizationOption = distNormalizationList.options[selectedDistNormalizationIdx].value;
         // window size
         let windowSize = $('#warpingWindowSize').val();
         windowSize = (windowSize === '')? 0: Number(windowSize);
@@ -560,6 +582,7 @@ export default class VisualQuery extends React.Component {
                         normalizationOption: normlizationOption,
                         coordinate: this.state.coordinate,
                         distanceMetric: selectedDist,
+                        distanceNormalization: distNormalizationOption,
                         warpingWindowSize: windowSize,
                         timeSliceLength: [periodMin, periodMax],
                         slidingWindow: step,
@@ -573,7 +596,8 @@ export default class VisualQuery extends React.Component {
                         // result stores {id, start, period, dtw distance, path} (not sorted)
                         let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored, this.state.coordinate);
                         if (query) {
-                            results = TimeSeriesQuerying.runMatching(query.values, targets, DTWType, normalization, normlizationOption, selectedDist, windowSize, step, [periodMin, periodMax]);
+                            results = TimeSeriesQuerying.runMatching(query.values, targets, parameters);
+                            // results = TimeSeriesQuerying.runMatching(query.values, targets, DTWType, normalization, normlizationOption, selectedDist, windowSize, step, [periodMin, periodMax]);
                             results = TimeSeriesQuerying.removeOverlappingQBE(source, period, results);
                             FeatureAction.setExtractionResults(parameters, results, query, ignored);
                             TimeSeriesQuerying.setDefaltOrderOfResults();
@@ -611,6 +635,7 @@ export default class VisualQuery extends React.Component {
                         normalizationOption: normlizationOption,
                         coordinate: this.state.coordinate,
                         distanceMetric: selectedDist,
+                        distanceNormalization: distNormalizationOption,
                         warpingWindowSize: windowSize,
                         timeSliceLength: [periodMin, periodMax],
                         slidingWindow: step,
@@ -622,7 +647,8 @@ export default class VisualQuery extends React.Component {
                         query.values = TimeSeriesQuerying.makeQueryPolarQBS(query.values);
                     }
                     if (query.values) {
-                        results = TimeSeriesQuerying.runMatchingSketch(query.values, targets, DTWType, normalization, normlizationOption, selectedDist, windowSize, step, [periodMin, periodMax]);
+                        results = TimeSeriesQuerying.runMatchingSketch(query.values, targets, parameters);
+                        // results = TimeSeriesQuerying.runMatchingSketch(query.values, targets, DTWType, normalization, normlizationOption, selectedDist, windowSize, step, [periodMin, periodMax]);
                         FeatureAction.setExtractionResults(parameters, results, query, ignored);
                         TimeSeriesQuerying.setDefaltOrderOfResults();
                     }
