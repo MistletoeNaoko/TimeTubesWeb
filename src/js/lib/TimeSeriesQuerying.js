@@ -170,7 +170,6 @@ export function runMatching(query, targets, parameters) {
             targetData = newTargetData;
         }
         let minJD = targetData.z[0];
-
         // make a list for parameters in the datasets
         let keys = [];
         if (query.r) {
@@ -1210,7 +1209,7 @@ export function runMatchingSketchBkp(query, targets, DTWType, normalization, nor
 
 function normalizeTimeSeries(normalizationOption, data) {
     // array or object
-    let result;
+    let result, mean;
     switch (normalizationOption) {
         case 'minmax':
             if (Array.isArray(data)) {
@@ -1256,11 +1255,38 @@ function normalizeTimeSeries(normalizationOption, data) {
                 }
             }
             break;
+        case 'centralize':
+            // make the average of the time period 0
+            if (Array.isArray(data)) {
+                result = [];
+                mean = d3.mean(data);
+                for (let i = 0; i < data.length; i++) {
+                    result.push(data[i] - mean);
+                }
+            } else {
+                result = {};
+                for (let key in data) {
+                    if (Array.isArray(data[key]) && data[key].indexOf(null) < 0) {
+                        if (key !== 'theta') {
+                            mean = d3.mean(data[key]);
+                            result[key] = [];
+                            for (let i = 0; i < data[key].length; i++) {
+                                result[key].push(data[key][i] - mean);
+                            }
+                        } else {
+                            result[key] = normalizeTheta(normalizationOption, data[key]);
+                        }
+                    } else {
+                        result[key] = data[key];
+                    }
+                }
+            }
+            break;
         case 'zScore':
             if (Array.isArray(data)) {
                 result = [];
-                let mean = d3.mean(data),
-                    std = d3.deviation(data);
+                mean = d3.mean(data);
+                let std = d3.deviation(data);
                 for (let i = 0; i < data.length; i++) {
                     result.push((data[i] - mean) / std);
                 }
@@ -1269,8 +1295,8 @@ function normalizeTimeSeries(normalizationOption, data) {
                 for (let key in data) {
                     if (Array.isArray(data[key]) && data[key].indexOf(null) < 0) {
                         if (key !== 'theta') {
-                            let mean = d3.mean(data[key]),
-                                std = d3.deviation(data[key]);
+                            mean = d3.mean(data[key]);
+                            let std = d3.deviation(data[key]);
                             result[key] = [];
                             for (let i = 0; i < data[key].length; i++) {
                                 result[key].push((data[key][i] - mean) / std);
@@ -1289,7 +1315,7 @@ function normalizeTimeSeries(normalizationOption, data) {
 }
 
 function normalizeTheta(normalizationOption, data) {
-    let result = [], dataTmp = [];
+    let result = [], dataTmp = [], mean;
     // parameters for the exponential smoothing
     let before = data[0], quadrantBef = getQuadrantAngle(data[0]), angDelSum = 0;
     // transform thetas (from 0 to 360) to continuous data
@@ -1317,9 +1343,15 @@ function normalizeTheta(normalizationOption, data) {
                 result.push((dataTmp[i] - min) / (max - min));
             }
             break;
+        case 'centralize':
+            mean = d3.mean(dataTmp);
+            for (let i = 0; i < dataTmp.length; i++) {
+                result.push(dataTmp[i] - mean);
+            }
+            break;
         case 'zScore':
-            let mean = d3.mean(dataTmp),
-                std = d3.deviation(dataTmp);
+            mean = d3.mean(dataTmp);
+            let std = d3.deviation(dataTmp);
             for (let i = 0; i < dataTmp.length; i++) {
                 result.push((dataTmp[i] - mean) / std);
             }

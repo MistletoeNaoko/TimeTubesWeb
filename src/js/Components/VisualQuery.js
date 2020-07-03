@@ -359,6 +359,7 @@ export default class VisualQuery extends React.Component {
                                     id='normalizationOptions'
                                     style={{width: '60%'}}>
                                     <option value="minmax">Min-max</option>
+                                    <option value="centralize">Centralize</option>
                                     <option value="zScore">z-score</option>
                                 </select>
                             </div>
