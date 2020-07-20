@@ -393,10 +393,17 @@ export default class SelectedTimeSlice extends React.Component {
         let divNum = this.division * Math.ceil(maxJD - minJD);
         let delTime = (maxJD - minJD) / divNum;
         let divNumPol = Math.ceil((this.data.data.splines.position.getPoint(1).z - this.data.data.splines.position.getPoint(0).z) / delTime);
-        let divNumPho = Math.ceil((this.data.data.splines.color.getPoint(1).z - this.data.data.splines.color.getPoint(0).z) / delTime);
+        // let divNumPho = Math.ceil((this.data.data.splines.color.getPoint(1).z - this.data.data.splines.color.getPoint(0).z) / delTime);
         let cen = this.data.data.splines.position.getSpacedPoints(divNumPol);
         let rad = this.data.data.splines.radius.getSpacedPoints(divNumPol);
-        let col = this.data.data.splines.color.getSpacedPoints(divNumPho);
+        // let col = this.data.data.splines.color.getSpacedPoints(divNumPho);
+        let divNumHue, hue;
+        if (this.data.data.hue.length > 0) {
+            divNumHue = Math.ceil((this.data.data.splines.hue.getPoint(1).z - this.data.data.splines.hue.getPoint(0).z) / delTime);
+            hue = this.data.data.splines.hue.getSpacedPoints(divNumHue);
+        }
+        let divNumValue = Math.ceil((this.data.data.splines.value.getPoint(1).z - this.data.data.splines.value.getPoint(0).z) / delTime);
+        let value = this.data.data.splines.value.getSpacedPoints(divNumValue);
         let del = Math.PI * 2 / (this.segment - 1);
         let minIdx = Math.ceil((this.selectedPeriod[0] - minJD) / delTime);
         let attrSize = this.tube.geometry.attributes.position.array.length / 3 / this.segment;
