@@ -43,6 +43,8 @@ class DataStore extends EventEmitter {
             //    position: value.splines.position,
             //    radius: value.splines.radius,
             //    color: value.splines.color,
+            //    hue: value.splines.hue,
+            //    value: value.splines.value,
             //    splines: value.splines.spline,
             //    lookup: value.lookup,
             //    merge: true
@@ -153,23 +155,55 @@ class DataStore extends EventEmitter {
                 tPos = ((i - 1) + (currentJD - this.data[id].data.position[i - 1].z) / (this.data[id].data.position[i].z - this.data[id].data.position[i - 1].z)) / (this.data[id].data.position.length - 1);
             }
 
+            // let j;
+            // for (j = 1; j < this.data[id].data.color.length; j++) {
+            //     if (this.data[id].data.color[j - 1].z <= currentJD && currentJD < this.data[id].data.color[j].z)
+            //         break;
+            // }
+            // let tCol;
+            // if (j >= this.data[id].data.color.length - 1) {
+            //     tCol = 1;
+            // } else {
+            //     tCol = ((j - 1) + (currentJD - this.data[id].data.color[j - 1].z) / (this.data[id].data.color[j].z - this.data[id].data.color[j - 1].z)) / (this.data[id].data.color.length - 1);
+            // }
+            let tHue;
             let j;
-            for (j = 1; j < this.data[id].data.color.length; j++) {
-                if (this.data[id].data.color[j - 1].z <= currentJD && currentJD < this.data[id].data.color[j].z)
+            if (this.data[id].data.hue.length > 0) {
+                for (j = 1; j < this.data[id].data.hue.length; j++) {
+                    if (this.data[id].data.hue[j - 1].z <= currentJD && currentJD < this.data[id].data.hue[j].z)
+                        break;
+                }
+                if (j >= this.data[id].data.hue.length - 1) {
+                    tHue = 1;
+                } else {
+                    tHue = ((j - 1) + (currentJD - this.data[id].data.hue[j - 1].z) / (this.data[id].data.hue[j].z - this.data[id].data.hue[j - 1].z)) / (this.data[id].data.hue.length - 1);
+                }
+            }
+            let k;
+            for (k = 1; k < this.data[id].data.value.length; k++) {
+                if (this.data[id].data.value[k - 1].z <= currentJD && currentJD < this.data[id].data.value[k].z)
                     break;
             }
-            let tCol;
-            if (j >= this.data[id].data.color.length - 1) {
-                tCol = 1;
+            let tValue;
+            if (k >= this.data[id].data.value.length - 1) {
+                tValue = 1;
             } else {
-                tCol = ((j - 1) + (currentJD - this.data[id].data.color[j - 1].z) / (this.data[id].data.color[j].z - this.data[id].data.color[j - 1].z)) / (this.data[id].data.color.length - 1);
+                tValue = ((k - 1) + (currentJD - this.data[id].data.value[k - 1].z) / (this.data[id].data.value[k].z - this.data[id].data.value[k - 1].z)) / (this.data[id].data.value.length - 1);
             }
+
             // QI, UI, JD
             let pos = this.data[id].data.splines.position.getPoint(tPos);
             // EQI, EUI, JD
             let err = this.data[id].data.splines.radius.getPoint(tPos);
             // VJ, Flx(V), JD
-            let col = this.data[id].data.splines.color.getPoint(tCol);
+            // let col = this.data[id].data.splines.color.getPoint(tCol);
+            let hue;
+            if (tHue) {
+                hue = this.data[id].data.splines.hue.getPoint(tHue);
+            } else {
+                hue = new THREE.Vector3(0, 0, pos.z);
+            }
+            let value = this.data[id].data.splines.value.getPoint(tValue);
             // PD, PA, JD
             let PDPA = this.data[id].data.splines.PDPA.getPoint(tPos);
 
@@ -179,8 +213,8 @@ class DataStore extends EventEmitter {
                 r_x: err.x,
                 y: pos.y,
                 r_y: err.y,
-                V: col.y,
-                H: col.x,
+                V: value.y,
+                H: hue.x,
                 PD: PDPA.x,
                 PA: PDPA.y
             };

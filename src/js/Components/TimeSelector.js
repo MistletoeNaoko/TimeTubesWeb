@@ -80,7 +80,7 @@ export default class TimeSelector extends React.Component {
             .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')');
         this.timeSelectorGraph = this.timeSelector
             .append('path')
-            .datum(this.data.data.color)
+            .datum(this.data.data.value)
             .attr('class', 'area')
             .attr('clip-path', 'url(#clipTimeSelector_' + this.id + ')');
         this.timeSelectorXAxis = this.timeSelector

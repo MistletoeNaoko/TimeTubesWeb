@@ -1089,11 +1089,26 @@ export default class TimeTubes extends React.Component{
         let divNum = this.division * Math.ceil(maxJD - minJD);
         let delTime = (maxJD - minJD) / divNum;
         let divNumPol = Math.ceil((this.data.splines.position.getPoint(1).z - this.data.splines.position.getPoint(0).z) / delTime);
-        let divNumPho = Math.ceil((this.data.splines.color.getPoint(1).z - this.data.splines.color.getPoint(0).z) / delTime);
+        // let divNumPho = Math.ceil((this.data.splines.color.getPoint(1).z - this.data.splines.color.getPoint(0).z) / delTime);
         let cen = this.data.splines.position.getSpacedPoints(divNumPol);
         let rad = this.data.splines.radius.getSpacedPoints(divNumPol);
-        let col = this.data.splines.color.getSpacedPoints(divNumPho);
-        let idxGap = Math.ceil((this.data.splines.color.getPoint(0).z - this.data.splines.position.getPoint(0).z) / delTime);
+        // let col = this.data.splines.color.getSpacedPoints(divNumPho);
+        let divNumHue, hue, idxGapHue;
+        if (this.data.hue.length > 0) { 
+            divNumHue = Math.ceil((this.data.splines.hue.getPoint(1).z - this.data.splines.hue.getPoint(0).z) / delTime);
+            hue = this.data.splines.hue.getSpacedPoints(divNumHue);
+            idxGapHue = Math.ceil((this.data.splines.hue.getPoint(0).z - this.data.splines.position.getPoint(0).z) / delTime);
+        }
+        let divNumValue = Math.ceil((this.data.splines.value.getPoint(1).z - this.data.splines.value.getPoint(0).z) / delTime);
+        // let hue
+        // if (divNumHue) {
+        //     hue = this.data.splines.hue.getSpacedPoints(divNumHue);
+        // }
+        let value = this.data.splines.value.getSpacedPoints(divNumValue);
+        // let idxGap = Math.ceil((this.data.splines.color.getPoint(0).z - this.data.splines.position.getPoint(0).z) / delTime);
+
+        // let idxGapHue = Math.ceil((this.data.splines.hue.getPoint(0).z - this.data.splines.position.getPoint(0).z) / delTime);
+        let idxGapValue = Math.ceil((this.data.splines.value.getPoint(0).z - this.data.splines.position.getPoint(0).z) / delTime);
         let del = Math.PI * 2 / (this.segment - 1);
         let vertices = [];
         let colors = [];
@@ -1112,10 +1127,19 @@ export default class TimeTubes extends React.Component{
         for (let i = 0; i <= divNumPol; i++) {
             currentColorX = 0;
             currentColorY = 0;
-            if (idxGap < i && (i - idxGap) < divNumPho) {
-                currentColorX = col[i - idxGap].x;//(col[i - idxGap].x - minH) / (maxH - minH);
-                currentColorY = col[i - idxGap].y;//(col[i - idxGap].y - minV) / (maxV - minV);
+            // if (idxGap < i && (i - idxGap) < divNumPho) {
+            //     currentColorX = col[i - idxGap].x;//(col[i - idxGap].x - minH) / (maxH - minH);
+            //     currentColorY = col[i - idxGap].y;//(col[i - idxGap].y - minV) / (maxV - minV);
+            // }
+            if (divNumHue) {
+                if (idxGapHue < i && (i - idxGapHue) < divNumHue) {
+                    currentColorX = hue[i - idxGapHue].x;
+                }
             }
+            if (idxGapValue < i && (i - idxGapValue) < divNumValue) {
+                currentColorY = value[i - idxGapValue].y;
+            }
+            
             for (let j = 0; j < this.segment; j++) {
                 for (let k = 0; k < this.tubeNum; k++) {
                     // k = 0;

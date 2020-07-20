@@ -67,7 +67,9 @@ export function mergeData(ids) {
                     meta: value.meta,
                     position: value.splines.position,
                     radius: value.splines.radius,
-                    color: value.splines.color,
+                    // color: value.splines.color,
+                    hue: value.splines.hue,
+                    value: value.splines.value,
                     splines: value.splines.spline,
                     lookup: value.lookup,
                     merge: true
@@ -111,7 +113,9 @@ export function importDemoData(fileName, data) {
             meta: metaData,
             position: splines.position,
             radius: splines.radius,
-            color: splines.color,
+            // color: splines.color,
+            hue: splines.hue,
+            value: splines.value,
             splines: splines.spline,
             lookup: lookup,
             merge: false
@@ -168,7 +172,9 @@ function loadFile(file) {
                         meta: metaData,
                         position: splines.position,
                         radius: splines.radius,
-                        color: splines.color,
+                        // color: splines.color,
+                        hue: splines.hue,
+                        value: splines.value,
                         splines: splines.spline,
                         lookup: lookup,
                         merge: false
@@ -307,25 +313,32 @@ function computeStats(lookup, data) {
 function computeSplines(data) {
     let line = [];
     let minZ = data[0].z;
-    let position = [], radius = [], color = [], PDPA = [];
+    let position = [], radius = [], hue = [], value =[], PDPA = [];
     data.forEach(function (e) {
         if ('x' in e) {
             position.push(new THREE.Vector3(e.x, e.y, e.z));
             radius.push(new THREE.Vector3(e.r_x, e.r_y, e.z));
             PDPA.push(new THREE.Vector3(e.PD, e.PA, e.z));
         }
+        if ('H' in e) {
+            hue.push(new THREE.Vector3(e.H, 0, e.z));
+        }
         if ('V' in e) {
-            color.push(new THREE.Vector3(e.H, e.V, e.z));
+            value.push(new THREE.Vector3(0, e.V, e.z));
         }
         line.push(new THREE.Vector3(0, 0, e.z - minZ));
     });
     let spline = {};
     spline.position = new THREE.CatmullRomCurve3(position, false, 'catmullrom');
     spline.radius = new THREE.CatmullRomCurve3(radius, false, 'catmullrom');
-    spline.color = new THREE.CatmullRomCurve3(color, false, 'catmullrom');
+    // spline.color = new THREE.CatmullRomCurve3(color, false, 'catmullrom');
+    spline.hue = new THREE.CatmullRomCurve3(hue, false, 'catmullrom');
+    spline.value = new THREE.CatmullRomCurve3(value, false, 'catmullrom');
     spline.line = new THREE.CatmullRomCurve3(line, false, 'catmullrom');
     spline.PDPA = new THREE.CatmullRomCurve3(PDPA, false, 'catmullrom');
-    return {position: position, radius: radius, color: color, spline:spline};
+    // return {position: position, radius: radius, color: color, spline:spline};
+
+    return {position: position, radius: radius, hue: hue, value:value, spline:spline};
 }
 
 export function updatePrivateComment() {
