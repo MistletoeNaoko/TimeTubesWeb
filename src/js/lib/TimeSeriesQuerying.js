@@ -225,7 +225,17 @@ export function runMatching(query, targets, parameters) {
                                             dtwSum += (dtw[query[key].length - 1][target.length - 1] / Math.max(query.arrayLength, j));
                                             break;
                                         case 'timeNormalization':
-                                            // it cannot be computed yet
+                                            let distSum = 0, weightSum = 0, weight = 0;
+                                            for (let k = 0; k < path.length - 1; k++) {
+                                                weight = (path[k][0] - path[k + 1][0]) + (path[k][1] - path[k + 1][1]);
+                                                distSum += weight * (dtw[path[k][1]][path[k][0]] - dtw[path[k + 1][1]][path[k + 1][0]]);
+                                                weightSum += weight;
+                                            }
+                                            weight = 1;
+                                            distSum += weight * dtw[0][0];//distFunc(target[path[path.length - 1][0]], query[key][path[path.length - 1][1]]);
+                                            weightSum += weight;
+                                            distSum /= weightSum;
+                                            dtwSum += distSum;
                                             break;
                                         case 'pathLengthRatio':
                                             dtwSum += (dtw[query[key].length - 1][target.length - 1] / (path.length / (query.arrayLength + j)));
@@ -278,35 +288,45 @@ export function runMatching(query, targets, parameters) {
                         let targetPeriod = maxLen - period[0] + 1, 
                             dtws = [];
                         for (let j = 1; j <= targetPeriod; j++) {
-                            let distSum = 0,
+                            let dtwSum = 0,
                                 paths = {};
                             for (let key in dists) {
                                 paths[key] = OptimalWarpingPath(dists[key]);
                                 let targetLength = dists[key][0].length - targetPeriod + j;
                                 switch (distanceNormalization) {
                                     case 'none':
-                                        distSum += dists[key][query.arrayLength - 1][targetLength - 1];
+                                        dtwSum += dists[key][query.arrayLength - 1][targetLength - 1];
                                         break;
                                     case 'warpingPathLength':
-                                        distSum += (dists[key][query.arrayLength - 1][targetLength - 1] / paths[key].length);
+                                        dtwSum += (dists[key][query.arrayLength - 1][targetLength - 1] / paths[key].length);
                                         break;
                                     case 'minLength':
-                                        distSum += (dists[key][query.arrayLength - 1][targetLength - 1] / Math.min(query.arrayLength, targetLength));
+                                        dtwSum += (dists[key][query.arrayLength - 1][targetLength - 1] / Math.min(query.arrayLength, targetLength));
                                         break;
                                     case 'maxLength':
-                                        distSum += (dists[key][query.arrayLength - 1][targetLength - 1] / Math.max(query.arrayLength, targetLength));
+                                        dtwSum += (dists[key][query.arrayLength - 1][targetLength - 1] / Math.max(query.arrayLength, targetLength));
                                         break;
                                     case 'timeNormalization':
-                                        // it cannot be computed yet
+                                        let distSum = 0, weightSum = 0, weight = 0;
+                                        for (let k = 0; k < paths[key].length - 1; k++) {
+                                            weight = (paths[key][k][0] - paths[key][k + 1][0]) + (paths[key][k][1] - paths[key][k + 1][1]);
+                                            distSum += weight * (dists[key][paths[key][k][1]][paths[key][k][0]] - dists[key][paths[key][k + 1][1]][paths[key][k + 1][0]]);
+                                            weightSum += weight;
+                                        }
+                                        weight = 1;
+                                        distSum += weight * dists[key][0][0];
+                                        weightSum += weight;
+                                        distSum /= weightSum;
+                                        dtwSum += distSum;
                                         break;
                                     case 'pathLengthRatio':
-                                        distSum += (dists[key][query.arrayLength - 1][targetLength - 1] / (paths[key].length / (query.arrayLength + targetLength)));
+                                        dtwSum += (dists[key][query.arrayLength - 1][targetLength - 1] / (paths[key].length / (query.arrayLength + targetLength)));
                                         break;
                                     default:
                                         break;
                                 }
                             }
-                            dtws.push({dist: distSum, paths: paths});
+                            dtws.push({dist: dtwSum, paths: paths});
                         }
                         let minIdx = 0;
                         let minVal = {dist: Infinity};
@@ -375,7 +395,17 @@ export function runMatching(query, targets, parameters) {
                                     distTmp /= Math.max(query.arrayLength, target.arrayLength);
                                     break;
                                 case 'timeNormalization':
-                                    // it cannot be computed yet
+                                    let distSum = 0, weightSum = 0, weight = 0;
+                                    for (let k = 0; k < path.length - 1; k++) {
+                                        weight = (path[k][0] - path[k + 1][0]) + (path[k][1] - path[k + 1][1]);
+                                        distSum += weight * (dtws[j][path[k][1]][path[k][0]] - dtws[j][path[k + 1][1]][path[k + 1][0]]);
+                                        weightSum += weight;
+                                    }
+                                    weight = 1;
+                                    distSum += weight * dtws[j][0][0];
+                                    weightSum += weight;
+                                    distSum /= weightSum;
+                                    distTmp = distSum; 
                                     break;
                                 case 'pathLengthRatio':
                                     distTmp /= (path.length / (query.arrayLength + target.arrayLength));
@@ -437,7 +467,17 @@ export function runMatching(query, targets, parameters) {
                                     distTmp /= Math.max(query.arrayLength, target.arrayLength - targetPeriod + j);
                                     break;
                                 case 'timeNormalization':
-                                    // it cannot be computed yet
+                                    let distSum = 0, weightSum = 0, weight = 0;
+                                    for (let k = 0; k < path.length - 1; k++) {
+                                        weight = (path[k][0] - path[k + 1][0]) + (path[k][1] - path[k + 1][1]);
+                                        distSum += weight * (subDist[path[k][1]][path[k][0]] - subDist[path[k + 1][1]][path[k + 1][0]]);
+                                        weightSum += weight;
+                                    }
+                                    weight = 1;
+                                    distSum += weight * subDist[0][0];
+                                    weight += weight;
+                                    distSum /= weightSum;
+                                    distTmp = distSum;
                                     break;
                                 case 'pathLengthRatio':
                                     distTmp /= (path.length / (query.arrayLength + target.arrayLength - targetPeriod + j));
@@ -446,260 +486,6 @@ export function runMatching(query, targets, parameters) {
                                     break;
                             }
                             dtws.push({dist: distTmp, path: path});
-                                // dist[query.arrayLength - 1][target.arrayLength - 1 - targetPeriod + j])
-                        }
-                        let minIdx = 0;
-                        let minVal = {dist: Infinity};
-                        for (let j = 1; j < dtws.length; j++) {
-                            if (dtws[j].dist < minVal.dist) {
-                                minVal = dtws[j];
-                                minIdx = j;
-                            }
-                        }
-                        // let minDist = [];
-                        // for (let j = 0; j < dist.length; j++) {
-                        //     minDist.push(dist[j].slice(0, target.arrayLength - 1 - targetPeriod + (minIdx + 1) + 1));
-                        // }
-                        // let path = OptimalWarpingPath(minDist);
-                        result.push({
-                            id: targetId,
-                            start: i + minJD,
-                            period: period[0] + minIdx,
-                            distance: minVal.dist,
-                            path: minVal.path
-                        });//[targetId, i + minJD, period[0] + minIdx, minVal, path]);
-                        i += step;
-                    }
-                }
-                break;
-        }
-    }
-    // result stores [id, JD, period, dtw distance]
-    return result;
-}
-
-export function runMatchingBkp(query, targets, DTWType, normalization, normalizationOption, dist, window, step, period) {
-    // make a nomalized query if the user select the normalized option (only think about relative shapes of variations)
-    // slide a window and create a target array
-    // normalize the target
-    // compute DTW distance
-    // store the DTW distance with the first time stamp of the time slice and the length of the priod
-    // sort the result
-    let result = [];
-    let distFunc;
-    switch (dist) {
-        case 'Euclidean':
-            distFunc = EuclideanDist;
-            break;
-    }
-    if (normalization) {
-        query = normalizeTimeSeries(normalizationOption, query);
-    }
-    for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
-        let targetId = targets[targetIdx];
-        let targetData = DataStore.getDataArray(targetId, 1);
-        if (query.r) {
-            let newTargetData = {};
-            let r = [], theta = [];
-            for (let i = 0; i < targetData.arrayLength; i++) {
-                r.push(Math.sqrt(Math.pow(targetData.x[i], 2) + Math.pow(targetData.y[i], 2)));
-                theta.push(convertRadToDeg(Math.atan2(targetData.y[i], targetData.x[i])));
-            }
-            newTargetData.r = r;
-            newTargetData.theta = theta;
-            for (let key in targetData) {
-                // if (key !== 'x' && key !== 'y') {
-                newTargetData[key] = targetData[key];
-                // }
-            }
-            targetData = newTargetData;
-        }
-        let minJD = targetData.z[0];
-
-        let keys = [];
-        if (query.r) {
-            for (let key in query) {
-                if (key !== 'x' && key !== 'y') { 
-                    if (Array.isArray(query[key]) && key !== 'z') {
-                        keys.push(key);
-                    }
-                }
-            }
-        } else {
-            for (let key in query) {
-                if (Array.isArray(query[key]) && key !== 'z') {
-                    keys.push(key);
-                }
-            }
-        }
-
-        switch (DTWType) {
-            case 'DTWI':
-                if (window > 0) {
-                    // compute dtw every time (time consuming :(
-                    let i = 0;
-                    while (i < targetData.arrayLength - period[0]) {
-                        let dtws = [];
-                        for (let j = period[0]; j <= period[1]; j++) {
-                            if (i + j > targetData.arrayLength - 1) break;
-                            let dtwSum = 0, paths = {};
-                            keys.forEach(function (key) {
-                                if (Array.isArray(targetData[key]) && key !== 'z') {
-                                    let target = targetData[key].slice(i, i + j);
-                                    if (normalization) {
-                                        if (key !== 'theta') {
-                                            target = normalizeTimeSeries(normalizationOption, target);
-                                        } else {
-                                            target = normalizeTheta(normalizationOption, target);
-                                        }
-                                    }
-                                    let dtw = DTW(query[key], target, window, distFunc);
-                                    let path = OptimalWarpingPath(dtw);
-                                    paths[key] = path;
-                                    dtwSum += (dtw[query[key].length - 1][target.length - 1] / path.length);
-                                }
-                            });
-                            dtws.push({dist: dtwSum, path: paths});
-                        }
-                        let minIdx = 0;
-                        let minVal = {dist: Infinity};
-                        for (let j = 0; j < dtws.length; j++) {
-                            if (dtws[j].dist < minVal.dist) {
-                                minVal = dtws[j];
-                                minIdx = j;
-                            }
-                        }
-                        result.push({
-                            id: targetId,
-                            start: i + minJD,
-                            period: period[0] + minIdx,
-                            distance: minVal.dist,
-                            path: minVal.path
-                        });//[targetId, i + minJD, period[0] + minIdx, minVal, dtws.path]);
-                        i += step;
-                    }
-                } else {
-                    // If there are no restriction on window size (simpleDTW), use fast computing
-                    let i = 0;
-                    while (i < targetData.arrayLength - period[0]) {
-                        let dists = {};
-                        let maxLen = (i + period[1] < targetData.arrayLength - 1) ? period[1] : targetData.arrayLength - i;
-                        keys.forEach(function (key) {
-                            if (Array.isArray(targetData[key]) && key !== 'z') {
-                                let target = targetData[key].slice(i, i + maxLen);
-                                if (normalization) {
-                                    if (key !== 'theta') {
-                                        target = normalizeTimeSeries(normalizationOption, target);
-                                    } else {
-                                        target = normalizeTheta(normalizationOption, target);
-                                    }
-                                }
-                                let dist = DTWSimple(query[key], target, distFunc);
-                                dists[key] = dist;
-                            }
-                        });
-                        // Choose a collection of dtw which minimize the sum
-                        let targetPeriod = maxLen - period[0] + 1, 
-                            dtws = [];
-                        for (let j = 1; j <= targetPeriod; j++) {
-                            let distSum = 0,
-                                paths = {};
-                            for (let key in dists) {
-                                paths[key] = OptimalWarpingPath(dists[key]);
-                                distSum += (dists[key][query.arrayLength - 1][dists[key][0].length - 1 - targetPeriod + j] / paths[key].length);
-                            }
-                            dtws.push({dist: distSum, paths: paths});
-                        }
-                        let minIdx = 0;
-                        let minVal = {dist: Infinity};
-                        for (let j = 0; j < dtws.length; j++) {
-                            if (dtws[j].dist < minVal.dist) {
-                                minVal = dtws[j];
-                                minIdx = j;
-                            }
-                        }
-
-                        // let paths = {};
-                        // for (let key in dists) {
-                        //     let minDist = [];
-                        //     for (let j = 0; j < dists[key].length; j++) {
-                        //         minDist.push(dists[key].slice(0, dists[key][j].length - 1 - targetPeriod + (minIdx + 1) + 1));
-                        //     }
-                        //     paths[key] = OptimalWarpingPath(minDist);
-                        // }
-                        // result is a collection of [start JD, the length of period, dtw value]
-                        result.push({
-                            id: targetId,
-                            start: i + minJD,
-                            period: period[0] + minIdx,
-                            distance: minVal.dist,
-                            path: minVal.paths
-                        });//[targetId, i + minJD, period[0] + minIdx, minVal, paths]);
-                        i += step;
-                    }
-                }
-                break;
-            case 'DTWD':
-                if (window > 0) {
-                    // use DTW
-                    let i = 0;
-                    while (i < targetData.arrayLength - period[0]) {
-                        let dtws = [];
-                        for (let j = period[0]; j <= period[1]; j++) {
-                            if (i + j > targetData.arrayLength - 1) break;
-                            let target = {};
-                            keys.forEach(function (key) {
-                                target[key] = targetData[key].slice(i, i + j);
-                            });
-                            target.arrayLength = j;
-                            if (normalization) {
-                                target = normalizeTimeSeries(normalizationOption, target);
-                            }
-                            // let distMat = DTWMD(query, target, window, keys, distFunc);
-                            dtws.push(DTWMD(query, target, window, keys, distFunc));//distMat[distMat.length - 1][distMat[0].length - 1]);
-                        }
-                        let minIdx = 0;
-                        let minVal = {dist: Infinity};
-                        for (let j = 0; j < dtws.length; j++) {
-                            let path = OptimalWarpingPath(dtws[j]);
-                            if (dtws[j][dtws[j].length - 1][dtws[j][0].length - 1] / path.length < minVal.dist) {
-                                minVal = {dist: dtws[j][dtws[j].length - 1][dtws[j][0].length - 1] / path.length, path: path};
-                                minIdx = j;
-                            }
-                        }
-                        // let path = OptimalWarpingPath(dtws[minIdx]);
-                        result.push({
-                            id: targetId,
-                            start: i + minJD,
-                            period: period[0] + minIdx,
-                            distance: minVal.dist,
-                            path: minVal.path
-                        });//[targetId, i + minJD, period[0] + minIdx, minVal, path]);
-                        i += step;
-                    }
-                } else {
-                    // use DTWSimple
-                    let i = 0;
-                    while (i < targetData.arrayLength - period[0]) {
-                        let target = {};
-                        let maxLen = (i + period[1] < targetData.arrayLength - 1) ? period[1] : targetData.arrayLength - i;
-                        keys.forEach(function (key) {
-                            target[key] = targetData[key].slice(i, i + maxLen);
-                        });
-                        target.arrayLength = maxLen;
-                        if (normalization) {
-                            target = normalizeTimeSeries(normalizationOption, target);
-                        }
-                        let dist = DTWSimpleMD(query, target, keys, distFunc);
-                        let targetPeriod = maxLen - period[0] + 1,
-                            dtws = [];
-                        for (let j = 1; j <= targetPeriod; j++) {
-                            let subDist = [];//dist.slice(0, target.arrayLength - 1 - targetPeriod + j + 1);
-                            for (let k = 0; k < dist.length; k++) {
-                                subDist.push(dist[k].slice(0, target.arrayLength - 1 - targetPeriod + j + 1));
-                            }
-                            let path = OptimalWarpingPath(subDist);
-                            dtws.push({dist: subDist[query.arrayLength - 1][target.arrayLength - 1 - targetPeriod + j] / path.length, path: path});
                                 // dist[query.arrayLength - 1][target.arrayLength - 1 - targetPeriod + j])
                         }
                         let minIdx = 0;
@@ -857,7 +643,17 @@ export function runMatchingSketch(query, targets, parameters) {
                                     distTmp /= Math.max(query.arrayLength, target.arrayLength);
                                     break;
                                 case 'timeNormalization':
-                                    // it cannot be computed yet
+                                    let distSum = 0, weightSum = 0, weight = 0;
+                                    for (let k = 0; k < path.length - 1; k++) {
+                                        weight = (path[k][0] - path[k + 1][0]) + (path[k][1] - path[k + 1][1]);
+                                        distSum += weight * (dtws[j][path[k][1]][path[k][0]] - dtws[j][path[k + 1][1]][path[k + 1][0]]);
+                                        weightSum += weight;
+                                    }
+                                    weight = 1;
+                                    distSum += weight * dtws[j][0][0];
+                                    weightSum += weight;
+                                    distSum /= weightSum;
+                                    distTmp = distSum; 
                                     break;
                                 case 'pathLengthRatio':
                                     distTmp /= (path.length / (query.arrayLength + target.arrayLength));
@@ -944,211 +740,23 @@ export function runMatchingSketch(query, targets, parameters) {
                                     distTmp /= Math.max(query.arrayLength, target.arrayLength - targetPeriod + j);
                                     break;
                                 case 'timeNormalization':
-                                    // it cannot be computed yet
+                                    let distSum = 0, weightSum = 0, weight = 0;
+                                    for (let k = 0; k < path.length - 1; k++) {
+                                        weight = (path[k][0] - path[k + 1][0]) + (path[k][1] - path[k + 1][1]);
+                                        distSum += weight * (subDist[path[k][1]][path[k][0]] - subDist[path[k + 1][1]][path[k + 1][0]]);
+                                        weightSum += weight;
+                                    }
+                                    weight = 1;
+                                    distSum += weight * subDist[0][0];
+                                    weight += weight;
+                                    distSum /= weightSum;
+                                    distTmp = distSum;
                                     break;
                                 case 'pathLengthRatio':
                                     distTmp /= (path.length / (query.arrayLength + target.arrayLength - targetPeriod + j   ));
                                     break;
                             }
                             dtws.push({dist: distTmp, path: path});
-                        }
-                        let minIdx = 0;
-                        let minVal = {dist: Infinity};
-                        for (let j = 0; j < dtws.length; j++) {
-                            if (dtws[j].dist < minVal.dist) {
-                                minVal = dtws[j];
-                                minIdx = j;
-                            }
-                        }
-                        // let minDist = [];
-                        // for (let j = 0; j < dist.length; j++) {
-                        //     minDist.push(dist[j].slice(0, target.arrayLength - 1 - targetPeriod + (minIdx + 1) + 1));
-                        // }
-                        // check whether the time slice is filtered out or not
-                        // let path = OptimalWarpingPath(minDist);
-                        let flag = true;
-                        for (let key in keysFilter) {
-                            for (let j = 0; j < query[keysFilter[key]].length; j++) {
-                                if (query[keysFilter[key]][j]) {
-                                    // value range is assigned to the time point
-                                    for (let k = 0; k < minVal.path.length; k++) {
-                                        // find the corresponding time point in the target
-                                        // path[k][0]: time point of the target
-                                        // path[k][1]: time point of the query
-                                        if (minVal.path[k][1] < j) break;
-                                        if (minVal.path[k][1] === j) {
-                                            let targetVal = targetData[keysFilter[key]][i + minVal.path[k][0]];
-                                            // check whether the value of the variable is in the assigned range
-                                            if (targetVal < query[keysFilter[key]][j][0] || query[keysFilter[key]][j][1] < targetVal) {
-                                                // filtered out!
-                                                flag = false;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                if (!flag) break;
-                            }
-                            if (!flag) break;
-                        }
-                        if (flag && minVal.dist !== Infinity) {
-                            result.push({
-                                id: targetId,
-                                start: i + minJD,
-                                period: period[0] + minIdx,
-                                distance: minVal.dist,
-                                path: minVal.path
-                            });//[targetId, i + minJD, period[0] + minIdx, minVal, path]);
-                        }
-                        i += step;
-                    }
-                }
-                break;
-        }
-    }
-    return result;
-}
-
-export function runMatchingSketchBkp(query, targets, DTWType, normalization, normalizationOption, dist, window, step, period) {
-    let result = [];
-    let distFunc;
-    switch (dist) {
-        case 'Euclidean':
-            distFunc = EuclideanDist;
-            break;
-    }
-    if (normalization) {
-        query = normalizeTimeSeries(normalizationOption, query);
-    }
-    for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
-        let targetId = targets[targetIdx];
-        let targetData = DataStore.getDataArray(targetId, 1);
-        if (query.r) {
-            let newTargetData = {};
-            let r = [], theta = [];
-            for (let i = 0; i < targetData.arrayLength; i++) {
-                r.push(Math.sqrt(Math.pow(targetData.x[i], 2) + Math.pow(targetData.y[i], 2)));
-                theta.push(convertRadToDeg(Math.atan2(targetData.y[i], targetData.x[i])));
-            }
-            newTargetData.r = r;
-            newTargetData.theta = theta;
-            for (let key in targetData) {
-                newTargetData[key] = targetData[key];
-            }
-            targetData = newTargetData;
-        }
-        let minJD = targetData.z[0];
-
-        // TODO: how to filter values when DTWI is selected
-        switch (DTWType) {
-            case 'DTWD':
-                let keys = [], keysFilter = [];
-                if (query.r) {
-                    for (let key in query) {
-                        if (key !== 'x' && key !== 'y') { 
-                            if (Array.isArray(query[key]) && query[key].indexOf(null) < 0 && key !== 'z') {
-                                keys.push(key);
-                            } else if (Array.isArray(query[key]) && query[key].indexOf(null) >= 0) {
-                                keysFilter.push(key);
-                            }
-                        }
-                    }
-                } else {
-                    for (let key in query) {
-                        if (Array.isArray(query[key]) && query[key].indexOf(null) < 0 && key !== 'z') {
-                            keys.push(key);
-                        } else if (Array.isArray(query[key]) && query[key].indexOf(null) >= 0) {
-                            keysFilter.push(key);
-                        }
-                    }
-                }
-                if (window > 0) {
-                    // use DTW
-                    let i = 0;
-                    while (i < targetData.arrayLength - period[0]) {
-                        let dtws = [];
-                        for (let j = period[0]; j <= period[1]; j++) {
-                            if (i + j > targetData.arrayLength - 1) break;
-                            let target = {};
-                            keys.forEach(function (key) {
-                                target[key] = targetData[key].slice(i, i + j);
-                            });
-                            target.arrayLength = j;
-                            if (normalization) {
-                                target = normalizeTimeSeries(normalizationOption, target);
-                            }
-                            dtws.push(DTWMD(query, target, window, keys, distFunc));
-                        }
-                        let minIdx = 0;
-                        let minVal = {dist: Infinity};
-                        for (let j = 0; j < dtws.length; j++) {
-                            let path = OptimalWarpingPath(dtws[j]);
-                            if (dtws[j][dtws[j].length - 1][dtws[j][0].length - 1] < minVal.dist) {
-                                minVal = {dist: dtws[j][dtws[j].length - 1][dtws[j][0].length - 1] / path.length, path: path};
-                                minIdx = j;
-                            }
-                        }
-                        // check whether the time slice is filtered out or not
-                        // let path = OptimalWarpingPath(dtws[minIdx]);
-                        let flag = true;
-                        for (let key in keysFilter) {
-                            for (let j = 0; j < query[keysFilter[key]].length; j++) {
-                                if (query[keysFilter[key]][j]) {
-                                    // value range is assigned to the time point
-                                    for (let k = 0; k < minVal.path.length; k++) {
-                                        // find the corresponding time point in the target
-                                        // path[k][0]: time point of the target
-                                        // path[k][1]: time point of the query
-                                        if (minVal.path[k][1] < j) break;
-                                        if (minVal.path[k][1] === j) {
-                                            let targetVal = targetData[keysFilter[key]][i + minVal.path[k][0]];
-                                            // check whether the value of the variable is in the assigned range
-                                            if (targetVal < query[keysFilter[key]][j][0] || query[keysFilter[key]][j][1] < targetVal) {
-                                                // filtered out!
-                                                flag = false;
-                                                break;
-                                            }
-                                        }
-                                    }
-                                }
-                                if (!flag) break;
-                            }
-                            if (!flag) break;
-                        }
-                        if (flag && minVal.dist !== Infinity) {
-                            result.push({
-                                id: targetId,
-                                start: i + minJD,
-                                period: period[0] + minIdx,
-                                distance: minVal.dist,
-                                path: minVal.path
-                            });//[targetId, i + minJD, period[0] + minIdx, minVal, path]);
-                        }
-                        i += step;
-                    }
-                } else {
-                    // use DTWSimple
-                    let i = 0;
-                    while (i < targetData.arrayLength - period[0]) {
-                        let target = {};
-                        let maxLen = (i + period[1] < targetData.arrayLength - 1) ? period[1] : targetData.arrayLength - i;
-                        keys.forEach(function (key) {
-                            target[key] = targetData[key].slice(i, i + maxLen);
-                        });
-                        target.arrayLength = maxLen;
-                        if (normalization) {
-                            target = normalizeTimeSeries(normalizationOption, target);
-                        }
-                        let dist = DTWSimpleMD(query, target, keys, distFunc);
-                        let targetPeriod = maxLen - period[0] + 1,
-                            dtws = [];
-                        for (let j = 1; j <= targetPeriod; j++) {
-                            let subDist = [];
-                            for (let k = 0; k < dist.length; k++) {
-                                subDist.push(dist[k].slice(0, target.arrayLength - 1 - targetPeriod + j + 1));
-                            }
-                            let path = OptimalWarpingPath(subDist);
-                            dtws.push({dist: subDist[query.arrayLength - 1][target.arrayLength - 1 - targetPeriod + j] / path.length, path: path});
                         }
                         let minIdx = 0;
                         let minVal = {dist: Infinity};

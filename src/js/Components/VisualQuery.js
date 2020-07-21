@@ -422,7 +422,7 @@ export default class VisualQuery extends React.Component {
                                     <option value='warpingPathLength'>Warping path length</option>
                                     <option value='minLength'>Minimum length</option>
                                     <option value='maxLength'>Maximum length</option>
-                                    {/* <option value='timeNormalization'>Time normalization</option> */}
+                                    <option value='timeNormalization'>Time normalization</option>
                                     <option value='pathLengthRatio'>Warping path ratio</option>
                                 </select>
                             </div>
