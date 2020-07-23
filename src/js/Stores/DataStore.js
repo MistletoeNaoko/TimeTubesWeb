@@ -141,18 +141,18 @@ class DataStore extends EventEmitter {
             let currentJD = zpos + this.data[id].data.meta.min.z;
 
             let i;
-            for (i = 1; i < this.data[id].data.position.length; i++) {
-                if (this.data[id].data.position[i - 1].z <= currentJD && currentJD < this.data[id].data.position[i].z) {
+            for (i = 1; i < this.data[id].data.splines.position.points.length; i++) {
+                if (this.data[id].data.splines.position.points[i - 1].z <= currentJD && currentJD < this.data[id].data.splines.position.points[i].z) {
                     break;
                 }
             }
             let tPos;
             if ((currentJD === this.data[id].data.meta.min.z) || (i < 0)) {
                 tPos = 0;
-            } else if ((currentJD === this.data[id].data.position[this.data[id].data.position.length - 1].z) || (i > this.data[id].data.position.length - 1)) {
+            } else if ((currentJD === this.data[id].data.splines.position.points[this.data[id].data.splines.position.points.length - 1].z) || (i > this.data[id].data.splines.position.points.length - 1)) {
                 tPos = 1;
             } else {
-                tPos = ((i - 1) + (currentJD - this.data[id].data.position[i - 1].z) / (this.data[id].data.position[i].z - this.data[id].data.position[i - 1].z)) / (this.data[id].data.position.length - 1);
+                tPos = ((i - 1) + (currentJD - this.data[id].data.splines.position.points[i - 1].z) / (this.data[id].data.splines.position.points[i].z - this.data[id].data.splines.position.points[i - 1].z)) / (this.data[id].data.splines.position.points.length - 1);
             }
 
             // let j;
@@ -168,27 +168,27 @@ class DataStore extends EventEmitter {
             // }
             let tHue;
             let j;
-            if (this.data[id].data.hue.length > 0) {
-                for (j = 1; j < this.data[id].data.hue.length; j++) {
-                    if (this.data[id].data.hue[j - 1].z <= currentJD && currentJD < this.data[id].data.hue[j].z)
+            if (this.data[id].data.splines.hue.points.length > 0) {
+                for (j = 1; j < this.data[id].data.splines.hue.points.length; j++) {
+                    if (this.data[id].data.splines.hue.points[j - 1].z <= currentJD && currentJD < this.data[id].data.splines.hue.points[j].z)
                         break;
                 }
-                if (j >= this.data[id].data.hue.length - 1) {
+                if (j >= this.data[id].data.splines.hue.points.length - 1) {
                     tHue = 1;
                 } else {
-                    tHue = ((j - 1) + (currentJD - this.data[id].data.hue[j - 1].z) / (this.data[id].data.hue[j].z - this.data[id].data.hue[j - 1].z)) / (this.data[id].data.hue.length - 1);
+                    tHue = ((j - 1) + (currentJD - this.data[id].data.splines.hue.points[j - 1].z) / (this.data[id].data.splines.hue.points[j].z - this.data[id].data.splines.hue.points[j - 1].z)) / (this.data[id].data.splines.hue.points.length - 1);
                 }
             }
             let k;
-            for (k = 1; k < this.data[id].data.value.length; k++) {
-                if (this.data[id].data.value[k - 1].z <= currentJD && currentJD < this.data[id].data.value[k].z)
+            for (k = 1; k < this.data[id].data.splines.value.pointslength; k++) {
+                if (this.data[id].data.splines.value.points[k - 1].z <= currentJD && currentJD < this.data[id].data.splines.value.points[k].z)
                     break;
             }
             let tValue;
-            if (k >= this.data[id].data.value.length - 1) {
+            if (k >= this.data[id].data.splines.value.points.length - 1) {
                 tValue = 1;
             } else {
-                tValue = ((k - 1) + (currentJD - this.data[id].data.value[k - 1].z) / (this.data[id].data.value[k].z - this.data[id].data.value[k - 1].z)) / (this.data[id].data.value.length - 1);
+                tValue = ((k - 1) + (currentJD - this.data[id].data.splines.value.points[k - 1].z) / (this.data[id].data.splines.value.points[k].z - this.data[id].data.splines.value.points[k - 1].z)) / (this.data[id].data.splines.value.points.length - 1);
             }
 
             // QI, UI, JD

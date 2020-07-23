@@ -996,7 +996,7 @@ export function DTWSimple(s, t, distFunc) {
             // }
         }
     }
-    
+
     let result = []
     for (let i = 1; i < dist.length; i++) {
         result.push(dist[i].slice(1, dist[i].length));
@@ -1651,7 +1651,7 @@ export function extractRotations(targets, period, diameter, angle, sigma, stdCon
     let results = [];
     for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
         let targetId = targets[targetIdx];
-        let targetData = DataStore.getData(targetId).data.position;
+        let targetData = DataStore.getData(targetId).data.splines.position.points;
         // let targetData = DataStore.getDataArray(targets[targetId], 1);
         let computationResults = [];      
         for (let firstIdx = 0; firstIdx < targetData.length; firstIdx++) {

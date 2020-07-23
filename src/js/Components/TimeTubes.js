@@ -578,7 +578,7 @@ export default class TimeTubes extends React.Component{
             // make a currently focused plot red
             if (changeColFlg) {
                 if (!this.data.merge) {
-                    for (let j = 0; j < this.data.position.length; j++) {
+                    for (let j = 0; j < this.data.splines.position.points.length; j++) {
                         if (dst === this.data.spatial[j].z - this.data.spatial[0].z) {
                             this.changePlotColor(j * this.segment, new THREE.Color('red'));
                             this.currentHighlightedPlot = j;
@@ -1018,7 +1018,7 @@ export default class TimeTubes extends React.Component{
             for (let i = 0; i < this.plotColor.length; i++) {
                 baseColors.push(new THREE.Color(this.plotColor[i]));
             }
-            let circleIndices = Array(this.data.position.length * this.segment * 2);
+            let circleIndices = Array(this.data.splines.position.points.length * this.segment * 2);
             let posCount = 0;
             let del = Math.PI * 2 / this.segment;
             let range = this.data.meta.range;
@@ -1094,7 +1094,7 @@ export default class TimeTubes extends React.Component{
         let rad = this.data.splines.radius.getSpacedPoints(divNumPol);
         // let col = this.data.splines.color.getSpacedPoints(divNumPho);
         let divNumHue, hue, idxGapHue;
-        if (this.data.hue.length > 0) { 
+        if (this.data.splines.hue.points.length > 0) { 
             divNumHue = Math.ceil((this.data.splines.hue.getPoint(1).z - this.data.splines.hue.getPoint(0).z) / delTime);
             hue = this.data.splines.hue.getSpacedPoints(divNumHue);
             idxGapHue = Math.ceil((this.data.splines.hue.getPoint(0).z - this.data.splines.position.getPoint(0).z) / delTime);
@@ -1331,7 +1331,7 @@ export default class TimeTubes extends React.Component{
             for (let i = 0; i < this.plotColor.length; i++) {
                 baseColors.push(new THREE.Color(this.plotColor[i]));
             }
-            let circleIndices = Array(this.data.position.length * this.segment * 2);
+            let circleIndices = Array(this.data.splines.position.points.length * this.segment * 2);
             let posCount = 0;
             let del = Math.PI * 2 / this.segment;
             let range = this.data.meta.range;
@@ -1378,16 +1378,16 @@ export default class TimeTubes extends React.Component{
             let circlePositions = [];
             let circleColor = [];
             let baseColor = new THREE.Color(this.plotColor);
-            let circleIndices = Array(this.data.position.length * this.segment * 2);
+            let circleIndices = Array(this.data.splines.position.points.length * this.segment * 2);
             let del = Math.PI * 2 / this.segment;
             let range = this.data.meta.range;
             // let plotNum = 0;
-            for (let i = 0; i < this.data.position.length; i++) {
-                let zpos = this.data.position[i].z - this.data.position[0].z;
-                let xcen = -this.data.position[i].x * range;
-                let ycen = this.data.position[i].y * range;
-                let xrad = this.data.radius[i].x * range;
-                let yrad = this.data.radius[i].y * range;
+            for (let i = 0; i < this.data.splines.position.points.length; i++) {
+                let zpos = this.data.splines.position.points[i].z - this.data.splines.position.points[0].z;
+                let xcen = -this.data.splines.position.points[i].x * range;
+                let ycen = this.data.splines.position.points[i].y * range;
+                let xrad = this.data.splines.radius.points[i].x * range;
+                let yrad = this.data.splines.radius.points[i].y * range;
                 // 0-1, 1-2, 2-3, ... , 31-0
                 let currentIdx = this.segment * 2 * i;
                 circleIndices[currentIdx] = i * this.segment;

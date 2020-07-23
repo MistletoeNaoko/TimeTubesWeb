@@ -398,7 +398,7 @@ export default class SelectedTimeSlice extends React.Component {
         let rad = this.data.data.splines.radius.getSpacedPoints(divNumPol);
         // let col = this.data.data.splines.color.getSpacedPoints(divNumPho);
         let divNumHue, hue;
-        if (this.data.data.hue.length > 0) {
+        if (this.data.data.splines.hue.points.length > 0) {
             divNumHue = Math.ceil((this.data.data.splines.hue.getPoint(1).z - this.data.data.splines.hue.getPoint(0).z) / delTime);
             hue = this.data.data.splines.hue.getSpacedPoints(divNumHue);
         }
