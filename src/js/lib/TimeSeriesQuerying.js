@@ -969,144 +969,155 @@ function normalizeTheta(normalizationOption, data) {
 
 export function DTWSimple(s, t, distFunc) {
     let dist = [];
-    for (let i = 0; i < s.length; i++) {
+    for (let i = 0; i <= s.length; i++) {
         dist[i] = [];
-        for (let j = 0; j < t.length; j++) {
+        for (let j = 0; j <= t.length; j++) {
             dist[i][j] = Infinity;
         }
     }
+    dist[0][0] = 0;
 
-    for (let i = 0; i < s.length; i++) {
-        for (let j = 0; j < t.length; j++) {
-            if (i > 0) {
-                if (j > 0) {
-                    dist[i][j] = distFunc(s[i], t[j]) + Math.min(dist[i - 1][j], dist[i][j - 1], dist[i - 1][j - 1]);
-                } else {
-                    dist[i][j] = distFunc(s[i], t[j]) + dist[i - 1][j];
-                }
-            } else {
-                if (j > 0) {
-                    dist[i][j] = distFunc(s[i], t[j]) + dist[i][j - 1];
-                } else {
-                    dist[i][j] = 0;
-                }
-            }
+    // distances between two data points are stored in dist[1~s.length][1~t.length]
+    for (let i = 1; i <= s.length; i++) {
+        for (let j = 1; j <= t.length; j++) {
+            dist[i][j] = distFunc(s[i - 1], t[j - 1]) + Math.min(dist[i - 1][j], dist[i][j - 1], dist[i - 1][j - 1]);
+            // if (i > 0) {
+            //     if (j > 0) {
+            //         dist[i][j] = distFunc(s[i], t[j]) + Math.min(dist[i - 1][j], dist[i][j - 1], dist[i - 1][j - 1]);
+            //     } else {
+            //         dist[i][j] = distFunc(s[i], t[j]) + dist[i - 1][j];
+            //     }
+            // } else {
+            //     if (j > 0) {
+            //         dist[i][j] = distFunc(s[i], t[j]) + dist[i][j - 1];
+            //     } else {
+            //         dist[i][j] = 0;
+            //     }
+            // }
         }
     }
-    // let result = []
-    // for (let i = 1; i <= period; i++) {
-    //     result.push(dist[s.length - 1][t.length - 1 - period + i]);
-    // }
-    return dist;//result;
+    
+    let result = []
+    for (let i = 1; i < dist.length; i++) {
+        result.push(dist[i].slice(1, dist[i].length));
+    }
+    return result;
 }
 
 export function DTWSimpleMD(s, t, keys, distFunc) {
     // s and t are object
     let dist = [];
-    for (let i = 0; i < s.arrayLength; i++) {
+    for (let i = 0; i <= s.arrayLength; i++) {
         dist[i] = [];
-        for (let j = 0; j < t.arrayLength; j++) {
+        for (let j = 0; j <= t.arrayLength; j++) {
             dist[i][j] = Infinity;
         }
     }
+    dist[0][0] = 0;
 
-    for (let i = 0; i < s.arrayLength; i++) {
+    // distances between two data points are stored in dist[1~s.length][1~t.length]
+    for (let i = 1; i <= s.arrayLength; i++) {
         let sValues = [];
         keys.forEach(function (key) {
-            sValues.push(s[key][i]);
+            sValues.push(s[key][i - 1]);
         });
-        for (let j = 0; j < t.arrayLength; j++) {
+        for (let j = 1; j <= t.arrayLength; j++) {
             let tValues = [];
             keys.forEach(function (key) {
-                tValues.push(t[key][j]);
+                tValues.push(t[key][j - 1]);
             });
-            if (i > 0) {
-                if (j > 0) {
-                    dist[i][j] = distFunc(sValues, tValues) + Math.min(dist[i - 1][j], dist[i][j - 1], dist[i - 1][j - 1]);
-                } else {
-                    dist[i][j] = distFunc(sValues, tValues) + dist[i - 1][j];
-                }
-            } else {
-                if (j > 0) {
-                    dist[i][j] = distFunc(sValues, tValues) + dist[i][j - 1];
-                } else {
-                    dist[i][j] = 0;
-                }
-            }
+            dist[i][j] = distFunc(sValues, tValues) + Math.min(dist[i - 1][j], dist[i][j - 1], dist[i - 1][j - 1]);
+            // if (i > 0) {
+            //     if (j > 0) {
+            //         dist[i][j] = distFunc(sValues, tValues) + Math.min(dist[i - 1][j], dist[i][j - 1], dist[i - 1][j - 1]);
+            //     } else {
+            //         dist[i][j] = distFunc(sValues, tValues) + dist[i - 1][j];
+            //     }
+            // } else {
+            //     if (j > 0) {
+            //         dist[i][j] = distFunc(sValues, tValues) + dist[i][j - 1];
+            //     } else {
+            //         dist[i][j] = 0;
+            //     }
+            // }
         }
     }
 
-    // let result = []
-    // for (let i = 1; i <= period; i++) {
-    //     result.push(dist[s.arrayLength - 1][t.arrayLength - 1 - period + i]);
-    // }
-    // return result;
-    return dist;
+    let result = []
+    for (let i = 1; i < dist.length; i++) {
+        result.push(dist[i].slice(1, dist[i].length));
+    }
+    return result;
+    // return dist;
 }
 
 export function DTW(s, t, w, distFunc) {
     let dist = [];
     w = Math.max(w, Math.abs(s.length - t.length));
-    for (let i = 0; i < s.length; i++) {
+    for (let i = 0; i <= s.length; i++) {
         dist[i] = [];
-        for (let j = 0; j < t.length; j++) {
+        for (let j = 0; j <= t.length; j++) {
             dist[i][j] = Infinity;
         }
     }
-
     dist[0][0] = 0;
-    for (let i = 1; i < s.length; i++) {
+    for (let i = 1; i <= s.length; i++) {
         let start = Math.max(1, i - w),
             end = Math.min(t.length, i + w);
-        for (let j = start; j < end; j++) {
+        for (let j = start; j <= end; j++) {
             dist[i][j] = 0;
         }
     }
 
-    for (let i = 1; i < s.length; i++) {
+    // distances between two data points are stored in dist[1~s.length][1~t.length]
+    for (let i = 1; i <= s.length; i++) {
         let start = Math.max(1, i - w),
             end = Math.min(t.length, i + w);
-        for (let j = start; j < end; j++) {
-            dist[i][j] = distFunc(s[i], t[j]) + Math.min(
+        for (let j = start; j <= end; j++) {
+            dist[i][j] = distFunc(s[i - 1], t[j - 1]) + Math.min(
                 dist[i - 1][j],     // insertion
                 dist[i][j - 1],     // deletion
                 dist[i - 1][j - 1]  // match
             );
         }
     }
-    return dist;//[s.length - 1][t.length - 1];
+
+    let result = [];
+    for (let i = 1; i < dist.length; i++) {
+        result.push(dist[i].slice(1, dist[i].length));
+    }
+    return result;//dist;//[s.length - 1][t.length - 1];
 }
 
 export function DTWMD(s, t, w, keys, distFunc) {
     let dist = [];
     w = Math.max(w, Math.abs(s.arrayLength - t.arrayLength));
-    for (let i = 0; i < s.arrayLength; i++) {
+    for (let i = 0; i <= s.arrayLength; i++) {
         dist[i] = [];
-        for (let j = 0; j < t.arrayLength; j++) {
+        for (let j = 0; j <= t.arrayLength; j++) {
             dist[i][j] = Infinity;
         }
     }
-
     dist[0][0] = 0;
-    for (let i = 1; i < s.arrayLength; i++) {
+    for (let i = 1; i <= s.arrayLength; i++) {
         let start = Math.max(1, i - w),
             end = Math.min(t.arrayLength, i + w);
-        for (let j = start; j < end; j++) {
+        for (let j = start; j <= end; j++) {
             dist[i][j] = 0;
         }
     }
 
-    for (let i = 1; i < s.arrayLength; i++) {
+    for (let i = 1; i <= s.arrayLength; i++) {
         let start = Math.max(1, i - w),
             end = Math.min(t.arrayLength, i + w);
         let sValues = [];
         keys.forEach(function (key) {
-            sValues.push(s[key][i]);
+            sValues.push(s[key][i - 1]);
         });
-        for (let j = start; j < end; j++) {
+        for (let j = start; j <= end; j++) {
             let tValues = [];
             keys.forEach(function (key) {
-                tValues.push(t[key][j]);
+                tValues.push(t[key][j - 1]);
             });
             dist[i][j] = distFunc(sValues, tValues) + Math.min(
                 dist[i - 1][j],     // insertion
@@ -1115,7 +1126,13 @@ export function DTWMD(s, t, w, keys, distFunc) {
             );
         }
     }
-    return dist;
+
+    let result = []
+    for (let i = 1; i < dist.length; i++) {
+        result.push(dist[i].slice(1, dist[i].length));
+    }
+    return result;
+    // return dist;
 }
 
 function OptimalWarpingPath(cost) {
