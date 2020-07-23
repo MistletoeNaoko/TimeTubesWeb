@@ -209,14 +209,13 @@ export function runMatching(query, targets, parameters) {
                                         }
                                     }
                                     let dtw = DTW(query[key], target, window, distFunc);
-                                    let path = OptimalWarpingPath(dtw);
-                                    paths[key] = path;
+                                    paths[key] = OptimalWarpingPath(dtw);
                                     switch (distanceNormalization) {
                                         case 'none':
                                             dtwSum += dtw[query[key].length - 1][target.length - 1];
                                             break;
                                         case 'warpingPathLength':
-                                            dtwSum += (dtw[query[key].length - 1][target.length - 1] / path.length);
+                                            dtwSum += (dtw[query[key].length - 1][target.length - 1] / paths[key].length);
                                             break;
                                         case 'minLength':
                                             dtwSum += (dtw[query[key].length - 1][target.length - 1] / Math.min(query.arrayLength, j));
@@ -226,19 +225,19 @@ export function runMatching(query, targets, parameters) {
                                             break;
                                         case 'timeNormalization':
                                             let distSum = 0, weightSum = 0, weight = 0;
-                                            for (let k = 0; k < path.length - 1; k++) {
-                                                weight = (path[k][0] - path[k + 1][0]) + (path[k][1] - path[k + 1][1]);
-                                                distSum += weight * (dtw[path[k][1]][path[k][0]] - dtw[path[k + 1][1]][path[k + 1][0]]);
+                                            for (let k = 0; k < paths[key].length - 1; k++) {
+                                                weight = (paths[key][k][0] - paths[key][k + 1][0]) + (paths[key][k][1] - paths[key][k + 1][1]);
+                                                distSum += weight * (dtw[paths[key][k][1]][paths[key][k][0]] - dtw[paths[key][k + 1][1]][paths[key][k + 1][0]]);
                                                 weightSum += weight;
                                             }
                                             weight = 1;
-                                            distSum += weight * dtw[0][0];//distFunc(target[path[path.length - 1][0]], query[key][path[path.length - 1][1]]);
+                                            distSum += weight * dtw[0][0];
                                             weightSum += weight;
                                             distSum /= weightSum;
                                             dtwSum += distSum;
                                             break;
                                         case 'pathLengthRatio':
-                                            dtwSum += (dtw[query[key].length - 1][target.length - 1] / (path.length / (query.arrayLength + j)));
+                                            dtwSum += (dtw[query[key].length - 1][target.length - 1] / (paths[key].length / (query.arrayLength + j)));
                                             break;
                                         default:
                                             break;
