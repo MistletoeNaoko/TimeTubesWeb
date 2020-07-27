@@ -290,36 +290,40 @@ export function runMatching(query, targets, parameters) {
                             let dtwSum = 0,
                                 paths = {};
                             for (let key in dists) {
-                                paths[key] = OptimalWarpingPath(dists[key]);
                                 let targetLength = dists[key][0].length - targetPeriod + j;
+                                let subDist = [];
+                                for (let k = 0; k < dists[key].length; k++) {
+                                    subDist.push(dists[key][k].slice(0, targetLength));
+                                }
+                                paths[key] = OptimalWarpingPath(subDist);
                                 switch (distanceNormalization) {
                                     case 'none':
-                                        dtwSum += dists[key][query.arrayLength - 1][targetLength - 1];
+                                        dtwSum += subDist[query.arrayLength - 1][targetLength - 1];
                                         break;
                                     case 'warpingPathLength':
-                                        dtwSum += (dists[key][query.arrayLength - 1][targetLength - 1] / paths[key].length);
+                                        dtwSum += (subDist[query.arrayLength - 1][targetLength - 1] / paths[key].length);
                                         break;
                                     case 'minLength':
-                                        dtwSum += (dists[key][query.arrayLength - 1][targetLength - 1] / Math.min(query.arrayLength, targetLength));
+                                        dtwSum += (subDist[query.arrayLength - 1][targetLength - 1] / Math.min(query.arrayLength, targetLength));
                                         break;
                                     case 'maxLength':
-                                        dtwSum += (dists[key][query.arrayLength - 1][targetLength - 1] / Math.max(query.arrayLength, targetLength));
+                                        dtwSum += (subDist[query.arrayLength - 1][targetLength - 1] / Math.max(query.arrayLength, targetLength));
                                         break;
                                     case 'timeNormalization':
                                         let distSum = 0, weightSum = 0, weight = 0;
                                         for (let k = 0; k < paths[key].length - 1; k++) {
                                             weight = (paths[key][k][0] - paths[key][k + 1][0]) + (paths[key][k][1] - paths[key][k + 1][1]);
-                                            distSum += weight * (dists[key][paths[key][k][1]][paths[key][k][0]] - dists[key][paths[key][k + 1][1]][paths[key][k + 1][0]]);
+                                            distSum += weight * (subDist[paths[key][k][1]][paths[key][k][0]] - subDist[paths[key][k + 1][1]][paths[key][k + 1][0]]);
                                             weightSum += weight;
                                         }
                                         weight = 1;
-                                        distSum += weight * dists[key][0][0];
+                                        distSum += weight * subDist[0][0];
                                         weightSum += weight;
                                         distSum /= weightSum;
                                         dtwSum += distSum;
                                         break;
                                     case 'pathLengthRatio':
-                                        dtwSum += (dists[key][query.arrayLength - 1][targetLength - 1] / (paths[key].length / (query.arrayLength + targetLength)));
+                                        dtwSum += (subDist[query.arrayLength - 1][targetLength - 1] / (paths[key].length / (query.arrayLength + targetLength)));
                                         break;
                                     default:
                                         break;
