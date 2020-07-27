@@ -266,10 +266,10 @@ export default class SelectedTimeSlice extends React.Component {
             let selected = new Float32Array(0);
             let indices = new Uint32Array(0);
             let tubeGeometry = new THREE.BufferGeometry();
-            tubeGeometry.addAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
-            tubeGeometry.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-            tubeGeometry.addAttribute('colorData', new THREE.BufferAttribute(new Float32Array(color), 2));
-            tubeGeometry.addAttribute('selected', new THREE.BufferAttribute(new Float32Array(selected), 1));
+            tubeGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(pos), 3));
+            tubeGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+            tubeGeometry.setAttribute('colorData', new THREE.BufferAttribute(new Float32Array(color), 2));
+            tubeGeometry.setAttribute('selected', new THREE.BufferAttribute(new Float32Array(selected), 1));
             tubeGeometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
             tubeGeometry.computeVertexNormals();
             let tubeMaterial = new THREE.ShaderMaterial({

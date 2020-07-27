@@ -1033,7 +1033,7 @@ export default class TimeTubes extends React.Component{
                     }
                 }
             }
-            this.plot.geometry.addAttribute('color', new THREE.Float32BufferAttribute(circleColor, 3));
+            this.plot.geometry.setAttribute('color', new THREE.Float32BufferAttribute(circleColor, 3));
         }
     }
 
@@ -1170,10 +1170,10 @@ export default class TimeTubes extends React.Component{
         let geometries = [];
         for (let i = 0; i < this.tubeNum; i++) {
             const geometryTmp = new THREE.BufferGeometry();
-            geometryTmp.addAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices[i]), 3));
-            geometryTmp.addAttribute('normal', new THREE.BufferAttribute(normals, 3));
-            geometryTmp.addAttribute('colorData', new THREE.BufferAttribute(new Float32Array(colors[i]), 3));
-            geometryTmp.addAttribute('selected', new THREE.BufferAttribute(new Float32Array(selected), 1));
+            geometryTmp.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices[i]), 3));
+            geometryTmp.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+            geometryTmp.setAttribute('colorData', new THREE.BufferAttribute(new Float32Array(colors[i]), 3));
+            geometryTmp.setAttribute('selected', new THREE.BufferAttribute(new Float32Array(selected), 1));
             geometryTmp.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
             // geometryTmp.computeFaceNormals();
             geometryTmp.computeVertexNormals();
@@ -1314,7 +1314,7 @@ export default class TimeTubes extends React.Component{
             j = j + 4;
         }
         axisGeometry.setIndex(axisIndices);
-        axisGeometry.addAttribute(
+        axisGeometry.setAttribute(
             'position',
             new THREE.Float32BufferAttribute(axisPosisitons, 3)
         );
@@ -1367,8 +1367,8 @@ export default class TimeTubes extends React.Component{
             }
             let circleGeometry = new THREE.BufferGeometry();
             circleGeometry.setIndex(circleIndices);
-            circleGeometry.addAttribute('position', new THREE.Float32BufferAttribute(circlePositions, 3));
-            circleGeometry.addAttribute('color', new THREE.Float32BufferAttribute(circleColor, 3));
+            circleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(circlePositions, 3));
+            circleGeometry.setAttribute('color', new THREE.Float32BufferAttribute(circleColor, 3));
             let circleMaterial = new THREE.LineBasicMaterial({
                 vertexColors: THREE.VertexColors,
                 clippingPlanes: [this.clippingPlane]
@@ -1409,8 +1409,8 @@ export default class TimeTubes extends React.Component{
             }
             let circleGeometry = new THREE.BufferGeometry();
             circleGeometry.setIndex(circleIndices);
-            circleGeometry.addAttribute('position', new THREE.Float32BufferAttribute(circlePositions, 3));
-            circleGeometry.addAttribute('color', new THREE.Float32BufferAttribute(circleColor, 3));
+            circleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(circlePositions, 3));
+            circleGeometry.setAttribute('color', new THREE.Float32BufferAttribute(circleColor, 3));
 
             let circleMaterial = new THREE.LineBasicMaterial({
                 vertexColors: THREE.VertexColors,
@@ -1484,8 +1484,8 @@ export default class TimeTubes extends React.Component{
             }
         }
         let planeGeometry = new THREE.BufferGeometry();
-        planeGeometry.addAttribute('position', new THREE.Float32BufferAttribute(planePositions, 3));
-        planeGeometry.addAttribute('color', new THREE.Float32BufferAttribute(planeColors, 3));
+        planeGeometry.setAttribute('position', new THREE.Float32BufferAttribute(planePositions, 3));
+        planeGeometry.setAttribute('color', new THREE.Float32BufferAttribute(planeColors, 3));
         let planeMaterial = new THREE.MeshBasicMaterial({
             vertexColors: THREE.VertexColors,
             side: THREE.DoubleSide,
