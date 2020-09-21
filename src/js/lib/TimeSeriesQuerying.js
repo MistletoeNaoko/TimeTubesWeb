@@ -1651,7 +1651,7 @@ export function extractFlaresManual(targets, threshold) {
     return results;
 }
 
-export function extractRotations(targets, period, diameter, angle, sigma, stdConst) {
+export function extractRotations(targets, period, diameter, angle, sigma, stdConst, alphaES) {
     let results = [];
     for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
         let targetId = targets[targetIdx];
@@ -1775,7 +1775,7 @@ export function extractRotations(targets, period, diameter, angle, sigma, stdCon
                     if (flag) {
                         let rotationAng = 0,
                             before = angList[0],
-                            alpha = 0.1,
+                            alpha = alphaES,
                             predAngBef = angList[0].angle;
                         for (let j = 0; j < i; j++) {
                             // sum up the differences of angle between two data points

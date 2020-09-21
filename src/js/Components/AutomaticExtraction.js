@@ -91,6 +91,7 @@ export default class AutomaticExtraction extends React.Component {
         $('#rotationPeriodMin').val(20);
         $('#rotationPeriodMax').val(30);
         $('#rotationAngle').val(270);
+        $('#alphaES').val(0.1);
     }
 
     setGaussCurve() {
@@ -220,9 +221,11 @@ export default class AutomaticExtraction extends React.Component {
             query.option.push('rotation');
             let period = [Number($('#rotationPeriodMin').val()), Number($('#rotationPeriodMax').val())],
                 diameter = $('#rotationDiameter').val(),
-                angle = $('#rotationAngle').val();
+                angle = $('#rotationAngle').val(),
+                alpha = $('#alphaES').val();
             diameter = (diameter === '')? 0: Number(diameter);
             angle = (angle === '')? 0: Number(angle);
+            alpha = (alpha === '')? 0.1: Number(alpha);
             // std constraint
             let stdConstraintsList = document.getElementById('stdConstraintsList');
             let selectedIdx = stdConstraintsList.selectedIndex;
@@ -232,11 +235,12 @@ export default class AutomaticExtraction extends React.Component {
             selectedIdx = weightList.selectedIndex;
             let selectedSigma = Number(weightList.options[selectedIdx].value);
 
-            rotations = TimeSeriesQuerying.extractRotations(targets, period, diameter, angle, selectedSigma, selectedStdConstraint);
+            rotations = TimeSeriesQuerying.extractRotations(targets, period, diameter, angle, selectedSigma, selectedStdConstraint, alpha);
             query.query.rotationPeriod = period;
             query.query.rotationDiameter = diameter;
             query.query.rotationAngle = angle;
             query.query.stdOfthePeriod = selectedStdConstraint;
+            query.query.alpha = alpha;
             query.query.weightForAverage = (selectedSigma === 0)? 'flat': selectedSigma;
         }
         if (this.state.anomaly) {
@@ -510,6 +514,19 @@ export default class AutomaticExtraction extends React.Component {
                             <option value="x">Sx &lt; sx</option>
                             <option value="y">Sy &lt; sy</option>
                         </select>
+                    </div>
+                </div>
+                <div className='row matchingOption'>
+                    <div className='col-5'>
+                        &#945; of the exponential smoothing
+                    </div>
+                    <div className='col'>
+                        <input className="form-control form-control-sm"
+                            type="text"
+                            placeholder="alpha"
+                            id="alphaES"
+                            disabled={!this.state.rotation}
+                            style={{width: '40%', marginRight: '0.5rem'}}/>
                     </div>
                 </div>
                 <div className='row matchingOption'>
