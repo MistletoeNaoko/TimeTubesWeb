@@ -1,6 +1,7 @@
 import {EventEmitter} from 'events';
 import * as THREE from 'three';
 import dispatcher from "../Dispatcher/dispatcher";
+import * as colorMap from '../lib/colorMap';
 
 const dataHeaders = {
     HU: {
@@ -180,7 +181,7 @@ class DataStore extends EventEmitter {
                 }
             }
             let k;
-            for (k = 1; k < this.data[id].data.splines.value.pointslength; k++) {
+            for (k = 1; k < this.data[id].data.splines.value.points.length; k++) {
                 if (this.data[id].data.splines.value.points[k - 1].z <= currentJD && currentJD < this.data[id].data.splines.value.points[k].z)
                     break;
             }
