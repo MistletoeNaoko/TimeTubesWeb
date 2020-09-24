@@ -80,6 +80,7 @@ class TimeTubesStore extends EventEmitter{
         }
         this.averagePeriod = 0;
         this.wheelInterval = 1;
+        this.colorEncodingOption = {hue: 'default', value: 'default'};
     }
 
     handleActions(action) {
@@ -188,6 +189,12 @@ class TimeTubesStore extends EventEmitter{
                 break;
             case 'UPDATE_WHEEL_INTERVAL':
                 this.updateWheelInterval(action.interval);
+                break;
+            case 'UPDATE_COLOR_ENCODING_OPTION_HUE':
+                this.updateColorEncodingOptionHue(action.id, action.option);
+                break;
+            case 'UPDATE_COLOR_ENCODING_OPTION_VALUE':
+                this.updateColorEncodingOptionValue(action.id, action.option);
                 break;
             default:
         }
@@ -307,6 +314,10 @@ class TimeTubesStore extends EventEmitter{
 
     getWheelInterval() {
         return this.wheelInterval;
+    }
+
+    getColorEncodingOption() {
+        return this.colorEncodingOption;
     }
 
     setPlotColor(id, color) {
@@ -524,6 +535,38 @@ class TimeTubesStore extends EventEmitter{
     updateWheelInterval(interval) {
         this.wheelInterval = interval;
         this.emit('updateWheelInterval');
+    }
+
+    updateColorEncodingOptionHue(id, option) {
+        // update minmaxH
+        let data = DataStore.getData(id).data;
+        switch(option){
+            case 'default':
+                this.minmaxH[id] = [data.meta.min.H, data.meta.max.H];
+                break;
+            case 'histogramEqualization':
+                this.minmaxH[id] = [data.hueValRanks.minmaxHue.min, data.hueValRanks.minmaxHue.max];
+                break;
+            default:
+        }
+        this.colorEncodingOption.hue = option;
+        this.emit('updateColorEncodingOptionHue', id, option);
+    }
+
+    updateColorEncodingOptionValue(id, option) {
+        // update minmaxV
+        let data = DataStore.getData(id).data;
+        switch(option){
+            case 'default':
+                this.minmaxV = [data.meta.min.V, data.meta.max.V];
+                break;
+            case 'histogramEqualization':
+                this.minmaxV = [data.hueValRanks.minmaxValue.min, data.hueValRanks.minmaxValue.max];
+                break;
+            default:
+        }
+        this.colorEncodingOption.value = option;
+        this.emit('updateColorEncodingOptionValue', id, option);
     }
 }
 

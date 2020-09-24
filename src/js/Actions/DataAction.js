@@ -1,5 +1,6 @@
 import * as d3 from 'd3';
 import * as THREE from 'three';
+import {histogramEqualizer} from '../lib/colorMap';
 import dispatcher from '../Dispatcher/dispatcher';
 import DataStore from '../Stores/DataStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
@@ -56,7 +57,16 @@ export function mergeData(ids) {
             let [spatialData, lookup] = extractData(mergedData);
             let metaData = computeStats(spatialVar, spatialData);
             let splines = computeSplines(spatialData);
-            return {fileName: fileNames, data: mergedData, spatial: spatialData, lookup: lookup, meta: metaData, splines: splines};
+            let rankings = rankHueValue(splines.spline.hue.points, splines.spline.value.points);
+            return {
+                fileName: fileNames, 
+                data: mergedData, 
+                spatial: spatialData, 
+                lookup: lookup, 
+                meta: metaData, 
+                hueValRanks: rankings, 
+                splines: splines
+            };
         })
         .then(function (value) {
             dispatcher.dispatch({
@@ -67,6 +77,7 @@ export function mergeData(ids) {
                     meta: value.meta,
                     splines: value.splines.spline,
                     lookup: value.lookup,
+                    hueValRanks: value.rankings, 
                     merge: true
                 }
             });
@@ -100,6 +111,7 @@ export function importDemoData(fileName, data) {
     let [spatialData, lookup] = extractData(blazarData);
     let metaData = computeStats(spatialVar, spatialData);
     let splines = computeSplines(spatialData);
+    let rankings = rankHueValue(splines.spline.hue.points, splines.spline.value.points);
     dispatcher.dispatch({
         type:'UPLOAD_DATA',
         data: { name:fileName,
@@ -108,6 +120,7 @@ export function importDemoData(fileName, data) {
             meta: metaData,
             splines: splines.spline,
             lookup: lookup,
+            hueValRanks: rankings,
             merge: false
         }
     });
@@ -154,6 +167,7 @@ function loadFile(file) {
                 let [spatialData, lookup] = extractData(blazarData);
                 let metaData = computeStats(spatialVar, spatialData);
                 let splines = computeSplines(spatialData);
+                let rankings = rankHueValue(splines.spline.hue.points, splines.spline.value.points);
                 dispatcher.dispatch({
                     type:'UPLOAD_DATA',
                     data: { name:fileName.join('+'),
@@ -162,6 +176,7 @@ function loadFile(file) {
                         meta: metaData,
                         splines: splines.spline,
                         lookup: lookup,
+                        hueValRanks: rankings,
                         merge: false
                     }
                 });
@@ -324,6 +339,114 @@ function computeSplines(data) {
     // return {position: position, radius: radius, color: color, spline:spline};
 
     return {position: position, radius: radius, hue: hue, value:value, spline:spline};
+}
+
+function rankHueValue(hue, value) {
+    // create new array for only index and data value
+    let hueData = hue.map((d, idx) => {
+        return {index: idx, value: d.x, timeStamp: d.z};
+    });
+    let valueData = value.map((d, idx) => {
+        return {index: idx, value: d.y, timeStamp: d.z};
+    });
+
+    // sort by value
+    hueData.sort((a, b) => {
+        if (a.value < b.value) return -1;
+        if (a.value > b.value) return 1;
+        return 0;
+    });
+    valueData.sort((a, b) => {
+        if (a.value < b.value) return -1;
+        if (a.value > b.value) return 1;
+        return 0;
+    });
+
+    // convert hue and values into the values more than 0
+    let nHue = -1 * Math.floor(Math.log10(hueData[0].value)),
+        nValue = -1 * Math.floor(Math.log10(valueData[0].value));
+
+    // add rank to the object array
+    if (hueData.length === valueData.length) {
+        for (let i = 0; i < hueData.length; i++) {
+            hueData[i].rank = i;
+            hueData[i].value *= Math.pow(10, nHue);
+            valueData[i].rank = i;
+            valueData[i].value *= Math.pow(10, nValue);
+        }
+    } else {
+        for (let i = 0; i < hueData.length; i++) {
+            hueData[i].rank = i;
+            hueData[i].value *= Math.pow(10, nHue);
+        }
+        for (let i = 0; i < valueData.length; i++) {
+            valueData[i].rank = i;
+            valueData[i].value *= Math.pow(10, nValue);
+        }
+    }
+    let diagHue = {
+            rank: hueData.length - 1, 
+            value: hueData[hueData.length - 1].value - hueData[0].value 
+        },
+        diagValue = {
+            rank: valueData.length - 1, 
+            value: valueData[valueData.length - 1].value - valueData[0].value
+        };
+    let minmaxHue = {min: hueData[0].index, max: hueData[hueData.length - 1].index},
+        minmaxValue = {min: valueData[0].index, max: valueData[valueData.length - 1].index};
+    // order the object array 
+    let sortedHueData = hueData.slice().sort((a, b) => {
+        if (a.index < b.index) return -1;
+        if (a.index > b.index) return 1;
+        return 0;
+    });
+    let sortedValueData = valueData.slice().sort((a, b) => {
+        if (a.index < b.index) return -1;
+        if (a.index > b.index) return 1;
+        return 0;
+    });
+
+    // create the arrays only for the ranks of data samples
+    let rankHue = [], rankValue = [];
+    if (sortedHueData.length === valueData.length) {
+        for (let i = 0; i < sortedHueData.length; i++) {
+            rankHue.push({rank: sortedHueData[i].rank, value: sortedHueData[i].value, timeStamp: sortedHueData[i].timeStamp});
+            rankValue.push({rank: sortedValueData[i].rank, value: sortedValueData[i].value, timeStamp: sortedValueData[i].timeStamp});
+        }
+    } else {
+        for (let i = 0; i < sortedHueData.length; i++) {
+            rankHue.push({rank: sortedHueData[i].rank, value: sortedHueData[i].value, timeStamp: sortedHueData[i].timeStamp});
+        }
+        for (let i = 0; i < sortedValueData.length; i++) {
+            rankValue.push({rank: sortedValueData[i].rank, value: sortedValueData[i].value, timeStamp: sortedValueData[i].timeStamp});
+        }
+    }
+
+    // create interpolation splines
+    let projectedHue = [], projectedValue = [];
+    let projectedTmp;
+    if (rankHue.length === rankValue.length) {
+        for (let i = 0; i < rankHue.length; i++) {
+            projectedTmp = histogramEqualizer(rankHue, i, diagHue);
+            projectedHue.push(new THREE.Vector3(rankHue[i].value, projectedTmp, rankHue[i].timeStamp));
+            projectedTmp = histogramEqualizer(rankValue, i, diagValue);
+            projectedValue.push(new THREE.Vector3(rankValue[i].value, projectedTmp, rankValue[i].timeStamp));
+        }
+    } else {
+        for (let i = 0; i < rankHue.length; i++) {
+            projectedTmp = histogramEqualizer(rankHue, i, diagHue);
+            projectedValue.push(new THREE.Vector3(rankHue[i].value, projectedTmp, rankHue[i].timeStamp));
+        }
+        for (let i = 0; i < rankValue.length; i++) {
+            projectedTmp = histogramEqualizer(rankValue, i, diagValue);
+            projectedValue.push(new THREE.Vector3(rankValue[i].value, projectedTmp, rankValue[i].timeStamp));
+        }
+    }
+    let projectedMinMaxHue = {min: histogramEqualizer(rankHue, minmaxHue.min, diagHue), max: histogramEqualizer(rankHue, minmaxHue.max, diagHue)},
+        projectedMinMaxValue = {min: histogramEqualizer(rankValue, minmaxValue.min, diagValue), max: histogramEqualizer(rankValue, minmaxValue.max, diagValue)};
+
+    return {hue: new THREE.CatmullRomCurve3(projectedHue, false, 'catmullrom'), value: new THREE.CatmullRomCurve3(projectedValue, false, 'catmullrom'), 
+            minmaxHue: projectedMinMaxHue, minmaxValue: projectedMinMaxValue};
 }
 
 export function updatePrivateComment() {

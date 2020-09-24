@@ -37,6 +37,7 @@ export default class TimeTubes extends React.Component{
         this.opacityCurve = TimeTubesStore.getOpacityCurve('Default');
         this.rotationPeriod = null;
         this.wheelInterval = 1;
+        this.colorEncodingOption = {hue: 'default', value: 'default'};
         // set plot color
         if (this.data.merge) {
             this.plotColor = [];
@@ -297,8 +298,8 @@ export default class TimeTubes extends React.Component{
             if (this.lock & id !== this.id) {
                 if (zpos !== 0) {
                     // move in the direction of the observation time
-                    let min = this.data.meta.min['z'];
-                    let max = this.data.meta.max['z'];
+                    let min = this.data.meta.min.z;
+                    let max = this.data.meta.max.z;
                     let dst = zpos + TimeTubesStore.getLock(this.id) - TimeTubesStore.getLock(id) + min;
                     if (min <= dst && dst <= max) {
                         // dst is fine
@@ -403,6 +404,18 @@ export default class TimeTubes extends React.Component{
         });
         TimeTubesStore.on('updateWheelInterval', () => {
             this.wheelInterval = TimeTubesStore.getWheelInterval();
+        });
+        TimeTubesStore.on('updateColorEncodingOptionHue', (id, option) => {
+            if (id === this.id) {
+                this.colorEncodingOption.hue = option;
+                this.updateColorEncodingOptionHue();
+            }
+        });
+        TimeTubesStore.on('updateColorEncodingOptionValue', (id, option) => {
+            if (id === this.id) {
+                this.colorEncodingOption.value = option;
+                this.updateColorEncodingOptionValue();
+            }
         });
         FeatureStore.on('switchQueryMode', (mode) => {
             let sourceId = FeatureStore.getSource();
@@ -1139,7 +1152,6 @@ export default class TimeTubes extends React.Component{
             if (idxGapValue < i && (i - idxGapValue) < divNumValue) {
                 currentColorY = value[i - idxGapValue].y;
             }
-            
             for (let j = 0; j < this.segment; j++) {
                 for (let k = 0; k < this.tubeNum; k++) {
                     // k = 0;
@@ -1681,5 +1693,67 @@ export default class TimeTubes extends React.Component{
         }
         // this.renderScene();
         // this.start();
+    }
+
+    updateColorEncodingOptionHue() {
+        this.tube.geometry.colorsNeedUpdate = true;
+        this.tube.geometry.attributes.colorData.needsUpdate = true;
+        
+        let divNumHue = this.tube.geometry.attributes.colorData.array.length / (3 * this.segment * this.tubeNum);
+        let hue;
+        switch (this.colorEncodingOption.hue) {
+            case 'default':
+                hue = this.data.splines.hue.getSpacedPoints(divNumHue);
+                for (let i = 0; i < this.tubeNum; i++) {
+                    for (let j = 0; j < divNumHue * this.segment; j++) {
+                        this.tube.geometry.attributes.colorData.array[divNumHue * this.segment * 3 * i + 3 * j] = hue[Math.floor(j / this.segment)].x;
+                    }
+                }
+                this.tube.material.uniforms.minmaxH.value = new THREE.Vector2(this.data.meta.min.H, this.data.meta.max.H);
+                break;
+            case 'histogramEqualization':
+                hue = this.data.hueValRanks.hue.getSpacedPoints(divNumHue);
+                for (let i = 0; i < this.tubeNum; i++) {
+                    for (let j = 0; j < divNumHue * this.segment; j++) {
+                        this.tube.geometry.attributes.colorData.array[divNumHue * this.segment * 3 * i + 3 * j] = hue[Math.floor(j / this.segment)].y;
+                    }
+                }
+                this.tube.material.uniforms.minmaxH.value = new THREE.Vector2(this.data.hueValRanks.minmaxHue.min, this.data.hueValRanks.minmaxHue.max);
+                break;
+            default:
+                break;
+        }
+        this.renderer.render(this.scene, this.camera);
+    }
+
+    updateColorEncodingOptionValue() {
+        this.tube.geometry.colorsNeedUpdate = true;
+        this.tube.geometry.attributes.colorData.needsUpdate = true;
+        
+        let divNumValue = this.tube.geometry.attributes.colorData.array.length / (3 * this.segment * this.tubeNum);
+        let value;
+        switch (this.colorEncodingOption.value) {
+            case 'default':
+                value = this.data.splines.value.getSpacedPoints(divNumValue);
+                for (let i = 0; i < this.tubeNum; i++) {
+                    for (let j = 0; j < divNumValue * this.segment; j++) {
+                        this.tube.geometry.attributes.colorData.array[divNumValue * this.segment * 3 * i + 3 * j + 1] = value[Math.floor(j / this.segment)].y;
+                    }
+                }
+                this.tube.material.uniforms.minmaxV.value = new THREE.Vector2(this.data.meta.min.V, this.data.meta.max.V);
+                break;
+            case 'histogramEqualization':
+                value = this.data.hueValRanks.value.getSpacedPoints(divNumValue);
+                for (let i = 0; i < this.tubeNum; i++) {
+                    for (let j = 0; j < divNumValue * this.segment; j++) {
+                        this.tube.geometry.attributes.colorData.array[divNumValue * this.segment * 3 * i + 3 * j + 1] = value[Math.floor(j / this.segment)].y;
+                    }
+                }
+                this.tube.material.uniforms.minmaxV.value = new THREE.Vector2(this.data.hueValRanks.minmaxValue.min, this.data.hueValRanks.minmaxValue.max);
+                break;
+            default:
+                break;
+        }
+        this.renderer.render(this.scene, this.camera);
     }
 }

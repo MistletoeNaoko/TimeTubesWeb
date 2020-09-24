@@ -177,7 +177,9 @@ class DataStore extends EventEmitter {
                 if (j >= this.data[id].data.splines.hue.points.length - 1) {
                     tHue = 1;
                 } else {
-                    tHue = ((j - 1) + (currentJD - this.data[id].data.splines.hue.points[j - 1].z) / (this.data[id].data.splines.hue.points[j].z - this.data[id].data.splines.hue.points[j - 1].z)) / (this.data[id].data.splines.hue.points.length - 1);
+                    tHue = ((j - 1) + (currentJD - this.data[id].data.splines.hue.points[j - 1].z) 
+                        / (this.data[id].data.splines.hue.points[j].z - this.data[id].data.splines.hue.points[j - 1].z)) 
+                        / (this.data[id].data.splines.hue.points.length - 1);
                 }
             }
             let k;
@@ -189,7 +191,9 @@ class DataStore extends EventEmitter {
             if (k >= this.data[id].data.splines.value.points.length - 1) {
                 tValue = 1;
             } else {
-                tValue = ((k - 1) + (currentJD - this.data[id].data.splines.value.points[k - 1].z) / (this.data[id].data.splines.value.points[k].z - this.data[id].data.splines.value.points[k - 1].z)) / (this.data[id].data.splines.value.points.length - 1);
+                tValue = ((k - 1) + (currentJD - this.data[id].data.splines.value.points[k - 1].z) 
+                / (this.data[id].data.splines.value.points[k].z - this.data[id].data.splines.value.points[k - 1].z)) 
+                / (this.data[id].data.splines.value.points.length - 1);
             }
 
             // QI, UI, JD

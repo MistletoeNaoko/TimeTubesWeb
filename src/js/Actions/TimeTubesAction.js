@@ -142,3 +142,11 @@ export function switchComment(id, state) {
 export function updateWheelInterval(interval) {
     dispatcher.dispatch({type: 'UPDATE_WHEEL_INTERVAL', interval});
 }
+
+export function updateColorEncodingOptionHue (id, option) {
+    dispatcher.dispatch({type: 'UPDATE_COLOR_ENCODING_OPTION_HUE', id, option});
+}
+
+export function updateColorEncodingOptionValue (id, option) {
+    dispatcher.dispatch({type: 'UPDATE_COLOR_ENCODING_OPTION_VALUE', id, option});
+}

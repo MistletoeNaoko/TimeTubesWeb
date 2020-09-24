@@ -22,6 +22,7 @@ export default class Details extends React.Component{
         this.opacityDistSet = TimeTubesStore.getOpacityDistSet();
         this.opacityCurves = TimeTubesStore.getOpacityCurves();
         this.colormapSize = 150;
+        this.colorEncodingOption = {hue: 'default', value: 'default'};
     }
 
     componentDidMount() {
@@ -53,8 +54,30 @@ export default class Details extends React.Component{
                     currentVal: currentVal
                 });
                 // 'currentColorPlot_' + this.id
-                let minH = this.data.data.meta.min.H, maxH = this.data.data.meta.max.H;
-                let minV = this.data.data.meta.min.V, maxV = this.data.data.meta.max.V;
+                let minH, maxH;
+                let minV, maxV;
+                switch (this.colorEncodingOption.hue) {
+                    case 'default':
+                        minH = this.data.data.meta.min.H; 
+                        maxH = this.data.data.meta.max.H;
+                        break;
+                    case 'histogramEqualization':
+                        minH = this.data.data.hueValRanks.minmaxHue.min;
+                        maxH = this.data.data.hueValRanks.minmaxHue.max;
+                        break;
+                    default:
+                }
+                switch (this.colorEncodingOption.value) {
+                    case 'default':
+                        minV = this.data.data.meta.min.V; 
+                        maxV = this.data.data.meta.max.V;
+                        break;
+                    case 'histogramEqualization':
+                        minV = this.data.data.hueValRanks.minmaxValue.min;
+                        maxV = this.data.data.hueValRanks.minmaxValue.max;
+                        break;
+                    default:
+                }
                 let VRange = $('#colorValue_' + this.id).slider('option', 'values');
                 let HRange = $('#colorHue_' + this.id).slider('option', 'values');
                 let minVTmp = minV + (maxV - minV) * VRange[0] / 100,
@@ -83,6 +106,20 @@ export default class Details extends React.Component{
                 this.setState({
                     checked: !this.state.checked
                 });
+            }
+        });
+        TimeTubesStore.on('updateColorEncodingOptionHue', (id, option) => {
+            if (this.id === id) {
+                this.colorEncodingOption.hue = option;
+                // reset colormap hue & value sliders
+                $( "#colorHue_" + id ).slider('option', 'values', [0, 100]);
+            }
+        });
+        TimeTubesStore.on('updateColorEncodingOptionValue', (id, option) => {
+            if (this.id === id) {
+                this.colorEncodingOption.value = option;
+                // reset colormap hue & value sliders
+                $( "#colorValue_" + id ).slider('option', 'values', [0, 100]);
             }
         });
     }
@@ -128,8 +165,20 @@ export default class Details extends React.Component{
             slide: function (event, ui) {
                 vMin.css('display', 'initial');
                 vMax.css('display', 'initial');
+                let colorEncodingOptionValue = TimeTubesStore.getColorEncodingOption().value;
                 let data = DataStore.getData(id);
-                let vMinValue = data.data.meta.min.V, vMaxValue = data.data.meta.max.V;
+                let vMinValue, vMaxValue;
+                switch (colorEncodingOptionValue) {
+                    case 'default':
+                        vMinValue = data.data.meta.min.V;
+                        vMaxValue = data.data.meta.max.V;
+                        break;
+                    case 'histogramEqualization':
+                        vMinValue = data.data.hueValRanks.minmaxValue.min;
+                        vMaxValue = data.data.hueValRanks.minmaxValue.max;
+                        break;
+                    default:
+                }
                 let minVal = ui.values[0] / 100 * (vMaxValue - vMinValue) + vMinValue;
                 let maxVal = ui.values[1] / 100 * (vMaxValue - vMinValue) + vMinValue;
                 if (Math.log10(Math.abs(minVal)) < -2 && minVal !== 0) {
@@ -150,8 +199,8 @@ export default class Details extends React.Component{
                 let maxPos = -10 + 150 - 150 * (ui.values[1] - min) / range;
                 vMin.css('bottom', minPos + 'px');
                 vMax.css('top', maxPos + 'px');
-                let rangeValue = data.data.meta.max.V - data.data.meta.min.V;
-                TimeTubesAction.updateMinMaxV(id, ui.values[0] / 100 * rangeValue + data.data.meta.min.V, ui.values[1] / 100 * rangeValue + data.data.meta.min.V);
+                let rangeValue = vMaxValue - vMinValue;
+                TimeTubesAction.updateMinMaxV(id, ui.values[0] / 100 * rangeValue + vMinValue, ui.values[1] / 100 * rangeValue + vMinValue);
             },
             stop: function () {
                 vMin.css('display', 'none');
@@ -175,8 +224,20 @@ export default class Details extends React.Component{
             slide: function (event, ui) {
                 hMin.css('display', 'initial');
                 hMax.css('display', 'initial');
+                let colorEncodingOptionHue = TimeTubesStore.getColorEncodingOption().hue;
                 let data = DataStore.getData(id);
-                let hMinValue = data.data.meta.min.H, hMaxValue = data.data.meta.max.H;
+                let hMinValue, hMaxValue;
+                switch (colorEncodingOptionHue) {
+                    case 'default':
+                        hMinValue = data.data.meta.min.H;
+                        hMaxValue = data.data.meta.max.H;
+                        break;
+                    case 'histogramEqualization':
+                        hMinValue = data.data.hueValRanks.minmaxHue.min;
+                        hMaxValue = data.data.hueValRanks.minmaxHue.max;
+                        break;
+                    default:
+                }
                 let minVal = ui.values[0] / 100 * (hMaxValue - hMinValue) + hMinValue;
                 let maxVal = ui.values[1] / 100 * (hMaxValue - hMinValue) + hMinValue;
                 if (Math.log10(Math.abs(minVal)) < -2 && minVal !== 0) {
@@ -195,8 +256,8 @@ export default class Details extends React.Component{
                 let maxPos = - 8 + 150 - 150 * ui.values[1] / 100;
                 hMin.css('left', minPos + 'px');
                 hMax.css('right', maxPos + 'px');
-                let rangeValue = data.data.meta.max.H - data.data.meta.min.H;
-                TimeTubesAction.updateMinMaxH(id, ui.values[0] / 100 * rangeValue + data.data.meta.min.H, ui.values[1] / 100 * rangeValue + data.data.meta.min.H);
+                let rangeValue = hMaxValue - hMinValue;
+                TimeTubesAction.updateMinMaxH(id, ui.values[0] / 100 * rangeValue + hMinValue, ui.values[1] / 100 * rangeValue + hMinValue);
             },
             stop: function () {
                 hMin.css('display', 'none');
@@ -210,8 +271,30 @@ export default class Details extends React.Component{
     setCurrentColotPlot() {
         // set current color plot to the initial position
         let currentVal = DataStore.getValues(this.id, 0);
-        let minH = this.data.data.meta.min.H, maxH = this.data.data.meta.max.H;
-        let minV = this.data.data.meta.min.V, maxV = this.data.data.meta.max.V;
+        let minH, maxH;
+        let minV, maxV;
+        switch (this.colorEncodingOption.hue) {
+            case 'default':
+                minH = this.data.data.meta.min.H; 
+                maxH = this.data.data.meta.max.H;
+                break;
+            case 'histogramEqualization':
+                minH = this.data.data.hueValRanks.minmaxHue.min;
+                maxH = this.data.data.hueValRanks.minmaxHue.max;
+                break;
+            default:
+        }
+        switch (this.colorEncodingOption.value) {
+            case 'default':
+                minV = this.data.data.meta.min.V; 
+                maxV = this.data.data.meta.max.V;
+                break;
+            case 'histogramEqualization':
+                minV = this.data.data.hueValRanks.minmaxValue.min;
+                maxV = this.data.data.hueValRanks.minmaxValue.max;
+                break;
+            default:
+        }
         let xPos = (currentVal.H - minH) / (maxH - minH);
         if (maxH === minH) {
             xPos = 0;
@@ -491,6 +574,20 @@ export default class Details extends React.Component{
         TimeTubesAction.updateOpacity(this.id, selectedOpt);
     }
 
+    updateColorEncodingOptionHue() {
+        let optionList = document.getElementById('colorEncodingOptionHue_' + this.id);
+        let selectedIdx = optionList.selectedIndex;
+        let selectedOpt = optionList.options[selectedIdx].value;
+        TimeTubesAction.updateColorEncodingOptionHue(this.id, selectedOpt);
+    }
+
+    updateColorEncodingOptionValue() {
+        let optionList = document.getElementById('colorEncodingOptionValue_' + this.id);
+        let selectedIdx = optionList.selectedIndex;
+        let selectedOpt = optionList.options[selectedIdx].value;
+        TimeTubesAction.updateColorEncodingOptionValue(this.id, selectedOpt);
+    }
+
     drawOpacityCurve(opt) {
         d3.select('#opacityCurvePath_' + this.id)
             .remove();
@@ -631,28 +728,65 @@ export default class Details extends React.Component{
                     id={"changeColormap_" + this.id}
                     style={{visibility: 'hidden', position: 'absolute', bottom: '1.7rem', width: 'auto', zIndex:'31'}}>
                     <div id={"colorFilter_" + this.id}>
-                        <div id={"colorValue_" + this.id} style={{float: 'left', height: this.colormapSize + 'px'}}>
-                            <output id={"colorValueMax_" + this.id} style={{marginLeft: '1.3rem'}}></output>
-                            <output id={"colorValueMin_" + this.id} style={{marginLeft: '1.3rem'}}></output>
+                        <div className="colormapController"
+                            style={{alignItems: 'center', display:'flex'}}>
+                            <div id={"colorValue_" + this.id} style={{float: 'left', height: this.colormapSize + 'px'}}>
+                                <output id={"colorValueMax_" + this.id} style={{marginLeft: '1.3rem'}}></output>
+                                <output id={"colorValueMin_" + this.id} style={{marginLeft: '1.3rem'}}></output>
+                            </div>
+                            <div id={"colorMapArea_" + this.id}  className='colormapArea' style={{float: 'left', marginLeft: '10px'}}>
+                                <img src="img/1_256.png" 
+                                    id={'colormap_' + this.id}
+                                    className='colormap'
+                                    style={{width: this.colormapSize + 'px', height: this.colormapSize + 'px'}}/>
+                                <span 
+                                    className='currentColor' 
+                                    id={'currentColorPlot_' + this.id}
+                                    ></span>
+                            </div>
+                            <div style={{clear:'both'}}></div>
                         </div>
-                        <div id={"colorMapArea_" + this.id}  className='colormapArea' style={{float: 'left', marginLeft: '10px'}}>
-                            <img src="img/1_256.png" 
-                                id={'colormap_' + this.id}
-                                className='colormap'
-                                style={{width: this.colormapSize + 'px', height: this.colormapSize + 'px'}}/>
-                            <span 
-                                className='currentColor' 
-                                id={'currentColorPlot_' + this.id}
-                                ></span>
-                        </div>
-                        <div style={{clear:'both'}}></div>
-                        <div id={"colorHue_" + this.id} style={{width: this.colormapSize + 'px', marginTop: '5px', marginLeft: '20px'}}>
-                            <output id={"colorHueMax_" + this.id} style={{bottom: '1.3rem'}}></output>
-                            <output id={"colorHueMin_" + this.id} style={{bottom: '1.3rem'}}></output>
-                        </div>
+                            <div id={"colorHue_" + this.id} style={{width: this.colormapSize + 'px', marginTop: '5px', marginLeft: '20px'}}>
+                                <output id={"colorHueMax_" + this.id} style={{bottom: '1.3rem'}}></output>
+                                <output id={"colorHueMin_" + this.id} style={{bottom: '1.3rem'}}></output>
+                            </div>
                         <div className="custom-file" style={{width: '170px', marginTop: '0.5rem'}}>
                             <input type="file" className="custom-file-input" id="uploadColormap" onChange={this.changeColorMap.bind(this)}/>
                             <label className="custom-file-label" htmlFor="uploadColormap">Change</label>
+                        </div>
+                        <div className="row">
+                            <div className="col-3">
+                                V-J
+                            </div>
+                            <div className="col">
+                                <div className="form-group">
+                                    <select 
+                                        className="custom-select" 
+                                        id={"colorEncodingOptionHue_" + this.id}
+                                        style={{fontSize: '0.8rem', height: '1.5rem'}}
+                                        onChange={this.updateColorEncodingOptionHue.bind(this)}>
+                                        <option value="default">Default</option>
+                                        <option value="histogramEqualization">Histogram Equalization</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="row">
+                            <div className="col-3">
+                                Flx(V)
+                            </div>
+                            <div className="col">
+                                <div className="form-group">
+                                    <select 
+                                        className="custom-select" 
+                                        id={"colorEncodingOptionValue_" + this.id}
+                                        style={{fontSize: '0.8rem', height: '1.5rem'}}
+                                        onChange={this.updateColorEncodingOptionValue.bind(this)}>
+                                        <option value="default">Default</option>
+                                        <option value="histogramEqualization">Histogram Equalization</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
