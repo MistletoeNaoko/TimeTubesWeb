@@ -254,13 +254,15 @@ export function runMatching(query, targets, parameters) {
                                 minIdx = j;
                             }
                         }
-                        result.push({
-                            id: targetId,
-                            start: i + minJD,
-                            period: period[0] + minIdx,
-                            distance: minVal.dist,
-                            path: minVal.path
-                        });//[targetId, i + minJD, period[0] + minIdx, minVal, dtws.path]);
+                        if (minVal.dist !== Infinity) {
+                            result.push({
+                                id: targetId,
+                                start: i + minJD,
+                                period: period[0] + minIdx,
+                                distance: minVal.dist,
+                                path: minVal.path
+                            });//[targetId, i + minJD, period[0] + minIdx, minVal, dtws.path]);
+                        }
                         i += step;
                     }
                 } else {
@@ -349,13 +351,15 @@ export function runMatching(query, targets, parameters) {
                         //     paths[key] = OptimalWarpingPath(minDist);
                         // }
                         // result is a collection of [start JD, the length of period, dtw value]
-                        result.push({
-                            id: targetId,
-                            start: i + minJD,
-                            period: period[0] + minIdx,
-                            distance: minVal.dist,
-                            path: minVal.paths
-                        });//[targetId, i + minJD, period[0] + minIdx, minVal, paths]);
+                        if (minVal.dist !== Infinity) {
+                            result.push({
+                                id: targetId,
+                                start: i + minJD,
+                                period: period[0] + minIdx,
+                                distance: minVal.dist,
+                                path: minVal.paths
+                            });//[targetId, i + minJD, period[0] + minIdx, minVal, paths]);
+                        }
                         i += step;
                     }
                 }
@@ -422,13 +426,15 @@ export function runMatching(query, targets, parameters) {
                             }
                         }
                         // let path = OptimalWarpingPath(dtws[minIdx]);
-                        result.push({
-                            id: targetId,
-                            start: i + minJD,
-                            period: period[0] + minIdx,
-                            distance: minVal.dist,
-                            path: minVal.path
-                        });//[targetId, i + minJD, period[0] + minIdx, minVal, path]);
+                        if (minVal.dist !== Infinity) {
+                            result.push({
+                                id: targetId,
+                                start: i + minJD,
+                                period: period[0] + minIdx,
+                                distance: minVal.dist,
+                                path: minVal.path
+                            });//[targetId, i + minJD, period[0] + minIdx, minVal, path]);
+                        }
                         i += step;
                     }
                 } else {
@@ -436,7 +442,7 @@ export function runMatching(query, targets, parameters) {
                     let i = 0;
                     while (i < targetData.arrayLength - period[0]) {
                         let target = {};
-                        let maxLen = (i + period[1] < targetData.arrayLength - 1) ? period[1] : targetData.arrayLength - i;
+                        let maxLen = (i + period[1] < targetData.arrayLength - 1) ? period[1] : targetData.arrayLength - i - 1;
                         keys.forEach(function (key) {
                             target[key] = targetData[key].slice(i, i + maxLen);
                         });
@@ -504,13 +510,15 @@ export function runMatching(query, targets, parameters) {
                         //     minDist.push(dist[j].slice(0, target.arrayLength - 1 - targetPeriod + (minIdx + 1) + 1));
                         // }
                         // let path = OptimalWarpingPath(minDist);
-                        result.push({
-                            id: targetId,
-                            start: i + minJD,
-                            period: period[0] + minIdx,
-                            distance: minVal.dist,
-                            path: minVal.path
-                        });//[targetId, i + minJD, period[0] + minIdx, minVal, path]);
+                        if (minVal.dist !== Infinity) {
+                            result.push({
+                                id: targetId,
+                                start: i + minJD,
+                                period: period[0] + minIdx,
+                                distance: minVal.dist,
+                                path: minVal.path
+                            });//[targetId, i + minJD, period[0] + minIdx, minVal, path]);
+                        }
                         i += step;
                     }
                 }

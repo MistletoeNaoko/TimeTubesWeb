@@ -40,6 +40,7 @@ export default class DistanceHistogram extends React.Component {
             let query = FeatureStore.getQuery();
             if (parameters && query.mode === 'visual query') {
                 this.results = FeatureStore.getExtractionResults();
+                console.log(this.results);
                 this.updateHistogram();
             }
         });
@@ -97,7 +98,7 @@ export default class DistanceHistogram extends React.Component {
         let xRange = d3.extent(this.results, d => d.distance);
         // xRange[0] = Math.floor(xRange[0]);
         // xRange[1] = Math.ceil(xRange[1]);
-
+        console.log(xRange, width);
         this.xScale
             .domain(xRange)
             .range([0, width])

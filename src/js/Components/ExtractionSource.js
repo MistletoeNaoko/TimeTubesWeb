@@ -25,7 +25,10 @@ export default class ExtractionSource extends React.Component {
         });
         DataStore.on('updateDetail', (id, zpos) => {
             if (Number(this.state.source) === id) {
-                document.getElementById('currentJDValue').innerText = (zpos + this.state.data[id].data.meta.min.z).toFixed(3);
+                let currentJD = document.getElementById('currentJDValue');
+                if (currentJD) {
+                    currentJD.innerText = (zpos + this.state.data[id].data.meta.min.z).toFixed(3);
+                }
             }
         });
         FeatureStore.on('updateSource', () => {

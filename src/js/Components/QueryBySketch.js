@@ -115,19 +115,21 @@ export default class QueryBySketch extends React.Component{
         FeatureStore.on('switchQueryMode', (mode) => {
             if (mode === 'QBS') {
                 let targets = FeatureStore.getTarget();
-                let lists = this.extractMinMaxList(this.state.lookup, targets);
+                let lookup = this.updateLookup();
+                let lists = this.extractMinMaxList(lookup, targets);
                 this.setState({
                     targetList: targets,
                     minList: lists.minList,
                     maxList: lists.maxList,
+                    lookup: lookup
                 });
                 let minmax = this.computeMinMaxValue(lists.minList, lists.maxList);
                 this.xMinMax = minmax.xMinMax;
                 this.yMinMax = minmax.yMinMax;
                 this.xAxisText
-                    .text(this.state.lookup[this.state.xItem]);
+                    .text(lookup[this.state.xItem]);
                 this.yAxisText
-                    .text(this.state.lookup[this.state.yItem]);
+                    .text(lookup[this.state.yItem]);
                 this.updateAxis();
                 this.updateWidthVariable();
             }
@@ -135,12 +137,29 @@ export default class QueryBySketch extends React.Component{
         FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
             if (FeatureStore.getMode() === 'QBS') {
                 this.clearCanvas();
-                
+                let targets = FeatureStore.getTarget();
+                let lookup = this.updateLookup();
+                let lists = this.extractMinMaxList(lookup, targets);
                 this.queryData = {
                     id: id,
                     period: period,
                     targetData: DataStore.getDataArray(id, 1)
                 };
+                this.setState({
+                    targetList: targets,
+                    minList: lists.minList,
+                    maxList: lists.maxList,
+                    lookup: lookup
+                });
+                if (!this.widthVar) {
+                    let variableList = document.getElementById('widthVariables');
+                    let selectedIdx = variableList.selectedIndex;
+                    let selectedVal = variableList.options[selectedIdx].value;
+                    this.widthVar = selectedVal;
+                    $('img[name=QBSSelector]').each(function() {
+                        $(this).removeClass('disabled');
+                    });
+                }
                 this.transformDataIntoSketch(this.state.xItem, this.state.yItem);
             }
         });
@@ -1486,7 +1505,6 @@ export default class QueryBySketch extends React.Component{
         let targetData = this.queryData.targetData;
         let minIdx = targetData.z.indexOf(this.queryData.period[0]),
             maxIdx = targetData.z.indexOf(this.queryData.period[1]);
-
         if (xItem !== 'z' && yItem !== 'z') {
             let xData = targetData[xItem].slice(minIdx, maxIdx + 1),
                 yData = targetData[yItem].slice(minIdx, maxIdx + 1);
