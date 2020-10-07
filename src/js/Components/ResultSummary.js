@@ -222,12 +222,12 @@ export default class ResultSummary extends React.Component {
         let elem = document.getElementById('resultSummaryHolder_' + this.rank);
         elem.classList.add('drag');
         let child = document.getElementById('resultSummary_' + this.rank);
-    
         this.clickedX = event.pageX - child.offsetLeft;
         this.clickedY = event.pageY - child.offsetTop;
     
         document.body.addEventListener('mousemove', this.onMouseMoveOnResultSummary.bind(this), false);
-        document.body.addEventListener('mouseleave', this.onMouseUpFromResultSummary.bind(this), false);
+        // TODO: To avoid unexpected behaviors related to fact-guided querying, the following code is temporally commented out.
+        // document.body.addEventListener('mouseleave', this.onMouseUpFromResultSummary.bind(this), false);
         elem.addEventListener('mouseup', this.onMouseUpFromResultSummary.bind(this), false);
     }
     
@@ -343,6 +343,7 @@ export default class ResultSummary extends React.Component {
             }
             // move it to the original position
             this.moveToOriginalPos();
+            this.moved = false;
         } else {
             this.showDetails();
             // set up a line chart for comparison between query and time slice
