@@ -1481,7 +1481,7 @@ export function extractFlares(targets, method, lookaround, sensitivity) {
         let targetData = DataStore.getData(targetId);      
         let sigList = [];
         let significance;
-        for (let i = 0; i < targetData.data.color.length; i++) {
+        for (let i = 0; i < targetData.data.splines.value.points.length; i++) {
             switch (method) {
                 case 'AveMaximum':
                     significance = significanceAveMaximum(targetId, i, lookaround);
@@ -1493,7 +1493,7 @@ export function extractFlares(targets, method, lookaround, sensitivity) {
                     significance = significanceAveDist(targetId, i, lookaround);
                     break;
             }
-            sigList.push({index: i, significance: significance, V: targetData.data.color[i].y});
+            sigList.push({index: i, significance: significance, V: targetData.data.splines.value.points[i].y});
         }
         let sigPositiveList = sigList.filter(d => d.significance > 0);
         let mean = d3.mean(sigPositiveList, d => d.significance);
@@ -1502,7 +1502,7 @@ export function extractFlares(targets, method, lookaround, sensitivity) {
             if (sigPositiveList[i].significance - mean > sensitivity * std) {
                 results.push({
                     id: targetId,
-                    start: targetData.data.color[sigPositiveList[i].index].z,
+                    start: targetData.data.splines.value.points[sigPositiveList[i].index].z,
                     significance: sigPositiveList[i].significance,
                     V: sigPositiveList[i].V
                 });
@@ -1514,7 +1514,7 @@ export function extractFlares(targets, method, lookaround, sensitivity) {
 
 function significanceAveMaximum(targetId, dataId, lookaround) {
     let significance;
-    let targetData = DataStore.getData(targetId).data.color;
+    let targetData = DataStore.getData(targetId).data.splines.value.points;
     let current = targetData[dataId].y;
     let leftNeighbor = targetData.slice(
         (dataId - lookaround) >= 0? dataId - lookaround: 0, 
@@ -1542,7 +1542,7 @@ function significanceAveMaximum(targetId, dataId, lookaround) {
 
 function significanceAveAve(targetId, dataId, lookaround) {
     let significance;
-    let targetData = DataStore.getData(targetId).data.color;
+    let targetData = DataStore.getData(targetId).data.splines.value.points;
     let current = targetData[dataId].y;
     let leftNeighbor = targetData.slice(
         (dataId - lookaround) >= 0? dataId - lookaround: 0, 
@@ -1570,7 +1570,7 @@ function significanceAveAve(targetId, dataId, lookaround) {
 
 function significanceAveDist(targetId, dataId, lookaround) {
     let significance;
-    let targetData = DataStore.getData(targetId).data.color;
+    let targetData = DataStore.getData(targetId).data.splines.value.points;
     let current = targetData[dataId].y;
     let leftNeighbor = targetData.slice(
         (dataId - lookaround) >= 0? dataId - lookaround: 0, 
@@ -1590,68 +1590,17 @@ function significanceAveDist(targetId, dataId, lookaround) {
     return significance;
 }
 
-export function extractFlaresGESD(targets, alpha) {
-    let results = [];
-    for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
-        let targetData = DataStore.getData(targets[targetIdx]);
-        let thd = targetData.data.meta.mean.V + targetData.data.meta.std.V;
-        let rValue = 0;
-        for (let i = 0; i < targetData.color.length; i++) {
-            if (targetData.color[i].V > thd) {
-                rValue++;
-            }
-        }
-
-    }
-}
-
-function generalizedESD(data, property, r, alpha) {
-    let originalDataLen = data.length;
-    for (let i = 0; i < r; i++) {
-        let mean = d3.mean(data, function(e) {
-            return e[property];
-        });
-        let std = d3.deviation(data, function(e) {
-            return e[property];
-        });
-
-        let maxDiff = calcMaxDiff(data, mean);
-        let candidate = {};
-        candidate.data = data[maxDiff.index];
-        candidate.R = maxDiff.diff / std;
-
-        // p is the cumulative probability, v is the degree of freedom
-        let p = 1.0 - alpha / (2.0 * (originalDataLen - i + 1));
-        let v = originalDataLen - i - 1;
-        // compute t distribution
-        // let t = 
-    }
-
-    function calcMaxDiff(currentData, currentMean) {
-        let maxVal = Math.abs(currentData[0][property] - currentMean);
-        let maxIdx = 0;
-        for (let i = 0; i < currentData.length; i++) {
-            let diff = Math.abs(currentData[i][property] - currentMean);
-            if (maxVal < diff) {
-                maxVal = diff;
-                maxIdx = i;
-            }
-        }
-        return {index: maxIdx, diff: maxVal};
-    }
-}
-
 export function extractFlaresManual(targets, threshold) {
     let results = [];
     for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
         let targetId = targets[targetIdx];
         let targetData = DataStore.getData(targetId);
-        for (let i = 0; i < targetData.data.color.length; i++) {
-            if (targetData.data.color[i].y >= threshold) {
+        for (let i = 0; i < targetData.data.splines.value.points.length; i++) {
+            if (targetData.data.splines.value.points[i].y >= threshold) {
                 results.push({
                     id: targetId,
-                    start: targetData.data.color[i].z,
-                    V: targetData.data.color[i].y
+                    start: targetData.data.splines.value.points[i].z,
+                    V: targetData.data.splines.value.points[i].y
                 });
             }
         }
