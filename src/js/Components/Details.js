@@ -551,18 +551,44 @@ export default class Details extends React.Component{
     }
 
     changeColorMap() {
-        let file = document.getElementById('uploadColormap').files;
+        $('#mask_uploadColormap_' + this.id).val($('#uploadColormap_' + this.id).val());
+        let file = document.getElementById('uploadColormap_' + this.id).files;
         
         let reader = new FileReader();
         reader.readAsDataURL(file[0]);
         reader.onload = function() {
             let dataURL = reader.result;
-            document.getElementById('colormap_' + this.id).src = dataURL;
+            document.getElementById('colormap_' + this.id).style.backgroundImage = 'url(' + dataURL + ')';
             let textureTHREE = new THREE.TextureLoader();
             textureTHREE.load(dataURL, function(texture) {
                 TimeTubesAction.updateTexture(this.id, texture);
             }.bind(this));
         }.bind(this);
+    }
+
+    changeColorMapMask() {
+        $('#uploadColormap_' + this.id).click();
+    }
+
+    clickColormapOption(e) {
+        let colormapType = e.target.className.split(' ')[1];
+        let textureColormap = new THREE.TextureLoader();
+        switch (colormapType) {
+            case 'colormapBR':
+                document.getElementById('colormap_' + this.id).style.backgroundImage = 'url(../img/1_256.png)';let textureTHREE = new THREE.TextureLoader();
+                textureColormap.load('img/1_256.png', function(texture) {
+                    TimeTubesAction.updateTexture(this.id, texture);
+                }.bind(this));
+                break;
+            case 'colormapRGB':
+                document.getElementById('colormap_' + this.id).style.backgroundImage = 'url(../img/RGB.png)';
+                textureColormap.load('img/RGB.png', function(texture) {
+                    TimeTubesAction.updateTexture(this.id, texture);
+                }.bind(this));
+                break;
+            default:
+                break;
+        }
     }
 
     changeOpacityDistribution() {
@@ -735,10 +761,12 @@ export default class Details extends React.Component{
                                 <output id={"colorValueMin_" + this.id} style={{marginLeft: '1.3rem'}}></output>
                             </div>
                             <div id={"colorMapArea_" + this.id}  className='colormapArea' style={{float: 'left', marginLeft: '10px'}}>
-                                <img src="img/1_256.png" 
-                                    id={'colormap_' + this.id}
-                                    className='colormap'
-                                    style={{width: this.colormapSize + 'px', height: this.colormapSize + 'px'}}/>
+                                <input type="file" className="custom-file-input colormapFile" id={"uploadColormap_" + this.id} onChange={this.changeColorMap.bind(this)}/>
+                                <label className="fileMask">
+                                    <span id={'colormap_' + this.id}>
+                                        <input type="text" id={"mask_uploadColormap_" + this.id} className='colormapFile' onClick={this.changeColorMapMask.bind(this)}></input>
+                                    </span>
+                                </label>
                                 <span 
                                     className='currentColor' 
                                     id={'currentColorPlot_' + this.id}
@@ -746,13 +774,23 @@ export default class Details extends React.Component{
                             </div>
                             <div style={{clear:'both'}}></div>
                         </div>
-                            <div id={"colorHue_" + this.id} style={{width: this.colormapSize + 'px', marginTop: '5px', marginLeft: '20px'}}>
-                                <output id={"colorHueMax_" + this.id} style={{bottom: '1.3rem'}}></output>
-                                <output id={"colorHueMin_" + this.id} style={{bottom: '1.3rem'}}></output>
-                            </div>
-                        <div className="custom-file" style={{width: '170px', marginTop: '0.5rem'}}>
-                            <input type="file" className="custom-file-input" id="uploadColormap" onChange={this.changeColorMap.bind(this)}/>
-                            <label className="custom-file-label" htmlFor="uploadColormap">Change</label>
+                        <div id={"colorHue_" + this.id} style={{width: this.colormapSize + 'px', marginTop: '5px', marginLeft: '20px'}}>
+                            <output id={"colorHueMax_" + this.id} style={{bottom: '1.3rem'}}></output>
+                            <output id={"colorHueMin_" + this.id} style={{bottom: '1.3rem'}}></output>
+                        </div>
+                        <div 
+                            id={'colormapOptions_' + this.id}
+                            className='colormapOptions'>
+                                    <img src="img/1_256.png" 
+                                        className='colormapOption colormapBR'
+                                        id={'colormapBR_' + this.id}
+                                        style={{width: '30px', height: '30px'}}
+                                        onClick={this.clickColormapOption.bind(this)}/>
+                                    <img src="img/RGB.png" 
+                                        className='colormapOption colormapRGB'
+                                        id={'colormapRGB_' + this.id}
+                                        style={{width: '30px', height: '30px'}}
+                                        onClick={this.clickColormapOption.bind(this)}/>
                         </div>
                         <div className="row">
                             <div className="col-3">

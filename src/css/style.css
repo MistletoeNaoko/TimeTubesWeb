@@ -476,6 +476,38 @@ img.selectorIcon:active {
     display: inline-block;
 }
 
+.colormapFile {
+    display: none;
+}
+
+.fileMask span {
+    display:block;
+    background-image:url(../img/1_256.png);
+    background-size: 150px 150px;
+	background-position:left top;
+	height:150px;
+	width:150px;
+	cursor:pointer;
+}
+
+.fileMask span:hover {
+    background-position:left bottom;
+}
+
+.colormapOptions {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.colormapOption {
+    margin-right: 0.3rem
+}
+
+.colormapOption:hover {
+    box-shadow: 2px 2px 2px rgba(0,0,0,0.5);
+    transform: translateY(-2px);
+    transition-duration: 0.2s;
+}
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
