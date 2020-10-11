@@ -226,6 +226,70 @@ class DataStore extends EventEmitter {
         }
     }
 
+    getProjectedHue(id, zpos) {
+        let tHue;
+        if (id < 0) {
+            return {};
+        } else {
+            let currentJD = zpos + this.data[id].data.meta.min.z;
+
+            let j;
+            if (this.data[id].data.hueValRanks.hue.points.length > 0) {
+                for (j = 1; j < this.data[id].data.hueValRanks.hue.points.length; j++) {
+                    if (this.data[id].data.hueValRanks.hue.points[j - 1].z <= currentJD && currentJD < this.data[id].data.hueValRanks.hue.points[j].z)
+                        break;
+                }
+                if (j >= this.data[id].data.hueValRanks.hue.points.length - 1) {
+                    tHue = 1;
+                } else {
+                    tHue = ((j - 1) + (currentJD - this.data[id].data.hueValRanks.hue.points[j - 1].z) 
+                        / (this.data[id].data.hueValRanks.hue.points[j].z - this.data[id].data.hueValRanks.hue.points[j - 1].z)) 
+                        / (this.data[id].data.hueValRanks.hue.points.length - 1);
+                }
+            }
+        }
+        let hue;
+        if (tHue) {
+            hue = this.data[id].data.hueValRanks.hue.getPoint(tHue);
+        } else {
+            hue = new THREE.Vector3(0, 0, pos.z);
+        }
+
+        return hue.y;
+    }
+
+    getProjectedValue(id, zpos) {
+        let tValue;
+        if (id < 0) {
+            return {};
+        } else {
+            let currentJD = zpos + this.data[id].data.meta.min.z;
+
+            let j;
+            if (this.data[id].data.hueValRanks.value.points.length > 0) {
+                for (j = 1; j < this.data[id].data.hueValRanks.value.points.length; j++) {
+                    if (this.data[id].data.hueValRanks.value.points[j - 1].z <= currentJD && currentJD < this.data[id].data.hueValRanks.value.points[j].z)
+                        break;
+                }
+                if (j >= this.data[id].data.hueValRanks.value.points.length - 1) {
+                    tValue = 1;
+                } else {
+                    tValue = ((j - 1) + (currentJD - this.data[id].data.hueValRanks.value.points[j - 1].z) 
+                        / (this.data[id].data.hueValRanks.value.points[j].z - this.data[id].data.hueValRanks.value.points[j - 1].z)) 
+                        / (this.data[id].data.hueValRanks.value.points.length - 1);
+                }
+            }
+        }
+        let value;
+        if (tValue) {
+            value = this.data[id].data.hueValRanks.value.getPoint(tValue);
+        } else {
+            value = new THREE.Vector3(0, 0, pos.z);
+        }
+        
+        return value.y;
+    }
+
     getIdFromName(fileName) {
         for (let i = 0; i < this.data.length; i++) {
             if (this.data[i].name === fileName)

@@ -85,13 +85,23 @@ export default class Details extends React.Component{
                     maxVTmp = minV + (maxV - minV) * VRange[1] / 100;
                 let minHTmp = minH + (maxH - minH) * HRange[0] / 100,
                     maxHTmp = minH + (maxH - minH) * HRange[1] / 100;
-                let xPos = (currentVal.H - minHTmp) / (maxHTmp - minHTmp);
+                let xPos;
+                if (this.colorEncodingOption.hue === 'default') {
+                    xPos = (currentVal.H - minHTmp) / (maxHTmp - minHTmp);
+                } else if (this.colorEncodingOption.hue === 'histogramEqualization') {
+                    xPos = (DataStore.getProjectedHue(id, zpos) - minHTmp) / (maxHTmp - minHTmp);
+                }
                 if (xPos < 0) {
                     xPos = 0;
                 } else if (1 < xPos) {
                     xPos = 1;
                 }
-                let yPos = (currentVal.V - minVTmp) / (maxVTmp - minVTmp);
+                let yPos;
+                if (this.colorEncodingOption.value === 'default') {
+                    yPos = (currentVal.V - minVTmp) / (maxVTmp - minVTmp);
+                } else if (this.colorEncodingOption.value === 'histogramEqualization') {
+                    yPos = (DataStore.getProjectedValue(id, zpos) - minVTmp) / (maxVTmp - minVTmp);
+                }
                 if (yPos < 0) {
                     yPos = 0;
                 } else if (1 < yPos) {
