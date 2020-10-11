@@ -500,13 +500,22 @@ img.selectorIcon:active {
 }
 
 .colormapOption {
-    margin-right: 0.3rem
+    margin-right: 0.3rem;
+    width: 30px;
+    height: 30px;
 }
 
 .colormapOption:hover {
     box-shadow: 2px 2px 2px rgba(0,0,0,0.5);
     transform: translateY(-2px);
     transition-duration: 0.2s;
+}
+
+.colormapCanvas {
+    display: none;
+	height:150px;
+	width:150px;
+	cursor:pointer;
 }
 /*#Controllers {*/
     /*background: #f8f9fa;*/

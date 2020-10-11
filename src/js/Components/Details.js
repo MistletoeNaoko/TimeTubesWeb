@@ -33,6 +33,7 @@ export default class Details extends React.Component{
         this.setOpacityCurve();
         this.setOpacityEllipse();
         this.setCurrentColotPlot();
+        this.setColormapOptions();
 
 
         // ToDo: at first file uploading, following 'upload' code cannot catch event emitter
@@ -442,6 +443,126 @@ export default class Details extends React.Component{
         }
     }
 
+    setColormapOptions() {
+        // let data = Array.from(Array(30).keys()),
+        //     datay = Array.from(Array(30).keys());
+        // let xScale = d3.scaleLinear()
+        //     .domain([0, 30])
+        //     .range([0, 30]);
+        // let colorScaleBW = d3.scaleSequential()
+        //     .domain([0, 29])
+        //     .interpolator(d3.piecewise(d3.interpolateRgb, ["rgba(255, 255, 255, 0.7)", "rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.7)"]));
+        let colorScaleBCVOR = d3.scaleSequential()
+            .domain([0, 1])
+            .interpolator(d3.piecewise(d3.interpolateLab, ["#0000ff", "#0084ff", "#bb9db8", "#ffb000", "#ff0000"]));
+        // let colormapBCVOR = d3.select('#colormapBCVOR_' + this.id)
+        //     .append('g')
+        //     .attr('class', 'hueVariation')
+        //     .selectAll('rect')
+        //     .data(data)
+        //     .enter()
+        //     .append('rect')
+        //     .attr('x', (d) => xScale(d))
+        //     .attr('y', 0)
+        //     .attr('height', 30)
+        //     .attr('width', 1)
+        //     .attr('fill', (d) =>colorScaleBCVOR(d));
+        // let colormapBCVORBW = d3.select('#colormapBCVOR_' + this.id)
+        //     .append('g')
+        //     .attr('class', 'valueVariation')
+        //     .selectAll('rect')
+        //     .data(datay)
+        //     .enter()
+        //     .append('rect')
+        //     .attr('x', 0)
+        //     .attr('y', (d) => xScale(d))
+        //     .attr('width', 30)
+        //     .attr('height', 1)
+        //     .attr('fill', (d) => colorScaleBW(d));
+        let step = 10;
+
+        let c = document.getElementById('colormapBCVOR_' + this.id);
+        let ctx = c.getContext('2d');
+
+        // gradient Blue-Cyan-Violet-Orange-Red
+        let grad = ctx.createLinearGradient(0, 0, c.clientWidth, 0);
+        let del = 1 / step;
+        for (let i = 0; i <= step; i++) {
+            grad.addColorStop(del * i, colorScaleBCVOR(del * i));
+        }
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+        // gradient Black-White
+        grad = ctx.createLinearGradient(0, 0, 0, c.clientHeight);
+        grad.addColorStop(0, "rgba(255, 255, 255, 0.7)");
+        grad.addColorStop(0.5, "rgba(255, 255, 255, 0)");
+        grad.addColorStop(0.5, "rgba(0, 0, 0, 0)");
+        grad.addColorStop(1, "rgba(0, 0, 0, 0.7)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    }
+
+    setColormapBCVOR() {
+        // let data = Array.from(Array(150).keys()),
+        //     datay = Array.from(Array(150).keys());
+        // let xScale = d3.scaleLinear()
+        //     .domain([0, 150])
+        //     .range([0, 150]);
+        // let colorScaleBW = d3.scaleSequential()
+        //     .domain([0, 149])
+        //     .interpolator(d3.piecewise(d3.interpolateRgb, ["rgba(255, 255, 255, 0.7)", "rgba(0, 0, 0, 0)", "rgba(0, 0, 0, 0.7)"]));
+        let colorScaleBCVOR = d3.scaleSequential()
+            .domain([0, 1])
+            .interpolator(d3.piecewise(d3.interpolateLab, ["#0000ff", "#0084ff", "#bb9db8", "#ffb000", "#ff0000"]));
+        // let colormapBCVOR = d3.select('#colormapSVG_' + this.id)
+        //     .append('g')
+        //     .attr('class', 'hueVariation')
+        //     .selectAll('rect')
+        //     .data(data)
+        //     .enter()
+        //     .append('rect')
+        //     .attr('x', (d) => xScale(d))
+        //     .attr('y', 0)
+        //     .attr('height', 150)
+        //     .attr('width', 1)
+        //     .attr('fill', (d) =>colorScaleBCVOR(d));
+        // let colormapBCVORBW = d3.select('#colormapSVG_' + this.id)
+        //     .append('g')
+        //     .attr('class', 'valueVariation')
+        //     .selectAll('rect')
+        //     .data(datay)
+        //     .enter()
+        //     .append('rect')
+        //     .attr('x', 0)
+        //     .attr('y', (d) => xScale(d))
+        //     .attr('width', 150)
+        //     .attr('height', 1)
+        //     .attr('fill', (d) => colorScaleBW(d));
+        let step = 50;
+
+        let c = document.getElementById('colormapCanvas_' + this.id);
+        let ctx = c.getContext('2d');
+
+        // gradient Blue-Cyan-Violet-Orange-Red
+        let grad = ctx.createLinearGradient(0, 0, c.clientWidth, 0);
+        let del = 1 / step;
+        for (let i = 0; i <= step; i++) {
+            grad.addColorStop(del * i, colorScaleBCVOR(del * i));
+        }
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+        // gradient Black-White
+        grad = ctx.createLinearGradient(0, 0, 0, c.clientHeight);
+        grad.addColorStop(0, "rgba(255, 255, 255, 0.7)");
+        grad.addColorStop(0.5, "rgba(255, 255, 255, 0)");
+        grad.addColorStop(0.5, "rgba(0, 0, 0, 0)");
+        grad.addColorStop(1, "rgba(0, 0, 0, 0.7)");
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    }
+
     onChangeCheckbox(id) {
         TimeTubesAction.updateChecked(id);
         // this.setState({
@@ -571,18 +692,37 @@ export default class Details extends React.Component{
     }
 
     clickColormapOption(e) {
-        let colormapType = e.target.className.split(' ')[1];
+        let colormapType;
+        if (typeof(e.target.className) === 'string') {
+            colormapType = e.target.className.split(' ')[1];
+        } else {
+            colormapType = e.currentTarget.className.animVal.split(' ')[1];
+        }
         let textureColormap = new THREE.TextureLoader();
         switch (colormapType) {
             case 'colormapBR':
+                $('#colormap_' + this.id).css('display', 'block');
+                $('#colormapCanvas_' + this.id).css('display', 'none');
                 document.getElementById('colormap_' + this.id).style.backgroundImage = 'url(../img/1_256.png)';let textureTHREE = new THREE.TextureLoader();
                 textureColormap.load('img/1_256.png', function(texture) {
                     TimeTubesAction.updateTexture(this.id, texture);
                 }.bind(this));
                 break;
             case 'colormapRGB':
+                $('#colormap_' + this.id).css('display', 'block');
+                $('#colormapCanvas_' + this.id).css('display', 'none');
                 document.getElementById('colormap_' + this.id).style.backgroundImage = 'url(../img/RGB.png)';
                 textureColormap.load('img/RGB.png', function(texture) {
+                    TimeTubesAction.updateTexture(this.id, texture);
+                }.bind(this));
+                break;
+            case 'colormapBCVOR':
+                $('#colormap_' + this.id).css('display', 'none');
+                $('#colormapCanvas_' + this.id).css('display', 'block');
+                this.setColormapBCVOR();
+                let canvas = document.getElementById('colormapCanvas_' + this.id);
+                let canvasimg = canvas.toDataURL();
+                textureColormap.load(canvasimg, function(texture) {
                     TimeTubesAction.updateTexture(this.id, texture);
                 }.bind(this));
                 break;
@@ -766,6 +906,12 @@ export default class Details extends React.Component{
                                     <span id={'colormap_' + this.id}>
                                         <input type="text" id={"mask_uploadColormap_" + this.id} className='colormapFile' onClick={this.changeColorMapMask.bind(this)}></input>
                                     </span>
+                                    {/* <svg className='colormapSVG' 
+                                        id={'colormapSVG_' + this.id}></svg> */}
+                                    <canvas className='colormapCanvas' 
+                                        id={'colormapCanvas_' + this.id}
+                                        width='150'
+                                        height='150'></canvas>
                                 </label>
                                 <span 
                                     className='currentColor' 
@@ -784,13 +930,18 @@ export default class Details extends React.Component{
                                     <img src="img/1_256.png" 
                                         className='colormapOption colormapBR'
                                         id={'colormapBR_' + this.id}
-                                        style={{width: '30px', height: '30px'}}
+                                        style={{verticalAlign: 'unset'}}
                                         onClick={this.clickColormapOption.bind(this)}/>
                                     <img src="img/RGB.png" 
                                         className='colormapOption colormapRGB'
                                         id={'colormapRGB_' + this.id}
-                                        style={{width: '30px', height: '30px'}}
+                                        style={{verticalAlign: 'unset'}}
                                         onClick={this.clickColormapOption.bind(this)}/>
+                                    <canvas className={'colormapOption colormapBCVOR'}
+                                        id={'colormapBCVOR_' + this.id}
+                                        width='30'
+                                        height='30'
+                                        onClick={this.clickColormapOption.bind(this)}></canvas>
                         </div>
                         <div className="row">
                             <div className="col-3">
