@@ -14,15 +14,15 @@ export default class Layout extends React.Component {
         this.state = {
             menu: 'visualization'
         };
-        this.selectMainView();
+        this.selectMainView('visualization');
     }
 
     componentDidMount() {
         AppStore.on('selectMenu', (menu) => {
+            this.selectMainView(menu);
             this.setState({
                 menu: menu
             });
-            this.selectMainView();
         });
         FeatureStore.on('recoverQuery', (query) => {
             this.setState({
@@ -31,9 +31,12 @@ export default class Layout extends React.Component {
         });
     }
 
-    selectMainView() {
+    selectMainView(menu) {
         // switch visibility
-        switch (this.state.menu) {
+        switch (menu) {
+            case 'about':
+                $('body').css('overflow-y', 'scroll');
+                break;
             case 'visualization':
                 $('body').css('overflow-y', 'hidden');
                 break;

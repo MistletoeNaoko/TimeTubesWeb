@@ -119,6 +119,18 @@ export default class VisualQuery extends React.Component {
                         break;
                     }
                 }
+                // recover the normalization option of DTW
+                let DTWNormalizationOptionList = document.getElementById('distanceNormalization');
+                if (parameters.distanceNormalization) {
+                    for (let i = 0; i < DTWNormalizationOptionList.options.length; i++) {
+                        if (DTWNormalizationOptionList.options[i].value === parameters.distanceNormalization) {
+                            DTWNormalizationOptionList.selectedIndex = i;
+                            break;
+                        }
+                    }
+                } else {
+                    DTWNormalizationOptionList.selectedIndex = 0;
+                }
                 // recover other parameters
                 $('#warpingWindowSize').val(parameters.warpingWindowSize);
                 $('#targetLengthMin').val(parameters.timeSliceLength[0]);
@@ -405,7 +417,7 @@ export default class VisualQuery extends React.Component {
                                     id='distanceMetric'
                                     style={{width: '60%'}}>
                                     <option value="Euclidean">Euclidean</option>
-                                    <option value="Manhattan">Manhattan</option>
+                                    {/* <option value="Manhattan">Manhattan</option> */}
                                 </select>
                             </div>
                         </div>
