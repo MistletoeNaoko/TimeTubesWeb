@@ -91,7 +91,7 @@ export default class AutomaticExtraction extends React.Component {
         $('#rotationPeriodMin').val(20);
         $('#rotationPeriodMax').val(30);
         $('#rotationAngle').val(270);
-        $('#alphaES').val(0.1);
+        $('#alphaES').val(0.5);
     }
 
     setGaussCurve() {
@@ -498,8 +498,8 @@ export default class AutomaticExtraction extends React.Component {
                 </div>
                 <div className='row matchingOption'>
                     <div className='col-5' 
-                        title='Sx and Sy are standard deviations of the whole data, 
-                        sx and sy are those of the time interval'>
+                        title='&sigma;X and &sigma;Y are standard deviations of the entire data, 
+                        &sigma;x and &sigma;y are those of the time interval'>
                         Standard deviation of the period
                     </div>
                     <div className='col'>
@@ -509,10 +509,10 @@ export default class AutomaticExtraction extends React.Component {
                             style={{width: '60%'}}
                             disabled={!this.state.rotation}>
                             <option value="no">No constraints</option>
-                            <option value="and">Sx &lt; sx &cap; Sy &lt; sy</option>
-                            <option value="or">Sx &lt; sx &cup; Sy &lt; sy</option>
-                            <option value="x">Sx &lt; sx</option>
-                            <option value="y">Sy &lt; sy</option>
+                            <option value="and">&sigma;X &lt; &sigma;x &cap; &sigma;Y &lt; &sigma;y</option>
+                            <option value="or">&sigma;X &lt; &sigma;x &cup; &sigma;Y &lt; &sigma;y</option>
+                            <option value="x">&sigma;X &lt; &sigma;x</option>
+                            <option value="y">&sigma;Y &lt; &sigma;y</option>
                         </select>
                     </div>
                 </div>
