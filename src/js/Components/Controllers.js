@@ -1,6 +1,7 @@
 import React from 'react';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import * as DataAction from '../Actions/DataAction';
+import {ordinalSuffixOf} from '../lib/mathLib';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import DataStore from '../Stores/DataStore';
 import TimeTubes from './TimeTubes';
@@ -10,6 +11,8 @@ export default class Controllers extends React.Component{
         super();
         this.state = {
             fileType: 'csv',
+            headerNum: 1,
+            variableNameLine: 1,
             grid: true,
             label: true,
             axis: true,
@@ -82,7 +85,7 @@ export default class Controllers extends React.Component{
 
     uploadFile() {
         let file = document.getElementById('uploadFileForm').files;
-        DataAction.uploadData(file);
+        DataAction.loadFile(file, this.state.headerNum, this.state.variableNameLine);
     }
 
     searchTime() {
@@ -234,15 +237,33 @@ export default class Controllers extends React.Component{
     }
 
     clickSub() {
-        let current = Number($('#initialLineVal').text());
-        if (current > 0) {
-            $('#initialLineVal').text(current - 1);
-        }
+        // let current = Number($('#initialLineVal').text());
+        // if (current > 0) {
+        //     $('#initialLineVal').text(current - 1);
+        // }
+        this.setState({
+            headerNum: this.state.headerNum - 1
+        });
     }
 
     clickAdd() {
-        let current = Number($('#initialLineVal').text());
-        $('#initialLineVal').text(current + 1);
+        // let current = Number($('#initialLineVal').text());
+        // $('#initialLineVal').text(current + 1);
+        this.setState({
+            headerNum: this.state.headerNum + 1
+        });
+    }
+
+    clickVariableNameLineSub() {
+        this.setState({
+            variableNameLine: this.state.variableNameLine - 1
+        });
+    }
+
+    clickVariableNameLineAdd() {
+        this.setState({
+            variableNameLine: this.state.variableNameLine + 1
+        });
     }
 
     getSelectedIDs() {
@@ -356,7 +377,7 @@ export default class Controllers extends React.Component{
                         <label className="custom-control-label" htmlFor="inlineCheckbox1">space</label>
                     </div>
                 </form>
-                <h6>Initial line of the data (excluding headers)</h6>
+                {/* <h6>Initial line of the data (excluding headers)</h6>
                 <div className="form-row" id="initialLineField" style={{display: 'flex', justifyContent: 'center'}}>
                     <button
                         type="button"
@@ -379,7 +400,58 @@ export default class Controllers extends React.Component{
                         onClick={this.clickAdd.bind(this)}>
                         +
                     </button>
+                </div> */}
+                <h6>How many lines are included in the header?</h6>
+                <span className='caution'>Datasets must contain the variables names in the first line of the header.</span>
+                <div className="form-row" id="initialLineField" style={{display: 'flex', justifyContent: 'center'}}>
+                    <button
+                        type="button"
+                        id="sub"
+                        className="sub btn btn-primary  btn-sm"
+                        style={{textAlign: 'center'}}
+                        onClick={this.clickSub.bind(this)}
+                        disabled={this.state.headerNum <= 1? true: false}>
+                        -
+                    </button>
+                    <label
+                        id="initialLineVal"
+                        style={{textAlign: 'center', width: '6rem'}}>
+                        {this.state.headerNum + (this.state.headerNum <= 1?' line':' lines')}
+                    </label>
+                    <button
+                        type="button"
+                        id="add"
+                        className="add btn btn-primary btn-sm"
+                        style={{textAlign: 'center'}}
+                        onClick={this.clickAdd.bind(this)}>
+                        +
+                    </button>
                 </div>
+                {/* <h6>Which line contains the variable names?</h6>
+                <div className="form-row" id="variableNameLineField" style={{display: 'flex', justifyContent: 'center'}}>
+                    <button
+                            type="button"
+                            id="sub"
+                            className="sub btn btn-primary  btn-sm"
+                            style={{textAlign: 'center'}}
+                            onClick={this.clickVariableNameLineSub.bind(this)}
+                            disabled={this.state.variableNameLine <= 1? true: false}>
+                            -
+                        </button>
+                        <label
+                            id="initialLineVal"
+                            style={{textAlign: 'center', width: '6rem'}}>
+                            {ordinalSuffixOf(this.state.variableNameLine) + ' line'}
+                        </label>
+                        <button
+                            type="button"
+                            id="add"
+                            className="add btn btn-primary btn-sm"
+                            style={{textAlign: 'center'}}
+                            onClick={this.clickVariableNameLineAdd.bind(this)}>
+                            +
+                    </button>
+                </div> */}
                 <h6>Select files</h6>
                 <div className="custom-file">
                     <input type='file' className="custom-file-input" id='uploadFileForm' onChange={this.uploadFile.bind(this)} multiple/>

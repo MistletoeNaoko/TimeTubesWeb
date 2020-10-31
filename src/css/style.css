@@ -517,6 +517,13 @@ img.selectorIcon:active {
 	width:150px;
 	cursor:pointer;
 }
+
+.caution {
+    display: inline-block;
+    font-size: 0.6rem;
+    color: #f26418;
+    margin-bottom: 0.5rem;
+}
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/

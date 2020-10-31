@@ -15,3 +15,18 @@ export function getGaussData(sigma) {
 export function getGaussValue(xPos, sigma) {
     return Math.exp(-xPos * xPos / (2 * sigma * sigma)) / Math.sqrt(2 * Math.PI * sigma * sigma);
 }
+
+export function ordinalSuffixOf(num) {
+    let i = num % 10,
+        j = num % 100;
+    if (i == 1 && j != 11) {
+        return num + "st";
+    }
+    if (i == 2 && j != 12) {
+        return num + "nd";
+    }
+    if (i == 3 && j != 13) {
+        return num + "rd";
+    }
+    return num + "th";
+}

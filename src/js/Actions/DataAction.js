@@ -126,10 +126,10 @@ export function importDemoData(fileName, data) {
     });
 }
 
-function loadFile(file) {
+export function loadFile(file, headerNum) {
     let dataIDx = DataStore.getDataNum();
     let type = 'csv';
-    let initLine = Number($('#initialLineVal').text());
+    let initLine = headerNum;
     let fileName = [];
     let dataset = [];
     let blazarData = [];
@@ -155,7 +155,7 @@ function loadFile(file) {
                     });
                     break;
             }
-            let slicedData = dataTmp.splice(initLine - 2);
+            let slicedData = dataTmp.splice(initLine - 1);
             dataset.push(slicedData);
             if (i === file.length - 1) {
                 for (let j = 0; j < dataset.length; j++) {
