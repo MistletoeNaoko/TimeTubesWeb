@@ -963,7 +963,8 @@ export default class Details extends React.Component{
                                         className="custom-select" 
                                         id={"colorEncodingOptionHue_" + this.id}
                                         style={{fontSize: '0.8rem', height: '1.5rem'}}
-                                        onChange={this.updateColorEncodingOptionHue.bind(this)}>
+                                        onChange={this.updateColorEncodingOptionHue.bind(this)}
+                                        disabled={!this.data.data.hueValRanks.minmaxHue}>
                                         <option value="default">Default</option>
                                         <option value="histogramEqualization">Histogram Equalization</option>
                                     </select>

@@ -342,111 +342,150 @@ function computeSplines(data) {
 }
 
 function rankHueValue(hue, value) {
-    // create new array for only index and data value
-    let hueData = hue.map((d, idx) => {
-        return {index: idx, value: d.x, timeStamp: d.z};
-    });
-    let valueData = value.map((d, idx) => {
-        return {index: idx, value: d.y, timeStamp: d.z};
-    });
+    if (hue.length > 0 && value.length > 0) {
+        // create new array for only index and data value
+        let hueData = hue.map((d, idx) => {
+            return {index: idx, value: d.x, timeStamp: d.z};
+        });
+        let valueData = value.map((d, idx) => {
+            return {index: idx, value: d.y, timeStamp: d.z};
+        });
 
-    // sort by value
-    hueData.sort((a, b) => {
-        if (a.value < b.value) return -1;
-        if (a.value > b.value) return 1;
-        return 0;
-    });
-    valueData.sort((a, b) => {
-        if (a.value < b.value) return -1;
-        if (a.value > b.value) return 1;
-        return 0;
-    });
+        // sort by value
+        hueData.sort((a, b) => {
+            if (a.value < b.value) return -1;
+            if (a.value > b.value) return 1;
+            return 0;
+        });
+        valueData.sort((a, b) => {
+            if (a.value < b.value) return -1;
+            if (a.value > b.value) return 1;
+            return 0;
+        });
 
-    // convert hue and values into the values more than 0
-    let nHue = -1 * Math.floor(Math.log10(hueData[0].value)),
-        nValue = -1 * Math.floor(Math.log10(valueData[0].value));
+        // convert hue and values into the values more than 0
+        let nHue = -1 * Math.floor(Math.log10(hueData[0].value)),
+            nValue = -1 * Math.floor(Math.log10(valueData[0].value));
 
-    // add rank to the object array
-    if (hueData.length === valueData.length) {
-        for (let i = 0; i < hueData.length; i++) {
-            hueData[i].rank = i;
-            hueData[i].value *= Math.pow(10, nHue);
-            valueData[i].rank = i;
-            valueData[i].value *= Math.pow(10, nValue);
+        // add rank to the object array
+        if (hueData.length === valueData.length) {
+            for (let i = 0; i < hueData.length; i++) {
+                hueData[i].rank = i;
+                hueData[i].value *= Math.pow(10, nHue);
+                valueData[i].rank = i;
+                valueData[i].value *= Math.pow(10, nValue);
+            }
+        } else {
+            for (let i = 0; i < hueData.length; i++) {
+                hueData[i].rank = i;
+                hueData[i].value *= Math.pow(10, nHue);
+            }
+            for (let i = 0; i < valueData.length; i++) {
+                valueData[i].rank = i;
+                valueData[i].value *= Math.pow(10, nValue);
+            }
         }
-    } else {
-        for (let i = 0; i < hueData.length; i++) {
-            hueData[i].rank = i;
-            hueData[i].value *= Math.pow(10, nHue);
+        let diagHue = {
+                rank: hueData.length - 1, 
+                value: hueData[hueData.length - 1].value - hueData[0].value 
+            },
+            diagValue = {
+                rank: valueData.length - 1, 
+                value: valueData[valueData.length - 1].value - valueData[0].value
+            };
+        let minmaxHue = {min: hueData[0].index, max: hueData[hueData.length - 1].index},
+            minmaxValue = {min: valueData[0].index, max: valueData[valueData.length - 1].index};
+        // order the object array 
+        let sortedHueData = hueData.slice().sort((a, b) => {
+            if (a.index < b.index) return -1;
+            if (a.index > b.index) return 1;
+            return 0;
+        });
+        let sortedValueData = valueData.slice().sort((a, b) => {
+            if (a.index < b.index) return -1;
+            if (a.index > b.index) return 1;
+            return 0;
+        });
+
+        // create the arrays only for the ranks of data samples
+        let rankHue = [], rankValue = [];
+        if (sortedHueData.length === valueData.length) {
+            for (let i = 0; i < sortedHueData.length; i++) {
+                rankHue.push({rank: sortedHueData[i].rank, value: sortedHueData[i].value, timeStamp: sortedHueData[i].timeStamp});
+                rankValue.push({rank: sortedValueData[i].rank, value: sortedValueData[i].value, timeStamp: sortedValueData[i].timeStamp});
+            }
+        } else {
+            for (let i = 0; i < sortedHueData.length; i++) {
+                rankHue.push({rank: sortedHueData[i].rank, value: sortedHueData[i].value, timeStamp: sortedHueData[i].timeStamp});
+            }
+            for (let i = 0; i < sortedValueData.length; i++) {
+                rankValue.push({rank: sortedValueData[i].rank, value: sortedValueData[i].value, timeStamp: sortedValueData[i].timeStamp});
+            }
         }
+
+        // create interpolation splines
+        let projectedHue = [], projectedValue = [];
+        let projectedTmp;
+        if (rankHue.length === rankValue.length) {
+            for (let i = 0; i < rankHue.length; i++) {
+                projectedTmp = histogramEqualizer(rankHue, i, diagHue);
+                projectedHue.push(new THREE.Vector3(rankHue[i].value, projectedTmp, rankHue[i].timeStamp));
+                projectedTmp = histogramEqualizer(rankValue, i, diagValue);
+                projectedValue.push(new THREE.Vector3(rankValue[i].value, projectedTmp, rankValue[i].timeStamp));
+            }
+        } else {
+            for (let i = 0; i < rankHue.length; i++) {
+                projectedTmp = histogramEqualizer(rankHue, i, diagHue);
+                projectedValue.push(new THREE.Vector3(rankHue[i].value, projectedTmp, rankHue[i].timeStamp));
+            }
+            for (let i = 0; i < rankValue.length; i++) {
+                projectedTmp = histogramEqualizer(rankValue, i, diagValue);
+                projectedValue.push(new THREE.Vector3(rankValue[i].value, projectedTmp, rankValue[i].timeStamp));
+            }
+        }
+        let projectedMinMaxHue = {min: histogramEqualizer(rankHue, minmaxHue.min, diagHue), max: histogramEqualizer(rankHue, minmaxHue.max, diagHue)},
+            projectedMinMaxValue = {min: histogramEqualizer(rankValue, minmaxValue.min, diagValue), max: histogramEqualizer(rankValue, minmaxValue.max, diagValue)};
+
+        return {hue: new THREE.CatmullRomCurve3(projectedHue, false, 'catmullrom'), value: new THREE.CatmullRomCurve3(projectedValue, false, 'catmullrom'), 
+                minmaxHue: projectedMinMaxHue, minmaxValue: projectedMinMaxValue};
+    } else if (hue.length === 0) {
+        let valueData = value.map((d, idx) => {
+            return {index: idx, value: d.y, timeStamp: d.z};
+        });
+        valueData.sort((a, b) => {
+            if (a.value < b.value) return -1;
+            if (a.value > b.value) return 1;
+            return 0;
+        });
+        let nValue = -1 * Math.floor(Math.log10(valueData[0].value));
         for (let i = 0; i < valueData.length; i++) {
             valueData[i].rank = i;
             valueData[i].value *= Math.pow(10, nValue);
         }
-    }
-    let diagHue = {
-            rank: hueData.length - 1, 
-            value: hueData[hueData.length - 1].value - hueData[0].value 
-        },
-        diagValue = {
+        let diagValue = {
             rank: valueData.length - 1, 
             value: valueData[valueData.length - 1].value - valueData[0].value
         };
-    let minmaxHue = {min: hueData[0].index, max: hueData[hueData.length - 1].index},
-        minmaxValue = {min: valueData[0].index, max: valueData[valueData.length - 1].index};
-    // order the object array 
-    let sortedHueData = hueData.slice().sort((a, b) => {
-        if (a.index < b.index) return -1;
-        if (a.index > b.index) return 1;
-        return 0;
-    });
-    let sortedValueData = valueData.slice().sort((a, b) => {
-        if (a.index < b.index) return -1;
-        if (a.index > b.index) return 1;
-        return 0;
-    });
-
-    // create the arrays only for the ranks of data samples
-    let rankHue = [], rankValue = [];
-    if (sortedHueData.length === valueData.length) {
-        for (let i = 0; i < sortedHueData.length; i++) {
-            rankHue.push({rank: sortedHueData[i].rank, value: sortedHueData[i].value, timeStamp: sortedHueData[i].timeStamp});
-            rankValue.push({rank: sortedValueData[i].rank, value: sortedValueData[i].value, timeStamp: sortedValueData[i].timeStamp});
-        }
-    } else {
-        for (let i = 0; i < sortedHueData.length; i++) {
-            rankHue.push({rank: sortedHueData[i].rank, value: sortedHueData[i].value, timeStamp: sortedHueData[i].timeStamp});
-        }
+        let minmaxValue = {min: valueData[0].index, max: valueData[valueData.length - 1].index};
+        let sortedValueData = valueData.slice().sort((a, b) => {
+            if (a.index < b.index) return -1;
+            if (a.index > b.index) return 1;
+            return 0;
+        });
+        let rankValue = [];
         for (let i = 0; i < sortedValueData.length; i++) {
             rankValue.push({rank: sortedValueData[i].rank, value: sortedValueData[i].value, timeStamp: sortedValueData[i].timeStamp});
         }
-    }
-
-    // create interpolation splines
-    let projectedHue = [], projectedValue = [];
-    let projectedTmp;
-    if (rankHue.length === rankValue.length) {
-        for (let i = 0; i < rankHue.length; i++) {
-            projectedTmp = histogramEqualizer(rankHue, i, diagHue);
-            projectedHue.push(new THREE.Vector3(rankHue[i].value, projectedTmp, rankHue[i].timeStamp));
-            projectedTmp = histogramEqualizer(rankValue, i, diagValue);
-            projectedValue.push(new THREE.Vector3(rankValue[i].value, projectedTmp, rankValue[i].timeStamp));
-        }
-    } else {
-        for (let i = 0; i < rankHue.length; i++) {
-            projectedTmp = histogramEqualizer(rankHue, i, diagHue);
-            projectedValue.push(new THREE.Vector3(rankHue[i].value, projectedTmp, rankHue[i].timeStamp));
-        }
+        let projectedValue = [];
+        let projectedTmp;
         for (let i = 0; i < rankValue.length; i++) {
             projectedTmp = histogramEqualizer(rankValue, i, diagValue);
             projectedValue.push(new THREE.Vector3(rankValue[i].value, projectedTmp, rankValue[i].timeStamp));
         }
+        let projectedMinMaxValue = {min: histogramEqualizer(rankValue, minmaxValue.min, diagValue), max: histogramEqualizer(rankValue, minmaxValue.max, diagValue)};
+        return {hue: undefined, value: new THREE.CatmullRomCurve3(projectedValue, false, 'catmullrom'), 
+                minmaxHue: undefined, minmaxValue: projectedMinMaxValue};
     }
-    let projectedMinMaxHue = {min: histogramEqualizer(rankHue, minmaxHue.min, diagHue), max: histogramEqualizer(rankHue, minmaxHue.max, diagHue)},
-        projectedMinMaxValue = {min: histogramEqualizer(rankValue, minmaxValue.min, diagValue), max: histogramEqualizer(rankValue, minmaxValue.max, diagValue)};
-
-    return {hue: new THREE.CatmullRomCurve3(projectedHue, false, 'catmullrom'), value: new THREE.CatmullRomCurve3(projectedValue, false, 'catmullrom'), 
-            minmaxHue: projectedMinMaxHue, minmaxValue: projectedMinMaxValue};
 }
 
 export function updatePrivateComment() {
