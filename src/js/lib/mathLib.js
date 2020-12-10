@@ -1,3 +1,5 @@
+import { result } from "lodash";
+
 export function getGaussData(sigma) {
     let data = [];
     if (sigma > 0) {
@@ -29,4 +31,124 @@ export function ordinalSuffixOf(num) {
         return num + "rd";
     }
     return num + "th";
+}
+
+export function objectSum(a, b) {
+    let result = {};
+    if (typeof(a) == 'object' && typeof(b) == 'object') {
+        for (let key in a) {
+            if (typeof(a[key]) == 'number')
+                result[key] = a[key] + b[key];
+        }
+    } else if (typeof(a) == 'number') {
+        for (let key in b) {
+            if (typeof(b[key]) == 'number')
+                result[key] = a + b[key];
+        }
+    } else if (typeof(b) == 'number') {
+        for (let key in a) {
+            if (typeof(a[key]) == 'number')
+                result[key] = a[key] + b;
+        }
+    }
+    return result;
+}
+
+export function objectSub(a, b) {
+    let result = {};
+    if (typeof(a) == 'object' && typeof(b) == 'object') {
+        for (let key in a) {
+            if (typeof(a[key]) == 'number')
+                result[key] = a[key] - b[key];
+        }
+    } else if (typeof(a) == 'number') {
+        for (let key in b) {
+            if (typeof(b[key]) == 'number')
+                result[key] = a - b[key];
+        }
+    } else if (typeof(b) == 'number') {
+        for (let key in a) {
+            if (typeof(a[key]) == 'number')
+                result[key] = a[key] - b;
+        }
+    }
+    return result;
+}
+
+export function objectMul(a, b) {
+    let result = {};
+    if (typeof(a) == 'object' && typeof(b) == 'object') {
+        for (let key in a) {
+            if (typeof(a[key]) == 'number')
+                result[key] = a[key] * b[key];
+        }
+    } else if (typeof(a) == 'number') {
+        for (let key in b) {
+            if (typeof(b[key]) == 'number')
+                result[key] = a * b[key];
+        }
+    } else if (typeof(b) == 'number') {
+        for (let key in a) {
+            if (typeof(a[key]) == 'number')
+                result[key] = a[key] * b;
+        }
+    }
+    return result;
+}
+
+export function objectDiv(a, b) {
+    let result = {};
+    if (typeof(a) == 'object' && typeof(b) == 'object') {
+        for (let key in a) {
+            if (typeof(a[key]) == 'number')
+                result[key] = a[key] / b[key];
+        }
+    } else if (typeof(a) == 'number') {
+        for (let key in b) {
+            if (typeof(b[key]) == 'number')
+                result[key] = a / b[key];
+        }
+    } else if (typeof(b) == 'number') {
+        for (let key in a) {
+            if (typeof(a[key]) == 'number')
+                result[key] = a[key] / b;
+        }
+    }
+    return result;
+}
+
+export function objectAbsSub(a, b) {
+    let result = {};
+    if (typeof(a) == 'object' && typeof(b) == 'object') {
+        for (let key in a) {
+            if (typeof(a[key]) == 'number')
+                result[key] = Math.abs(a[key] - b[key]);
+        }
+    } else if (typeof(a) == 'number') {
+        for (let key in b) {
+            if (typeof(b[key]) == 'number')
+                result[key] = Math.abs(a - b[key]);
+        }
+    } else if (typeof(b) == 'number') {
+        for (let key in a) {
+            if (typeof(a[key]) == 'number')
+                result[key] = Math.abs(a[key] - b);
+        }
+    }
+    return result;
+}
+
+export function objectTotal(data, exceptions) {
+    let total = 0;
+    if (exceptions) {
+        for (let key in data) {
+            if (exceptions.indexOf(key) < 0) 
+                total += data[key];
+        }
+    } else {
+        for (let key in data) {
+            total += data[key];
+        }
+    }
+    return total;
 }
