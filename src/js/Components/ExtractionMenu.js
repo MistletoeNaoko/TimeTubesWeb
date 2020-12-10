@@ -1,8 +1,8 @@
 import React from 'react';
 import VisualQuery from '../Components/VisualQuery';
 import AutomaticExtraction from '../Components/AutomaticExtraction';
+import Clustering from '../Components/Clustering';
 import * as FeatureAction from '../Actions/FeatureAction';
-import ExtractionSource from '../Components/ExtractionSource';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 
@@ -101,6 +101,9 @@ export default class ExtractionMenu extends React.Component {
                         <li className="nav-item">
                             <a className="nav-link" data-toggle="tab" href="#visualQuery">Visual Query</a>
                         </li>
+                        <li className="nav-item">
+                            <a className="nav-link" data-toggle="tab" href="#clustering">Clustering</a>
+                        </li>
                     </ul>
                     <div id="extractionMenuTabs" className="tab-content">
                         <div className="tab-pane fade show active" id="automaticExtraction">
@@ -108,6 +111,9 @@ export default class ExtractionMenu extends React.Component {
                         </div>
                         <div className="tab-pane fade" id="visualQuery">
                             <VisualQuery/>
+                        </div>
+                        <div className="tab-pane fade" id="clustering">
+                            <Clustering/>
                         </div>
                     </div>
                 </div>
