@@ -1009,6 +1009,7 @@ export function DTWSimple(s, t, distFunc) {
         }
     }
 
+    // remove infinity row and column
     let result = []
     for (let i = 1; i < dist.length; i++) {
         result.push(dist[i].slice(1, dist[i].length));
@@ -1055,6 +1056,7 @@ export function DTWSimpleMD(s, t, keys, distFunc) {
         }
     }
 
+    // remove infinity row and column
     let result = []
     for (let i = 1; i < dist.length; i++) {
         result.push(dist[i].slice(1, dist[i].length));
@@ -1094,6 +1096,7 @@ export function DTW(s, t, w, distFunc) {
         }
     }
 
+    // remove infinity row and column
     let result = [];
     for (let i = 1; i < dist.length; i++) {
         result.push(dist[i].slice(1, dist[i].length));
@@ -1139,6 +1142,7 @@ export function DTWMD(s, t, w, keys, distFunc) {
         }
     }
 
+    // remove infinity row and column
     let result = []
     for (let i = 1; i < dist.length; i++) {
         result.push(dist[i].slice(1, dist[i].length));
@@ -1173,7 +1177,7 @@ function OptimalWarpingPath(cost) {
     return path;
 }
 
-function EuclideanDist(x, y) {
+export function EuclideanDist(x, y) {
     if (Array.isArray(x)) {
         let sum = 0;
         for (let i = 0; i < x.length; i++) {

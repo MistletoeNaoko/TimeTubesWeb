@@ -22,12 +22,16 @@ export default class Clustering extends React.Component {
 
     clickRunButton() {
         let data = DataStore.getData(0),
-            clusterNum = 5,
+            clusteringParameters = {
+                method: 'kmedoid',
+                clusterNum: 5,
+                distanceMetric: 'DTWD',
+                window: 0,
+            },
             SSperiod = [20, 30],
-            distanceMetric = 'dtw',
             isometryLen = 30,
             overlappingTh = 70,
             variables = ['x', 'y', 'V', 'H'];
-        performClustering(data, clusterNum, SSperiod, distanceMetric, isometryLen, overlappingTh, variables);
+        performClustering(data, clusteringParameters, SSperiod, isometryLen, overlappingTh, variables);
     }
 }

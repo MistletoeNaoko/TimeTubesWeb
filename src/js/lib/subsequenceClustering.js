@@ -1,6 +1,6 @@
 import {objectSum, objectSub, objectMul, objectDiv, objectAbsSub, objectTotal} from '../lib/mathLib';
 
-export function performClustering(data, clusterNum, SSperiod, distanceMetric, isometryLen, overlapTh, variables) {
+export function performClustering(data, clusteringParameters, SSperiod, isometryLen, overlapTh, variables) {
     // Overview of subsequence clustering
     // 1: extract all possible subsequences (SS)
     // 2: make all SS isometric + z-normalize SS if needed
@@ -85,7 +85,14 @@ export function performClustering(data, clusterNum, SSperiod, distanceMetric, is
             filteredSS.push(isometricData[filteredSameStartsIdx[i]]);
         }
     }
-    console.log(filteredSS.length)
+
+    // perform clustering
+    let distanceParameters = {
+        window: clusteringParameters.window,
+        metric: clusteringParameters.distanceMetric,
+        distFunc: EuclideanDist
+    }
+    kMedoids(filteredSS, variables, clusteringParameters.clusterNum, distanceParameters);
 }
 
 export function extractRanges(data, SSperiod) {
@@ -251,4 +258,257 @@ function overlappingDegree(data1, data2) {
         }
     }
     return degree;
+}
+
+
+function distanceMatrix(data, distanceParameters, variables) {
+    let distMatrix = [];
+    // initialize distance matrix
+    switch (distanceParameters.metric) {
+        case 'DTWD':
+            if (distanceParameters.window > 0) {
+                // DTWMD
+                for (let i = 0; i < data.length - 1; i++) {
+                    let distTmp = [];
+                    for (let j = i + 1; j < data.length; j++) {
+                        let dist = DTWMD(data[i], data[j], variables, distanceParameters.window, distanceParameters.distFunc);
+                        distTmp.push(dist[dist.length - 1][dist[0].length - 1]);
+                    }
+                    distMatrix.push(distTmp);
+                }
+            } else {
+                // DTWSimpleMD
+                for (let i = 0; i < data.length - 1; i++) {
+                    let distTmp = [];
+                    for (let j = i + 1; j < data.length; j++) {
+                        let dist = DTWSimpleMD(data[i], data[j], variables, distanceParameters.distFunc);
+                        distTmp.push(dist[dist.length - 1][dist[0].length - 1]);
+                    }
+                    distMatrix.push(distTmp);
+                }
+            }
+            break;
+        case 'DTWI':
+            if (distanceParameters.window > 0) {
+                // DTW
+                for (let i = 0; i < data.length - 1; i++) {
+                    let distTmp = [];
+                    for (let j = i + 1; j < data.length; j++) {
+                        let distSum = 0;
+                        let dists = DTW(data[i], data[j], variables, distanceParameters.window, disranceParameter.distFunc);
+                        variables.forEach(key => {
+                            distSum += dists[key][dists[key].length - 1][dists[key][0].length - 1];
+                        });
+                        distTmp.push(distSum);
+                    }
+                    distMatrix.push(distTmp);
+                }
+            } else {
+                // DTWSimple
+                for (let i = 0; i < data.length - 1; i++) {
+                    let distTmp = [];
+                    for (let j = i + 1; j < data.length; j++) {
+                        let distSum = 0;
+                        let dists = DTWSimple(data[i], data[j], variables, distanceParameters.distFunc);
+                        variables.forEach(key => {
+                            distSum += dists[key][dists[key].length - 1][dists[key][0].length - 1];
+                        });
+                        distTmp.push(distSum);
+                    }
+                    distMatrix.push(distTmp);
+                }
+            }
+            break;
+        case 'Euclidean':
+            break;
+        default:
+            break;
+    }
+    return distMatrix;
+}
+
+function kMedoids(data, variables, clusterNum, distanceParameters) {
+    // step 1: compute distance matrix between SS
+    // step 2: pick up k medoids from all SS
+    // step 3: assign other SS to medoids
+    // step 4: re-find medoids which minimize the total distances
+    // step 5: repeat steps 3 and 4
+
+    // step 1
+    let distMatrix = distanceMatrix(data, distanceParameters, variables);
+    console.log(distMatrix)
+}
+
+
+function DTWSimple(s, t, variables, distFunc) {
+    let dists = {};
+    variables.forEach(key => {
+        let dist = [];
+        for (let i = 0; i <= s.length; i++) {
+            dist[i] = [];
+            for (let j = 0; j <= t.length; j++) {
+                dist[i][j] = Infinity;
+            }
+        }
+        dist[0][0] = 0;
+        dists[key] = dist;
+    });
+    // distances between two data points are stored in dist[1~s.length][1~t.length]
+    for (let i = 1; i <= s.length; i++) {
+        for (let j = 1; j <= t.length; j++) {
+            variables.forEach(key => {
+                dists[key][i][j] = distFunc(s[i - 1][key], t[j - 1][key]) 
+                + Math.min(
+                    dists[key][i - 1][j], 
+                    dists[key][i][j - 1], 
+                    dists[key][i - 1][j - 1]
+                );
+            });
+        }
+    }
+
+    // remove infinity row and column
+    let result = {};
+    variables.forEach(key => {
+        result[key] = [];
+        for (let i = 1; i < dists[key].length; i++) {
+            result[key].push(dists[key][i].slice(1, dists[key][i].length));
+        }
+    });
+    return result;
+}
+
+function DTWSimpleMD(s, t, variables, distFunc) {
+    // s and t are object
+    let dist = [];
+    for (let i = 0; i <= s.length; i++) {
+        dist[i] = [];
+        for (let j = 0; j <= t.length; j++) {
+            dist[i][j] = Infinity;
+        }
+    }
+    dist[0][0] = 0;
+
+    // distances between two data points are stored in dist[1~s.length][1~t.length]
+    for (let i = 1; i <= s.length; i++) {
+        for (let j = 1; j <= t.length; j++) {
+            dist[i][j] = distFunc(s[i - 1], t[j - 1], variables) 
+                + Math.min(
+                    dist[i - 1][j], 
+                    dist[i][j - 1], 
+                    dist[i - 1][j - 1]
+                );
+        }
+    }
+
+    // remove infinity row and column
+    let result = []
+    for (let i = 1; i < dist.length; i++) {
+        result.push(dist[i].slice(1, dist[i].length));
+    }
+    return result;
+}
+
+function DTW(s, t, variables, w, distFunc) {
+    let dists = {};
+    w = Math.max(w, Math.abs(s.length - t.length));
+    variables.forEach(key => {
+        let dist = [];
+        for (let i = 0; i <= s.length; i++) {
+            dist[i] = [];
+            for (let j = 0; j <= t.length; j++) {
+                dist[i][j] = Infinity;
+            }
+        }
+        dist[0][0] = 0;
+        for (let i = 1; i <= s.length; i++) {
+            let start = Math.max(1, i - w),
+                end = Math.min(t.length, i + w);
+            for (let j = start; j <= end; j++) {
+                dist[i][j] = 0;
+            }
+        }
+        dists[key] = dist;
+    });
+
+    // distances between two data points are stored in dist[1~s.length][1~t.length]
+    for (let i = 1; i <= s.length; i++) {
+        let start = Math.max(1, i - w),
+            end = Math.min(t.length, i + w);
+        for (let j = start; j <= end; j++) {
+            variables.forEach(key => {
+                dists[key][i][j] = distFunc(s[i - 1][key], t[j - 1][key]) + Math.min(
+                    dists[key][i - 1][j],     // insertion
+                    dists[key][i][j - 1],     // deletion
+                    dists[key][i - 1][j - 1]  // match
+                );
+            });
+        }
+    }
+
+    // remove infinity row and column
+    let result = {};
+    variables.forEach(key => {
+        result[key] = [];
+        for (let i = 1; i < dists[key].length; i++) {
+            result[key].push(dists[key][i].slice(1, dists[key][i].length));
+        }
+    });
+    return result;
+}
+
+function DTWMD(s, t, variables, w, distFunc) {
+    let dist = [];
+    w = Math.max(w, Math.abs(s.length - t.length));
+    for (let i = 0; i <= s.length; i++) {
+        dist[i] = [];
+        for (let j = 0; j <= t.length; j++) {
+            dist[i][j] = Infinity;
+        }
+    }
+    dist[0][0] = 0;
+    for (let i = 1; i <= s.length; i++) {
+        let start = Math.max(1, i - w),
+            end = Math.min(t.length, i + w);
+        for (let j = start; j <= end; j++) {
+            dist[i][j] = 0;
+        }
+    }
+
+    for (let i = 1; i <= s.length; i++) {
+        let start = Math.max(1, i - w),
+            end = Math.min(t.length, i + w);
+        for (let j = start; j <= end; j++) {
+            dist[i][j] = distFunc(s[i - 1], t[j - 1], variables) + Math.min(
+                dist[i - 1][j],     // insertion
+                dist[i][j - 1],     // deletion
+                dist[i - 1][j - 1]  // match
+            );
+        }
+    }
+
+    // remove infinity row and column
+    let result = []
+    for (let i = 1; i < dist.length; i++) {
+        result.push(dist[i].slice(1, dist[i].length));
+    }
+    return result;
+}
+
+function EuclideanDist(x, y, variables) {
+    if (Array.isArray(x)) {
+        let sum = 0;
+        for (let i = 0; i < x.length; i++) {
+            sum += Math.pow(x[i] - y[i], 2);
+        }
+        return Math.sqrt(sum);
+    } else if (typeof(x) === 'number') {
+        return Math.abs(x - y);
+    } else if (typeof(x) === 'object') {
+        let sum = 0;
+        variables.forEach((key) => {
+            sum += Math.pow(x[key] - y[key], 2);
+        });
+        return Math.sqrt(sum);
+    }
 }
