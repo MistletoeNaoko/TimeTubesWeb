@@ -23,7 +23,7 @@ export default class Clustering extends React.Component {
     clickRunButton() {
         let data = DataStore.getData(0),
             clusteringParameters = {
-                method: 'kmedoid',
+                method: 'kmeans',
                 clusterNum: 5,
                 distanceMetric: 'DTWD',
                 window: 0,
