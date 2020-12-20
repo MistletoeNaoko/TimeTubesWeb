@@ -1,4 +1,3 @@
-import { cluster } from 'd3';
 import {objectSum, objectSub, objectMul, objectDiv, objectAbsSub, objectTotal} from '../lib/mathLib';
 
 export function performClustering(data, clusteringParameters, SSperiod, isometryLen, overlapTh, variables) {
@@ -17,7 +16,7 @@ export function performClustering(data, clusteringParameters, SSperiod, isometry
     
     // ignore z (=JD) in clustering, but keep z in the objects for references
     variables.push('z');
-    let rawData = [];//data.data.spatial;
+    let rawData = [];
     for (let i = 0; i < data.data.spatial.length; i++) {
         let dataTmp = {};
         dataTmp.z = data.data.spatial[i].z;
@@ -27,7 +26,7 @@ export function performClustering(data, clusteringParameters, SSperiod, isometry
         rawData.push(dataTmp);
     }
     let SSRanges = extractRanges(rawData, SSperiod);
-    let [isometricData, changeDegrees] = timeSeriesIsometry(rawData, SSRanges, isometryLen, false, data.data.meta.min, data.data.meta.max);
+    let [isometricData, anomalyDegrees] = timeSeriesIsometry(rawData, SSRanges, isometryLen, true, data.data.meta.min, data.data.meta.max);
 
     // pick up a SS with the highest changeDegrees from SS which has the same starting data point
     let i = 0;
@@ -37,7 +36,7 @@ export function performClustering(data, clusteringParameters, SSperiod, isometry
             maxChangeDegreeIdx = i;
         i++;
         while (i < SSRanges.length && SSRanges[i][0] == startIdx) {
-            if (changeDegrees[maxChangeDegreeIdx] < changeDegrees[i]) {
+            if (anomalyDegrees[maxChangeDegreeIdx] < anomalyDegrees[i]) {
                 maxChangeDegreeIdx = i;
                 i++;
                 continue;
@@ -66,9 +65,9 @@ export function performClustering(data, clusteringParameters, SSperiod, isometry
                     break;
                 }
                 if (overlap >= overlapTh) {
-                    if (changeDegrees[maxChangeDegreeIdx] < changeDegrees[filteredSameStartsIdx[j]]) {
+                    if (anomalyDegrees[maxChangeDegreeIdx] < anomalyDegrees[filteredSameStartsIdx[j]]) {
                         maxChangeDegreeIdx = filteredSameStartsIdx[j];
-                    } else if (changeDegrees[maxChangeDegreeIdx] === changeDegrees[filteredSameStartsIdx[j]]) {
+                    } else if (anomalyDegrees[maxChangeDegreeIdx] === anomalyDegrees[filteredSameStartsIdx[j]]) {
                         if (SSRanges[filteredSameStartsIdx[i]][1] - SSRanges[filteredSameStartsIdx[i]][0] < SSRanges[filteredSameStartsIdx[j]][1] - SSRanges[filteredSameStartsIdx[j]][0]) {
                             maxChangeDegreeIdx = filteredSameStartsIdx[j];
                         } else {
@@ -99,12 +98,12 @@ export function performClustering(data, clusteringParameters, SSperiod, isometry
             [clusterCenters, labels] = kMedoids(filteredSS, clusteringParameters.clusterNum, distanceParameters);
             break;
         case 'kmeans':
-            kMeans(filteredSS, clusteringParameters.clusterNum, distanceParameters);
+            [clusterCenters, labels] = kMeans(filteredSS, clusteringParameters.clusterNum, distanceParameters);
             break;
         default:
             break;
     }
-    
+    return [filteredSS, clusterCenters, labels];
 }
 
 export function extractRanges(data, SSperiod) {
@@ -159,7 +158,7 @@ export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = t
             SStmp.push(dataTmp);
         }
         // compute change degrees
-        changeDegrees.push(changeDegree(SStmp, min, max))
+        changeDegrees.push(anomalyDegree(SStmp, min, max))
         // normalize SS here if needed
         if (normalize) {
             SStmp = zNormalization(SStmp);
@@ -218,7 +217,7 @@ function zNormalization(data) {
         }
     }
     for (let key in stds) {
-        stds[key] = Math.sqrt(std[key] / data.length);
+        stds[key] = Math.sqrt(stds[key] / data.length);
     }
 
     // z-normalize data points
@@ -232,7 +231,7 @@ function zNormalization(data) {
     return normalized;
 }
 
-function changeDegree(data, min, max) {
+function anomalyDegree(data, min, max) {
     let ranges = objectSub(max, min);
     let change = {};
     for (let key in data[0]) {
@@ -375,17 +374,22 @@ function kMedoids(data, clusterNum, distanceParameters) {
             labels = newLabels;
         }
         // step 3
-        newMedoids = updateMedoids(medoids, labels);
+        newMedoids = updateMedoids(labels);
         // step 4
         newLabels = assignSSToMedoids(newMedoids);
         loop++;
     }
 
     medoids = newMedoids;
+    let medoidData = [];
+    for (let i = 0; i < medoids.length; i++) {
+        medoidData.push(data[medoids[i]]);
+    }
     labels = newLabels;
-    return [medoids, labels];
+    return [medoidData, labels];
 
     function initMedoids() {
+        // randomly pick up k SS from the dataset
         let medoids = [];
         while (medoids.length < clusterNum) {
             let medoid = Math.floor(Math.random() * Math.floor(data.length));
@@ -399,7 +403,6 @@ function kMedoids(data, clusterNum, distanceParameters) {
     }
     function evalInit(medoids, labels) {
         // compute errors between a medoid and SS
-        // 直角状にdistmatrixからmedoidとの距離抜いてこれるはず？
         let errorSum = 0;
         for (let i = 0; i < labels.length; i++) {
             if (i < medoids[labels[i]]) {
@@ -439,17 +442,17 @@ function kMedoids(data, clusterNum, distanceParameters) {
         }
         return labels;
     }
-    function updateMedoids(medoids, labels) {
+    function updateMedoids(labels) {
         // divide SS by clusters
         let clusters = [];
-        for (let i = 0; i < medoids.length; i++) {
+        for (let i = 0; i < clusterNum; i++) {
             clusters.push([]);
         }
         for (let i = 0; i < labels.length; i++) {
             clusters[labels[i]].push(i);
         }
         let newMedoids = [];
-        for (let i = 0; i < medoids.length; i++) {
+        for (let i = 0; i < clusterNum; i++) {
             // find the best medoid from each cluster
             let newMedoidTmp = 0,
                 minDistSum = Infinity;
@@ -493,23 +496,31 @@ function kMeans(data, clusterNum, distanceParameters) {
 
     // step 3 and 4
     let newCentroids = [], newLabels = [];
-    let loop = 0, maxIteration = 1;
-    updateCentroids(centroids, labels, distanceParameters, dataLen);
-    // while (loop < maxIteration) {
-    //     updateCentroids(centroids, labels, distanceParameters);
-    //     assignSSToCentroids();
-    //     loop++;
-    // }
+    let loop = 0, maxIteration = 300;
+    while (loop < maxIteration && checkUpdates(labels, newLabels)) {
+        if (newCentroids.length !== 0 && newLabels.length !== 0) {
+            centroids = newCentroids;
+            labels = newLabels;
+        }
+        newCentroids = updateCentroids(labels, dataLen);
+        newLabels = assignSSToCentroids(newCentroids);
+        loop++;
+    }
+    centroids = newCentroids;
+    labels = newLabels;
+    return [centroids, labels];
 
     function createCentroids() {
-        let initCentroids = [];
-        while (initCentroids.length < clusterNum) {
+        // choose k SS from the dataset as a initial centroid of the clusters
+        let initCentroidsIdx = [],
+            initCentroids = [];
+        while (initCentroidsIdx.length < clusterNum) {
             let centroidTmp = Math.floor(Math.random() * Math.floor(data.length));
-            if (initCentroids.indexOf(centroidTmp) < 0)
-                initCentroids.push(centroidTmp);
+            if (initCentroidsIdx.indexOf(centroidTmp) < 0)
+                initCentroidsIdx.push(centroidTmp);
         }
-        for (let i = 0; i < initCentroids.length; i++) {
-            initCentroids[i] = data[initCentroids[i]];
+        for (let i = 0; i < initCentroidsIdx.length; i++) {
+            initCentroids.push(data[initCentroidsIdx[i]]);
         }
         return initCentroids;
     }
@@ -523,6 +534,8 @@ function kMeans(data, clusterNum, distanceParameters) {
                 // compute distances between centroids and SS
                 let distTmp = 0;
                 switch (distanceParameters.metric) {
+                    case 'Euclidean':
+                        break;
                     case 'DTWD':
                         if (distanceParameters.window > 0) {
                             // DTWMD
@@ -543,8 +556,31 @@ function kMeans(data, clusterNum, distanceParameters) {
                         }
                         break;
                     case 'DTWI':
-                        break;
-                    case 'Euclidean':
+                        if (distanceParameters.window > 0) {
+                            // DTW
+                            distTmp = DTW(centroids[j], data[i], variables, distanceParameters.window, distanceParameters.distFunc);
+                            let distSum = 0;
+                            variables.forEach(key => {
+                                distSum += distTmp[key][distTmp[key].length - 1][distTmp[key][0].length - 1];
+                            });
+                            if (distSum < NNDist) {
+                                NNDist = distSum;
+                                NNCentroid = j;
+                                NNDistPath = OptimalWarpingPath(distTmp);
+                            }
+                        } else {
+                            // DTWSimple
+                            distTmp = DTWSimple(centroids[j], data[i], variables, distanceParameters.distFunc);
+                            let distSum = 0;
+                            variables.forEach(key => {
+                                distSum += distTmp[key][distTmp[key].length - 1][distTmp[key][0].length - 1];
+                            });
+                            if (distSum < NNDist) {
+                                NNDist = distSum;
+                                NNCentroid = j;
+                                NNDistPath = OptimalWarpingPath(distTmp);
+                            }
+                        }
                         break;
                     default:
                         break;
@@ -557,28 +593,22 @@ function kMeans(data, clusterNum, distanceParameters) {
         }
         return labels;
     }
-    function updateCentroids(centroids, labels, distanceParameters, dataLen) {
-        // DBA
-        // centroidとSSの距離を計算する
-        // 最適なパスを見つける
-        // centroid上の各データ点に対応する時系列上の点の値を足し合わせる、何個のデータ点が足し合わされたかも記録
-        // 重心を求め、重心をcentroidとして更新する
+    function updateCentroids(labels, dataLen) {
         // divide SS into clusters according to labels
-        console.log(labels)
         let clusters = []; // store indexes of data samples belonging to each cluster
-        for (let i = 0; i < centroids.length; i++) {
+        for (let i = 0; i < clusterNum; i++) {
             clusters.push([]);
         }
         for (let i = 0; i < labels.length; i++) {
             clusters[labels[i].cluster].push(i);
         }
         
+        let newCentroids = [];
         switch(distanceParameters.metric) {
             case 'Euclidean':
                 break;
             case 'DTWD':
-                let newCentroids = [];
-                // compute centroids according to SS in the cluster and the path between the current centroid and SS
+                // compute new centroids according to SS in the cluster and the path between the current centroid and SS
                 for (let i = 0; i < clusters.length; i++) {
                     // create a new arrray for storing new centroid
                     let centroidTmp = [],
@@ -612,13 +642,62 @@ function kMeans(data, clusterNum, distanceParameters) {
                     }
                     newCentroids.push(centroidTmp);
                 }
-                console.log('newMedoids', variables, newCentroids);
                 break;
             case 'DTWI':
+                // compute new centroids according to SS in the cluster amd the path between the current centroid and SS
+                for (let i = 0; i < clusters.length; i++) {
+                    // create a new array for storing new centroid
+                    let centroidTmp = [],
+                        dataCount = [];
+                    // new centroid will be a barycenter of data values of data samples in the cluster
+                    for (let j = 0; j < dataLen; j++) {
+                        let dataTmp = {},
+                            countTmp = {};
+                        variables.forEach(key => {
+                            dataTmp[key] = 0;
+                            countTmp[key] = 0;
+                        });
+                        centroidTmp.push(dataTmp);
+                        dataCount.push(countTmp);
+                    }
+
+                    // add data values of data in the cluster to get barycenter
+                    for (let j = 0; j < clusters[i].length; j++) {
+                        // focus on a data[clusters[i][j]] (data[clusters[i][j]] has 31 data points)
+                        // check the path between the current centroid and data[clusters[i][j]] (labels[clusters[i][j]].path)
+                        variables.forEach(key => {
+                            for (let k = 0; k < labels[clusters[i][j]].path[key].length; k++) {
+                                centroidTmp[labels[clusters[i][j]].path[key][k][0]][key] += data[clusters[i][j]][labels[clusters[i][j]].path[key][k][1]][key];
+                                dataCount[labels[clusters[i][j]].path[key][k][0]][key]++;
+                            }
+                        });
+                    }
+                    // compute barycenters of each variables
+                    for (let j = 0; j < centroidTmp.length; j++) {
+                        variables.forEach(key => {
+                            centroidTmp[j][key] /= dataCount[j][key];
+                        });
+                    }
+                    newCentroids.push(centroidTmp);
+                }
                 break;
             default:
                 break;
         }
+        return newCentroids;
+    }
+    function checkUpdates(pLabels, nLabels) {
+        let flag = false;
+        if (pLabels.length === 0 || nLabels.length === 0) {
+            return true;
+        }
+        for (let i = 0; i < pLabels.length; i++) {
+            if (pLabels[i].cluster !== nLabels[i].cluster) {
+                flag = true;
+                break;
+            }
+        }
+        return flag;
     }
 }
 

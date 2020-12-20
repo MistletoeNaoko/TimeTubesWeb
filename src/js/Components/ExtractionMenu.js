@@ -50,8 +50,12 @@ export default class ExtractionMenu extends React.Component {
         });
     }
 
-    selectTab() {
+    selectTabAE() {
         FeatureAction.switchQueryMode('AE'); // automatic extraction
+    }
+
+    selectTabClustering() {
+        FeatureAction.switchQueryMode('Clustering');
     }
 
     updateTargets() {
@@ -96,13 +100,13 @@ export default class ExtractionMenu extends React.Component {
                     </div>
                     <ul className="nav nav-tabs">
                         <li className="nav-item">
-                            <a className="nav-link active" data-toggle="tab" href="#automaticExtraction" onClick={this.selectTab}>Automatic Extraction</a>
+                            <a className="nav-link active" data-toggle="tab" href="#automaticExtraction" onClick={this.selectTabAE}>Automatic Extraction</a>
                         </li>
                         <li className="nav-item">
                             <a className="nav-link" data-toggle="tab" href="#visualQuery">Visual Query</a>
                         </li>
                         <li className="nav-item">
-                            <a className="nav-link" data-toggle="tab" href="#clustering">Clustering</a>
+                            <a className="nav-link" data-toggle="tab" href="#clustering" onClick={this.selectTabClustering}>Clustering</a>
                         </li>
                     </ul>
                     <div id="extractionMenuTabs" className="tab-content">

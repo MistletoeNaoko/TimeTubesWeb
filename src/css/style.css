@@ -609,6 +609,13 @@ img.selectorIcon:active {
     position: relative;
 }
 
+#clusteringResults {
+    float: right;
+    width: 70%;
+    background-color: #F8F5F0;
+    position: relative;
+}
+
 #collapseSourcePanel{
     position: relative;
     top: 20px;

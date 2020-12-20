@@ -286,12 +286,12 @@ export default class VisualQuery extends React.Component {
             if (inactiveVariables.length === 0) {
                 for (let key in lookup) {
                     let label = '';
-                    if (lookup[key].length > 1) {
-                        label = lookup[key].join(',');
-                    } else {
-                        label = lookup[key];
-                    }
                     if (key !== 'z' && key !== 'PA' && key !== 'PD') {
+                        if (lookup[key].length > 1) {
+                            label = lookup[key].join(',');
+                        } else {
+                            label = lookup[key];
+                        }
                         items.push(
                             <div className="form-check form-check-inline"
                                 key={key}>

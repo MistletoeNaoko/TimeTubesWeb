@@ -1,5 +1,4 @@
 import dispatcher from '../Dispatcher/dispatcher';
-import { func } from 'prop-types';
 
 export function updateSource(id) {
     dispatcher.dispatch({type:'UPDATE_SOURCE', id});

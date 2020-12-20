@@ -4,6 +4,7 @@ import ExtractionResults from '../Components/ExtractionResults';
 import ExtractionSource from '../Components/ExtractionSource';
 import * as FeatureAction from '../Actions/FeatureAction';
 import FeatureStore from '../Stores/FeatureStore';
+import ClusteringResults from '../Components/ClusteringResults';
 
 export default class FeatureExtraction extends React.Component{
     constructor(props) {
@@ -25,6 +26,10 @@ export default class FeatureExtraction extends React.Component{
                 $('#extractionResults').css({
                     width: (100 - 30 * 2) + '%'
                 });
+            } else if (mode === 'Clustering') {
+                $('#clusteringResults').css({
+                    width: (100 - 30) + '%'
+                });
             } else {
                 $('#extractionResults').css({
                     width: (100 - 30) + '%'
@@ -40,6 +45,10 @@ export default class FeatureExtraction extends React.Component{
                 $('#extractionResults').css({
                     width: (100 - 30 * 2) + '%'
                 });
+            } else if (mode === 'Clustering') {
+                $('#clusteringResults').css({
+                    width: (100 - 30) + '%'
+                });
             } else {
                 $('#extractionResults').css({
                     width: (100 - 30) + '%'
@@ -52,6 +61,12 @@ export default class FeatureExtraction extends React.Component{
         let QBESource;
         if (this.state.queryMode === 'QBE') {
             QBESource = <ExtractionSource/>;
+        }
+        let resultsPanel;
+        if (this.state.queryMode === 'Clustering') {
+            resultsPanel = <ClusteringResults/>;
+        } else {
+            resultsPanel = <ExtractionResults/>;
         }
         return (
             <div
@@ -68,7 +83,7 @@ export default class FeatureExtraction extends React.Component{
                          {/*display: (this.state.queryMode === 'QBE') ? 'block': 'none'}}>*/}
                     {/*<ExtractionSource/>*/}
                 {/*</div>*/}
-                <ExtractionResults/>
+                {resultsPanel}
             </div>
         );
     }
