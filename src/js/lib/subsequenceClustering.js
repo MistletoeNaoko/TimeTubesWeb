@@ -1,6 +1,7 @@
 import {objectSum, objectSub, objectMul, objectDiv, objectAbsSub, objectTotal} from '../lib/mathLib';
+import DataStore from '../Stores/DataStore';
 
-export function performClustering(data, clusteringParameters, SSperiod, isometryLen, overlapTh, variables) {
+export function performClustering(datasets, clusteringParameters, subsequenceParameters, variables) {
     // Overview of subsequence clustering
     // 1: extract all possible subsequences (SS)
     // 2: make all SS isometric + z-normalize SS if needed
@@ -16,73 +17,209 @@ export function performClustering(data, clusteringParameters, SSperiod, isometry
     
     // ignore z (=JD) in clustering, but keep z in the objects for references
     variables.push('z');
-    let rawData = [];
-    for (let i = 0; i < data.data.spatial.length; i++) {
-        let dataTmp = {};
-        dataTmp.z = data.data.spatial[i].z;
-        for (let j = 0; j < variables.length; j++) {
-            dataTmp[variables[j]] = data.data.spatial[i][variables[j]];
-        }
-        rawData.push(dataTmp);
-    }
-    let SSRanges = extractRanges(rawData, SSperiod);
-    let [isometricData, anomalyDegrees] = timeSeriesIsometry(rawData, SSRanges, isometryLen, true, data.data.meta.min, data.data.meta.max);
 
-    // pick up a SS with the highest changeDegrees from SS which has the same starting data point
-    let i = 0;
-    let filteredSameStartsIdx = [];
-    while (i < SSRanges.length) {
-        let startIdx = SSRanges[i][0],
-            maxChangeDegreeIdx = i;
-        i++;
-        while (i < SSRanges.length && SSRanges[i][0] == startIdx) {
-            if (anomalyDegrees[maxChangeDegreeIdx] < anomalyDegrees[i]) {
-                maxChangeDegreeIdx = i;
-                i++;
-                continue;
-            } else if (i + 1 < SSRanges.length && SSRanges[i + 1][0] !== startIdx) {
-                break;
-            } else {
-                i++;
-                continue;
+    let rawData = {}, mins = {}, maxs = {};
+    for (let i = 0; i < datasets.length; i++) {
+        let rawDataTmp = [];
+        for (let j = 0; j < datasets[i].data.spatial.length; j++) {
+            let dataTmp = {};
+            dataTmp.z = datasets[i].data.spatial[j].z;
+            for (let k = 0; k < variables.length; k++) {
+                dataTmp[variables[k]] = datasets[i].data.spatial[j][variables[k]];
+            }
+            rawDataTmp.push(dataTmp);
+        }
+        rawData[datasets[i].id] = rawDataTmp;
+        mins[datasets[i].id] = datasets[i].data.meta.min;
+        maxs[datasets[i].id] = datasets[i].data.meta.max;
+    }
+
+    let subsequences = {}, subsequenceData = [];
+    let isometricData, anomalyDegrees;
+
+    // filtering subsequences according to selected options
+    // subsequences by datasets
+    if (subsequenceParameters.filtering.indexOf('dataDrivenSlidingWindow') >= 0) {
+        let SSRanges = extractRanges(rawData, subsequenceParameters.SSperiod);
+        // store indexes of subsequences for initialization
+        for (let dataIdx in SSRanges) {
+            subsequences[dataIdx] = [];
+            for (let i = 0; i < SSRanges[dataIdx].length; i++) {
+                subsequences[dataIdx].push(i);
             }
         }
-        filteredSameStartsIdx.push(maxChangeDegreeIdx);
-        i++;
-    }
 
-    // if needed, filter out SS with high overlapping degree
-    let filteredSS = [];
-    if (overlapTh > 0) {
-        let i = 0;
-        while (i < filteredSameStartsIdx.length) {
-            let range1 = SSRanges[filteredSameStartsIdx[i]],
-                maxChangeDegreeIdx = filteredSameStartsIdx[i];
-            let j = i + 1;
-            while (j < filteredSameStartsIdx.length) {
-                let overlap = overlappingDegree(range1, SSRanges[filteredSameStartsIdx[j]]);
-                if (overlap < overlapTh) {
-                    break;
-                }
-                if (overlap >= overlapTh) {
-                    if (anomalyDegrees[maxChangeDegreeIdx] < anomalyDegrees[filteredSameStartsIdx[j]]) {
-                        maxChangeDegreeIdx = filteredSameStartsIdx[j];
-                    } else if (anomalyDegrees[maxChangeDegreeIdx] === anomalyDegrees[filteredSameStartsIdx[j]]) {
-                        if (SSRanges[filteredSameStartsIdx[i]][1] - SSRanges[filteredSameStartsIdx[i]][0] < SSRanges[filteredSameStartsIdx[j]][1] - SSRanges[filteredSameStartsIdx[j]][0]) {
-                            maxChangeDegreeIdx = filteredSameStartsIdx[j];
+        // make subsequence isometric and compute anomaly degree
+        [isometricData, anomalyDegrees] = timeSeriesIsometry(
+                rawData, 
+                SSRanges, 
+                subsequenceParameters.isometryLen, 
+                subsequenceParameters.normalize,
+                mins,
+                maxs
+            );
+
+        // pick up a SS with the highest changeDegrees from SS which has the same starting data point
+        if (subsequenceParameters.filtering.indexOf('sameStartingPoint') >= 0) {
+            for (let dataIdx in SSRanges) {
+                let i = 0,
+                    filteredSameStartsIdx = [];
+                while (i < SSRanges[dataIdx].length) {
+                    let startIdx = SSRanges[dataIdx][i][0],
+                        maxChangeDegreeIdx = i;
+                    i++;
+                    while (i < SSRanges[dataIdx].length && SSRanges[dataIdx][i][0] == startIdx) {
+                        if (anomalyDegrees[dataIdx][maxChangeDegreeIdx] < anomalyDegrees[dataIdx][i]) {
+                            maxChangeDegreeIdx = i;
+                            i++;
+                            continue;
+                        } else if (i + 1 < SSRanges[dataIdx].length && SSRanges[dataIdx][i + 1][0] !== startIdx) {
+                            break;
                         } else {
-                            maxChangeDegreeIdx = filteredSameStartsIdx[i];
+                            i++;
+                            continue;
                         }
                     }
+                    filteredSameStartsIdx.push(maxChangeDegreeIdx);
+                    i++;
                 }
-                j++;
+                subsequences[dataIdx] = filteredSameStartsIdx;
             }
-            filteredSS.push(isometricData[maxChangeDegreeIdx]);
-            i = j;
+        }
+
+        // if needed, filter out SS with high overlapping degree
+        if (subsequenceParameters.filtering.indexOf('overlappingDegreeFilter') >= 0) {
+            if (subsequenceParameters.overlappingTh > 0) {
+                for (let dataIdx in SSRanges) {
+                    let filteredSS = [];
+                    let i = 0;
+                    while (i < subsequences[dataIdx].length) {
+                        let range1 = SSRanges[dataIdx][subsequences[dataIdx][i]],
+                            maxChangeDegreeIdx = subsequences[dataIdx][i];
+                        let j = i + 1;
+                        while (j < subsequences[dataIdx].length) {
+                            let overlap = overlappingDegree(range1, SSRanges[dataIdx][subsequences[dataIdx][j]]);
+                            if (overlap < subsequenceParameters.overlappingTh) {
+                                break;
+                            }
+                            if (overlap >= subsequenceParameters.overlappingTh) {
+                                if (anomalyDegrees[maxChangeDegreeIdx] < anomalyDegrees[subsequences[dataIdx][j]]) {
+                                    maxChangeDegreeIdx = subsequences[dataIdx][j];
+                                } else if (anomalyDegrees[maxChangeDegreeIdx] === anomalyDegrees[subsequences[dataIdx][j]]) {
+                                    if (SSRanges[dataIdx][subsequences[dataIdx][i]][1] - SSRanges[dataIdx][subsequences[dataIdx][i]][0] < SSRanges[dataIdx][subsequences[dataIdx][j]][1] - SSRanges[dataIdx][subsequences[dataIdx][j]][0]) {
+                                        maxChangeDegreeIdx = subsequences[dataIdx][j];
+                                    } else {
+                                        maxChangeDegreeIdx = subsequences[dataIdx][i];
+                                    }
+                                }
+                            }
+                            j++;
+                        }
+                        filteredSS.push(maxChangeDegreeIdx);
+                        i = j;
+                    }
+                    subsequences[dataIdx] = filteredSS;
+                }
+            }
+        }
+
+        // data collection only for filtered subsequences
+        for (let dataIdx in subsequences) {
+            for (let i = 0; i < subsequences[dataIdx].length; i++) {
+                let dataTmp = isometricData[dataIdx][subsequences[dataIdx][i]];
+                dataTmp.id = dataIdx;
+                subsequenceData.push(dataTmp);
+            }
         }
     } else {
-        for (let i = 0; i < filteredSameStartsIdx.length; i++) {
-            filteredSS.push(isometricData[filteredSameStartsIdx[i]]);
+        // extract subsequences by the normal sliding window
+        let step = 1;
+        for (let i = 0; i < datasets.length; i++) {
+            let dataIdx = datasets[i].id;
+            let targetData = DataStore.getDataArray(dataIdx, step);
+            targetData = convertDataStyle(targetData, variables);
+            let SSRanges = extractRangesFromInterpolatedData(targetData, subsequenceParameters.SSperiod);
+
+            // store indexes of subsequences for initialization
+            subsequences[dataIdx] = [];
+            for (let i = 0; i < SSRanges.length; i++) {
+                subsequences[dataIdx].push(i);
+            }
+
+            [isometricData, anomalyDegrees] = timeSeriesIsometry(
+                targetData, 
+                SSRanges, 
+                subsequenceParameters.isometryLen, 
+                subsequenceParameters.normalize,
+                mins[dataIdx],
+                maxs[dataIdx]
+            );
+
+            // pick up a SS with the highest changeDegrees from SS which has the same starting data point
+            if (subsequenceParameters.filtering.indexOf('sameStartingPoint') >= 0) {
+                let i = 0,
+                    filteredSameStartsIdx = [];
+                while (i < SSRanges.length) {
+                    let startIdx = SSRanges[i][0],
+                        maxChangeDegreeIdx = i;
+                    i++;
+                    while (i < SSRanges.length && SSRanges[i][0] == startIdx) {
+                        if (anomalyDegrees[maxChangeDegreeIdx] < anomalyDegrees[i]) {
+                            maxChangeDegreeIdx = i;
+                            i++;
+                            continue;
+                        } else if (i + 1 < SSRanges.length && SSRanges[i + 1][0] !== startIdx) {
+                            break;
+                        } else {
+                            i++;
+                            continue;
+                        }
+                    }
+                    filteredSameStartsIdx.push(maxChangeDegreeIdx);
+                    i++;
+                }
+                subsequences[dataIdx] = filteredSameStartsIdx;
+            }
+
+            // if needed, filter out SS with high overlapping degree
+            if (subsequenceParameters.filtering.indexOf('overlappingDegreeFilter') >= 0) {
+                if (subsequenceParameters.overlappingTh > 0) {
+                    let filteredSS = [];
+                    let i = 0;
+                    while (i < subsequences[dataIdx].length) {
+                        let range1 = SSRanges[subsequences[dataIdx][i]],
+                            maxChangeDegreeIdx = subsequences[dataIdx][i];
+                        let j = i + 1;
+                        while (j < subsequences[dataIdx].length) {
+                            let overlap = overlappingDegree(range1, SSRanges[subsequences[dataIdx][j]]);
+                            if (overlap < subsequenceParameters.overlappingTh) {
+                                break;
+                            }
+                            if (overlap >= subsequenceParameters.overlappingTh) {
+                                if (anomalyDegrees[maxChangeDegreeIdx] < anomalyDegrees[subsequences[dataIdx][j]]) {
+                                    maxChangeDegreeIdx = subsequences[dataIdx][j];
+                                } else if (anomalyDegrees[maxChangeDegreeIdx] === anomalyDegrees[subsequences[dataIdx][j]]) {
+                                    if (SSRanges[dataIdx][subsequences[dataIdx][i]][1] - SSRanges[dataIdx][subsequences[dataIdx][i]][0] < SSRanges[dataIdx][subsequences[dataIdx][j]][1] - SSRanges[dataIdx][subsequences[dataIdx][j]][0]) {
+                                        maxChangeDegreeIdx = subsequences[dataIdx][j];
+                                    } else {
+                                        maxChangeDegreeIdx = subsequences[dataIdx][i];
+                                    }
+                                }
+                            }
+                            j++;
+                        }
+                        filteredSS.push(maxChangeDegreeIdx);
+                        i = j;
+                    }
+                    subsequences[dataIdx] = filteredSS;
+                }
+            }
+            // data collection only for filtered subsequences
+            for (let i = 0; i < subsequences[dataIdx].length; i++) {
+                let dataTmp = isometricData[subsequences[dataIdx][i]];
+                dataTmp.id = dataIdx;
+                subsequenceData.push(dataTmp);
+            }
         }
     }
 
@@ -95,18 +232,36 @@ export function performClustering(data, clusteringParameters, SSperiod, isometry
     let clusterCenters, labels;
     switch (clusteringParameters.method) {
         case 'kmedoids':
-            [clusterCenters, labels] = kMedoids(filteredSS, clusteringParameters.clusterNum, distanceParameters);
+            [clusterCenters, labels] = kMedoids(subsequenceData, clusteringParameters.clusterNum, distanceParameters, variables);
             break;
         case 'kmeans':
-            [clusterCenters, labels] = kMeans(filteredSS, clusteringParameters.clusterNum, distanceParameters);
+            [clusterCenters, labels] = kMeans(subsequenceData, clusteringParameters.clusterNum, distanceParameters, variables);
             break;
         default:
             break;
     }
-    return [filteredSS, clusterCenters, labels];
+    return [subsequenceData, clusterCenters, labels];
 }
 
-export function extractRanges(data, SSperiod) {
+function extractRanges(datasets, SSperiod) {
+    let ranges = {};
+    for (let dataId in datasets) {
+        let rangeData = [];
+        for (let i = 0; i < datasets[dataId].length; i++) {
+            for (let j = i; j < datasets[dataId].length; j++) {
+                let rangeTmp = datasets[dataId][j].z - datasets[dataId][i].z;
+                if (rangeTmp > SSperiod[1])
+                    break;
+                if (SSperiod[0] <= rangeTmp && rangeTmp <= SSperiod[1])
+                    rangeData.push([i, j])
+            }
+        }
+        ranges[dataId] = rangeData;
+    }
+    return ranges;
+}
+
+function extractRangesFromInterpolatedData(data, SSperiod) {
     let ranges = [];
     for (let i = 0; i < data.length; i++) {
         for (let j = i; j < data.length; j++) {
@@ -120,52 +275,115 @@ export function extractRanges(data, SSperiod) {
     return ranges;
 }
 
-export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = true, min, max) {
-    let isometricSS = [], changeDegrees = [];
-    for (let i = 0; i < ranges.length; i++) {
-        let delta = (data[ranges[i][1]].z - data[ranges[i][0]].z) / isometryLen;
-        let SStmp = [];
-        for (let j = 0; j <= isometryLen; j++) {
-            // get n (n = isometryLen) coordinates between the currently focused range
-            let timestampTmp = j * delta + data[ranges[i][0]].z;
-            let dataTmp;
-
-            for (let k = ranges[i][0]; k <= ranges[i][1]; k++) {
-                // find data points around z=timestampTmp
-                if (data[k].z === timestampTmp) {
-                    dataTmp = data[k];
-                    break;
-                } else if (data[k].z < timestampTmp && timestampTmp < data[k + 1].z) {
-                    let zpos = (timestampTmp - data[k].z) / (data[k + 1].z - data[k].z);
-                    if (k === 0) {
-                        // if the data point just before the current data point is the first data point in the dataset
-                        let interpData = objectSub(data[k], objectSub(data[k + 1], data[k]));
-                        dataTmp = catmullromPointMd(zpos, interpData, data[k], data[k + 1], data[k + 2]);
-                        dataTmp.z = timestampTmp;
-                    } else if (k == data.length - 2) {
-                        // if the data point just after the current data point is the second last data point in the dataset
-                        let interpData = objectSum(data[k + 1], objectSub(data[k + 1], data[k]));
-                        dataTmp = catmullromPointMd(zpos, data[k - 1], data[k], data[k + 1], interpData);
-                        dataTmp.z = timestampTmp;
-                    } else {
-                        // there are at least two data points before and after the current data point
-                        dataTmp = catmullromPointMd(zpos, data[k - 1], data[k], data[k + 1], data[k + 2]);
-                        dataTmp.z = timestampTmp;
-                    }
-                    break;
-                }
-            }
-            SStmp.push(dataTmp);
-        }
-        // compute change degrees
-        changeDegrees.push(anomalyDegree(SStmp, min, max))
-        // normalize SS here if needed
-        if (normalize) {
-            SStmp = zNormalization(SStmp);
-        }
-        isometricSS.push(SStmp);
+function convertDataStyle(data, variables) {
+    let dataNew = [];
+    for (let i = 0; i < data.z.length; i++) {
+        let dataTmp = {};
+        variables.forEach(ele => {
+            dataTmp[ele] = data[ele][i];
+        });
+        dataNew.push(dataTmp);
     }
-    return [isometricSS, changeDegrees];
+    return dataNew;
+}
+
+export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = true, min, max) {
+    if (Array.isArray(data)) {
+        let isometricSS = [], changeDegrees = [];
+        for (let i = 0; i < ranges.length; i++) {
+            let delta = (data[ranges[i][1]].z - data[ranges[i][0]].z) / isometryLen;
+            let SStmp = [];
+            for (let j = 0; j <= isometryLen; j++) {
+                // get n (n = isometryLen) coordinates between the currently focused range
+                let timestampTmp = j * delta + data[ranges[i][0]].z;
+                let dataTmp;
+                for (let k = ranges[i][0]; k <= ranges[i][1]; k++) {
+                    // find data points around z=timestampTmp
+                    if (data[k].z === timestampTmp) {
+                        dataTmp = data[k];
+                        break;
+                    } else if (data[k].z < timestampTmp && timestampTmp < data[k + 1].z) {
+                        let zpos = (timestampTmp - data[k].z) / (data[k + 1].z - data[k].z);
+                        if (k === 0) {
+                            // if the data point just before the current data point is the first data point in the dataset
+                            let interpData = objectSub(data[k], objectSub(data[k + 1], data[k]));
+                            dataTmp = catmullromPointMd(zpos, interpData, data[k], data[k + 1], data[k + 2]);
+                            dataTmp.z = timestampTmp;
+                        } else if (k == data.length - 2) {
+                            // if the data point just after the current data point is the second last data point in the dataset
+                            let interpData = objectSum(data[k + 1], objectSub(data[k + 1], data[k]));
+                            dataTmp = catmullromPointMd(zpos, data[k - 1], data[k], data[k + 1], interpData);
+                            dataTmp.z = timestampTmp;
+                        } else {
+                            // there are at least two data points before and after the current data point
+                            dataTmp = catmullromPointMd(zpos, data[k - 1], data[k], data[k + 1], data[k + 2]);
+                            dataTmp.z = timestampTmp;
+                        }
+                        break;
+                    }
+                }
+                SStmp.push(dataTmp);
+            }
+            // compute change degrees
+            changeDegrees.push(anomalyDegree(SStmp, min, max));
+            // normalize SS here if needed
+            if (normalize) {
+                SStmp = zNormalization(SStmp, ['z']);
+            }
+            isometricSS.push(SStmp);
+        }
+        return [isometricSS, changeDegrees];
+    } else {
+        let isometricSS = {}, changeDegrees = {};
+        for (let dataIdx in data) {
+            let isometricSSTmp = [], changeDegreesTmp = [];
+            for (let i = 0; i < ranges[dataIdx].length; i++) {
+                let delta = (data[dataIdx][ranges[dataIdx][i][1]].z - data[dataIdx][ranges[dataIdx][i][0]].z) / isometryLen;
+                let SStmp = [];
+                for (let j = 0; j <= isometryLen; j++) {
+                    // get n (n = isometryLen) coordinates between the currently focused range
+                    let timestampTmp = j * delta + data[dataIdx][ranges[dataIdx][i][0]].z;
+                    let dataTmp;
+                    for (let k = ranges[dataIdx][i][0]; k <= ranges[dataIdx][i][1]; k++) {
+                        // find data points around z=timestampTmp
+                        if (data[dataIdx][k].z === timestampTmp) {
+                            dataTmp = data[dataIdx][k];
+                            break;
+                        } else if (data[dataIdx][k].z < timestampTmp && timestampTmp < data[dataIdx][k + 1].z) {
+                            let zpos = (timestampTmp - data[dataIdx][k].z) / (data[dataIdx][k + 1].z - data[dataIdx][k].z);
+                            if (k === 0) {
+                                // if the data point just before the current data point is the first data point in the dataset
+                                let interpData = objectSub(data[dataIdx][k], objectSub(data[dataIdx][k + 1], data[dataIdx][k]));
+                                dataTmp = catmullromPointMd(zpos, interpData, data[dataIdx][k], data[dataIdx][k + 1], data[dataIdx][k + 2]);
+                                dataTmp.z = timestampTmp;
+                            } else if (k == data[dataIdx].length - 2) {
+                                // if the data point just after the current data point is the second last data point in the dataset
+                                let interpData = objectSum(data[dataIdx][k + 1], objectSub(data[dataIdx][k + 1], data[dataIdx][k]));
+                                dataTmp = catmullromPointMd(zpos, data[dataIdx][k - 1], data[dataIdx][k], data[dataIdx][k + 1], interpData);
+                                dataTmp.z = timestampTmp;
+                            } else {
+                                // there are at least two data points before and after the current data point
+                                dataTmp = catmullromPointMd(zpos, data[dataIdx][k - 1], data[dataIdx][k], data[dataIdx][k + 1], data[dataIdx][k + 2]);
+                                dataTmp.z = timestampTmp;
+                            }
+                            break;
+                        }
+                    }
+                    SStmp.push(dataTmp);
+                }
+                // compute change degrees
+                changeDegreesTmp.push(anomalyDegree(SStmp, min[dataIdx], max[dataIdx]));
+                // normalize SS here if needed
+                if (normalize) {
+                    SStmp = zNormalization(SStmp, ['z']);
+                }
+                isometricSSTmp.push(SStmp);
+            }
+            isometricSS[dataIdx] = isometricSSTmp;
+            changeDegrees[dataIdx] = changeDegreesTmp;
+        }
+        return [isometricSS, changeDegrees];
+    }
 }
 
 function catmullromPointMd (x, v0, v1, v2, v3) {
@@ -195,17 +413,21 @@ function catmullromPoint(x, v0, v1, v2, v3) {
     return ((c4 * x + c3) * x + c2) * x + c1;
 }
 
-function zNormalization(data) {
+function zNormalization(data, ignored = undefined) {
     let normalized = [];
     // compute the mean and standard deviation of the time interval
     let means = {}, stds = {};
     for (let key in data[0]) {
-        means[key] = 0;
-        stds[key] = 0;
+        if (typeof(ignored) === "undefined" || ignored.indexOf(key) < 0) {
+            means[key] = 0;
+            stds[key] = 0;
+        }
     }
     for (let i = 0; i < data.length; i++) {
         for (let key in data[i]) {
-            means[key] += data[i][key];
+            if (typeof(ignored) === "undefined" || ignored.indexOf(key) < 0) {
+                means[key] += data[i][key];
+            }
         }
     }
     for (let key in means) {
@@ -213,7 +435,9 @@ function zNormalization(data) {
     }
     for (let i = 0; i < data.length; i++) {
         for (let key in data[i]) {
-            stds[key] += Math.pow((data[i][key] - means[key]), 2);
+            if (typeof(ignored) === "undefined" || ignored.indexOf(key) < 0) {
+                stds[key] += Math.pow((data[i][key] - means[key]), 2);
+            }
         }
     }
     for (let key in stds) {
@@ -224,7 +448,12 @@ function zNormalization(data) {
     for (let i = 0; i < data.length; i++) {
         let normalizedTmp = {};
         for (let key in data[i]) {
-            normalizedTmp[key] = (data[i][key] - means[key]) / stds[key];
+            if (typeof(ignored) === "undefined" || ignored.indexOf(key) < 0) {
+                normalizedTmp[key] = (data[i][key] - means[key]) / stds[key];
+            }
+            if (typeof(ignored) !== "undefined" && ignored.indexOf(key) >= 0) {
+                normalizedTmp[key] = data[i][key];
+            }
         }
         normalized.push(normalizedTmp);
     }
@@ -337,7 +566,7 @@ function distanceMatrix(data, distanceParameters, variables) {
     return distMatrix;
 }
 
-function kMedoids(data, clusterNum, distanceParameters) {
+function kMedoids(data, clusterNum, distanceParameters, variables) {
     // step 1: compute distance matrix between SS
     // step 2: pick up k medoids from all SS
     // step 3: assign other SS to medoids
@@ -346,9 +575,8 @@ function kMedoids(data, clusterNum, distanceParameters) {
 
     // step 1
     // note: when comparing SSi and SSj (i < j), refer distMatrix[i][j - i - 1]
-    let variables = Object.keys(data[0][0]);
-    variables = variables.filter(ele => ele !== 'z');
-    let distMatrix = distanceMatrix(data, distanceParameters, variables);
+    let variableList = variables.filter(ele => ele !== 'z');
+    let distMatrix = distanceMatrix(data, distanceParameters, variableList);
 
     // step 2
     // find the inital medoids which make the errors inside the clusters minimum
@@ -481,13 +709,13 @@ function kMedoids(data, clusterNum, distanceParameters) {
     }
 }
 
-function kMeans(data, clusterNum, distanceParameters) {
+function kMeans(data, clusterNum, distanceParameters, variables) {
     // step 1: randomly assign SS to k clusters
     // step 2: compute barycenters (centroids) of the clusters
     // step 3: re-assign SS to the nearest cluster
     // step 4: repeat steps 2 and 3 if there are any changes the nodes in the cluster
-    let variables = Object.keys(data[0][0]);
-    variables = variables.filter(ele => ele !== 'z');
+    let variableList = variables.filter(ele => ele !== 'z');
+    console.log('variables in kMeans', variableList);
     let dataLen = data[0].length;
 
     // step 1 and 2
@@ -539,7 +767,7 @@ function kMeans(data, clusterNum, distanceParameters) {
                     case 'DTWD':
                         if (distanceParameters.window > 0) {
                             // DTWMD
-                            distTmp = DTWMD(centroids[j], data[i], variables, distanceParameters.window, distanceParameters.distFunc);
+                            distTmp = DTWMD(centroids[j], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
                             if (distTmp[distTmp.length - 1][distTmp[0].length - 1] < NNDist) {
                                 NNDist = distTmp[distTmp.length - 1][distTmp[0].length - 1];
                                 NNCentroid = j;
@@ -547,7 +775,7 @@ function kMeans(data, clusterNum, distanceParameters) {
                             }
                         } else {
                             // DTWSimpleMD
-                            distTmp = DTWSimpleMD(centroids[j], data[i], variables, distanceParameters.distFunc);
+                            distTmp = DTWSimpleMD(centroids[j], data[i], variableList, distanceParameters.distFunc);
                             if (distTmp[distTmp.length - 1][distTmp[0].length - 1] < NNDist) {
                                 NNDist = distTmp[distTmp.length - 1][distTmp[0].length - 1];
                                 NNCentroid = j;
@@ -558,7 +786,7 @@ function kMeans(data, clusterNum, distanceParameters) {
                     case 'DTWI':
                         if (distanceParameters.window > 0) {
                             // DTW
-                            distTmp = DTW(centroids[j], data[i], variables, distanceParameters.window, distanceParameters.distFunc);
+                            distTmp = DTW(centroids[j], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
                             let distSum = 0;
                             variables.forEach(key => {
                                 distSum += distTmp[key][distTmp[key].length - 1][distTmp[key][0].length - 1];
@@ -570,7 +798,7 @@ function kMeans(data, clusterNum, distanceParameters) {
                             }
                         } else {
                             // DTWSimple
-                            distTmp = DTWSimple(centroids[j], data[i], variables, distanceParameters.distFunc);
+                            distTmp = DTWSimple(centroids[j], data[i], variableList, distanceParameters.distFunc);
                             let distSum = 0;
                             variables.forEach(key => {
                                 distSum += distTmp[key][distTmp[key].length - 1][distTmp[key][0].length - 1];
@@ -616,7 +844,7 @@ function kMeans(data, clusterNum, distanceParameters) {
                     // new centroid will be a barycenter of data values of data samples in the cluster
                     for (let j = 0; j < dataLen; j++) {
                         let dataTmp = {};
-                        variables.forEach(key => {
+                        variableList.forEach(key => {
                             dataTmp[key] = 0;
                         });
                         centroidTmp.push(dataTmp);
@@ -628,7 +856,7 @@ function kMeans(data, clusterNum, distanceParameters) {
                         // focus on a data[clusters[i][j]] (data[clusters[i][j]] has 31 data points)
                         // check the path between the current centroid and data[clusters[i][j]] (labels[clusters[i][j]].path)
                         for (let k = 0; k < labels[clusters[i][j]].path.length; k++) {
-                            variables.forEach(key => {
+                            variableList.forEach(key => {
                                 centroidTmp[labels[clusters[i][j]].path[k][0]][key] += data[clusters[i][j]][labels[clusters[i][j]].path[k][1]][key];
                             });
                             dataCount[labels[clusters[i][j]].path[k][0]]++;
@@ -636,7 +864,7 @@ function kMeans(data, clusterNum, distanceParameters) {
                     }
                     // compute barycenters of each variables
                     for (let j = 0; j < centroidTmp.length; j++) {
-                        variables.forEach(key => {
+                        variableList.forEach(key => {
                             centroidTmp[j][key] /= dataCount[j];
                         });
                     }
@@ -653,7 +881,7 @@ function kMeans(data, clusterNum, distanceParameters) {
                     for (let j = 0; j < dataLen; j++) {
                         let dataTmp = {},
                             countTmp = {};
-                        variables.forEach(key => {
+                        variableList.forEach(key => {
                             dataTmp[key] = 0;
                             countTmp[key] = 0;
                         });
@@ -665,7 +893,7 @@ function kMeans(data, clusterNum, distanceParameters) {
                     for (let j = 0; j < clusters[i].length; j++) {
                         // focus on a data[clusters[i][j]] (data[clusters[i][j]] has 31 data points)
                         // check the path between the current centroid and data[clusters[i][j]] (labels[clusters[i][j]].path)
-                        variables.forEach(key => {
+                        variableList.forEach(key => {
                             for (let k = 0; k < labels[clusters[i][j]].path[key].length; k++) {
                                 centroidTmp[labels[clusters[i][j]].path[key][k][0]][key] += data[clusters[i][j]][labels[clusters[i][j]].path[key][k][1]][key];
                                 dataCount[labels[clusters[i][j]].path[key][k][0]][key]++;
@@ -674,7 +902,7 @@ function kMeans(data, clusterNum, distanceParameters) {
                     }
                     // compute barycenters of each variables
                     for (let j = 0; j < centroidTmp.length; j++) {
-                        variables.forEach(key => {
+                        variableList.forEach(key => {
                             centroidTmp[j][key] /= dataCount[j][key];
                         });
                     }

@@ -9,7 +9,6 @@ import * as mathLib from '../lib/mathLib';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
-import { min } from 'lodash';
 
 export function makeQueryfromQBE(source, period, ignored, coordinates) {
     let roundedPeriod = [Math.floor(period[0]), Math.ceil(period[1])];
