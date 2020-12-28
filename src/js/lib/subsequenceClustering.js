@@ -715,7 +715,6 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
     // step 3: re-assign SS to the nearest cluster
     // step 4: repeat steps 2 and 3 if there are any changes the nodes in the cluster
     let variableList = variables.filter(ele => ele !== 'z');
-    console.log('variables in kMeans', variableList);
     let dataLen = data[0].length;
 
     // step 1 and 2

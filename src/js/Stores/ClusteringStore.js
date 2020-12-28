@@ -4,9 +4,11 @@ import dispatcher from '../Dispatcher/dispatcher';
 class ClusteringStore extends EventEmitter {
     constructor() {
         super();
+        this.viewportSize = 18;
         this.subsequences = [];
         this.clusterCenters = [];
         this.labels = [];
+        this.gridSize = 18;
     }
 
     handleActions(action) {
@@ -17,6 +19,14 @@ class ClusteringStore extends EventEmitter {
             default:
                 break;
         }
+    }
+
+    getViewportSize() {
+        return this.viewportSize;
+    }
+
+    getGridSize() {
+        return this.gridSize;
     }
 
     getSubsequences() {
@@ -35,6 +45,9 @@ class ClusteringStore extends EventEmitter {
         this.subsequences = subsequences;
         this.clusterCenters = clusterCenters;
         this.labels = labels;
+        // クラスタの数から適切なグリッドサイズを求める
+        let div = this.viewportSize * Math.PI / this.clusterCenters.length;
+        this.gridSize = div * 0.8;
         this.emit('showClusteringResults');
     }
 }

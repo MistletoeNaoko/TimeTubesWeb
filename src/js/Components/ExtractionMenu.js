@@ -1,10 +1,11 @@
 import React from 'react';
 import VisualQuery from '../Components/VisualQuery';
 import AutomaticExtraction from '../Components/AutomaticExtraction';
-import Clustering from '../Components/Clustering';
+import ClusteringSettings from './ClusteringSettings';
 import * as FeatureAction from '../Actions/FeatureAction';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
+import ClusteringStore from '../Stores/ClusteringStore';
 
 export default class ExtractionMenu extends React.Component {
     constructor(props) {
@@ -47,6 +48,9 @@ export default class ExtractionMenu extends React.Component {
             for (let i = 0; i < targets.length; i++) {
                 targets[i].checked = true;
             }
+        });
+        ClusteringStore.on('showClusteringResults', () => {
+            $('#extractionMenu').css('display', 'none');
         });
     }
 
@@ -117,7 +121,7 @@ export default class ExtractionMenu extends React.Component {
                             <VisualQuery/>
                         </div>
                         <div className="tab-pane fade" id="clustering">
-                            <Clustering/>
+                            <ClusteringSettings/>
                         </div>
                     </div>
                 </div>
