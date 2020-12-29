@@ -3,14 +3,17 @@ import ClusteringStore from '../Stores/ClusteringStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import BufferGeometryUtils from '../lib/BufferGeometryUtils';
 import OrbitControls from "three-orbitcontrols";
-
 import * as THREE from 'three';
+// import TextSprite from 'three.textsprite';
+import TextSprite from '@seregpie/three.text-sprite';
 
 export default class ClusteringOverview extends React.Component {
     constructor() {
         super();
 
         this.tubes = [];
+        this.axes = [];
+        this.labels = [];
         this.tubeNum = 16;
         this.segment = 16;
         this.division = 5;
@@ -103,7 +106,7 @@ export default class ClusteringOverview extends React.Component {
     setCameras(width, height) {
         // initialize camera properties
         let fov = 45;
-        let far = 100; //Math.ceil(this.data.spatial[this.data.spatial.length - 1].z - this.data.spatial[0].z + 50);
+        let far = 1000; //Math.ceil(this.data.spatial[this.data.spatial.length - 1].z - this.data.spatial[0].z + 50);
         let depth = Math.tan(fov / 2.0 * Math.PI / 180.0) * 2;
         let aspect = width / height;
 
@@ -120,13 +123,12 @@ export default class ClusteringOverview extends React.Component {
             -size_x / 2, size_x / 2,
             size_y / 2, -size_y / 2, 0.1,
             far);
-        this.camera = this.cameraSet.perspective;
-        this.camera.position.z = 50;
+        this.camera = this.cameraSet.orthographic;
+        this.camera.position.z = 100;
         this.camera.lookAt(this.scene.position);
     }
 
     computeSplines() {
-        let variables = Object.keys(this.clusterCenters[0][0]);
         this.minmax = {};
         for (let key in this.clusterCenters[0][0]) {
             this.minmax[key] = [this.clusterCenters[0][0][key], this.clusterCenters[0][0][key]];
@@ -159,21 +161,29 @@ export default class ClusteringOverview extends React.Component {
     }
 
     drawClusterCentersAsTubes() {
-        // チューブグループをクラスタの数ずつ作成
-        // 描画画面内に等間隔の円形状にチューブを配置
-        // 原点中心に描画してから移動？
-        // z座標は配列のインデックスに一致
-       
-        // すでにオブジェクトがあれば削除
-
-        let texture = new THREE.TextureLoader();
-        texture.load('img/1_256.png', function(texture) {
-            this.texture = texture;
+        // TODO: 各チューブの場所にグリッドもしくは軸とクラスタ番号を表示
+        if (typeof(this.texture) === 'undefined') {
+            let texture = new THREE.TextureLoader();
+            texture.load('img/1_256.png', function(texture) {
+                this.texture = texture;
+                this.drawTubes();
+            }.bind(this));
+        } else {
             this.drawTubes();
-        }.bind(this));
+        }
+        this.drawAxes();
+        this.drawLabels();
     }
 
-    drawTubes(texture) {
+    drawTubes() {
+        for (let i = 0; i < this.tubes.length; i++) {
+            let geometry = this.tubes[i].geometry,
+                material = this.tubes[i].material;
+            this.scene.remove(this.tubes[i]);
+            geometry.dispose();
+            material.dispose();
+        }
+
         let divNum = this.division * this.clusterCenters[0].length;
         let del = Math.PI * 2 / (this.segment - 1);
 
@@ -243,19 +253,80 @@ export default class ClusteringOverview extends React.Component {
                     flagV: {value: true}
                 },
                 side: THREE.DoubleSide,
-                transparent: true,
-                // clipping: true,
-                // clippingPlanes: [this.clippingPlane]
+                transparent: true
             });
             this.tubes.push(new THREE.Mesh(tubeGeometry, tubeMaterial));
-            // this.tubeGroup.add(this.tube);
             this.tubes[this.tubes.length - 1].rotateY(Math.PI);
-            let viewportSize = ClusteringStore.getViewportSize();
-            let posX = viewportSize * Math.sin(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
-            let posY = viewportSize * Math.cos(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
+            let viewportSize = ClusteringStore.getViewportSize() * 0.8;
+            let posX = viewportSize * Math.cos(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
+            let posY = viewportSize * Math.sin(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
             this.tubes[this.tubes.length - 1].translateX(posX);
             this.tubes[this.tubes.length - 1].translateY(posY);
             this.scene.add(this.tubes[this.tubes.length - 1]);
+        }
+    }
+
+    drawAxes() {
+        for (let i = 0; i < this.axes.length; i++) {
+            let geometry = this.axes[i].geometry,
+                material = this.axes[i].material;
+            this.scene.remove(this.axes[i]);
+            geometry.dispose();
+            material.dispose();
+        }
+
+        let axisSize = ClusteringStore.getGridSize() * 0.7;
+        let viewportSize = ClusteringStore.getViewportSize() * 0.8;
+        for (let i = 0; i < this.clusterCenters.length; i++) {
+            let axisGeometry = new THREE.BufferGeometry();
+            let axisMaterial = new THREE.LineBasicMaterial({
+                color: 'white',
+                opacity: 0.5
+            });
+            let axisPosisitons = [];
+            let axisIndices = [];
+            let j = 0;
+            axisPosisitons.push(-1 * axisSize, 0, 0);
+            axisPosisitons.push(axisSize, 0, 0);
+            axisPosisitons.push(0, axisSize, 0);
+            axisPosisitons.push(0, -1 * axisSize, 0);
+            axisPosisitons.push(0, 0, 0);
+            axisPosisitons.push(0, 0, this.clusterCenters[i].length);
+
+            axisIndices.push(j + 0, j + 1, j + 2, j + 3, j + 4, j + 5);
+            j += 6;
+
+            axisGeometry.setIndex(axisIndices);
+            axisGeometry.setAttribute(
+                'position',
+                new THREE.Float32BufferAttribute(axisPosisitons, 3)
+            );
+            this.axes.push(new THREE.LineSegments(axisGeometry, axisMaterial));
+            this.axes[this.axes.length - 1].rotateY(Math.PI);
+            let posX = viewportSize * Math.cos(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
+            let posY = viewportSize * Math.sin(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
+            this.axes[this.axes.length - 1].translateX(posX);
+            this.axes[this.axes.length - 1].translateY(posY);
+            this.scene.add(this.axes[this.axes.length - 1]);
+        }
+    }
+
+    drawLabels() {
+        let axisSize = ClusteringStore.getGridSize() * 0.7;
+        let viewportSize = ClusteringStore.getViewportSize() * 0.8;
+        for (let i = 0; i < this.clusterCenters.length; i++) {
+            let label = new TextSprite({
+                alignment: 'center',
+                color: '#ffffff',
+                fontFamily: 'Arial, Helvetica, sans-serif',
+                textSize: 0.8,
+                text: 'Cluster ' + i
+            });
+            this.labels.push(label);
+            let posX = viewportSize * Math.cos(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
+            let posY = viewportSize * Math.sin(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i) + axisSize;
+            this.labels[this.labels.length - 1].position.set(posX, posY, -3);
+            this.scene.add(this.labels[this.labels.length - 1]);
         }
     }
 }

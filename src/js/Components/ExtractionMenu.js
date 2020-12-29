@@ -50,7 +50,7 @@ export default class ExtractionMenu extends React.Component {
             }
         });
         ClusteringStore.on('showClusteringResults', () => {
-            $('#extractionMenu').css('display', 'none');
+            // $('#extractionMenu').css('display', 'none');
         });
     }
 
