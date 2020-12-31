@@ -1,3 +1,4 @@
+import { cluster } from 'd3';
 import {objectSum, objectSub, objectMul, objectDiv, objectAbsSub, objectTotal} from '../lib/mathLib';
 import DataStore from '../Stores/DataStore';
 
@@ -558,6 +559,37 @@ function distanceMatrix(data, distanceParameters, variables) {
                 }
             }
             break;
+        case 'DTW':
+            if (distanceParameters.window > 0) {
+                // DTW
+                for (let i = 0; i < data.length - 1; i++) {
+                    let distList = [];
+                    for (let j = i + 1; j < data.length; j++) {
+                        let distTmp = {};
+                        let dists = DTW(data[i], data[j], variables, distanceParameters.window, disranceParameter.distFunc);
+                        variables.forEach(key => {
+                            distTmp[key] = dists[key][dists[key].length - 1][dists[key][0].length - 1];
+                        });
+                        distList.push(distTmp);
+                    }
+                    distMatrix.push(distList);
+                }
+            } else {
+                // DTWSimple
+                for (let i = 0; i < data.length - 1; i++) {
+                    let distList = [];
+                    for (let j = i + 1; j < data.length; j++) {
+                        let distTmp = {};
+                        let dists = DTWSimple(data[i], data[j], variables, distanceParameters.distFunc);
+                        variables.forEach(key => {
+                            distTmp[key] = dists[key][dists[key].length - 1][dists[key][0].length - 1];
+                        });
+                        distList.push(distTmp);
+                    }
+                    distMatrix.push(distList);
+                }
+            }
+            break;
         case 'Euclidean':
             break;
         default:
@@ -577,100 +609,174 @@ function kMedoids(data, clusterNum, distanceParameters, variables) {
     // note: when comparing SSi and SSj (i < j), refer distMatrix[i][j - i - 1]
     let variableList = variables.filter(ele => ele !== 'z');
     let distMatrix = distanceMatrix(data, distanceParameters, variableList);
-
     // step 2
     // find the inital medoids which make the errors inside the clusters minimum
     let init_search = 5;
     let score = Infinity, medoids, labels;
     for (let i = 0; i < init_search; i++) {
         // step 3
-        let [medoidsTmp, scoreTmp, labelsTmp] = initMedoids();
+        let [medoidsTmp, scoreTmp, labelsTmp] = initMedoids(variableList);
         if (scoreTmp < score) {
             score = scoreTmp;
             medoids = medoidsTmp;
             labels = labelsTmp;
         }
     }
-
     // step 3 and 4
     let newMedoids = [], newLabels = [];
     let loop = 0, maxIteration = 300;
-    while (medoids.filter(i => newMedoids.indexOf(i) == -1).length > 0 && loop < maxIteration) {
+    while (!checkMedoidsUpdates(medoids, newMedoids, variableList) && loop < maxIteration) {//(medoids.filter(i => newMedoids.indexOf(i) == -1).length > 0 && loop < maxIteration) {
         // update medoids until there are no medoid updates or repeat updating medoids maxIteration times
         if (newMedoids.length !== 0 && newLabels.length !== 0) {
             medoids = newMedoids;
             labels = newLabels;
         }
         // step 3
-        newMedoids = updateMedoids(labels);
+        newMedoids = updateMedoids(labels, variableList);
         // step 4
-        newLabels = assignSSToMedoids(newMedoids);
+        newLabels = assignSSToMedoids(newMedoids, variableList);
         loop++;
     }
-
     medoids = newMedoids;
+    labels = newLabels;
     let medoidData = [];
     for (let i = 0; i < medoids.length; i++) {
-        medoidData.push(data[medoids[i]]);
+        let dataTmp = [];
+        for (let i = 0; i < data[0].length; i++) {
+            dataTmp.push({});
+        }
+        for (let key in medoids[i]) {
+            for (let j = 0; j < data[medoids[i][key]].length; j++) {
+                dataTmp[j][key] = data[medoids[i][key]][j][key];
+            }
+        }
+        medoidData.push(dataTmp);
     }
-    labels = newLabels;
     return [medoidData, labels];
 
-    function initMedoids() {
+    function initMedoids(activeVariables) {
         // randomly pick up k SS from the dataset
         let medoids = [];
         while (medoids.length < clusterNum) {
-            let medoid = Math.floor(Math.random() * Math.floor(data.length));
-            if (medoids.indexOf(medoid) < 0)
-                medoids.push(medoid);
+            let medoidTmp = {};
+            activeVariables.forEach((key) => {
+                let medoid;
+                while (typeof(medoid) === 'undefined') {
+                    medoid = Math.floor(Math.random() * Math.floor(data.length));
+                    for (let i = 0; i < medoids.length; i++) {
+                        if (medoids[i][key] === medoid) {
+                            medoid = undefined;
+                            break;
+                        }
+                    }
+                }
+                medoidTmp[key] = medoid;
+            });
+            medoids.push(medoidTmp);
         }
-        let labels = assignSSToMedoids(medoids);
-        let score = evalInit(medoids, labels);
-
+        let labels = assignSSToMedoids(medoids, activeVariables);
+        let score = evalInit(medoids, labels, activeVariables);
         return [medoids, score, labels];
     }
-    function evalInit(medoids, labels) {
+    function checkMedoidsUpdates (pMedoids, nMedoids, activeVariables) {
+        let update = true;
+        if (pMedoids.length !== nMedoids.length) {
+            update = false;
+        } else {
+            for (let i = 0; i < nMedoids.length; i++) {
+                let sameMedoidFlag = false;
+                for (let j = 0; j < pMedoids.length; j++) {
+                    let updateTmp = true;
+                    for (let key of activeVariables) {
+                        if (nMedoids[i][key] !== pMedoids[j][key]) {
+                            updateTmp = false;
+                            break;
+                        }
+                    }; 
+                    if (updateTmp) {
+                        sameMedoidFlag = true;
+                        break;
+                    }
+                }
+                if (!sameMedoidFlag) {
+                    update = false;
+                    break;
+                }
+            }
+        }
+        // 一つでも更新があればupdateはfalseになる
+        return update;
+    }
+    function evalInit(medoids, labels, activeVariables) {
         // compute errors between a medoid and SS
         let errorSum = 0;
         for (let i = 0; i < labels.length; i++) {
-            if (i < medoids[labels[i]]) {
-                errorSum += distMatrix[i][medoids[labels[i]] - i - 1];
-            } else if (medoids[labels[i]] < i) {
-                errorSum += distMatrix[medoids[labels[i]]][i - medoids[labels[i]] - 1];
-            }
+            activeVariables.forEach(key => {
+                if (i < medoids[labels[i]][key]) {
+                    errorSum += distMatrix[i][medoids[labels[i]][key] - i - 1][key];
+                } else if (medoids[labels[i]][key] < i) {
+                    errorSum += distMatrix[medoids[labels[i]][key]][i - medoids[labels[i]][key] - 1][key];
+                }  
+            });
         }
         return errorSum;
     }
-    function assignSSToMedoids(medoids) {
+    function assignSSToMedoids(medoids, activeVariables) {
         let labels = [];
         for (let i = 0; i < data.length; i++) {
-            // if data[i] is a medoid
-            let medoidCheck = medoids.indexOf(i);
-            if (medoidCheck >= 0) {
-                labels.push(medoidCheck);
-                continue;
-            }
             let NNMedoid = 0,
-                NNDist = distMatrix[Math.min(i, NNMedoid)][Math.max(i, NNMedoid) - Math.min(i, NNMedoid) - 1];
-            for (let j = 1; j < medoids.length; j++) {
-                // compare data[i] and medoid[j] (=data[medoids[j]])
-                if (i < medoids[j]) {
-                    if (distMatrix[i][medoids[j] - i - 1] < NNDist) {
-                        NNMedoid = j;
-                        NNDist = distMatrix[i][medoids[j] - i - 1];
+                NNDist = Infinity;
+            // for (let key of activeVariables) {
+            //     if (medoids[0][key] === 0) {
+            //         continue;
+            //     } else {
+            //         NNDist += distMatrix[0][medoids[0][key] - 1][key];
+            //     }
+            // };
+            for (let j = 0; j < medoids.length; j++) {
+                let distTmp = 0;
+                activeVariables.forEach(key => {
+                    if (i < medoids[j][key]) {
+                        distTmp += distMatrix[i][medoids[j][key] - i - 1][key];
+                    } else if (medoids[j][key] < i) {
+                        distTmp += distMatrix[medoids[j][key]][i - medoids[j][key] - 1][key];
+                    } else {
+                        distTmp += 0;
                     }
-                } else if (medoids[j] < i) {
-                    if (distMatrix[medoids[j]][i - medoids[j] - 1] < NNDist) {
-                        NNMedoid = j;
-                        NNDist = distMatrix[medoids[j]][i - medoids[j] - 1];
-                    }
+                });
+                if (distTmp < NNDist) {
+                    NNMedoid = j;
+                    NNDist = distTmp;
                 }
             }
             labels.push(NNMedoid);
+            // if data[i] is a medoid
+            // let medoidCheck = medoids.indexOf(i);
+            // if (medoidCheck >= 0) {
+            //     labels.push(medoidCheck);
+            //     continue;
+            // }
+            // let NNMedoid = 0,
+            //     NNDist = distMatrix[Math.min(i, NNMedoid)][Math.max(i, NNMedoid) - Math.min(i, NNMedoid) - 1];
+            // for (let j = 1; j < medoids.length; j++) {
+            //     // compare data[i] and medoid[j] (=data[medoids[j]])
+            //     if (i < medoids[j]) {
+            //         if (distMatrix[i][medoids[j] - i - 1] < NNDist) {
+            //             NNMedoid = j;
+            //             NNDist = distMatrix[i][medoids[j] - i - 1];
+            //         }
+            //     } else if (medoids[j] < i) {
+            //         if (distMatrix[medoids[j]][i - medoids[j] - 1] < NNDist) {
+            //             NNMedoid = j;
+            //             NNDist = distMatrix[medoids[j]][i - medoids[j] - 1];
+            //         }
+            //     }
+            // }
+            // labels.push(NNMedoid);
         }
         return labels;
     }
-    function updateMedoids(labels) {
+    function updateMedoids(labels, activeVariables) {
         // divide SS by clusters
         let clusters = [];
         for (let i = 0; i < clusterNum; i++) {
@@ -681,30 +787,77 @@ function kMedoids(data, clusterNum, distanceParameters, variables) {
         }
         let newMedoids = [];
         for (let i = 0; i < clusterNum; i++) {
-            // find the best medoid from each cluster
-            let newMedoidTmp = 0,
-                minDistSum = Infinity;
+            let newMedoidTmp = {},
+                minDistSum = {};
+            activeVariables.forEach((key) => {
+                newMedoidTmp[key] = 0;
+                minDistSum[key] = Infinity;
+            });
+            // 変数毎にクラスタ内の距離合計を最小にする代表値を選ぶ
             for (let j = 0; j < clusters[i].length; j++) {
-                // if the medoid of the cluster is clusters[i], how much the total distance between the medoid and other SS
-                let distSumTmp = 0;
+                // 各変数についてclusters[i][j]をmedoidにした場合
+                let distSumTmp = {};
+                for (let key in minDistSum) {
+                    distSumTmp[key] = 0;
+                }
                 for (let k = 0; k < clusters[i].length; k++) {
+                    let overCounter = 0;
                     if (clusters[i][j] === clusters[i][k]) {
                         continue;
                     } else if (clusters[i][j] < clusters[i][k]) {
-                        distSumTmp += distMatrix[clusters[i][j]][clusters[i][k] - clusters[i][j] - 1];
-                    } else if (clusters[k] > clusters[j]) {
-                        distSumTmp += distMatrix[clusters[i][k]][clusters[i][j] - clusters[i][k] - 1];
+                        for (let key in minDistSum) {
+                            distSumTmp[key] += distMatrix[clusters[i][j]][clusters[i][k] - clusters[i][j] - 1][key];
+                            if (minDistSum[key] < distSumTmp[key]) {
+                                overCounter++;
+                            }
+                        }
+                    } else if (clusters[i][k] < clusters[i][j]) {
+                        for (let key in minDistSum) {
+                            distSumTmp[key] += distMatrix[clusters[i][k]][clusters[i][j] - clusters[i][k] - 1][key];
+                            if (minDistSum[key] < distSumTmp[key]) {
+                                overCounter++;
+                            }
+                        }
                     }
-                    if (minDistSum < distSumTmp)
+                    if (overCounter === Object.keys(minDistSum)) {
                         break;
+                    }
                 }
-                if (distSumTmp < minDistSum) {
-                    newMedoidTmp = clusters[i][j];
-                    minDistSum = distSumTmp;
+                // 各変数について最小値だったらmedoidを更新
+                for (let key in minDistSum) {
+                    if (distSumTmp[key] < minDistSum[key]) {
+                        minDistSum[key] = distSumTmp[key];
+                        newMedoidTmp[key] = clusters[i][j];
+                    }
                 }
             }
             newMedoids.push(newMedoidTmp);
         }
+        // for (let i = 0; i < clusterNum; i++) {
+        //     // find the best medoid from each cluster
+        //     let newMedoidTmp = 0,
+        //         minDistSum = Infinity;
+        //     for (let j = 0; j < clusters[i].length; j++) {
+        //         // if the medoid of the cluster is clusters[i], how much the total distance between the medoid and other SS
+        //         let distSumTmp = 0;
+        //         for (let k = 0; k < clusters[i].length; k++) {
+        //             if (clusters[i][j] === clusters[i][k]) {
+        //                 continue;
+        //             } else if (clusters[i][j] < clusters[i][k]) {
+        //                 distSumTmp += distMatrix[clusters[i][j]][clusters[i][k] - clusters[i][j] - 1];
+        //             } else if (clusters[k] > clusters[j]) {
+        //                 distSumTmp += distMatrix[clusters[i][k]][clusters[i][j] - clusters[i][k] - 1];
+        //             }
+        //             if (minDistSum < distSumTmp)
+        //                 break;
+        //         }
+        //         if (distSumTmp < minDistSum) {
+        //             newMedoidTmp = clusters[i][j];
+        //             minDistSum = distSumTmp;
+        //         }
+        //     }
+        //     newMedoids.push(newMedoidTmp);
+        // }
         return newMedoids;
     }
 }

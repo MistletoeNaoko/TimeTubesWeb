@@ -11,7 +11,7 @@ export default class clusteringSettings extends React.Component {
             queryMode: FeatureStore.getMode(),
             normalize: true,
             clusteringMethod: 'kmedoids',
-            distanceMetric: 'DTWD',
+            distanceMetric: 'DTW',
             targetList: FeatureStore.getTarget(),
             filteringSS: ['dataDrivenSlidingWindow', 'sameStartingPoint', 'overlappingDegreeFilter']
         };
@@ -259,6 +259,30 @@ export default class clusteringSettings extends React.Component {
         let clusteringOptions;
         switch(this.state.clusteringMethod) {
             case 'kmedoids':
+                let distanceMetric = (
+                    <form
+                        className="form-check"
+                        id='distanceMetricClustering'
+                        onChange={this.switchDistanceMetric.bind(this)}
+                        style={{paddingLeft: '0px'}}>
+                        <div className="custom-control custom-radio">
+                            <input type="radio" id="EuclideanClustering" name="distanceMetricClustering" value='Euclidean'
+                                checked={(this.state.distanceMetric === 'Euclidean')? true: false}
+                                className="custom-control-input" readOnly/>
+                            <label className="custom-control-label" htmlFor="EuclideanClustering">
+                                Euclidean
+                            </label>
+                        </div>    
+                        <div className="custom-control custom-radio">
+                            <input type="radio" id="DTWClustering" name="distanceMetricClustering" value='DTW'
+                                checked={(this.state.distanceMetric === 'DTW')? true: false}
+                                className="custom-control-input" readOnly/>
+                            <label className="custom-control-label" htmlFor="DTWClustering">
+                                DTW
+                            </label>
+                        </div>
+                    </form>
+                );
                 clusteringOptions = (
                     <div id='clusteringOptions'>
                         <div className="row matchingOption">
@@ -278,36 +302,7 @@ export default class clusteringSettings extends React.Component {
                                 Distance metric
                             </div>
                             <div className='col'>
-                                <form
-                                    className="form-check"
-                                    id='distanceMetricClustering'
-                                    onChange={this.switchDistanceMetric.bind(this)}
-                                    style={{paddingLeft: '0px'}}>
-                                    <div className="custom-control custom-radio">
-                                        <input type="radio" id="EuclideanClustering" name="distanceMetricClustering" value='Euclidean'
-                                            checked={(this.state.distanceMetric === 'Euclidean')? true: false}
-                                            className="custom-control-input" readOnly/>
-                                        <label className="custom-control-label" htmlFor="EuclideanClustering">
-                                            Euclidean
-                                        </label>
-                                    </div>    
-                                    <div className="custom-control custom-radio">
-                                        <input type="radio" id="DTWIClustering" name="distanceMetricClustering" value='DTWI'
-                                            checked={(this.state.distanceMetric === 'DTWI')? true: false}
-                                            className="custom-control-input" readOnly/>
-                                        <label className="custom-control-label" htmlFor="DTWIClustering">
-                                            DTW<sub>I</sub>
-                                        </label>
-                                    </div>
-                                    <div className="custom-control custom-radio">
-                                        <input type="radio" id="DTWDClustering" name="distanceMetricClustering" value='DTWD'
-                                            checked={(this.state.distanceMetric === 'DTWD')? true: false}
-                                            className="custom-control-input" readOnly/>
-                                        <label className="custom-control-label" htmlFor="DTWDClustering">
-                                            DTW<sub>D</sub>
-                                        </label>
-                                    </div>
-                                </form>
+                                {distanceMetric}
                             </div>
                         </div>
                     </div>
@@ -476,8 +471,6 @@ export default class clusteringSettings extends React.Component {
             }
         }
         let [subsequences, clusterCenters, labels] = performClustering(datasets, clusteringParameters, subsequenceParameters, variables);
-        
-        console.log(subsequences, clusterCenters, labels);
         // let data = DataStore.getData(0),
         //     clusteringParameters = {
         //         method: 'kmedoids',
