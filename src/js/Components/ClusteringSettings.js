@@ -485,6 +485,10 @@ export default class clusteringSettings extends React.Component {
         // // perform clustering
         // let [subsequences, clusterCenters, labels] = performClustering(data, clusteringParameters, SSperiod, isometryLen, overlappingTh, variables);
         // // show clustering results
-        ClusteringAction.showClusteringResults(subsequences, clusterCenters, labels);
+        let datasetIds = [];
+        for (let i = 0; i < datasets.length; i++) {
+            datasetIds.push(datasets[i].id);
+        }
+        ClusteringAction.showClusteringResults(datasetIds, subsequences, clusterCenters, labels);
     }
 }

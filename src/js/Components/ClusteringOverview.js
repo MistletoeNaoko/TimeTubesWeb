@@ -60,6 +60,7 @@ export default class ClusteringOverview extends React.Component {
 
         ClusteringStore.on('showClusteringResults', () => {
             this.clusterCenters = ClusteringStore.getClusterCenters();
+            this.clusterColors = ClusteringStore.getClusterColors();
             this.computeSplines();
             this.drawClusterCentersAsTubes();
         });
@@ -330,7 +331,7 @@ export default class ClusteringOverview extends React.Component {
         for (let i = 0; i < this.clusterCenters.length; i++) {
             let label = new TextSprite({
                 alignment: 'center',
-                color: '#ffffff',
+                color: 'hsl(' + this.clusterColors[i][0] + ',' + this.clusterColors[i][1] * 100 + '%,' + this.clusterColors[i][2] * 100 + '%)',
                 fontFamily: 'Arial, Helvetica, sans-serif',
                 textSize: 0.8,
                 text: 'Cluster ' + i
