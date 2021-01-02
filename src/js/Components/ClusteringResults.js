@@ -6,6 +6,7 @@ import ClusteringOverview from '../Components/ClusteringOverview';
 import ClusteringDetail from '../Components/ClusteringDetail';
 import ClusteringProcess from '../Components/ClusteringProcess';
 import ClusteringDetails from '../Components/ClusteringDetail';
+import {toggleExtractionMenu} from '../lib/domActions';
 
 export default class ClusteringResults extends React.Component {
     constructor(props) {
@@ -33,15 +34,12 @@ export default class ClusteringResults extends React.Component {
         );
     }
 
-    // componentDidMount() {
-    //     ClusteringStore.on('showClusteringResults', () => {
-    //         this.subsequences = ClusteringStore.getSubsequences();
-    //         this.clusterCenters = ClusteringStore.getClusterCenters();
-    //         this.labels = ClusteringStore.getLabels();
-    //         this.divideSSintoClusters();
-    //         this.drawClusteringResultsTmp();
-    //     });
-    // }
+    componentDidMount() {
+        ClusteringStore.on('showClusteringResults', () => {
+            toggleExtractionMenu('none');
+            $('#clusteringResults').css('width', '100%');
+        });
+    }
 
     // drawClusteringResultsTmp() {
     //     let lineChartWidth = 200, 

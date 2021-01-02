@@ -1,3 +1,26 @@
+export function toggleExtractionMenu(display) {
+    let current = $('#extractionMainMenu').css('display');
+    if (display === 'none' || current === 'block') {
+        $('#extractionMainMenu').css('display', 'none');//toggle();
+        $('#extractionMenu').css('width', '0%');
+        if ($('#extractionResults')) {
+            $('#extractionResults').css('width', '100%');
+        } else if ($('#clusteringResults')) {
+            $('#clusteringResults').css('width', '100%');
+        }
+        $('#collapseExtractionMenu').text('Open');
+    } else if (display === 'block' || current === 'none') {
+        $('#extractionMainMenu').css('display', 'block');
+        $('#extractionMenu').css('width', '30%');
+        if ($('#extractionResults')) {
+            $('#extractionResults').css('width', '70%');
+        } else if ($('#clusteringResults')) {
+            $('#clusteringResults').css('width', '70%');
+        }
+        $('#collapseExtractionMenu').text('Close');
+    }
+}
+
 export function toggleSourcePanel() {
     let current = $('#QBESourceMain').css('display');
     if (current === 'block') {

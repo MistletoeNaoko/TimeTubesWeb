@@ -417,7 +417,8 @@ export default class clusteringSettings extends React.Component {
         let clusteringMethod = clusteringMethodList.options[selectedMethodIdx].value;
         ClusteringAction.changeClusteringMethod(clusteringMethod);
         this.setState({
-            clusteringMethod: clusteringMethod
+            clusteringMethod: clusteringMethod,
+            distanceMetric: (clusteringMethod === 'kmedoids')? 'DTW': 'DTWD'
         });
     }
 

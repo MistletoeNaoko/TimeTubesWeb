@@ -3,6 +3,7 @@ import VisualQuery from '../Components/VisualQuery';
 import AutomaticExtraction from '../Components/AutomaticExtraction';
 import ClusteringSettings from './ClusteringSettings';
 import * as FeatureAction from '../Actions/FeatureAction';
+import {toggleExtractionMenu} from '../lib/domActions';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 import ClusteringStore from '../Stores/ClusteringStore';
@@ -49,9 +50,6 @@ export default class ExtractionMenu extends React.Component {
                 targets[i].checked = true;
             }
         });
-        ClusteringStore.on('showClusteringResults', () => {
-            // $('#extractionMenu').css('display', 'none');
-        });
     }
 
     selectTabAE() {
@@ -69,6 +67,11 @@ export default class ExtractionMenu extends React.Component {
             targetIdList.push(Number(selectedTargets[i].value));
         }
         FeatureAction.updateTarget(targetIdList);
+    }
+
+    clickCloseExtractionMenu() {
+        toggleExtractionMenu();
+        resizeExtractionResultsArea();
     }
 
     render() {
@@ -94,7 +97,7 @@ export default class ExtractionMenu extends React.Component {
             <div
                 id='extractionMenu'
                 className='featureColumn'
-                style={{overflow: 'auto'}}>
+                style={{float: 'left', position: 'relative'}}>
                 <div id='extractionMainMenu'>
                     <div id='targetDatasetsList' className='controllersElem'>
                         <h5>Target</h5>
@@ -126,6 +129,13 @@ export default class ExtractionMenu extends React.Component {
                     </div>
                 </div>
                 {/*{QBESource}*/}
+                <button
+                    id='collapseExtractionMenu'
+                    className="btn btn-primary btn-sm"
+                    style={{width: '4rem', height: '1.5rem',position: 'absolute', top: '0px', right: '-4rem', zIndex: 100}}
+                    onClick={this.clickCloseExtractionMenu}>
+                        Close
+                </button>
             </div>
         );
     }

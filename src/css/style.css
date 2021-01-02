@@ -621,11 +621,6 @@ img.selectorIcon:active {
 }
 
 #collapseSourcePanel{
-    position: relative;
-    top: 20px;
-    right: 20px;
-    width: 40px;
-    height: 40px;
     z-index: 100;
 }
 
@@ -719,4 +714,8 @@ img.selectorIcon:active {
 
 #clusteringResultsOverview {
     width: 70%;
+}
+
+#clusterCenterLineChartsSVG {
+    background-color: #fff;
 }

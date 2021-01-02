@@ -611,34 +611,74 @@ function kMedoids(data, clusterNum, distanceParameters, variables) {
     let distMatrix = distanceMatrix(data, distanceParameters, variableList);
     // step 2
     // find the inital medoids which make the errors inside the clusters minimum
-    let init_search = 5;
+    let init_search = 100;
     let score = Infinity, medoids, labels;
+    let bestMedoids, bestLabels, bestDist = Infinity;
+
     for (let i = 0; i < init_search; i++) {
         // step 3
-        let [medoidsTmp, scoreTmp, labelsTmp] = initMedoids(variableList);
-        if (scoreTmp < score) {
-            score = scoreTmp;
-            medoids = medoidsTmp;
-            labels = labelsTmp;
+        [medoids, score, labels] = initMedoids(variableList);
+        // if (scoreTmp < score) {
+        //     score = scoreTmp;
+        //     medoids = medoidsTmp;
+        //     labels = labelsTmp;
+        // }
+        // step 3 and 4
+        let newMedoids = [], newLabels = [], distSum = [];
+        let loop = 0, maxIteration = 300;
+        while (!checkMedoidsUpdates(medoids, newMedoids, variableList) && loop < maxIteration) {//(medoids.filter(i => newMedoids.indexOf(i) == -1).length > 0 && loop < maxIteration) {
+            // update medoids until there are no medoid updates or repeat updating medoids maxIteration times
+            if (newMedoids.length !== 0 && newLabels.length !== 0) {
+                medoids = newMedoids;
+                labels = newLabels;
+            }
+            // step 3
+            [newMedoids, distSum] = updateMedoids(labels, variableList);
+            // step 4
+            newLabels = assignSSToMedoids(newMedoids, variableList);
+            loop++;
+        }
+        let distSumTmp = 0;
+        for (let i = 0; i < distSum.length; i++) {
+            for (let key in distSum[i]) {
+                distSumTmp += distSum[i][key];
+            }
+        }
+        if (distSumTmp < bestDist) {
+            bestDist = distSumTmp;
+            bestMedoids = newMedoids;
+            bestLabels = newLabels;
         }
     }
-    // step 3 and 4
-    let newMedoids = [], newLabels = [];
-    let loop = 0, maxIteration = 300;
-    while (!checkMedoidsUpdates(medoids, newMedoids, variableList) && loop < maxIteration) {//(medoids.filter(i => newMedoids.indexOf(i) == -1).length > 0 && loop < maxIteration) {
-        // update medoids until there are no medoid updates or repeat updating medoids maxIteration times
-        if (newMedoids.length !== 0 && newLabels.length !== 0) {
-            medoids = newMedoids;
-            labels = newLabels;
-        }
-        // step 3
-        newMedoids = updateMedoids(labels, variableList);
-        // step 4
-        newLabels = assignSSToMedoids(newMedoids, variableList);
-        loop++;
-    }
-    medoids = newMedoids;
-    labels = newLabels;
+    console.log(bestDist);
+    medoids = bestMedoids;
+    labels = bestLabels;
+    // for (let i = 0; i < init_search; i++) {
+    //     // step 3
+    //     let [medoidsTmp, scoreTmp, labelsTmp] = initMedoids(variableList);
+    //     if (scoreTmp < score) {
+    //         score = scoreTmp;
+    //         medoids = medoidsTmp;
+    //         labels = labelsTmp;
+    //     }
+    // }
+    // // step 3 and 4
+    // let newMedoids = [], newLabels = [];
+    // let loop = 0, maxIteration = 300;
+    // while (!checkMedoidsUpdates(medoids, newMedoids, variableList) && loop < maxIteration) {//(medoids.filter(i => newMedoids.indexOf(i) == -1).length > 0 && loop < maxIteration) {
+    //     // update medoids until there are no medoid updates or repeat updating medoids maxIteration times
+    //     if (newMedoids.length !== 0 && newLabels.length !== 0) {
+    //         medoids = newMedoids;
+    //         labels = newLabels;
+    //     }
+    //     // step 3
+    //     newMedoids = updateMedoids(labels, variableList);
+    //     // step 4
+    //     newLabels = assignSSToMedoids(newMedoids, variableList);
+    //     loop++;
+    // }
+    // medoids = newMedoids;
+    // labels = newLabels;
     let medoidData = [];
     for (let i = 0; i < medoids.length; i++) {
         let dataTmp = [];
@@ -786,6 +826,7 @@ function kMedoids(data, clusterNum, distanceParameters, variables) {
             clusters[labels[i]].push(i);
         }
         let newMedoids = [];
+        let distSumFinal = [];
         for (let i = 0; i < clusterNum; i++) {
             let newMedoidTmp = {},
                 minDistSum = {};
@@ -832,6 +873,7 @@ function kMedoids(data, clusterNum, distanceParameters, variables) {
                 }
             }
             newMedoids.push(newMedoidTmp);
+            distSumFinal.push(minDistSum);
         }
         // for (let i = 0; i < clusterNum; i++) {
         //     // find the best medoid from each cluster
@@ -858,7 +900,7 @@ function kMedoids(data, clusterNum, distanceParameters, variables) {
         //     }
         //     newMedoids.push(newMedoidTmp);
         // }
-        return newMedoids;
+        return [newMedoids, distSumFinal];
     }
 }
 

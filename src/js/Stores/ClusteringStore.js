@@ -18,6 +18,9 @@ class ClusteringStore extends EventEmitter {
             case 'SHOW_CLUSTERING_RESULTS':
                 this.showClusteringResults(action.datasets, action.subsequences, action.clusterCenters, action.labels);
                 break;
+            case 'SHOW_CLUSTER_DETAILS':
+                this.showClusterDetails(action.cluster);
+                break;
             default:
                 break;
         }
@@ -66,6 +69,10 @@ class ClusteringStore extends EventEmitter {
             this.clusterColors.push([hue, 0.5, 0.5]);
         }
         this.emit('showClusteringResults');
+    }
+
+    showClusterDetails(cluster) {
+        this.emit('showClusterDetails', cluster);
     }
 }
 

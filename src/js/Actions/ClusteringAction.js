@@ -7,3 +7,7 @@ export function showClusteringResults (datasets, subsequences, clusterCenters, l
 export function changeClusteringMethod(method) {
     dispatcher.dispatch({type: 'CHANGE_CLUSTERING_METHOD', method});
 }
+
+export function showClusterDetails(cluster) {
+    dispatcher.dispatch({type: 'SHOW_CLUSTER_DETAILS', cluster});
+}

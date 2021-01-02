@@ -1,3 +1,4 @@
+import * as ClusteringAction from '../Actions/ClusteringAction';
 import React from 'react';
 import ClusteringStore from '../Stores/ClusteringStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
@@ -6,6 +7,7 @@ import OrbitControls from "three-orbitcontrols";
 import * as THREE from 'three';
 // import TextSprite from 'three.textsprite';
 import TextSprite from '@seregpie/three.text-sprite';
+import { cluster } from 'd3';
 
 export default class ClusteringOverview extends React.Component {
     constructor() {
@@ -22,6 +24,9 @@ export default class ClusteringOverview extends React.Component {
         this.opacityCurve = TimeTubesStore.getOpacityCurve('Default');
         this.vertex = document.getElementById('vertexShader_tube').textContent;
         this.fragment = document.getElementById('fragmentShader_tube').textContent;
+        this.raycaster = new THREE.Raycaster();
+        this.clusterCenters = [];
+        this.clusterColors = [];
     }
 
     componentDidMount() {
@@ -43,6 +48,8 @@ export default class ClusteringOverview extends React.Component {
         this.renderScene();
         this.start();
 
+        this.initDetailView();
+
         let directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
         directionalLight.position.set(-20, 40, 60);
         this.scene.add(directionalLight);
@@ -50,6 +57,9 @@ export default class ClusteringOverview extends React.Component {
         this.scene.add(ambientLight);
 
         this.addControls();
+
+        let onMouseClick = this.onMouseClick();
+        this.canvas.addEventListener('click', onMouseClick.bind(this), false);
         // for test
         // let geo = new THREE.BoxGeometry(40, 25, 15);
         // let mat = new THREE.MeshBasicMaterial( {color: 0x00ff00} );
@@ -63,6 +73,9 @@ export default class ClusteringOverview extends React.Component {
             this.clusterColors = ClusteringStore.getClusterColors();
             this.computeSplines();
             this.drawClusterCentersAsTubes();
+        });
+        ClusteringStore.on('showClusterDetails', (cluster) => {
+            this.setDetailView(cluster);
         });
     }
 
@@ -95,6 +108,27 @@ export default class ClusteringOverview extends React.Component {
 
     renderScene() {
         if (this.renderer) this.renderer.render(this.scene, this.camera);
+        if (this.detailRenderer) this.detailRenderer.render(this.scene, this.cameraDetail);
+    }
+
+    initDetailView() {
+        this.detailRenderer = new THREE.WebGLRenderer();
+        this.detailRenderer.setSize(300, 300);
+        this.detailRenderer.setClearColor('#000000');
+        this.detailRenderer.domElement.id = 'selectedClusterCenterTimeTubes';
+    }
+
+    setDetailView(cluster) {
+        if (typeof(cluster) !== 'undefined' && $('#selectedClusterCenterTimeTubes')) {
+            let viewportSize = ClusteringStore.getViewportSize() * 0.7;
+            let posX = viewportSize * Math.cos(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * cluster);
+            let posY = viewportSize * Math.sin(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * cluster);
+            this.cameraDetail.position.x = posX;
+            this.cameraDetail.position.y = posY;
+            this.cameraDetail.lookAt(posX, posY, 0);
+            let canvas = document.getElementById('selectedClusterCenterTimeTubes');
+            canvas.appendChild(this.detailRenderer.domElement);
+        }
     }
 
     addControls() {
@@ -102,6 +136,33 @@ export default class ClusteringOverview extends React.Component {
         this.controls.position0.set(0, 0, 50);
         this.controls.screenSpacePanning = false;
         this.controls.enableZoom = false;
+    }
+
+    onMouseClick() {
+        return function(event) {
+            let name = this.getIntersectedIndex(event);
+            if (name) {
+                name = Number(name.split('_')[1]);
+                // show detail of the selected cluster
+                ClusteringAction.showClusterDetails(name);
+            }
+        }
+    }
+
+    getIntersectedIndex(event) {
+        let name;
+        let raymouse = new THREE.Vector2();
+        raymouse.x = (event.offsetX / this.renderer.domElement.clientWidth) * 2 - 1;
+        raymouse.y = -(event.offsetY / this.renderer.domElement.clientHeight) * 2 + 1;
+        this.raycaster.setFromCamera(raymouse, this.camera);
+        for (let i = 0; i < this.labels.length; i++) {
+            let intersects = this.raycaster.intersectObject(this.labels[i]);
+            if (intersects.length > 0) {
+                name = intersects[0].object.name;
+                break;
+            }
+        }
+        return name;
     }
 
     setCameras(width, height) {
@@ -127,6 +188,14 @@ export default class ClusteringOverview extends React.Component {
         this.camera = this.cameraSet.orthographic;
         this.camera.position.z = 100;
         this.camera.lookAt(this.scene.position);
+
+        let axisSize = ClusteringStore.getGridSize() * 0.7;
+        this.cameraDetail = new THREE.OrthographicCamera(
+            -axisSize / 2, axisSize / 2,
+            axisSize / 2, -axisSize / 2, 0.1,
+            far
+        );
+        this.cameraDetail.position.z = 10;
     }
 
     computeSplines() {
@@ -336,6 +405,7 @@ export default class ClusteringOverview extends React.Component {
                 textSize: 0.8,
                 text: 'Cluster ' + i
             });
+            label.name = 'Cluster_' + i;
             this.labels.push(label);
             let posX = viewportSize * Math.cos(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
             let posY = viewportSize * Math.sin(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i) + axisSize;

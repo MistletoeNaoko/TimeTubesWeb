@@ -36,7 +36,6 @@ export default class ClusteringTimeline extends React.Component {
             this.subsequences = ClusteringStore.getSubsequences();
             this.labels = ClusteringStore.getLabels();
             this.clusterColors = ClusteringStore.getClusterColors();
-            console.log(this.labels);
             this.divideDataIntoCluster();
             this.drawTimelines();
         });
@@ -48,7 +47,11 @@ export default class ClusteringTimeline extends React.Component {
             this.clusters.push([]);
         }
         for (let i = 0; i < this.labels.length; i++) {
-            this.clusters[this.labels[i]].push(i);
+            if (typeof(this.labels[i]) === 'object') {
+                this.clusters[this.labels[i].cluster].push(i);
+            } else {
+                this.clusters[this.labels[i]].push(i);
+            }
         }
     }
 
