@@ -9,6 +9,9 @@ export default class ClusteringDetail extends React.Component {
         super();
         this.margin = {left: 30, right: 10, top: 20, bottom: 20};
         this.cluster = -1;
+        this.state = {
+            cluster: -1
+        };
     }
 
     render() {
@@ -29,7 +32,6 @@ export default class ClusteringDetail extends React.Component {
                 ref={mount => {
                     this.mount = mount;
                 }}>
-                clustering detail
                 {clusterCenterTimeTubes}
                 {clusterCenterLineCharts}
                 {datasetDistribution}
@@ -54,6 +56,9 @@ export default class ClusteringDetail extends React.Component {
             this.drawClusterCenterLineCharts();
             this.drawSubsequenceLengthHistogram();
             this.drawSparklinesTable();
+            this.setState({
+                cluster: cluster
+            });
         });
     }
 
@@ -74,7 +79,6 @@ export default class ClusteringDetail extends React.Component {
     datasetDistribution() {
         return (
             <div>
-                dataset distribution
             </div>
         );
     }
@@ -87,9 +91,25 @@ export default class ClusteringDetail extends React.Component {
     }
 
     clusterFeatureTable() {
+        let table;
+        if (this.state.cluster >= 0) {
+            let width = this.mount.clientWidth;
+            table = (
+                <table id='clusterFeatureTable'
+                    className='table table-hover'
+                    style={{width: width}}>
+                    <tbody>
+                        <tr>
+                            <td style={{width: width / 2}}>Subsequence number</td>
+                            <td style={{width: width / 2}}>{this.SSCluster.length}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            );
+        }
         return (
-            <div>
-                cluster feature
+            <div id='clusterFeature'>
+                {table}
             </div>
         );
     }
@@ -343,7 +363,7 @@ export default class ClusteringDetail extends React.Component {
             .attr('width', clientWidth)
             .attr('height', cellHeight)
             .text(function(d) {return d});
-            
+
         let tableMain = d3.select('#subsequencesOverview')
             .append('div')
             .attr('id', 'subsequenceOverviewTableMain')
@@ -418,4 +438,28 @@ export default class ClusteringDetail extends React.Component {
                 return curves[d](this.SSCluster[(i === this.variables.length - 1)? rowCounter++: rowCounter]);
             }.bind(this));
     }
+
+    // drawClusterFeatureTable() {
+    //     $('#clusterFeatureTable').remove();
+
+    //     let clientWidth = this.mount.clientWidth;
+    //     let cellHeight = 30;
+    //     let table = d3.select('#clusterFeature')
+    //         .append('table')
+    //         .attr('class', 'table table-hover')
+    //         .attr('id', 'clusterFeatureTable')
+    //         .attr('width', clientWidth);
+    //     let tbody = table.append('tbody')
+    //         .attr('width', clientWidth);
+
+    //     // subsequence number
+    //     let SSnumRow = tbody.append('tr')
+    //         .attr('height'. cellHeight)
+    //         // .append('td')
+    //         // .attr('width', clientWidth / 2)
+    //         // .text('subsequence number')
+    //         // .append('td')
+    //         // .attr('width', clientWidth / 2)
+    //         // .text(this.SSCluster.length);
+    // }
 }

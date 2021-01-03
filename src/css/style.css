@@ -719,9 +719,16 @@ img.selectorIcon:active {
 #clusteringResults {
     display: flex;
 }
+#clusteringProcess {
+    width: 20%;
+}
+
+#clusteringDetail {
+    width: 20%;
+}
 
 #clusteringResultsOverview {
-    width: 70%;
+    width: 60%;
 }
 
 #clusterCenterLineChartsSVG {
@@ -735,3 +742,4 @@ img.selectorIcon:active {
 #subsequenceOverviewTable {
     margin: unset;
 }
+
