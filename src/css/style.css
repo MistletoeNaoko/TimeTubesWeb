@@ -528,6 +528,14 @@ img.selectorIcon:active {
     color: #f26418;
     margin-bottom: 0.5rem;
 }
+
+.spark {
+    background-color: #fff;
+}
+
+.sparkTable th, .sparkTable td {
+    padding: 3px;
+}
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
@@ -718,4 +726,12 @@ img.selectorIcon:active {
 
 #clusterCenterLineChartsSVG {
     background-color: #fff;
+}
+
+#subsequenceLengthHistogramSVG {
+    background-color: #fff;
+}
+
+#subsequenceOverviewTable {
+    margin: unset;
 }

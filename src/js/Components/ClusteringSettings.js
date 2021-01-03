@@ -490,6 +490,13 @@ export default class clusteringSettings extends React.Component {
         for (let i = 0; i < datasets.length; i++) {
             datasetIds.push(datasets[i].id);
         }
-        ClusteringAction.showClusteringResults(datasetIds, subsequences, clusterCenters, labels);
+        ClusteringAction.showClusteringResults(
+            datasetIds, 
+            subsequences, 
+            clusterCenters, 
+            labels, 
+            clusteringParameters, 
+            subsequenceParameters
+        );
     }
 }

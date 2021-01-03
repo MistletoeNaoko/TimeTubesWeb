@@ -11,12 +11,14 @@ class ClusteringStore extends EventEmitter {
         this.clusterCenters = [];
         this.labels = [];
         this.clusterColors = []; // hsv color space
+        this.clusteringParameters = {};
+        this.subsequenceParameters = {};
     }
 
     handleActions(action) {
         switch (action.type) {
             case 'SHOW_CLUSTERING_RESULTS':
-                this.showClusteringResults(action.datasets, action.subsequences, action.clusterCenters, action.labels);
+                this.showClusteringResults(action.datasets, action.subsequences, action.clusterCenters, action.labels, action.clusteringParameters, action.subsequenceParameters);
                 break;
             case 'SHOW_CLUSTER_DETAILS':
                 this.showClusterDetails(action.cluster);
@@ -54,7 +56,15 @@ class ClusteringStore extends EventEmitter {
         return this.clusterColors;
     }
 
-    showClusteringResults (datasets, subsequences, clusterCenters, labels) {
+    getClusteringParameters() {
+        return this.clusteringParameters;
+    }
+
+    getSubsequenceParameters() {
+        return this.subsequenceParameters;
+    }
+
+    showClusteringResults (datasets, subsequences, clusterCenters, labels, clusteringParameters, subsequenceParameters) {
         this.datasets = datasets;
         this.subsequences = subsequences;
         this.clusterCenters = clusterCenters;
@@ -68,6 +78,8 @@ class ClusteringStore extends EventEmitter {
             let hue = i * 360 / this.clusterCenters.length;
             this.clusterColors.push([hue, 0.5, 0.5]);
         }
+        this.clusteringParameters = clusteringParameters;
+        this.subsequenceParameters = subsequenceParameters;
         this.emit('showClusteringResults');
     }
 
