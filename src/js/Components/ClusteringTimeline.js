@@ -6,7 +6,7 @@ import ClusteringStore from '../Stores/ClusteringStore';
 export default class ClusteringTimeline extends React.Component {
     constructor() {
         super();
-        this.margin = {left: 20, right: 20};
+        this.margin = {left: 20, right: 50};
         this.datasets = [];
         this.custerCenters = [];
         this.subsequences = [];
@@ -22,6 +22,7 @@ export default class ClusteringTimeline extends React.Component {
     render() {
         return (
             <div id='clusteringTimeline'
+                className='resultAreaElem'
                 ref={mount => {
                     this.mount = mount;
                 }}>
@@ -67,7 +68,7 @@ export default class ClusteringTimeline extends React.Component {
 
         let clientWidth = this.mount.clientWidth,
             width = this.mount.clientWidth - this.margin.left - this.margin.right,
-            fileNameWidth = 50;
+            fileNameWidth = 100;
         let widthTimeline = width - fileNameWidth,
             height = 40;
         let timelineArea = d3.select('#clusteringTimeline')

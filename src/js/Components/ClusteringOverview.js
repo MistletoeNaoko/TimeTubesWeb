@@ -19,6 +19,7 @@ export default class ClusteringOverview extends React.Component {
         this.tubeNum = 16;
         this.segment = 16;
         this.division = 5;
+        this.cameraPosZ = 50;
         this.tubeGroups = [];
         this.splines = [];
         this.opacityCurve = TimeTubesStore.getOpacityCurve('Default');
@@ -31,7 +32,8 @@ export default class ClusteringOverview extends React.Component {
 
     componentDidMount() {
         const width = this.mount.clientWidth;
-        const height = $('#clusteringResultsOverview').height();
+        let appHeaderHeight = $('#appHeader').height();
+        const height = $('#clusteringResultsOverview').height() - appHeaderHeight;
         this.scene = new THREE.Scene();
 
         this.setCameras(width, height);
@@ -71,6 +73,7 @@ export default class ClusteringOverview extends React.Component {
         ClusteringStore.on('showClusteringResults', () => {
             this.clusterCenters = ClusteringStore.getClusterCenters();
             this.clusterColors = ClusteringStore.getClusterColors();
+            this.setRendererSize();
             this.computeSplines();
             this.drawClusterCentersAsTubes();
         });
@@ -86,7 +89,6 @@ export default class ClusteringOverview extends React.Component {
                 ref={mount => {
                     this.mount = mount;
                 }}>
-                clustering overview
             </div>
         );
     }
@@ -110,6 +112,34 @@ export default class ClusteringOverview extends React.Component {
         if (this.renderer) this.renderer.render(this.scene, this.camera);
         if (this.detailRenderer) this.detailRenderer.render(this.scene, this.cameraDetail);
     }
+    
+    setRendererSize() {
+        const width = this.mount.clientWidth;
+        let appHeaderHeight = $('#appHeader').height();
+        let timelineHeight = 40 * ClusteringStore.getDatasets().length + 16 + 2;
+        const height = window.innerHeight - appHeaderHeight - timelineHeight;
+        this.renderer.setSize(width, height);
+        let aspect = width / height, 
+            fov = 45,
+            far = 1000;
+        let depth = Math.tan(fov / 2.0 * Math.PI / 180.0) * 2;
+        let size_y = depth * this.cameraPosZ;
+        let size_x = depth * this.cameraPosZ * aspect;
+        // this.camera.left = -size_x / 2;
+        // this.camera.right = size_x / 2;
+        // this.camera.top = size_y / 2;
+        // this.camera.bottom = -size_y / 2;
+        // this.camera.lookAt(this.scene.position);
+        this.cameraSet.orthographic = new THREE.OrthographicCamera(
+            -size_x / 2, size_x / 2,
+            size_y / 2, -size_y / 2, 0.1,
+            far);
+        this.camera = this.cameraSet.orthographic;
+        this.camera.position.z = this.cameraPosZ;
+        this.camera.lookAt(this.scene.position);
+        this.renderer.render(this.scene, this.camera);
+        this.addControls();
+    }
 
     initDetailView() {
         this.detailRenderer = new THREE.WebGLRenderer();
@@ -120,6 +150,8 @@ export default class ClusteringOverview extends React.Component {
 
     setDetailView(cluster) {
         if (typeof(cluster) !== 'undefined' && $('#selectedClusterCenterTimeTubes')) {
+            let rendererSize = $('#selectedClusterCenterTimeTubes').width() - 16 * 2;
+            this.detailRenderer.setSize(rendererSize, rendererSize);
             let viewportSize = ClusteringStore.getViewportSize() * 0.7;
             let posX = viewportSize * Math.cos(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * cluster);
             let posY = viewportSize * Math.sin(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * cluster);
@@ -179,14 +211,14 @@ export default class ClusteringOverview extends React.Component {
             0.1,
             far
         );
-        let size_y = depth * (50);
-        let size_x = depth * (50) * aspect;
+        let size_y = depth * this.cameraPosZ;
+        let size_x = depth * this.cameraPosZ * aspect;
         this.cameraSet.orthographic = new THREE.OrthographicCamera(
             -size_x / 2, size_x / 2,
             size_y / 2, -size_y / 2, 0.1,
             far);
         this.camera = this.cameraSet.orthographic;
-        this.camera.position.z = 100;
+        this.camera.position.z = this.cameraPosZ;
         this.camera.lookAt(this.scene.position);
 
         let axisSize = ClusteringStore.getGridSize() * 0.7;

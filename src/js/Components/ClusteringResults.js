@@ -35,10 +35,10 @@ export default class ClusteringResults extends React.Component {
     }
 
     componentDidMount() {
-        ClusteringStore.on('showClusteringResults', () => {
-            toggleExtractionMenu('none');
-            $('#clusteringResults').css('width', '100%');
-        });
+        // ClusteringStore.on('showClusteringResults', () => {
+        //     toggleExtractionMenu('none');
+        //     $('#clusteringResults').css('width', '100%');
+        // });
     }
 
     // drawClusteringResultsTmp() {

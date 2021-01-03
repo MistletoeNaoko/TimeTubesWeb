@@ -3,6 +3,7 @@ import {performClustering} from '../lib/subsequenceClustering';
 import * as ClusteringAction from '../Actions/ClusteringAction';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
+import {toggleExtractionMenu} from '../lib/domActions';
 
 export default class clusteringSettings extends React.Component {
     constructor(props) {
@@ -490,6 +491,8 @@ export default class clusteringSettings extends React.Component {
         for (let i = 0; i < datasets.length; i++) {
             datasetIds.push(datasets[i].id);
         }
+        toggleExtractionMenu('none');
+        $('#clusteringResults').css('width', '100%');
         ClusteringAction.showClusteringResults(
             datasetIds, 
             subsequences, 

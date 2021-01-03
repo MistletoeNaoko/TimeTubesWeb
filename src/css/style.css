@@ -718,6 +718,7 @@ img.selectorIcon:active {
 
 #clusteringResults {
     display: flex;
+    overflow-y: hidden;
 }
 #clusteringProcess {
     width: 20%;
@@ -725,6 +726,8 @@ img.selectorIcon:active {
 
 #clusteringDetail {
     width: 20%;
+    margin: 0px 10px;
+    overflow: auto;
 }
 
 #clusteringResultsOverview {
@@ -743,3 +746,12 @@ img.selectorIcon:active {
     margin: unset;
 }
 
+#clusteringResultsViewport {
+    display: grid;
+    margin: auto;
+}
+
+#selectedClusterCenterTimeTubes {
+    display: grid;
+    margin: auto;
+}

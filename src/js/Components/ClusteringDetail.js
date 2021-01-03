@@ -8,6 +8,7 @@ export default class ClusteringDetail extends React.Component {
     constructor() {
         super();
         this.margin = {left: 30, right: 10, top: 20, bottom: 20};
+        this.paddingCard = 16;
         this.cluster = -1;
         this.state = {
             cluster: -1
@@ -29,12 +30,13 @@ export default class ClusteringDetail extends React.Component {
         subsequencesOverview = this.subsequencesOverview();
         return (
             <div id='clusteringDetail' className='clusteringPanel'
+                style={{height: window.innerHeight - $('#appHeader').height()}}
                 ref={mount => {
                     this.mount = mount;
                 }}>
                 {clusterCenterTimeTubes}
                 {clusterCenterLineCharts}
-                {datasetDistribution}
+                {/* {datasetDistribution} */}
                 {subsequenceLengthDistribution}
                 {clusterFeatureTable}
                 {subsequencesOverview}
@@ -64,28 +66,32 @@ export default class ClusteringDetail extends React.Component {
 
     clusterCenterTimeTubesView() {
         return (
-            <div id='selectedClusterCenterTimeTubes'>
+            <div id='selectedClusterCenterTimeTubes'
+                className='resultAreaElem'>
             </div>
         );
     }
 
     clusterCenterLineCharts() {
         return (
-            <div id='selectedClusterCenterLineCharts'>
+            <div id='selectedClusterCenterLineCharts'
+                className='resultAreaElem'>
             </div>
         );
     }
 
     datasetDistribution() {
         return (
-            <div>
+            <div
+                className='resultAreaElem'>
             </div>
         );
     }
 
     subsequenceLengthDistribution() {
         return (
-            <div id='subsequenceLengthHistogram'>
+            <div id='subsequenceLengthHistogram'
+                className='resultAreaElem'>
             </div>
         );
     }
@@ -93,7 +99,7 @@ export default class ClusteringDetail extends React.Component {
     clusterFeatureTable() {
         let table;
         if (this.state.cluster >= 0) {
-            let width = this.mount.clientWidth;
+            let width = this.mount.clientWidth - this.paddingCard * 2;
             table = (
                 <table id='clusterFeatureTable'
                     className='table table-hover'
@@ -108,7 +114,8 @@ export default class ClusteringDetail extends React.Component {
             );
         }
         return (
-            <div id='clusterFeature'>
+            <div id='clusterFeature'
+                className='resultAreaElem'>
                 {table}
             </div>
         );
@@ -116,7 +123,8 @@ export default class ClusteringDetail extends React.Component {
 
     subsequencesOverview() {
         return (
-            <div id='subsequencesOverview'>
+            <div id='subsequencesOverview'
+                className='resultAreaElem'>
             </div>
         );
     }
@@ -159,8 +167,8 @@ export default class ClusteringDetail extends React.Component {
     drawClusterCenterLineCharts() {
         $('#clusterCenterLineChartsSVG').remove();
 
-        let clientWidth = this.mount.clientWidth,
-            clientHeight = this.mount.clientHeight;
+        let clientWidth = this.mount.clientWidth - this.paddingCard * 2;
+        console.log(this.mount.clientWidth, clientWidth);
         let lineChartWidth = clientWidth / 2,
             lineChartHeight = clientWidth / 2 * 0.6;
 
@@ -225,8 +233,7 @@ export default class ClusteringDetail extends React.Component {
         $('#subsequenceLengthHistogramSVG').remove();
 
 
-        let clientWidth = this.mount.clientWidth,
-            clientHeight = this.mount.clientHeight;
+        let clientWidth = this.mount.clientWidth - this.paddingCard * 2;
         let height = clientWidth * 0.5;
         
         let svg = d3.select('#subsequenceLengthHistogram')
@@ -317,13 +324,13 @@ export default class ClusteringDetail extends React.Component {
                     return xScale(bins[i].x0);
                 }) 
                 .attr('y', function(d, i) {
-                    return yScale(d[0])
+                    return yScale(d[1])
                 })
                 .attr('width', function(d, i) {
                     return xScale(bins[i].x1) - xScale(bins[i].x0) - 1;
                 })
                 .attr('height', function(d) {
-                    return (yScale(d[1]) - yScale(d[0]))
+                    return (yScale(d[0]) - yScale(d[1]))
                 }.bind(this));
         }
     }
@@ -333,7 +340,7 @@ export default class ClusteringDetail extends React.Component {
         $('#subsequenceOverviewTableMain').remove();
 
         let paddingCell = 3;
-        let clientWidth = this.mount.clientWidth;
+        let clientWidth = this.mount.clientWidth - this.paddingCard * 2;
         let cellWidth = clientWidth / this.variables.length,
             cellHeight = 30;
         let tableHeader = d3.select('#subsequencesOverview')
@@ -368,6 +375,7 @@ export default class ClusteringDetail extends React.Component {
             .append('div')
             .attr('id', 'subsequenceOverviewTableMain')
             .style('overflow', 'auto')
+            .style('height', Math.min(clientWidth, cellHeight * this.SSCluster.length))
             .append('table')
             .attr('class', 'table table-hover sparkTable')
             .attr('width', clientWidth)
@@ -419,7 +427,7 @@ export default class ClusteringDetail extends React.Component {
                 .curve(d3.curveCatmullRom);
         }
         
-        let rowCounter = 0;
+        let rowCounterColor = 0, rowCounter = 0;
         let dataColors = {};
         for (let i = 0; i < this.datasets.length; i++) {
             dataColors[this.datasets[i]] = TimeTubeesStore.getPlotColor(this.datasets[i]);
@@ -432,7 +440,9 @@ export default class ClusteringDetail extends React.Component {
             .attr('height', cellHeight - paddingCell * 2)
             .append('path')
             .attr('fill', 'none')
-            .attr('stroke', dataColors[this.SSCluster[rowCounter].id])
+            .attr('stroke', function(d, i) {
+                return dataColors[this.SSCluster[(i === this.variables.length - 1)? rowCounterColor++: rowCounterColor].id]
+            }.bind(this))
             .attr('stroke-width', 1.5)
             .attr('d', function(d, i) {
                 return curves[d](this.SSCluster[(i === this.variables.length - 1)? rowCounter++: rowCounter]);
