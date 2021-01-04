@@ -9,6 +9,7 @@ import * as dataLib from '../lib/dataLib';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
+import ClusteringStore from '../Stores/ClusteringStore';
 import BufferGeometryUtils from '../lib/BufferGeometryUtils';
 import OrbitControls from "three-orbitcontrols";
 import TextSprite from 'three.textsprite';
@@ -485,6 +486,14 @@ export default class TimeTubes extends React.Component{
                 }.bind(this), 0);
             }
         });
+        ClusteringStore.on('showClusteringResults', () => {
+            // show subsequences in TimeTubes view
+            // 必要なのはsubsequencesとlabelsとcolors
+            let subsequences = ClusteringStore.getSubsequences();
+            let labels = ClusteringStore.getLabels();
+            let colors = ClusteringStore.getClusterColors();
+            this.showClusteringResults(subsequences, labels, colors);
+        });
     }
 
     start() {
@@ -615,6 +624,9 @@ export default class TimeTubes extends React.Component{
                 this.periodGroup.position.z = this.periodGroup.position.z + (dst - this.tubeGroup.position.z);
             }
             this.tubeGroup.position.z = dst;
+            if (this.clusteringGroup) {
+                this.clusteringGroup.position.z = dst;
+            }
 
             // remove/hide objects out of use
             if (this.diskRotation.visible) {
@@ -1755,5 +1767,44 @@ export default class TimeTubes extends React.Component{
                 break;
         }
         this.renderer.render(this.scene, this.camera);
+    }
+
+    showClusteringResults (subsequences, labels, colors) {
+        if (this.clusteringGroup) {
+            for (let i = 0; i < this.clusteringGroup.children.length; i++) {
+                let geometry = this.clusteringGroup.children[i].geometry,
+                    material = this.clusteringGroup.children[i].material;
+                this.scene.remove(this.clusteringGroup.children[i]);
+                geometry.dispose();
+                material.dispose();
+            }
+        }
+        this.clusteringGroup = new THREE.Group();
+        this.scene.add(this.clusteringGroup);
+        let cubeSize = TimeTubesStore.getGridSize() * 2;
+        cubeSize = Math.sqrt(cubeSize * cubeSize / 2);
+        let materials = [];
+        for (let i = 0; i < colors.length; i++) {
+            materials.push(new THREE.MeshBasicMaterial({
+                color: new THREE.Color('hsl(' + colors[i][0] + ',' + (colors[i][1] * 100) + '%,' + (colors[i][2] * 100) + '%)'),
+                transparent: true,
+                opacity: 0.3,
+                clippingPlanes: [this.clippingPlane]
+            }));
+        }
+        for (let i = 0; i < subsequences.length; i++) {
+            if (Number(subsequences[i].id) === this.id) {
+                let cubeDepth = subsequences[i][subsequences[i].length - 1].z - subsequences[i][0].z;
+                let cubeSSGeometry = new THREE.CylinderBufferGeometry(cubeSize, cubeSize, cubeDepth, 4);
+                let cluster = (typeof(labels[i]) === 'object'? labels[i].cluster: labels[i]);
+                let cubeSSMesh = new THREE.Mesh(cubeSSGeometry, materials[cluster]);
+                cubeSSMesh.rotateZ(Math.PI / 4);
+                cubeSSMesh.rotateX(Math.PI / 2);
+                cubeSSMesh.position.z = subsequences[i][0].z - this.data.meta.min.z + cubeDepth / 2;
+                this.clusteringGroup.add(cubeSSMesh);
+            }
+        }
+
+        this.clusteringGroup.rotateY(Math.PI);
     }
 }
