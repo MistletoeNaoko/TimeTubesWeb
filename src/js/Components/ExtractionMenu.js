@@ -3,6 +3,7 @@ import VisualQuery from '../Components/VisualQuery';
 import AutomaticExtraction from '../Components/AutomaticExtraction';
 import ClusteringSettings from './ClusteringSettings';
 import * as FeatureAction from '../Actions/FeatureAction';
+import {resizeExtractionResultsArea} from '../Actions/AppAction';
 import {toggleExtractionMenu} from '../lib/domActions';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';

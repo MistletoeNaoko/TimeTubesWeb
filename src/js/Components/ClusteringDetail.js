@@ -168,7 +168,6 @@ export default class ClusteringDetail extends React.Component {
         $('#clusterCenterLineChartsSVG').remove();
 
         let clientWidth = this.mount.clientWidth - this.paddingCard * 2;
-        console.log(this.mount.clientWidth, clientWidth);
         let lineChartWidth = clientWidth / 2,
             lineChartHeight = clientWidth / 2 * 0.6;
 
@@ -252,7 +251,8 @@ export default class ClusteringDetail extends React.Component {
 
         let subsequencesCluster = [];
         for (let i = 0; i < this.labels.length; i++) {
-            if (this.labels[i] === this.cluster) {
+            let clusterSS = (typeof(this.labels[i]) === 'object')? this.labels[i].cluster: this.labels[i];
+            if (clusterSS === this.cluster) {
                 subsequencesCluster.push(this.subsequences[i]);
             }
         }

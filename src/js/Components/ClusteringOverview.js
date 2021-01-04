@@ -2,12 +2,12 @@ import * as ClusteringAction from '../Actions/ClusteringAction';
 import React from 'react';
 import ClusteringStore from '../Stores/ClusteringStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
+import AppStore from '../Stores/AppStore';
 import BufferGeometryUtils from '../lib/BufferGeometryUtils';
 import OrbitControls from "three-orbitcontrols";
 import * as THREE from 'three';
 // import TextSprite from 'three.textsprite';
 import TextSprite from '@seregpie/three.text-sprite';
-import { cluster } from 'd3';
 
 export default class ClusteringOverview extends React.Component {
     constructor() {
@@ -79,6 +79,9 @@ export default class ClusteringOverview extends React.Component {
         });
         ClusteringStore.on('showClusterDetails', (cluster) => {
             this.setDetailView(cluster);
+        });
+        AppStore.on('resizeExtractionResultsArea', () => {
+            this.setRendererSize();
         });
     }
 

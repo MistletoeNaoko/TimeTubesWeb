@@ -3,19 +3,26 @@ export function toggleExtractionMenu(display) {
     if (display === 'none' || current === 'block') {
         $('#extractionMainMenu').css('display', 'none');//toggle();
         $('#extractionMenu').css('width', '0%');
-        if ($('#extractionResults')) {
+        if ($('#extractionResults').length > 0) {
             $('#extractionResults').css('width', '100%');
-        } else if ($('#clusteringResults')) {
+        } else if ($('#clusteringResults').length > 0) {
             $('#clusteringResults').css('width', '100%');
+            $('#clusteringProcess').css('display', 'block');
+            $('#clusteringProcess').css('width', '20%');
+            $('#clusteringResultsOverview').css('width', '60%');
+            $('#clusteringDetail').css('width', '20%');
         }
         $('#collapseExtractionMenu').text('Open');
     } else if (display === 'block' || current === 'none') {
         $('#extractionMainMenu').css('display', 'block');
         $('#extractionMenu').css('width', '30%');
-        if ($('#extractionResults')) {
+        if ($('#extractionResults').length > 0) {
             $('#extractionResults').css('width', '70%');
-        } else if ($('#clusteringResults')) {
+        } else if ($('#clusteringResults').length > 0) {
             $('#clusteringResults').css('width', '70%');
+            $('#clusteringProcess').css('display', 'none');
+            $('#clusteringResultsOverview').css('width', '70%');
+            $('#clusteringDetail').css('width', '30%');
         }
         $('#collapseExtractionMenu').text('Close');
     }

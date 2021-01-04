@@ -927,7 +927,7 @@ export default class Scatterplots extends React.Component{
             }.bind(this))
             .attr('height', this.yScale.range()[0])
             .attr('fill', function(d, i) {
-                let color = colors[labelsData[i]];
+                let color = colors[(typeof(labelsData[i]) === 'object')? labelsData[i].cluster: labelsData[i]];
                 return d3.hsl(color[0], color[1], color[2]);
             })
             .attr('opacity', 0.3);
