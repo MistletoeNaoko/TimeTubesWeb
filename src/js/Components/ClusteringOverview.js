@@ -119,7 +119,7 @@ export default class ClusteringOverview extends React.Component {
     setRendererSize() {
         const width = this.mount.clientWidth;
         let appHeaderHeight = $('#appHeader').height();
-        let timelineHeight = 40 * ClusteringStore.getDatasets().length + 16 + 2;
+        let timelineHeight = $('#clusteringTimeline').height();//40 * ClusteringStore.getDatasets().length + 16 + 2;
         const height = window.innerHeight - appHeaderHeight - timelineHeight;
         this.renderer.setSize(width, height);
         let aspect = width / height, 

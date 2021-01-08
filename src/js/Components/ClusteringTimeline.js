@@ -187,7 +187,9 @@ export default class ClusteringTimeline extends React.Component {
                         .duration(1000)
                         .attr('height', height);
                 }
-                resizeExtractionResultsArea();
+                setTimeout(function() {
+                    resizeExtractionResultsArea();
+                }, 1000);
             };
         }
     }
