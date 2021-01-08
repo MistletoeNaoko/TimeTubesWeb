@@ -3,6 +3,7 @@ import * as d3 from 'd3';
 import ClusteringStore from '../Stores/ClusteringStore';
 import DataStore from '../Stores/DataStore';
 import TimeTubeesStore from '../Stores/TimeTubesStore';
+import {tickFormatting} from '../lib/2DGraphLib';
 
 export default class ClusteringDetail extends React.Component {
     constructor() {
@@ -131,14 +132,40 @@ export default class ClusteringDetail extends React.Component {
 
     extractSubsequencesInCluster() {
         this.SSCluster = [];
+        this.yMinMax = {};
+        this.variables.forEach(function(d) {
+            this.yMinMax[d] = [Infinity, -Infinity];
+        }.bind(this));
         for (let i = 0; i < this.labels.length; i++) {
             if (typeof(this.labels[i]) === 'object') {
                 if (this.labels[i].cluster === this.cluster) {
                     this.SSCluster.push(this.subsequences[i]);
+                    
+                    for (let j = 0; j < this.subsequences[i].length; j++) {
+                        this.variables.forEach(function(d) {
+                            if (this.subsequences[i][j][d] < this.yMinMax[d][0]) {
+                                this.yMinMax[d][0] = this.subsequences[i][j][d];
+                            }
+                            if (this.yMinMax[d][1] < this.subsequences[i][j][d]) {
+                                this.yMinMax[d][1] = this.subsequences[i][j][d];
+                            }
+                        }.bind(this));
+                    }
                 }
             } else {
                 if (this.labels[i] === this.cluster) {
                     this.SSCluster.push(this.subsequences[i]);
+                    
+                    for (let j = 0; j < this.subsequences[i].length; j++) {
+                        this.variables.forEach(function(d) {
+                            if (this.subsequences[i][j][d] < this.yMinMax[d][0]) {
+                                this.yMinMax[d][0] = this.subsequences[i][j][d];
+                            }
+                            if (this.yMinMax[d][1] < this.subsequences[i][j][d]) {
+                                this.yMinMax[d][1] = this.subsequences[i][j][d];
+                            }
+                        }.bind(this));
+                    }
                 }
             }
         }
@@ -181,13 +208,13 @@ export default class ClusteringDetail extends React.Component {
             let xScale = d3.scaleLinear()
                 .domain([0, this.clusterCenters[this.cluster].length - 1])
                 .range([lineChartWidth * (i % 2) + this.margin.left, lineChartWidth * (i % 2) + lineChartWidth - this.margin.right]);
-            let yMinMax = d3.extent(this.clusterCenters[this.cluster], d => d[this.variables[i]]);
+            // let yMinMax = d3.extent(this.clusterCenters[this.cluster], d => d[this.variables[i]]);
             let yScale = d3.scaleLinear()
-                .domain(yMinMax)
+                .domain(this.yMinMax[this.variables[i]])
                 .range([lineChartHeight * Math.floor(i / 2) + lineChartHeight - this.margin.bottom, lineChartHeight * Math.floor(i / 2) + this.margin.top]);
 
             let xAxis = d3.axisBottom(xScale).ticks(5);
-            let yAxis = d3.axisLeft(yScale).ticks(5);
+            let yAxis = d3.axisLeft(yScale).ticks(5).tickFormat(tickFormatting);
             
             let xPos = lineChartWidth * (i % 2),
                 yPos = lineChartHeight * Math.floor(i / 2);
@@ -198,6 +225,25 @@ export default class ClusteringDetail extends React.Component {
                 .attr('transform', 'translate(' + (xPos + this.margin.left) + ',' + 0 + ')')
                 .call(yAxis);
             
+            // subsequences in the cluster
+            for (let j = 0; j < this.SSCluster.length; j++) {
+                svg.append('path')
+                    .datum(this.SSCluster[j])
+                    .attr('fill', 'none')
+                    .attr('stroke', 'gray')
+                    .attr('stroke-width', 0.7)
+                    .attr('d', d3.line()
+                        .x(function(d, i) {
+                            return xScale(i);
+                        })
+                        .y(function(d) {
+                            return yScale(d[this.variables[i]]);
+                        }.bind(this))
+                        .curve(d3.curveCatmullRom)
+                    );
+            }
+
+            // cluster center line
             svg.append('path')
                 .datum(this.clusterCenters[this.cluster])
                 .attr('fill', 'none')
@@ -205,8 +251,8 @@ export default class ClusteringDetail extends React.Component {
                 .attr('stroke-width', 1.5)
                 .attr('d', d3.line()
                     .x(function(d, i) {
-                        return xScale(i)
-                    }.bind(this))
+                        return xScale(i);
+                    })
                     .y(function(d) {
                         return yScale(d[this.variables[i]]);
                     }.bind(this))
@@ -222,7 +268,7 @@ export default class ClusteringDetail extends React.Component {
                 .attr('x', xPos + lineChartWidth / 2)
                 .attr('y', yPos + this.margin.top / 2)
                 .attr('fill', 'black')
-                .attr('font-size', '10px')
+                .attr('font-size', '0.5rem')
                 .attr('text-anchor', 'middle')
                 .text(label);
         }

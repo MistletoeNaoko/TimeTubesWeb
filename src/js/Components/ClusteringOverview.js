@@ -292,6 +292,7 @@ export default class ClusteringOverview extends React.Component {
             this.tubes[i] = undefined;
         }
         this.tubes = [];
+        let tubeGeometry;
 
         let divNum = this.division * this.clusterCenters[0].length;
         let del = Math.PI * 2 / (this.segment - 1);
@@ -303,52 +304,85 @@ export default class ClusteringOverview extends React.Component {
             let cen = this.splines[i].position.getSpacedPoints(divNum),
                 rad = this.splines[i].radius.getSpacedPoints(divNum),
                 col = this.splines[i].color.getSpacedPoints(divNum);
-            let opacityPoints = this.opacityCurve.getSpacedPoints(this.tubeNum);
-            let opacityList = [];
-            for (let i = 1; i <= this.tubeNum; i++) {
-                opacityList.push(1 - (1 - opacityPoints[i - 1].y) / (1 - opacityPoints[i].y));
-            }
-            for (let j = 0; j < this.tubeNum; j++) {
-                vertices[j] = [];
-                colors[j] = [];
-            }
 
-            for (let j = 0; j <= divNum; j++) {
-                for (let k = 0; k < this.segment; k++) {
-                    for (let l = 0; l < this.tubeNum; l++) {
-                        let currad = (1 / this.tubeNum) * (l + 1);
-                        let deg = del * k;
-                        vertices[l].push((cen[j].x * this.range + currad * rad[j].x * this.range * Math.cos(deg)) * -1);
-                        vertices[l].push(cen[j].y * this.range + currad * rad[j].y * this.range * Math.sin(deg));
-                        vertices[l].push(cen[j].z);
+            if ('r_x' in this.clusterCenters[0][0] || 'r_y' in this.clusterCenters[0][0]) {
+                let opacityPoints = this.opacityCurve.getSpacedPoints(this.tubeNum);
+                let opacityList = [];
+                for (let i = 1; i <= this.tubeNum; i++) {
+                    opacityList.push(1 - (1 - opacityPoints[i - 1].y) / (1 - opacityPoints[i].y));
+                }
+                for (let j = 0; j < this.tubeNum; j++) {
+                    vertices[j] = [];
+                    colors[j] = [];
+                }
+                for (let j = 0; j <= divNum; j++) {
+                    let radX = ('r_x' in this.clusterCenters[0][0])? rad[j].x * this.range: 0.5,
+                        radY = ('r_y' in this.clusterCenters[0][0])? rad[j].y * this.range: 0.5;
+                    for (let k = 0; k < this.segment; k++) {
+                        for (let l = 0; l < this.tubeNum; l++) {
+                            let currad = (1 / this.tubeNum) * (l + 1);
+                            let deg = del * k;
+                            vertices[l].push((cen[j].x * this.range + currad * radX * Math.cos(deg)) * -1);
+                            vertices[l].push(cen[j].y * this.range + currad * radY * Math.sin(deg));
+                            vertices[l].push(cen[j].z);
 
-                        colors[l].push(col[j].x);
-                        colors[l].push(col[j].y);
-                        colors[l].push(opacityList[l]);
-                    }
-                    if (k !== this.segment - 1) {
-                        indices.push(k + j * (this.segment));
-                        indices.push(k + (this.segment) + j * (this.segment));
-                        indices.push(k + 1 + j * (this.segment));
-                        indices.push(k + (this.segment) + j * (this.segment));
-                        indices.push(k + 1 + (this.segment) + j * (this.segment));
-                        indices.push(k + 1 + j * (this.segment));
+                            colors[l].push(col[j].x);
+                            colors[l].push(col[j].y);
+                            colors[l].push(opacityList[l]);
+                        }
+                        if (k !== this.segment - 1) {
+                            indices.push(k + j * (this.segment));
+                            indices.push(k + (this.segment) + j * (this.segment));
+                            indices.push(k + 1 + j * (this.segment));
+                            indices.push(k + (this.segment) + j * (this.segment));
+                            indices.push(k + 1 + (this.segment) + j * (this.segment));
+                            indices.push(k + 1 + j * (this.segment));
+                        }
                     }
                 }
+                indices = indices.slice(0, -1 * this.segment * 3 * 2);
+                let normals = new Float32Array(vertices[0].length);
+                let geometries = [];
+                for (let j = 0; j < this.tubeNum; j++) {
+                    const geometryTmp = new THREE.BufferGeometry();
+                    geometryTmp.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices[j]), 3));
+                    geometryTmp.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+                    geometryTmp.setAttribute('colorData', new THREE.BufferAttribute(new Float32Array(colors[j]), 3));
+                    geometryTmp.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+                    geometryTmp.computeVertexNormals();
+                    geometries.push(geometryTmp);
+                }
+                tubeGeometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
+            } else {
+                for (let j = 0; j <= divNum; j++) {
+                    for (let k = 0; k < this.segment; k++) {
+                        let deg = del * k;
+                        vertices.push((cen[j].x * this.range + 0.5 * Math.cos(deg)) * -1);
+                        vertices.push(cen[j].y * this.range + 0.5 * Math.sin(deg));
+                        vertices.push(cen[j].z);
+
+                        colors.push(col[j].x);
+                        colors.push(col[j].y);
+                        colors.push(1);
+                        if (k !== this.segment - 1) {
+                            indices.push(k + j * (this.segment));
+                            indices.push(k + (this.segment) + j * (this.segment));
+                            indices.push(k + 1 + j * (this.segment));
+                            indices.push(k + (this.segment) + j * (this.segment));
+                            indices.push(k + 1 + (this.segment) + j * (this.segment));
+                            indices.push(k + 1 + j * (this.segment));
+                        }
+                    }
+                }
+                indices = indices.slice(0, -1 * this.segment * 3 * 2);
+                let normals = new Float32Array(vertices.length);
+                tubeGeometry = new THREE.BufferGeometry();
+                tubeGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+                tubeGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+                tubeGeometry.setAttribute('colorData', new THREE.BufferAttribute(new Float32Array(colors), 3));
+                tubeGeometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+                tubeGeometry.computeVertexNormals();
             }
-            indices = indices.slice(0, -1 * this.segment * 3 * 2);
-            let normals = new Float32Array(vertices[0].length);
-            let geometries = [];
-            for (let j = 0; j < this.tubeNum; j++) {
-                const geometryTmp = new THREE.BufferGeometry();
-                geometryTmp.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices[j]), 3));
-                geometryTmp.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
-                geometryTmp.setAttribute('colorData', new THREE.BufferAttribute(new Float32Array(colors[j]), 3));
-                geometryTmp.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
-                geometryTmp.computeVertexNormals();
-                geometries.push(geometryTmp);
-            }
-            let tubeGeometry = BufferGeometryUtils.mergeBufferGeometries(geometries);
             let tubeMaterial = new THREE.ShaderMaterial({
                 vertexShader: this.vertex,
                 fragmentShader: this.fragment,
