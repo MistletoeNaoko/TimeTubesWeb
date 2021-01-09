@@ -230,7 +230,7 @@ export default class ClusteringDetail extends React.Component {
                 svg.append('path')
                     .datum(this.SSCluster[j])
                     .attr('fill', 'none')
-                    .attr('stroke', 'gray')
+                    .attr('stroke', 'lightgray')
                     .attr('stroke-width', 0.7)
                     .attr('d', d3.line()
                         .x(function(d, i) {
