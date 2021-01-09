@@ -53,6 +53,7 @@ export default class ClusteringDetail extends React.Component {
             this.subsequences = ClusteringStore.getSubsequences();
             this.cluster = cluster;
             this.variables = Object.keys(this.clusterCenters[cluster][0]);
+            this.variables = this.variables.filter(ele => ele !== 'z')
             this.datasets = ClusteringStore.getDatasets();
             this.createVariableLabels();
             this.extractSubsequencesInCluster();
@@ -172,23 +173,23 @@ export default class ClusteringDetail extends React.Component {
     }
 
     createVariableLabels() {
-        let variables = {};
+        let variableLabels = {};
         let targets = ClusteringStore.getDatasets();
         for (let i = 0; i < targets.length; i++) {
             let lookup = DataStore.getData(targets[i]).data.lookup;
             for (let key in lookup) {
-                if (!(key in variables)) {
-                    variables[key] = lookup[key];
+                if (!(key in variableLabels)) {
+                    variableLabels[key] = lookup[key];
                 } else {
                     for (let j = 0; j < lookup[key].length; j++) {
-                        if (variables[key].indexOf(lookup[key][j]) < 0) {
-                            variables[key].push(lookup[key][j]);
+                        if (variableLabels[key].indexOf(lookup[key][j]) < 0) {
+                            variableLabels[key].push(lookup[key][j]);
                         }
                     }
                 }
             }
         }
-        this.variableLabels = variables;
+        this.variableLabels = variableLabels;
     }
 
     drawClusterCenterLineCharts() {
@@ -351,7 +352,6 @@ export default class ClusteringDetail extends React.Component {
                 rectColors.push(TimeTubeesStore.getPlotColor(this.datasets[i]));
             }
             let series = stack(binsStack);
-            console.log(series);
             let groups = svg.selectAll('g.stackedBarGroup')
                 .data(series)
                 .enter()
