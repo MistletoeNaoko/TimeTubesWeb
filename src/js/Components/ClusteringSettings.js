@@ -4,6 +4,7 @@ import * as ClusteringAction from '../Actions/ClusteringAction';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 import {toggleExtractionMenu} from '../lib/domActions';
+import { each } from 'lodash';
 
 export default class clusteringSettings extends React.Component {
     constructor(props) {
@@ -13,6 +14,7 @@ export default class clusteringSettings extends React.Component {
             normalize: true,
             clusteringMethod: 'kmedoids',
             distanceMetric: 'DTW',
+            medoidDefinition: 'each',
             targetList: FeatureStore.getTarget(),
             filteringSS: ['dataDrivenSlidingWindow', 'sameStartingPoint', 'overlappingDegreeFilter']
         };
@@ -274,12 +276,57 @@ export default class clusteringSettings extends React.Component {
                                 Euclidean
                             </label>
                         </div>    
-                        <div className="custom-control custom-radio">
+                        <div className="custom-control custom-radio" 
+                            style={{display: (this.state.medoidDefinition === 'each')? 'block': 'none'}}>
                             <input type="radio" id="DTWClustering" name="distanceMetricClustering" value='DTW'
                                 checked={(this.state.distanceMetric === 'DTW')? true: false}
                                 className="custom-control-input" readOnly/>
                             <label className="custom-control-label" htmlFor="DTWClustering">
                                 DTW
+                            </label>
+                        </div>
+                        <div className="custom-control custom-radio"
+                            style={{display: (this.state.medoidDefinition === 'unified')? 'block': 'none'}}>
+                            <input type="radio" id="DTWIClustering" name="distanceMetricClustering" value='DTWI'
+                                checked={(this.state.distanceMetric === 'DTWI')? true: false}
+                                className="custom-control-input" readOnly/>
+                            <label className="custom-control-label" htmlFor="DTWIClustering">
+                                DTW<sub>I</sub>
+                            </label>
+                        </div>
+                        <div className="custom-control custom-radio"
+                            style={{display: (this.state.medoidDefinition === 'unified')? 'block': 'none'}}>
+                            <input type="radio" id="DTWDClustering" name="distanceMetricClustering" value='DTWD'
+                                checked={(this.state.distanceMetric === 'DTWD')? true: false}
+                                className="custom-control-input" readOnly/>
+                            <label className="custom-control-label" htmlFor="DTWDClustering">
+                                DTW<sub>D</sub>
+                            </label>
+                        </div>
+                    </form>
+                );
+                let medoidDefinition = (
+                    <form
+                        className="form-check"
+                        id='medoidDefinition'
+                        onChange={this.switchMedoidDefinition.bind(this)}
+                        style={{paddingLeft: '0px'}}>
+                        <div className="custom-control custom-radio">
+                            <input type="radio" id="medoidEachVariable" name="medoidDefinition" value='each'
+                                checked={(this.state.medoidDefinition === 'each')? true: false}
+                                className="custom-control-input" readOnly/>
+                            <label className="custom-control-label" htmlFor="medoidEachVariable">
+                                Independent medoid for each variable
+                                {/* a collection of subsequences for each variable */}
+                            </label>
+                        </div>    
+                        <div className="custom-control custom-radio">
+                            <input type="radio" id="medoidAllVariables" name="medoidDefinition" value='unified'
+                                checked={(this.state.medoidDefinition === 'unified')? true: false}
+                                className="custom-control-input" readOnly/>
+                            <label className="custom-control-label" htmlFor="medoidAllVariables">
+                                Unified medoid for all variables
+                                {/* Subsequence itself */}
                             </label>
                         </div>
                     </form>
@@ -304,6 +351,14 @@ export default class clusteringSettings extends React.Component {
                             </div>
                             <div className='col'>
                                 {distanceMetric}
+                            </div>
+                        </div>
+                        <div className="row matchingOption">
+                            <div className='col-5'>
+                                Definition of medoids
+                            </div>
+                            <div className='col'>
+                                {medoidDefinition}
                             </div>
                         </div>
                     </div>
@@ -336,7 +391,7 @@ export default class clusteringSettings extends React.Component {
                                     style={{paddingLeft: '0px'}}>
                                     <div className="custom-control custom-radio">
                                         <input type="radio" id="EuclideanClustering" name="distanceMetricClustering" value='Euclidean'
-                                            checked={(this.state.distanceMetric === 'DTWI')? true: false}
+                                            checked={(this.state.distanceMetric === 'Euclidean')? true: false}
                                             className="custom-control-input" readOnly/>
                                         <label className="custom-control-label" htmlFor="EuclideanClustering">
                                             Euclidean
@@ -412,6 +467,14 @@ export default class clusteringSettings extends React.Component {
         });
     }
 
+    switchMedoidDefinition() {
+        let selectedMedoidDefinition = $('input[name=medoidDefinition]:checked').val();
+        this.setState({
+            distanceMetric: (selectedMedoidDefinition === 'each')? 'DTW': 'DTWD',
+            medoidDefinition: selectedMedoidDefinition
+        });
+    }
+
     onChangeClusteringMethod() {
         let clusteringMethodList = document.getElementById('clusteringMethod');
         let selectedMethodIdx = clusteringMethodList.selectedIndex;
@@ -441,6 +504,7 @@ export default class clusteringSettings extends React.Component {
                 clusteringParameters = {
                     method: 'kmedoids',
                     clusterNum: Number($('#clusterNumber').val()),
+                    medoidDefinition: this.state.medoidDefinition,
                     distanceMetric: this.state.distanceMetric,
                     window: 0
                 };
