@@ -35,7 +35,7 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
         maxs[datasets[i].id] = datasets[i].data.meta.max;
     }
 
-    let subsequences = {}, subsequenceData = [];
+    let subsequences = {}, subsequenceData = [], ranges = [];
     let isometricData, anomalyDegrees;
 
     // filtering subsequences according to selected options
@@ -59,7 +59,6 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                 mins,
                 maxs
             );
-
         // pick up a SS with the highest changeDegrees from SS which has the same starting data point
         if (subsequenceParameters.filtering.indexOf('sameStartingPoint') >= 0) {
             for (let dataIdx in SSRanges) {
@@ -123,13 +122,13 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                 }
             }
         }
-
         // data collection only for filtered subsequences
         for (let dataIdx in subsequences) {
             for (let i = 0; i < subsequences[dataIdx].length; i++) {
                 let dataTmp = isometricData[dataIdx][subsequences[dataIdx][i]];
                 dataTmp.id = dataIdx;
                 subsequenceData.push(dataTmp);
+                ranges.push(SSRanges[dataIdx][subsequences[dataIdx][i]]);
             }
         }
     } else {
@@ -220,6 +219,7 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                 let dataTmp = isometricData[subsequences[dataIdx][i]];
                 dataTmp.id = dataIdx;
                 subsequenceData.push(dataTmp);
+                ranges.push(SSRanges[subsequences[dataIdx][i]]);
             }
         }
     }
@@ -245,7 +245,7 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
         default:
             break;
     }
-    return [subsequenceData, clusterCenters, labels];
+    return [subsequenceData, ranges, clusterCenters, labels];
 }
 
 function extractRanges(datasets, SSperiod) {
@@ -297,7 +297,8 @@ export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = t
         let isometricSS = [], changeDegrees = [];
         for (let i = 0; i < ranges.length; i++) {
             let delta = (data[ranges[i][1]].z - data[ranges[i][0]].z) / isometryLen;
-            let SStmp = [];
+            let SStmp = [], SSDataPoints = [];
+            SSDataPoints = data.slice(ranges[i][0], ranges[i][1] + 1);
             for (let j = 0; j <= isometryLen; j++) {
                 // get n (n = isometryLen) coordinates between the currently focused range
                 let timestampTmp = j * delta + data[ranges[i][0]].z;
@@ -333,7 +334,20 @@ export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = t
             changeDegrees.push(anomalyDegree(SStmp, min, max));
             // normalize SS here if needed
             if (normalize) {
-                SStmp = zNormalization(SStmp, ['z']);
+                let dataPoints = [], means, stds;
+                [SStmp, means, stds] = zNormalization(SStmp, ['z']);
+                for (let dataPointIdx = 0; dataPointIdx < SSDataPoints.length; dataPointIdx++) {
+                    let dataPointTmp = {};
+                    for (let key in SStmp[0]) {
+                        if (key === 'z') {
+                            dataPointTmp[key] = SSDataPoints[dataPointIdx].z;
+                        } else {
+                            dataPointTmp[key] = (SSDataPoints[dataPointIdx][key] - means[key]) / stds[key];
+                        }
+                    }
+                    dataPoints.push(dataPointTmp);
+                }
+                SStmp.dataPoints = dataPoints;
             }
             isometricSS.push(SStmp);
         }
@@ -344,7 +358,8 @@ export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = t
             let isometricSSTmp = [], changeDegreesTmp = [];
             for (let i = 0; i < ranges[dataIdx].length; i++) {
                 let delta = (data[dataIdx][ranges[dataIdx][i][1]].z - data[dataIdx][ranges[dataIdx][i][0]].z) / isometryLen;
-                let SStmp = [];
+                let SStmp = [], SSDataPoints = [];
+                SSDataPoints = data[dataIdx].slice(ranges[dataIdx][i][0], ranges[dataIdx][i][1] + 1);
                 for (let j = 0; j <= isometryLen; j++) {
                     // get n (n = isometryLen) coordinates between the currently focused range
                     let timestampTmp = j * delta + data[dataIdx][ranges[dataIdx][i][0]].z;
@@ -380,7 +395,20 @@ export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = t
                 changeDegreesTmp.push(anomalyDegree(SStmp, min[dataIdx], max[dataIdx]));
                 // normalize SS here if needed
                 if (normalize) {
-                    SStmp = zNormalization(SStmp, ['z']);
+                    let dataPoints = [], means, stds;
+                    [SStmp, means, stds] = zNormalization(SStmp, ['z']);
+                    for (let dataPointIdx = 0; dataPointIdx < SSDataPoints.length; dataPointIdx++) {
+                        let dataPointTmp = {};
+                        for (let key in SStmp[0]) {
+                            if (key === 'z') {
+                                dataPointTmp[key] = SSDataPoints[dataPointIdx].z;
+                            } else {
+                                dataPointTmp[key] = (SSDataPoints[dataPointIdx][key] - means[key]) / stds[key];
+                            }
+                        }
+                        dataPoints.push(dataPointTmp);
+                    }
+                    SStmp.dataPoints = dataPoints;
                 }
                 isometricSSTmp.push(SStmp);
             }
@@ -462,7 +490,7 @@ function zNormalization(data, ignored = undefined) {
         }
         normalized.push(normalizedTmp);
     }
-    return normalized;
+    return [normalized, means, stds];
 }
 
 function anomalyDegree(data, min, max) {

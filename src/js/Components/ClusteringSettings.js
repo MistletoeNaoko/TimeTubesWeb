@@ -536,7 +536,7 @@ export default class clusteringSettings extends React.Component {
                 variables.push(variableList[i].value);
             }
         }
-        let [subsequences, clusterCenters, labels] = performClustering(datasets, clusteringParameters, subsequenceParameters, variables);
+        let [subsequences, ranges, clusterCenters, labels] = performClustering(datasets, clusteringParameters, subsequenceParameters, variables);
         // let data = DataStore.getData(0),
         //     clusteringParameters = {
         //         method: 'kmedoids',
@@ -560,6 +560,7 @@ export default class clusteringSettings extends React.Component {
         ClusteringAction.showClusteringResults(
             datasetIds, 
             subsequences, 
+            ranges,
             clusterCenters, 
             labels, 
             clusteringParameters, 

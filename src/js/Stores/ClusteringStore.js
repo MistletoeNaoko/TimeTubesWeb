@@ -8,6 +8,7 @@ class ClusteringStore extends EventEmitter {
         this.gridSize = 18;
         this.datasets = [];
         this.subsequences = [];
+        this.ranges = [];
         this.clusterCenters = [];
         this.labels = [];
         this.clusterColors = []; // hsv color space
@@ -18,7 +19,7 @@ class ClusteringStore extends EventEmitter {
     handleActions(action) {
         switch (action.type) {
             case 'SHOW_CLUSTERING_RESULTS':
-                this.showClusteringResults(action.datasets, action.subsequences, action.clusterCenters, action.labels, action.clusteringParameters, action.subsequenceParameters);
+                this.showClusteringResults(action.datasets, action.subsequences, action.ranges, action.clusterCenters, action.labels, action.clusteringParameters, action.subsequenceParameters);
                 break;
             case 'SHOW_CLUSTER_DETAILS':
                 this.showClusterDetails(action.cluster);
@@ -44,6 +45,10 @@ class ClusteringStore extends EventEmitter {
         return this.subsequences;
     }
 
+    getRanges() {
+        return this.ranges;
+    }
+
     getClusterCenters() {
         return this.clusterCenters;
     }
@@ -64,9 +69,10 @@ class ClusteringStore extends EventEmitter {
         return this.subsequenceParameters;
     }
 
-    showClusteringResults (datasets, subsequences, clusterCenters, labels, clusteringParameters, subsequenceParameters) {
+    showClusteringResults (datasets, subsequences, ranges, clusterCenters, labels, clusteringParameters, subsequenceParameters) {
         this.datasets = datasets;
         this.subsequences = subsequences;
+        this.ranges = ranges;
         this.clusterCenters = clusterCenters;
         this.labels = labels;
         // クラスタの数から適切なグリッドサイズを求める

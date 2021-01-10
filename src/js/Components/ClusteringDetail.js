@@ -46,15 +46,18 @@ export default class ClusteringDetail extends React.Component {
     }
 
     componentDidMount() {
-        ClusteringStore.on('showClusterDetails', (cluster) => {
+        ClusteringStore.on('showClusteringResults', () => {
             this.clusterCenters = ClusteringStore.getClusterCenters();
             this.clusterColors = ClusteringStore.getClusterColors();
             this.labels = ClusteringStore.getLabels();
             this.subsequences = ClusteringStore.getSubsequences();
+            this.ranges = ClusteringStore.getRanges();
+            this.datasetsIdx = ClusteringStore.getDatasets();
+        });
+        ClusteringStore.on('showClusterDetails', (cluster) => {
             this.cluster = cluster;
             this.variables = Object.keys(this.clusterCenters[cluster][0]);
             this.variables = this.variables.filter(ele => ele !== 'z')
-            this.datasets = ClusteringStore.getDatasets();
             this.createVariableLabels();
             this.extractSubsequencesInCluster();
             this.drawClusterCenterLineCharts();
@@ -133,6 +136,7 @@ export default class ClusteringDetail extends React.Component {
 
     extractSubsequencesInCluster() {
         this.SSCluster = [];
+        this.SSRanges = [];
         this.yMinMax = {};
         this.variables.forEach(function(d) {
             this.yMinMax[d] = [Infinity, -Infinity];
@@ -141,7 +145,8 @@ export default class ClusteringDetail extends React.Component {
             if (typeof(this.labels[i]) === 'object') {
                 if (this.labels[i].cluster === this.cluster) {
                     this.SSCluster.push(this.subsequences[i]);
-                    
+                    this.SSRanges.push(this.ranges[i]);
+
                     for (let j = 0; j < this.subsequences[i].length; j++) {
                         this.variables.forEach(function(d) {
                             if (this.subsequences[i][j][d] < this.yMinMax[d][0]) {
@@ -156,6 +161,7 @@ export default class ClusteringDetail extends React.Component {
             } else {
                 if (this.labels[i] === this.cluster) {
                     this.SSCluster.push(this.subsequences[i]);
+                    this.SSRanges.push(this.ranges[i]);
                     
                     for (let j = 0; j < this.subsequences[i].length; j++) {
                         this.variables.forEach(function(d) {
@@ -174,9 +180,8 @@ export default class ClusteringDetail extends React.Component {
 
     createVariableLabels() {
         let variableLabels = {};
-        let targets = ClusteringStore.getDatasets();
-        for (let i = 0; i < targets.length; i++) {
-            let lookup = DataStore.getData(targets[i]).data.lookup;
+        for (let i = 0; i < this.datasetsIdx.length; i++) {
+            let lookup = DataStore.getData(this.datasetsIdx[i]).data.lookup;
             for (let key in lookup) {
                 if (!(key in variableLabels)) {
                     variableLabels[key] = lookup[key];
@@ -315,8 +320,8 @@ export default class ClusteringDetail extends React.Component {
             .attr('transform', 'translate(' + this.margin.left + ',0)')
             .call(d3.axisLeft(yScale).ticks(5));
             
-        if (this.datasets.length === 1) {
-            let rectColor = TimeTubeesStore.getPlotColor(this.datasets[0]);
+        if (this.datasetsIdx.length === 1) {
+            let rectColor = TimeTubeesStore.getPlotColor(this.datasetsIdx[0]);
             svg.selectAll('rect')
                 .data(bins)
                 .enter()
@@ -333,12 +338,12 @@ export default class ClusteringDetail extends React.Component {
                     return height - this.margin.bottom - yScale(d.length);
                 }.bind(this))
                 .attr('fill', rectColor);
-        } else if (this.datasets.length > 1) {
+        } else if (this.datasetsIdx.length > 1) {
             let binsStack = [];
             for (let i = 0; i < bins.length; i++) {
                 let stackTmp = {};
-                for (let j = 0; j < this.datasets.length; j++) {
-                    stackTmp[this.datasets[j]] = 0;
+                for (let j = 0; j < this.datasetsIdx.length; j++) {
+                    stackTmp[this.datasetsIdx[j]] = 0;
                 }
                 for (let j = 0; j < bins[i].length; j++) {
                     stackTmp[bins[i][j].id]++;
@@ -346,10 +351,10 @@ export default class ClusteringDetail extends React.Component {
                 binsStack.push(stackTmp);
             }
             let stack = d3.stack()
-                .keys(this.datasets);
+                .keys(this.datasetsIdx);
             let rectColors = [];
-            for (let i = 0; i < this.datasets.length; i++) {
-                rectColors.push(TimeTubeesStore.getPlotColor(this.datasets[i]));
+            for (let i = 0; i < this.datasetsIdx.length; i++) {
+                rectColors.push(TimeTubeesStore.getPlotColor(this.datasetsIdx[i]));
             }
             let series = stack(binsStack);
             let groups = svg.selectAll('g.stackedBarGroup')
@@ -454,13 +459,17 @@ export default class ClusteringDetail extends React.Component {
                 }
             }
         }
+
+        let svgWidth = cellWidth - paddingCell * 2,
+            svgHeight = cellHeight - paddingCell * 2;
+
         let xScale = d3.scaleLinear()
-            .range([paddingCell, cellWidth - paddingCell])
+            .range([paddingCell, svgWidth - paddingCell])
             .domain(xMinMax);
         let yScales = {}, curves = {};
         for (let i = 0; i < this.variables.length; i++) {
             yScales[this.variables[i]] = d3.scaleLinear()
-                .range([cellHeight - paddingCell, paddingCell])
+                .range([svgHeight - paddingCell, paddingCell])
                 .domain(yMinMax[this.variables[i]])
                 .nice();
             curves[this.variables[i]] = d3.line()
@@ -475,24 +484,67 @@ export default class ClusteringDetail extends React.Component {
         
         let rowCounterColor = 0, rowCounter = 0;
         let dataColors = {};
-        for (let i = 0; i < this.datasets.length; i++) {
-            dataColors[this.datasets[i]] = TimeTubeesStore.getPlotColor(this.datasets[i]);
+        for (let i = 0; i < this.datasetsIdx.length; i++) {
+            dataColors[this.datasetsIdx[i]] = TimeTubeesStore.getPlotColor(this.datasetsIdx[i]);
         }
-        let sparklines = rows
+        let sparklinesSVG = rows
             .selectAll('td')
             .append('svg')
             .attr('class', 'spark')
-            .attr('width', cellWidth - paddingCell * 2)
-            .attr('height', cellHeight - paddingCell * 2)
+            .attr('id', function(d, i) {
+                let idName = 'sparkLineSVG_' + d + '_' + ((i === this.variables.length - 1)? rowCounter++: rowCounter);
+                return idName;
+            }.bind(this))
+            .attr('width', svgWidth)
+            .attr('height', svgHeight);
+        rowCounter = 0;
+        let sparklines = sparklinesSVG
             .append('path')
             .attr('fill', 'none')
             .attr('stroke', function(d, i) {
-                return dataColors[this.SSCluster[(i === this.variables.length - 1)? rowCounterColor++: rowCounterColor].id]
+                return dataColors[this.SSCluster[(i === this.variables.length - 1)? rowCounter++: rowCounter].id]
             }.bind(this))
-            .attr('stroke-width', 1.5)
+            .attr('stroke-width', 1.5);
+        rowCounter = 0;
+        sparklines
             .attr('d', function(d, i) {
                 return curves[d](this.SSCluster[(i === this.variables.length - 1)? rowCounter++: rowCounter]);
             }.bind(this));
+            
+        for (let i = 0; i < sparklinesSVG._groups.length; i++) {
+            // iは行数に一致
+                // let data = DataStore.getData(this.SSCluster[i].id).data.spatial.slice(this.SSRanges[i][0], this.SSRanges[i][1] + 1);
+            for (let j = 0; j < sparklinesSVG._groups[i].length; j++) {
+                // jは変数に一致
+                let svgId = sparklinesSVG._groups[i][j].id;
+                let varTd = svgId.split('_')[1];
+                // let data = DataStore.getData(this.SSCluster[SSIdx].id).data.spatial.slice(this.SSRanges[SSIdx][0], this.SSRanges[SSIdx][1] + 1);
+                d3.select('#' + svgId)
+                    .append('g')
+                    .attr('class', 'dataPointsSparkLine')
+                    .selectAll('circle')
+                    .data(this.SSCluster[i].dataPoints)
+                    .enter()
+                    .append('circle')
+                    .attr('cx', function(d) {
+                        let xVal = (d.z - this.SSCluster[i].dataPoints[0].z) / (this.SSCluster[i].dataPoints[this.SSCluster[i].dataPoints.length - 1].z - this.SSCluster[i].dataPoints[0].z) * xMinMax[1];
+                        return xScale(xVal);
+                    }.bind(this))
+                    .attr('cy', function(d) {
+                        return yScales[varTd](d[varTd]);
+                    }.bind(this))
+                    .attr('fill', 'black')
+                    .attr('r', 1);
+            }
+        }
+        // let dataForSP = observationDataPoints();
+        // let dataPoints = sparklines
+        //     .selectAll('circle')
+        //     .data();
+
+        // function observationDataPoints() {
+        //     // 実データと変数から各セルに打つべきデータ点一覧を返す？
+        // }
     }
 
     // drawClusterFeatureTable() {
