@@ -1151,30 +1151,109 @@ export function DTWMD(s, t, w, keys, distFunc) {
 }
 
 function OptimalWarpingPath(cost) {
-    let path = [];
-    let i = cost.length - 1,    // y: source
-        j = cost[0].length - 1; // x: target
-    path.push([j, i]);
-    while (i > 0 && j > 0) {
-        if (i === 0) {
-            j--;
-        } else if (j === 0) {
-            i--;
-        } else {
-            if (cost[i - 1][j] === Math.min(cost[i - 1][j - 1], cost[i - 1][j], cost[i][j - 1])) {
-                i--;
-            } else if (cost[i][j - 1] === Math.min(cost[i - 1][j - 1], cost[i - 1][j], cost[i][j - 1])) {
-                j--;
+    if (Array.isArray(cost)) {
+        let path;
+        let i = cost.length - 1,    // y axis: source (SS)
+            j = cost[0].length - 1; // x axis: target (centroid/medoid)
+        path = [[i, j]];
+        while (i > 0 || j > 0) {
+            if (i > 0) {
+                if (j > 0) {
+                    if (cost[i - 1][j] < cost[i - 1][j - 1]) {
+                        if (cost[i - 1][j] < cost[i][j - 1]) {
+                            path.push([i - 1, j]);
+                            i--;
+                        } else {
+                            path.push([i, j - 1]);
+                            j--;
+                        }
+                    } else {
+                        if (cost[i - 1][j - 1] < cost[i][j - 1]) {
+                            path.push([i - 1, j - 1]);
+                            i--;
+                            j--;
+                        } else {
+                            path.push([i, j - 1]);
+                            j--;
+                        }
+                    }
+                } else {
+                    path.push([i - 1, j]);
+                    i--;
+                }
             } else {
-                i--;
+                path.push([i, j - 1]);
                 j--;
             }
         }
-        path.push([j, i]);
+        return path;
+    } else {
+        let paths = {};
+        for (let key in cost) {
+            let path;
+            let i = cost[key].length - 1,    // y axis: source (SS)
+                j = cost[key][0].length - 1; // x axis: target (centroid/medoid)
+            path = [[i, j]];
+            while (i > 0 || j > 0) {
+                if (i > 0) {
+                    if (j > 0) {
+                        if (cost[key][i - 1][j] < cost[key][i - 1][j - 1]) {
+                            if (cost[key][i - 1][j] < cost[key][i][j - 1]) {
+                                path.push([i - 1, j]);
+                                i--;
+                            } else {
+                                path.push([i, j - 1]);
+                                j--;
+                            }
+                        } else {
+                            if (cost[key][i - 1][j - 1] < cost[key][i][j - 1]) {
+                                path.push([i - 1, j - 1]);
+                                i--;
+                                j--;
+                            } else {
+                                path.push([i, j - 1]);
+                                j--;
+                            }
+                        }
+                    } else {
+                        path.push([i - 1, j]);
+                        i--;
+                    }
+                } else {
+                    path.push([i, j - 1]);
+                    j--;
+                }
+            }
+            paths[key] = path;
+        }
+        return paths;
     }
-    path.push([0, 0]);
-    return path;
 }
+// function OptimalWarpingPath(cost) {
+//     let path = [];
+//     let i = cost.length - 1,    // y: source
+//         j = cost[0].length - 1; // x: target
+//     path.push([j, i]);
+//     while (i > 0 && j > 0) {
+//         if (i === 0) {
+//             j--;
+//         } else if (j === 0) {
+//             i--;
+//         } else {
+//             if (cost[i - 1][j] === Math.min(cost[i - 1][j - 1], cost[i - 1][j], cost[i][j - 1])) {
+//                 i--;
+//             } else if (cost[i][j - 1] === Math.min(cost[i - 1][j - 1], cost[i - 1][j], cost[i][j - 1])) {
+//                 j--;
+//             } else {
+//                 i--;
+//                 j--;
+//             }
+//         }
+//         path.push([j, i]);
+//     }
+//     path.push([0, 0]);
+//     return path;
+// }
 
 export function EuclideanDist(x, y) {
     if (Array.isArray(x)) {
