@@ -1,4 +1,4 @@
-import { cluster } from 'd3';
+import { cluster, path } from 'd3';
 import {objectSum, objectSub, objectMul, objectDiv, objectAbsSub, objectTotal} from '../lib/mathLib';
 import DataStore from '../Stores/DataStore';
 
@@ -230,6 +230,7 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
         metric: clusteringParameters.distanceMetric,
         distFunc: EuclideanDist
     }
+    dataCenter(subsequenceData, distanceParameters, variables.filter(ele => ele !== 'z'), subsequenceParameters.isometryLen);
     let clusterCenters, labels;
     switch (clusteringParameters.method) {
         case 'kmedoids':
@@ -630,6 +631,127 @@ function distanceMatrix(data, distanceParameters, variables) {
     return distMatrix;
 }
 
+function dataCenter(data, distanceParameters, variables, dataLen) {
+    let centroid = [], newCentroid = [];
+    let loop = 0, maxIteration = 300;
+    switch (distanceParameters.metric) {
+        case 'Euclidean':
+            break;
+        case 'DTWD':
+            // いったんランダムにセントろいどを決定してから更新していく
+            centroid = data[Math.floor(Math.random() * Math.floor(data.length))];
+            while (loop < maxIteration && checkUpdates(centroid, newCentroid)) {
+                let distTmp = 0;
+                let centroidTmp = [], dataCount = [];
+                for (let i = 0; i <= dataLen; i++) {
+                    let dataTmp = {};
+                    variables.forEach(key => {
+                        dataTmp[key] = 0;
+                    });
+                    centroidTmp.push(dataTmp);
+                    dataCount.push(0);
+                }
+                if (distanceParameters.window > 0) {
+                    for (let i = 0; i < data.length; i++) {
+                        distTmp = DTWMD(centroid, data[i], variables, distanceParameters.window, distanceParameters.distFunc);
+                        let path = OptimalWarpingPath(distTmp);
+                        for (let j = 0; j < path.length; j++) {
+                            variables.forEach(key => {
+                                centroidTmp[path[j][0]][key] += data[i][path[j][1]][key];
+                            });
+                            dataCount[path[j][0]]++;
+                        }
+                    }
+                } else {
+                    for (let i = 0; i < data.length; i++) {
+                        distTmp = DTWSimpleMD(centroid, data[i], variables, distanceParameters.distFunc);
+                        let path = OptimalWarpingPath(distTmp);
+                        for (let j = 0; j < path.length; j++) {
+                            variables.forEach(key => {
+                                centroidTmp[path[j][0]][key] += data[i][path[j][1]][key];
+                            });
+                            dataCount[path[j][0]]++;
+                        }
+                    }
+                }
+                for (let i = 0; i < centroidTmp.length; i++) {
+                    for (let key in centroidTmp[i]) {
+                        centroidTmp[i][key] /= dataCount[i];
+                    }
+                }
+                newCentroid = centroidTmp;
+                loop++;
+            }
+            break;
+        case 'DTWI':
+            // いったんランダムにセントろいどを決定してから更新していく
+            centroid = data[Math.floor(Math.random() * Math.floor(data.length))];
+            while (loop < maxIteration && checkUpdates(centroid, newCentroid)) {
+                let distTmp = 0;
+                let centroidTmp = [], dataCount = [];
+                for (let i = 0; i <= dataLen; i++) {
+                    let dataTmp = {}, countTmp = {};
+                    variables.forEach(key => {
+                        dataTmp[key] = 0;
+                        countTmp[key] = 0;
+                    });
+                    centroidTmp.push(dataTmp);
+                    dataCount.push(countTmp);
+                }
+                if (distanceParameters.window > 0) {
+                    for (let i = 0; i < data.length; i++) {
+                        distTmp = DTW(centroid, data[i], variables, distanceParameters.window, distanceParameters.distFunc);
+                        let path = OptimalWarpingPath(distTmp);
+                        variables.forEach(key => {
+                            for (let j = 0; j < path[key].length; j++) {
+                                centroidTmp[path[key][j][0]][key] += data[i][path[key][j][1]][key];
+                                dataCount[path[key][j][0]][key]++;
+                            }
+                        });
+                    }
+                } else {
+                    for (let i = 0; i < data.length; i++) {
+                        distTmp = DTWSimple(centroid, data[i], variables, distanceParameters.distFunc);
+                        let path = OptimalWarpingPath(distTmp);
+                        variables.forEach(key => {
+                            for (let j = 0; j < path[key].length; j++) {
+                                centroidTmp[path[key][j][0]][key] += data[i][path[key][j][1]][key];
+                                dataCount[path[key][j][0]][key]++;
+                            }
+                        });
+                    }
+                }
+                for (let i = 0; i < centroidTmp.length; i++) {
+                    for (let key in centroidTmp[i]) {
+                        centroidTmp[i][key] /= dataCount[i][key];
+                    }
+                }
+                newCentroid = centroidTmp;
+                loop++;
+            }
+            break;
+        default:
+            break;
+    }
+    return newCentroid;
+    function checkUpdates(pCentroid, nCentroid) {
+        let flag = false;
+        if (pCentroid.length === 0 || nCentroid.length === 0) {
+            return true;
+        }
+        for (let i = 0; i < pCentroid.length; i++) {
+            for (let key in variables) {
+                if (pCentroid[i][key] !== nCentroid[i][key]) {
+                    flag = true;
+                    break;
+                }
+            }
+            if (flag) break;
+        }
+        return flag;
+    }
+}
+
 function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
     // step 1: compute distance matrix between SS
     // step 2: pick up k medoids from all SS
@@ -645,7 +767,8 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
     // find the inital medoids which make the errors inside the clusters minimum
     let initSearch = 5, maxTrial = 10;
     let score = Infinity, medoids, labels;
-    let bestMedoids, bestLabels, bestDist = Infinity;
+    let clusteringScores = {};
+    let bestMedoids, bestLabels, bestDist = Infinity, bestDists;
 
     for (let trial = 0; trial < maxTrial; trial++) {
         for (let i = 0; i < initSearch; i++) {
@@ -672,14 +795,18 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
             newLabels = assignSSToMedoids(newMedoids, variableList);
             loop++;
         }
-        let distSumTmp = 0;
+        let distSumTmp = 0, distCluster = [];
         for (let i = 0; i < distSum.length; i++) {
+            let distClusterTmp = 0;
             for (let key in distSum[i]) {
                 distSumTmp += distSum[i][key];
+                distClusterTmp += distSum[i][key];
             }
+            distCluster.push(distClusterTmp);
         }
         if (distSumTmp < bestDist) {
             bestDist = distSumTmp;
+            bestDists = distCluster;
             bestMedoids = newMedoids;
             bestLabels = newLabels;
         }
@@ -699,8 +826,31 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
         }
         medoidData.push(dataTmp);
     }
+    clusteringScores.clusterRadiuses = clusterRadius(countClusterNumber());
+
+
     return [medoidData, labels];
 
+    function countClusterNumber() {
+        let counters = [];
+        for (let i = 0; i < clusterNum; i++) {
+            counters.push(0);
+        }
+        for (let i = 0; i < labels.length; i++) {
+            counters[labels[i]]++;
+        }
+        return counters;
+    }
+    function clusterRadius(counters) {
+        let radiuses = [];
+        for (let i = 0; i < clusterNum; i++) {
+            radiuses.push(bestDists[i] / counters[i]);
+        }
+        return radiuses;
+    }
+    function pseudoF() {
+        let cohesion, separation;
+    }
     function initMedoids(activeVariables) {
         // randomly pick up k SS from the dataset
         let medoids = [];
@@ -1076,45 +1226,275 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
     let variableList = variables.filter(ele => ele !== 'z');
     let dataLen = data[0].length;
 
-    // step 1 and 2
-    let centroids = createCentroids();
-    let labels = assignSSToCentroids(centroids);
+    // // step 1 and 2
+    // let centroids = createCentroids();
+    // let labels = assignSSToCentroids(centroids);
+
+    // // step 3 and 4
+    // let newCentroids = [], newLabels = [];
+    // let loop = 0, maxIteration = 300;
+    // while (loop < maxIteration && checkUpdates(labels, newLabels)) {
+    //     if (newCentroids.length !== 0 && newLabels.length !== 0) {
+    //         centroids = newCentroids;
+    //         labels = newLabels;
+    //     }
+    //     newCentroids = updateCentroids(labels, dataLen);
+    //     newLabels = assignSSToCentroids(newCentroids);
+    //     loop++;
+    // }
+
+    let centroids = initCentroids();
+    let labels = [];// = assignSSToCentroids(centroids);
 
     // step 3 and 4
     let newCentroids = [], newLabels = [];
-    let loop = 0, maxIteration = 300;
+    let loop = 0, maxIteration = 10;
     while (loop < maxIteration && checkUpdates(labels, newLabels)) {
         if (newCentroids.length !== 0 && newLabels.length !== 0) {
             centroids = newCentroids;
             labels = newLabels;
         }
-        newCentroids = updateCentroids(labels, dataLen);
-        newLabels = assignSSToCentroids(newCentroids);
+        newLabels = assignSSToCentroids(centroids);
+        newCentroids = updateCentroids(newLabels, dataLen);
         loop++;
     }
+
     centroids = newCentroids;
     labels = newLabels;
     return [centroids, labels];
 
-    function createCentroids() {
-        // choose k SS from the dataset as a initial centroid of the clusters
-        let initCentroidsIdx = [],
-            initCentroids = [];
-        while (initCentroidsIdx.length < clusterNum) {
-            let centroidTmp = Math.floor(Math.random() * Math.floor(data.length));
-            if (initCentroidsIdx.indexOf(centroidTmp) < 0)
-                initCentroidsIdx.push(centroidTmp);
+    // function createCentroids() {
+    //     // choose k SS from the dataset as a initial centroid of the clusters
+    //     let initCentroidsIdx = [],
+    //         initCentroids = [];
+    //     while (initCentroidsIdx.length < clusterNum) {
+    //         let centroidTmp = Math.floor(Math.random() * Math.floor(data.length));
+    //         if (initCentroidsIdx.indexOf(centroidTmp) < 0)
+    //             initCentroidsIdx.push(centroidTmp);
+    //     }
+    //     for (let i = 0; i < initCentroidsIdx.length; i++) {
+    //         initCentroids.push(data[initCentroidsIdx[i]]);
+    //     }
+    //     return initCentroids;
+    // }
+    function initCentroids() {
+        let labels = [], clusters = [];
+        // 各データ点を適当なクラスタに割り振る
+        for (let i = 0; i < clusterNum; i++) {
+            clusters.push([]);
         }
-        for (let i = 0; i < initCentroidsIdx.length; i++) {
-            initCentroids.push(data[initCentroidsIdx[i]]);
+        for (let i = 0; i < clusterNum; i++) {
+            labels.push(i);
+            clusters[labels[labels.length - 1]].push(i);
         }
-        return initCentroids;
+        for (let i = clusterNum; i < data.length; i++) {
+            labels.push(Math.floor(Math.random() * clusterNum));
+            clusters[labels[labels.length - 1]].push(i);
+        }
+        // TODO:本当はここでラベルをシャッフルすべき
+
+        // DBAで各クラスタのセントロイドを求める 
+        let newCentroid = [];
+        switch(distanceParameters.metric) {
+            case 'Euclidean':
+                break;
+            case 'DTWD':
+                for (let i = 0; i < clusters.length; i++) {
+                    let pCentroid = data[clusters[i][Math.floor(Math.random() * clusters[i].length)]];
+                    let loopInit = 0, maxIterationInit = 300;
+                    if (distanceParameters.window > 0) {
+                        while (loopInit < maxIterationInit) {
+                            // empty array for storing temporal centroid
+                            let centroidTmp = [],
+                                dataCount = [];
+                            for (let j = 0; j < dataLen; j++) {
+                                let dataTmp = {};
+                                variableList.forEach(key => {
+                                    dataTmp[key] = 0;
+                                });
+                                centroidTmp.push(dataTmp);
+                                dataCount.push(0);
+                            }
+
+                            // run DBA and get barycenter
+                            for (let j = 0; j < clusters[i].length; j++) {
+                                let distTmp = DTWMD(pCentroid, data[clusters[i][j]], variableList, distanceParameters.window, distanceParameters.distFunc);
+                                let path = OptimalWarpingPath(distTmp);
+                                for (let k = 0; k < path.length; k++) {
+                                    variableList.forEach(key => {
+                                        centroidTmp[path[k][0]][key] += data[clusters[i][j]][path[k][1]][key];
+                                    });
+                                    dataCount[path[k][0]]++;
+                                }
+                            }
+                            // average
+                            for (let j = 0; j < centroidTmp.length; j++) {
+                                for (let key in centroidTmp[j]) {
+                                    centroidTmp[j][key] /= dataCount[j];
+                                }
+                            }
+
+                            if (!checkUpdateInitCentroids(pCentroid, centroidTmp)) {
+                                // if pCentroid and centroidTmp is the same (= no updates), stop this iteration
+                                newCentroid.push(centroidTmp);
+                                break;
+                            }
+                            loopInit++;
+                        }
+                    } else {
+                        while (loopInit < maxIterationInit) {
+                            // empty array for storing temporal centroid
+                            let centroidTmp = [],
+                                dataCount = [];
+                            for (let j = 0; j < dataLen; j++) {
+                                let dataTmp = {};
+                                variableList.forEach(key => {
+                                    dataTmp[key] = 0;
+                                });
+                                centroidTmp.push(dataTmp);
+                                dataCount.push(0);
+                            }
+
+                            // run DBA and get barycenter
+                            for (let j = 0; j < clusters[i].length; j++) {
+                                let distTmp = DTWSimpleMD(pCentroid, data[clusters[i][j]], variableList, distanceParameters.distFunc);
+                                let path = OptimalWarpingPath(distTmp);
+                                for (let k = 0; k < path.length; k++) {
+                                    variableList.forEach(key => {
+                                        centroidTmp[path[k][0]][key] += data[clusters[i][j]][path[k][1]][key];
+                                    });
+                                    dataCount[path[k][0]]++;
+                                }
+                            }
+                            // average
+                            for (let j = 0; j < centroidTmp.length; j++) {
+                                for (let key in centroidTmp[j]) {
+                                    centroidTmp[j][key] /= dataCount[j];
+                                }
+                            }
+
+                            if (!checkUpdateInitCentroids(pCentroid, centroidTmp)) {
+                                // if pCentroid and centroidTmp is the same (= no updates), stop this iteration
+                                newCentroid.push(centroidTmp);
+                                break;
+                            }
+                            loopInit++;
+                        }
+                    }
+                }
+                break;
+            case 'DTWI':
+                for (let i = 0; i < clusters.length; i++) {
+                    let pCentroid = data[clusters[i][Math.floor(Math.random() * clusters[i].length)]];
+                    let loopInit = 0, maxIterationInit = 300;
+                    if (distanceParameters.window > 0) {
+                        while (loopInit < maxIterationInit) {
+                            // empty array for storing temporal centroid
+                            let centroidTmp = [],
+                                dataCount = [];
+                            for (let j = 0; j < dataLen; j++) {
+                                let dataTmp = {}, countTmp = {};
+                                variableList.forEach(key => {
+                                    dataTmp[key] = 0;
+                                    countTmp[key] = 0;
+                                });
+                                centroidTmp.push(dataTmp);
+                                dataCount.push(countTmp);
+                            }
+
+                            // run DBA and get barycenter
+                            for (let j = 0; j < clusters[i].length; j++) {
+                                let distTmp = DTW(pCentroid, data[clusters[i][j]], variableList, distanceParameters.window, distanceParameters.distFunc);
+                                let path = OptimalWarpingPath(distTmp);
+                                variableList.forEach(key => {
+                                    for (let k = 0; k < path[key].length; k++) {
+                                        centroidTmp[path[key][k][0]][key] += data[clusters[i][j]][path[key][k][1]][key];
+                                        dataCount[path[key][k][0]][key]++;
+                                    }
+                                });
+                            }
+                            // average
+                            for (let j = 0; j < centroidTmp.length; j++) {
+                                for (let key in centroidTmp[j]) {
+                                    centroidTmp[j][key] /= dataCount[j][key];
+                                }
+                            }
+
+                            if (!checkUpdateInitCentroids(pCentroid, centroidTmp)) {
+                                // if pCentroid and centroidTmp is the same (= no updates), stop this iteration
+                                newCentroid.push(centroidTmp);
+                                break;
+                            }
+                            loopInit++;
+                        }
+                    } else {
+                        while (loopInit < maxIterationInit) {
+                            // empty array for storing temporal centroid
+                            let centroidTmp = [],
+                                dataCount = [];
+                            for (let j = 0; j < dataLen; j++) {
+                                let dataTmp = {}, countTmp = {};
+                                variableList.forEach(key => {
+                                    dataTmp[key] = 0;
+                                    countTmp[key] = 0;
+                                });
+                                centroidTmp.push(dataTmp);
+                                dataCount.push(countTmp);
+                            }
+
+                            // run DBA and get barycenter
+                            for (let j = 0; j < clusters[i].length; j++) {
+                                let distTmp = DTWSimple(pCentroid, data[clusters[i][j]], variableList, distanceParameters.distFunc);
+                                let path = OptimalWarpingPath(distTmp);
+                                variableList.forEach(key => {
+                                    for (let k = 0; k < path[key].length; k++) {
+                                        centroidTmp[path[key][k][0]][key] += data[clusters[i][j]][path[key][k][1]][key];
+                                        dataCount[path[key][k][0]][key]++;
+                                    }
+                                });
+                            }
+                            // average
+                            for (let j = 0; j < centroidTmp.length; j++) {
+                                for (let key in centroidTmp[j]) {
+                                    centroidTmp[j][key] /= dataCount[j][key];
+                                }
+                            }
+
+                            if (!checkUpdateInitCentroids(pCentroid, centroidTmp)) {
+                                // if pCentroid and centroidTmp is the same (= no updates), stop this iteration
+                                newCentroid.push(centroidTmp);
+                                break;
+                            }
+                            loopInit++;
+                        }
+                    }
+                }
+                break;
+        }
+        return newCentroid;
+        function checkUpdateInitCentroids(pCentroid, nCentroid) {
+            let flag = false;
+            for (let i = 0; i < pCentroid.length; i++) {
+                for (let key in variableList) {
+                    if (pCentroid[i][key] !== nCentroid[i][key]) {
+                        flag = true;
+                        break;
+                    }
+                } 
+                if (flag) break;
+            }
+            return flag;
+        }
     }
     function assignSSToCentroids(centroids) {
         let labels = [];
+        let clusterCount = [];
+        for (let i = 0; i < clusterNum; i++) {
+            clusterCount.push(0);
+        }
         for (let i = 0; i < data.length; i++) {
             let NNDist = Infinity,
-                NNDistPath,
+                NNDistMat,
                 NNCentroid;
             for (let j = 0; j < centroids.length; j++) {
                 // compute distances between centroids and SS
@@ -1129,7 +1509,8 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                             if (distTmp[distTmp.length - 1][distTmp[0].length - 1] < NNDist) {
                                 NNDist = distTmp[distTmp.length - 1][distTmp[0].length - 1];
                                 NNCentroid = j;
-                                NNDistPath = OptimalWarpingPath(distTmp);
+                                NNDistMat = distTmp;
+                                // NNDistPath = OptimalWarpingPath(distTmp);
                             }
                         } else {
                             // DTWSimpleMD
@@ -1137,7 +1518,8 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                             if (distTmp[distTmp.length - 1][distTmp[0].length - 1] < NNDist) {
                                 NNDist = distTmp[distTmp.length - 1][distTmp[0].length - 1];
                                 NNCentroid = j;
-                                NNDistPath = OptimalWarpingPath(distTmp);
+                                NNDistMat = distTmp;
+                                // NNDistPath = OptimalWarpingPath(distTmp);
                             }
                         }
                         break;
@@ -1146,25 +1528,27 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                             // DTW
                             distTmp = DTW(centroids[j], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
                             let distSum = 0;
-                            variables.forEach(key => {
+                            variableList.forEach(key => {
                                 distSum += distTmp[key][distTmp[key].length - 1][distTmp[key][0].length - 1];
                             });
                             if (distSum < NNDist) {
                                 NNDist = distSum;
                                 NNCentroid = j;
-                                NNDistPath = OptimalWarpingPath(distTmp);
+                                NNDistMat = distTmp;
+                                // NNDistPath = OptimalWarpingPath(distTmp);
                             }
                         } else {
                             // DTWSimple
                             distTmp = DTWSimple(centroids[j], data[i], variableList, distanceParameters.distFunc);
                             let distSum = 0;
-                            variables.forEach(key => {
+                            variableList.forEach(key => {
                                 distSum += distTmp[key][distTmp[key].length - 1][distTmp[key][0].length - 1];
                             });
                             if (distSum < NNDist) {
                                 NNDist = distSum;
                                 NNCentroid = j;
-                                NNDistPath = OptimalWarpingPath(distTmp);
+                                NNDistMat = distTmp;
+                                // NNDistPath = OptimalWarpingPath(distTmp);
                             }
                         }
                         break;
@@ -1174,8 +1558,96 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
             }
             labels.push({
                 cluster: NNCentroid,
-                path: NNDistPath
+                path: OptimalWarpingPath(NNDistMat)//NNDistPath
             });
+            clusterCount[NNCentroid]++;
+        }
+
+        // check if there are empty clusters
+        let singletons = [];
+        for (let i = 0; i < clusterNum; i++) {
+            if (clusterCount[i] === 0) {
+                // TODO: クラスタが空の際の処理。複数オプション用意すべき
+                // singleton
+                let maxIdx = -1, maxDist = -Infinity;
+                for (let j = 0; j < data.length; j++) {
+                    if (singletons.indexOf(j) < 0) {
+                        switch (distanceParameters.metric) {
+                            case 'Euclidean': 
+                                break;
+                            case 'DTWD':
+                                if (distanceParameters.window > 0) {
+                                    let distTmp = DTWMD(centroids[i], data[j], variableList, distanceParameters.window, distanceParameters.distFunc);
+                                    if (maxDist < distTmp[distTmp.length - 1][distTmp[0].length - 1]) {
+                                        maxIdx = j;
+                                        maxDist = distTmp[distTmp.length - 1][distTmp[0].length - 1];
+                                    }
+                                } else {
+                                    let distTmp = DTWSimpleMD(centroids[i], data[j], variableList, distanceParameters.distFunc);
+                                    if (maxDist < distTmp[distTmp.length - 1][distTmp[0].length - 1]) {
+                                        maxIdx = j;
+                                        maxDist = distTmp[distTmp.length - 1][distTmp[0].length - 1];
+                                    }
+                                }
+                                break;
+                            case 'DTWI':
+                                if (distanceParameters.window > 0) {
+                                    let dists = DTW(centroids[i], data[j], variableList, distanceParameters.window, distanceParameters.distFunc);
+                                    let distSum = 0;
+                                    variableList.forEach(key => {
+                                        distSum += dists[key][dists[key].length - 1][dists[key][0].length - 1];
+                                    });
+                                    if (maxDist < distSum) {
+                                        maxIdx = j;
+                                        maxDist = distSum;
+                                    }
+                                } else {
+                                    let dists = DTWSimple(centroids[i], data[j], variableList, distanceParameters.distFunc);
+                                    let distSum = 0;
+                                    variableList.forEach(key => {
+                                        distSum += dists[key][dists[key].length - 1][dists[key][0].length - 1];
+                                    });
+                                    if (maxDist < distSum) {
+                                        maxIdx = j;
+                                        maxDist = distSum;
+                                    }
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+                let path = {};
+                variableList.forEach(key => {
+                    let pathTmp = [];
+                    for (let j = 0; j < dataLen; j++) {
+                        pathTmp.push([j, j]);
+                    }
+                    path[key] = pathTmp;
+                });
+                singletons.push(maxIdx);
+                labels[maxIdx] = {
+                    cluster: i,
+                    path: path
+                };
+                let centroidTmp = [];
+                for (let j = 0; j < data[maxIdx].length; j++) {
+                    let tmp = {};
+                    variableList.forEach(key => {
+                        tmp[key] = data[maxIdx][key];
+                    });
+                    centroidTmp.push(tmp);
+                }
+                centroids[i] = centroidTmp;
+            }
+        }
+        let clusters = [];
+        for (let i = 0; i < clusterNum; i++) {
+            clusters.push(0);
+        }
+        for (let i = 0; i < labels.length; i++) {
+            clusters[labels[i].cluster]++;
         }
         return labels;
     }
@@ -1250,7 +1722,7 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                     // add data values of data in the cluster to get barycenter
                     for (let j = 0; j < clusters[i].length; j++) {
                         // focus on a data[clusters[i][j]] (data[clusters[i][j]] has 31 data points)
-                        // check the path between the current centroid and data[clusters[i][j]] (labels[clusters[i][j]].path)
+                        // check the path between the current centroid and data[clusters[i][j]] (labels[clusters[i][j]].path)labels[clusters[i][j]].path
                         variableList.forEach(key => {
                             for (let k = 0; k < labels[clusters[i][j]].path[key].length; k++) {
                                 centroidTmp[labels[clusters[i][j]].path[key][k][0]][key] += data[clusters[i][j]][labels[clusters[i][j]].path[key][k][1]][key];
@@ -1261,6 +1733,8 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                     // compute barycenters of each variables
                     for (let j = 0; j < centroidTmp.length; j++) {
                         variableList.forEach(key => {
+                            if (centroidTmp[j][key] == 0) {
+                            }
                             centroidTmp[j][key] /= dataCount[j][key];
                         });
                     }
@@ -1448,59 +1922,139 @@ function DTWMD(s, t, variables, w, distFunc) {
 
 function OptimalWarpingPath(cost) {
     if (Array.isArray(cost)) {
-        let path = [];
+        let path;
         let i = cost.length - 1,    // y axis: source (SS)
             j = cost[0].length - 1; // x axis: target (centroid/medoid)
-        path.push([j, i]);
-        while (i > 0 && j > 0) {
-            if (i === 0) {
-                j--;
-            } else if (j === 0) {
-                i--;
-            } else {
-                if (cost[i - 1][j] === Math.min(cost[i - 1][j - 1], cost[i - 1][j], cost[i][j - 1])) {
-                    i--;
-                } else if (cost[i][j - 1] === Math.min(cost[i - 1][j - 1], cost[i - 1][j], cost[i][j - 1])) {
-                    j--;
+        path = [[i, j]];
+        while (i > 0 || j > 0) {
+            if (i > 0) {
+                if (j > 0) {
+                    if (cost[i - 1][j] < cost[i - 1][j - 1]) {
+                        if (cost[i - 1][j] < cost[i][j - 1]) {
+                            path.push([i - 1, j]);
+                            i--;
+                        } else {
+                            path.push([i, j - 1]);
+                            j--;
+                        }
+                    } else {
+                        if (cost[i - 1][j - 1] < cost[i][j - 1]) {
+                            path.push([i - 1, j - 1]);
+                            i--;
+                            j--;
+                        } else {
+                            path.push([i, j - 1]);
+                            j--;
+                        }
+                    }
                 } else {
+                    path.push([i - 1, j]);
                     i--;
-                    j--;
                 }
+            } else {
+                path.push([i, j - 1]);
+                j--;
             }
-            path.push([j, i]);
         }
-        path.push([0, 0]);
         return path;
-    } else if (typeof(cost) === 'object') {
+    } else {
         let paths = {};
         for (let key in cost) {
-            let path = [];
+            let path;
             let i = cost[key].length - 1,    // y axis: source (SS)
                 j = cost[key][0].length - 1; // x axis: target (centroid/medoid)
-            path.push([j, i]);
-            while (i > 0 && j > 0) {
-                if (i === 0) {
-                    j--;
-                } else if (j === 0) {
-                    i--;
-                } else {
-                    if (cost[key][i - 1][j] === Math.min(cost[key][i - 1][j - 1], cost[key][i - 1][j], cost[key][i][j - 1])) {
-                        i--;
-                    } else if (cost[key][i][j - 1] === Math.min(cost[key][i - 1][j - 1], cost[key][i - 1][j], cost[key][i][j - 1])) {
-                        j--;
+            path = [[i, j]];
+            while (i > 0 || j > 0) {
+                if (i > 0) {
+                    if (j > 0) {
+                        if (cost[key][i - 1][j] < cost[key][i - 1][j - 1]) {
+                            if (cost[key][i - 1][j] < cost[key][i][j - 1]) {
+                                path.push([i - 1, j]);
+                                i--;
+                            } else {
+                                path.push([i, j - 1]);
+                                j--;
+                            }
+                        } else {
+                            if (cost[key][i - 1][j - 1] < cost[key][i][j - 1]) {
+                                path.push([i - 1, j - 1]);
+                                i--;
+                                j--;
+                            } else {
+                                path.push([i, j - 1]);
+                                j--;
+                            }
+                        }
                     } else {
+                        path.push([i - 1, j]);
                         i--;
-                        j--;
                     }
+                } else {
+                    path.push([i, j - 1]);
+                    j--;
                 }
-                path.push([j, i]);
             }
-            path.push([0, 0]);
             paths[key] = path;
         }
         return paths;
     }
 }
+
+// function OptimalWarpingPath(cost) {
+//     if (Array.isArray(cost)) {
+//         let path = [];
+//         let i = cost.length - 1,    // y axis: source (SS)
+//             j = cost[0].length - 1; // x axis: target (centroid/medoid)
+//         path.push([j, i]);
+//         while (i > 0 && j > 0) {
+//             if (i === 0) {
+//                 j--;
+//             } else if (j === 0) {
+//                 i--;
+//             } else {
+//                 if (cost[i - 1][j] === Math.min(cost[i - 1][j - 1], cost[i - 1][j], cost[i][j - 1])) {
+//                     i--;
+//                 } else if (cost[i][j - 1] === Math.min(cost[i - 1][j - 1], cost[i - 1][j], cost[i][j - 1])) {
+//                     j--;
+//                 } else {
+//                     i--;
+//                     j--;
+//                 }
+//             }
+//             path.push([j, i]);
+//         }
+//         path.push([0, 0]);
+//         return path;
+//     } else if (typeof(cost) === 'object') {
+//         let paths = {};
+//         for (let key in cost) {
+//             let path = [];
+//             let i = cost[key].length - 1,    // y axis: source (SS)
+//                 j = cost[key][0].length - 1; // x axis: target (centroid/medoid)
+//             path.push([j, i]);
+//             while (i > 0 && j > 0) {
+//                 if (i === 0) {
+//                     j--;
+//                 } else if (j === 0) {
+//                     i--;
+//                 } else {
+//                     if (cost[key][i - 1][j] === Math.min(cost[key][i - 1][j - 1], cost[key][i - 1][j], cost[key][i][j - 1])) {
+//                         i--;
+//                     } else if (cost[key][i][j - 1] === Math.min(cost[key][i - 1][j - 1], cost[key][i - 1][j], cost[key][i][j - 1])) {
+//                         j--;
+//                     } else {
+//                         i--;
+//                         j--;
+//                     }
+//                 }
+//                 path.push([j, i]);
+//             }
+//             path.push([0, 0]);
+//             paths[key] = path;
+//         }
+//         return paths;
+//     }
+// }
 
 function EuclideanDist(x, y, variables) {
     if (Array.isArray(x)) {
