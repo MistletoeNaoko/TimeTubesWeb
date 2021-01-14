@@ -230,31 +230,115 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
         metric: clusteringParameters.distanceMetric,
         distFunc: EuclideanDist
     }
-    let clusterCenters, labels;
+    let clusterCenters, labels, clusteringScores;
     switch (clusteringParameters.method) {
         case 'kmedoids':
             if (clusteringParameters.medoidDefinition === 'unified') {
-                [clusterCenters, labels] = kMedoidsUnified(subsequenceData, clusteringParameters.clusterNum, distanceParameters, variables);
+                [clusterCenters, labels, clusteringScores] = kMedoidsUnified(subsequenceData, clusteringParameters.clusterNum, distanceParameters, variables);
             } else if (clusteringParameters.medoidDefinition === 'each') {
-                [clusterCenters, labels] = kMedoidsEach(subsequenceData, clusteringParameters.clusterNum, distanceParameters, variables);
+                [clusterCenters, labels, clusteringScores] = kMedoidsEach(subsequenceData, clusteringParameters.clusterNum, distanceParameters, variables);
             }
             break;
         case 'kmeans':
-            [clusterCenters, labels] = kMeans(subsequenceData, clusteringParameters.clusterNum, distanceParameters, variables);
+            [clusterCenters, labels, clusteringScores] = kMeans(subsequenceData, clusteringParameters.clusterNum, distanceParameters, variables);
             break;
         default:
             break;
     }
-
-    // 
     let dataCenter = computeDataCenter(subsequenceData, distanceParameters, variables.filter(ele => ele !== 'z'), subsequenceParameters.isometryLen);
-
-
-    return [subsequenceData, ranges, clusterCenters, labels];
+    let labelsCluster = divideSSIntoClusters(labels, clusteringParameters.clusterNum);
+    
+    clusteringScores.pseudoF = pseudoF(clusteringScores.clusterRadiuses, clusterCenters, dataCenter, labelsCluster.map(x => x.length), distanceParameters, variables.filter(ele => ele !== 'z'));
+    return [subsequenceData, ranges, clusterCenters, labels, clusteringScores];
 }
 
-function pseudoF() {
-    let cohesion, separation;
+function divideSSIntoClusters (labels, clusterNum) {
+    let clusters = [];
+    for (let i = 0; i < clusterNum; i++) {
+        clusters.push([]);
+    }
+    if (typeof(labels[0]) === 'object') {
+        for (let i = 0; i < labels.length; i++) {
+            clusters[labels[i].cluster].push(i);
+        }
+    } else {
+        for (let i = 0; i < labels.length; i++) {
+            clusters[labels[i]].push(i);
+        }
+    }
+    return clusters;
+}
+
+function pseudoF(clusterRadiuses, clusterCenters, dataCenter, clusterMemberNum, distanceParameters, variableList) {
+    let cohesion = 0, separation = 0;
+    for (let i = 0; i < clusterRadiuses.length; i++) {
+        cohesion += (clusterRadiuses[i] * clusterMemberNum[i]);
+    }
+    switch (distanceParameters.metric) {
+        case 'Euclidean':
+            break;
+        case 'DTWD':
+            if (distanceParameters.window > 0) {
+                for (let i = 0; i < clusterCenters.length; i++) {
+                    let dist = DTWMD(clusterCenters[i], dataCenter, variableList, distanceParameters.window, distanceParameters.distFunc);
+                    separation += clusterMemberNum[i] * dist[dist.length - 1][dist[0].length - 1];
+                }
+            } else {
+                for (let i = 0; i < clusterCenters.length; i++) {
+                    let dist = DTWSimpleMD(clusterCenters[i], dataCenter, variableList, distanceParameters.distFunc);
+                    separation += clusterMemberNum[i] * dist[dist.length - 1][dist[0].length - 1];
+                }
+            }
+            break;
+        case 'DTWI':
+            if (distanceParameters.window > 0) {
+                for (let i = 0; i < clusterCenters.length; i++) {
+                    let dist = DTW(clusterCenters[i], dataCenter, variableList, distanceParameters.window, distanceParameters.distFunc);
+                    let distSum = 0;
+                    variableList.forEach(key => {
+                        distSum += dist[key][dist[key].length - 1][dist[key][0].length - 1];
+                    });
+                    separation += clusterMemberNum[i] * distSum;
+                }
+            } else {
+                for (let i = 0; i < clusterCenters.length; i++) {
+                    let dist = DTWSimple(clusterCenters[i], dataCenter, variableList, distanceParameters.distFunc);
+                    let distSum = 0;
+                    variableList.forEach(key => {
+                        distSum += dist[key][dist[key].length - 1][dist[key][0].length - 1];
+                    });
+                    separation += clusterMemberNum[i] * distSum;
+                }
+            }
+            break;
+        case 'DTW':
+            // kmedoidEachの時はmedoidは各変数ごとに決まっているが、clusterCentersのデータはデータ値になってるからOK
+            // TODO: DTWの時はDTWIでOK?
+            if (distanceParameters.window > 0) {
+                for (let i = 0; i < clusterCenters.length; i++) {
+                    let dist = DTW(clusterCenters[i], dataCenter, variableList, distanceParameters.window, distanceParameters.distFunc);
+                    let distSum = 0;
+                    variableList.forEach(key => {
+                        distSum += dist[key][dist[key].length - 1][dist[key][0].length - 1];
+                    });
+                    separation += clusterMemberNum[i] * distSum;
+                }
+            } else {
+                for (let i = 0; i < clusterCenters.length; i++) {
+                    let dist = DTWSimple(clusterCenters[i], dataCenter, variableList, distanceParameters.distFunc);
+                    let distSum = 0;
+                    variableList.forEach(key => {
+                        distSum += dist[key][dist[key].length - 1][dist[key][0].length - 1];
+                    });
+                    separation += clusterMemberNum[i] * distSum;
+                }
+            }
+            break;
+        default:
+            break;
+    }
+    let dataNumber = clusterMemberNum.reduce((sum, element) => sum + element, 0);
+    return (separation / cohesion) * ((dataNumber - clusterCenters.length) / (clusterCenters.length - 1));
 }
 
 function extractRanges(datasets, SSperiod) {
@@ -849,8 +933,8 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
     clusteringScores.clusterRadiuses = clusterRadius(clusters.map(x => x.length));
     [clusteringScores.silhouette, clusteringScores.silhouetteSS] = silhouetteCoefficient();
     clusteringScores.davisBouldin = davisBouldinIndex();
-    
-    return [medoidData, labels];
+
+    return [medoidData, labels, clusteringScores];
 
     function divideSSIntoClusters() {
         let clustersTmp = [];
@@ -1251,7 +1335,7 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables) {
     clusteringScores.clusterRadiuses = clusterRadius(clusters.map(x => x.length));
     [clusteringScores.silhouette, clusteringScores.silhouetteSS] = silhouetteCoefficient();
     clusteringScores.davisBouldin = davisBouldinIndex();
-    return [medoidData, labels];
+    return [medoidData, labels, clusteringScores];
 
     function divideSSIntoClusters() {
         let clustersTmp = [];
@@ -1483,7 +1567,7 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
     [clusteringScores.silhouette, clusteringScores.silhouetteSS] = silhouetteCoefficient();
     clusteringScores.davisBouldin = davisBouldinIndex();
 
-    return [centroids, labels];
+    return [centroids, labels, clusteringScores];
 
     // function createCentroids() {
     //     // choose k SS from the dataset as a initial centroid of the clusters
@@ -1601,7 +1685,7 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                             let clusterDist = DTW(centroids[i], centroids[j], variableList, distanceParameters.window, distanceParameters.distFunc);
                             let distSum = 0;
                             variableList.forEach(key => {
-                                distSum += clusterDist[clusterDist.length - 1][clusterDist[0].length - 1][key];
+                                distSum += clusterDist[key][clusterDist[key].length - 1][clusterDist[key][0].length - 1];
                             });
                             let Rij = (clusteringScores.clusterRadiuses[i] + clusteringScores.clusterRadiuses[j]) / distSum;
                             if (maxR < Rij) {
@@ -1611,7 +1695,7 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                             let clusterDist = DTWSimple(centroids[i], centroids[j], variableList, distanceParameters.distFunc);
                             let distSum = 0;
                             variableList.forEach(key => {
-                                distSum += clusterDist[clusterDist.length - 1][clusterDist[0].length - 1][key];
+                                distSum += clusterDist[key][clusterDist[key].length - 1][clusterDist[key][0].length - 1];
                             });
                             let Rij = (clusteringScores.clusterRadiuses[i] + clusteringScores.clusterRadiuses[j]) / distSum;
                             if (maxR < Rij) {
@@ -2037,7 +2121,7 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                                 dist = DTW(centroids[i], data[j], variableList, distanceParameters.window, distanceParameters.distFunc);
                                 let distSum = 0;
                                 variableList.forEach(key => {
-                                    distSum += dist[dist.length - 1][dist[0].length - 1][key];
+                                    distSum += dist[key][dist[key].length - 1][dist[key][0].length - 1];
                                 });
                                 distsToClusters[j][i] = distSum;
                             } else {
@@ -2045,7 +2129,7 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                                 dist = DTWSimple(centroids[i], data[j], variableList, distanceParameters.distFunc);
                                 let distSum = 0;
                                 variableList.forEach(key => {
-                                    distSum += dist[dist.length - 1][dist[0].length - 1][key];
+                                    distSum += dist[key][dist[key].length - 1][dist[key][0].length - 1];
                                 });
                                 distsToClusters[j][i] = distSum;
                             }
