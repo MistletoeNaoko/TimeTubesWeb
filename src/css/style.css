@@ -339,6 +339,10 @@ img.selectorIcon:active {
     /* height: 100vh; */
 }
 
+.clusteringScoresValues {
+    text-align: right;
+}
+
 #commentFormFeatureExtraction {
     position: absolute;
     left: 50%;
@@ -754,4 +758,24 @@ img.selectorIcon:active {
 #selectedClusterCenterTimeTubes {
     display: grid;
     margin: auto;
+}
+
+#clusterFeatureTable td {
+    padding: 0.3rem;
+}
+
+#clusteringOverview {
+    position: relative;
+}
+
+#clusteringScores {
+    position: absolute;
+    color: #fff;
+    right: 0px;
+    margin: 0.5rem;
+}
+
+#clusteringScoresTable tr, #clusteringScoresTable td {
+    border: 1px solid;
+    border-color: #fff;
 }

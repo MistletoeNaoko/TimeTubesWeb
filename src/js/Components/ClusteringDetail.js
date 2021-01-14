@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import ClusteringStore from '../Stores/ClusteringStore';
 import DataStore from '../Stores/DataStore';
 import TimeTubeesStore from '../Stores/TimeTubesStore';
-import {tickFormatting} from '../lib/2DGraphLib';
+import {tickFormatting, formatValue} from '../lib/2DGraphLib';
 
 export default class ClusteringDetail extends React.Component {
     constructor() {
@@ -53,6 +53,8 @@ export default class ClusteringDetail extends React.Component {
             this.subsequences = ClusteringStore.getSubsequences();
             this.ranges = ClusteringStore.getRanges();
             this.datasetsIdx = ClusteringStore.getDatasets();
+            this.clusteringScores = ClusteringStore.getClusteringScores();
+            console.log(this.clusteringScores);
         });
         ClusteringStore.on('showClusterDetails', (cluster) => {
             this.cluster = cluster;
@@ -108,12 +110,20 @@ export default class ClusteringDetail extends React.Component {
             table = (
                 <table id='clusterFeatureTable'
                     className='table table-hover'
-                    style={{width: width}}>
+                    style={{width: width, marginBottom: 'unset'}}>
                     <tbody>
                         <tr>
-                            <td style={{width: width / 2}}>Subsequence number</td>
+                            <td style={{width: width / 2}}>Member number</td>
                             <td style={{width: width / 2}}>{this.SSCluster.length}</td>
                         </tr>
+                        <tr>
+                            <td style={{width: width / 2}}>Cluster radius</td>
+                            <td style={{width: width / 2}}>{formatValue(this.clusteringScores.clusterRadiuses[this.state.cluster])}</td>
+                        </tr>
+                        {/* <tr>
+                            <td style={{width: width / 2}}></td>
+                            <td style={{width: width / 2}}></td>
+                        </tr> */}
                     </tbody>
                 </table>
             );
@@ -533,7 +543,7 @@ export default class ClusteringDetail extends React.Component {
                     .attr('cy', function(d) {
                         return yScales[varTd](d[varTd]);
                     }.bind(this))
-                    .attr('fill', 'black')
+                    .attr('fill', 'gray')
                     .attr('r', 1);
             }
         }

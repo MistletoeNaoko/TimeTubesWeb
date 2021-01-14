@@ -8,6 +8,7 @@ import OrbitControls from "three-orbitcontrols";
 import * as THREE from 'three';
 // import TextSprite from 'three.textsprite';
 import TextSprite from '@seregpie/three.text-sprite';
+import {formatValue} from '../lib/2DGraphLib';
 
 export default class ClusteringOverview extends React.Component {
     constructor() {
@@ -28,6 +29,7 @@ export default class ClusteringOverview extends React.Component {
         this.raycaster = new THREE.Raycaster();
         this.clusterCenters = [];
         this.clusterColors = [];
+        this.clusteringScores = {};
     }
 
     componentDidMount() {
@@ -73,9 +75,11 @@ export default class ClusteringOverview extends React.Component {
         ClusteringStore.on('showClusteringResults', () => {
             this.clusterCenters = ClusteringStore.getClusterCenters();
             this.clusterColors = ClusteringStore.getClusterColors();
+            this.clusteringScores = ClusteringStore.getClusteringScores();
             this.setRendererSize();
             this.computeSplines();
             this.drawClusterCentersAsTubes();
+            this.showClusteringScores();
         });
         ClusteringStore.on('showClusterDetails', (cluster) => {
             this.setDetailView(cluster);
@@ -92,10 +96,34 @@ export default class ClusteringOverview extends React.Component {
                 ref={mount => {
                     this.mount = mount;
                 }}>
+                <div id='clusteringScores'>
+                    <table id='clusteringScoresTable'>
+                        <tbody>
+                            <tr>
+                                <td>Pseudo F</td>
+                                <td id='pseudoFValue'></td>
+                            </tr>
+                            <tr>
+                                <td>Silhouette coefficient</td>
+                                <td id='silhouetteValue'></td>
+                            </tr>
+                            <tr>
+                                <td>Davis Bouldin index</td>
+                                <td id='davisBouldinValue'></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         );
     }
 
+    showClusteringScores() {
+        $('#pseudoFValue').text(formatValue(this.clusteringScores.pseudoF));
+        $('#silhouetteValue').text(formatValue(this.clusteringScores.silhouette));
+        $('#davisBouldinValue').text(formatValue(this.clusteringScores.davisBouldin));
+    }
+    
     start() {
         if (!this.frameId) {
             this.frameId = requestAnimationFrame(this.animate.bind(this));

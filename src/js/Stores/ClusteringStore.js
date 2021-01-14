@@ -14,12 +14,22 @@ class ClusteringStore extends EventEmitter {
         this.clusterColors = []; // hsv color space
         this.clusteringParameters = {};
         this.subsequenceParameters = {};
+        this.clusteringScores = {}; // clusteringRadiuses, silhouette, silhouetteSS, davisBouldin, pseudoF
     }
 
     handleActions(action) {
         switch (action.type) {
             case 'SHOW_CLUSTERING_RESULTS':
-                this.showClusteringResults(action.datasets, action.subsequences, action.ranges, action.clusterCenters, action.labels, action.clusteringParameters, action.subsequenceParameters);
+                this.showClusteringResults(
+                    action.datasets, 
+                    action.subsequences, 
+                    action.ranges, 
+                    action.clusterCenters, 
+                    action.labels, 
+                    action.clusteringParameters, 
+                    action.subsequenceParameters,
+                    action.clusteringScores
+                );
                 break;
             case 'SHOW_CLUSTER_DETAILS':
                 this.showClusterDetails(action.cluster);
@@ -69,7 +79,11 @@ class ClusteringStore extends EventEmitter {
         return this.subsequenceParameters;
     }
 
-    showClusteringResults (datasets, subsequences, ranges, clusterCenters, labels, clusteringParameters, subsequenceParameters) {
+    getClusteringScores() {
+        return this.clusteringScores;
+    }
+
+    showClusteringResults (datasets, subsequences, ranges, clusterCenters, labels, clusteringParameters, subsequenceParameters, clusteringScores) {
         this.datasets = datasets;
         this.subsequences = subsequences;
         this.ranges = ranges;
@@ -86,6 +100,7 @@ class ClusteringStore extends EventEmitter {
         }
         this.clusteringParameters = clusteringParameters;
         this.subsequenceParameters = subsequenceParameters;
+        this.clusteringScores = clusteringScores;
         this.emit('showClusteringResults');
     }
 

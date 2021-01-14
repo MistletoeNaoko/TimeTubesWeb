@@ -1,6 +1,6 @@
 import dispatcher from '../Dispatcher/dispatcher';
 
-export function showClusteringResults (datasets, subsequences, ranges, clusterCenters, labels, clusteringParameters, subsequenceParameters) {
+export function showClusteringResults (datasets, subsequences, ranges, clusterCenters, labels, clusteringParameters, subsequenceParameters, clusteringScores) {
     dispatcher.dispatch({
         type: 'SHOW_CLUSTERING_RESULTS', 
         datasets, 
@@ -9,7 +9,8 @@ export function showClusteringResults (datasets, subsequences, ranges, clusterCe
         clusterCenters, 
         labels,
         clusteringParameters,
-        subsequenceParameters
+        subsequenceParameters,
+        clusteringScores
     });
 }
 
