@@ -54,7 +54,7 @@ export default class ClusteringDetail extends React.Component {
             this.ranges = ClusteringStore.getRanges();
             this.datasetsIdx = ClusteringStore.getDatasets();
             this.clusteringScores = ClusteringStore.getClusteringScores();
-            console.log(this.clusteringScores);
+            this.subsequenceParameters = ClusteringStore.getSubsequenceParameters();
         });
         ClusteringStore.on('showClusterDetails', (cluster) => {
             this.cluster = cluster;
@@ -107,6 +107,38 @@ export default class ClusteringDetail extends React.Component {
         let table;
         if (this.state.cluster >= 0) {
             let width = this.mount.clientWidth - this.paddingCard * 2;
+            let aveDataPointNum = 0, avePeriod = 0, aveDataValues = {};
+            this.variables.forEach(key => {
+                aveDataValues[key] = 0;
+            })
+            for (let i = 0; i < this.SSCluster.length; i++) {
+                aveDataPointNum += this.SSCluster[i].dataPoints.length;
+                avePeriod += (this.SSCluster[i].dataPoints[this.SSCluster[i].dataPoints.length - 1].z - this.SSCluster[i].dataPoints[0].z);
+                if (this.subsequenceParameters.normalize === false) {
+                    for (let j = 0; j < this.SSCluster[i].dataPoints.length; j++) {
+                        this.variables.forEach(key => {
+                            aveDataValues[key] += this.SSCluster[i].dataPoints[j][key];
+                        });
+                    }
+                }
+            }
+            this.variables.forEach(key => {
+                aveDataValues[key] /= aveDataPointNum;
+            })
+            aveDataPointNum /= this.SSCluster.length;
+            avePeriod /= this.SSCluster.length;
+
+            let aveDataValuesTable = [];
+            if (this.subsequenceParameters.normalize === false) {
+                this.variables.forEach(key => {
+                    aveDataValuesTable.push(
+                        <tr key={key}>
+                            <td>Average of {this.variableLabels[key]}</td>
+                            <td>{formatValue(aveDataValues[key])}</td>
+                        </tr>
+                    )
+                });
+            }
             table = (
                 <table id='clusterFeatureTable'
                     className='table table-hover'
@@ -114,12 +146,25 @@ export default class ClusteringDetail extends React.Component {
                     <tbody>
                         <tr>
                             <td style={{width: width / 2}}>Member number</td>
-                            <td style={{width: width / 2}}>{this.SSCluster.length}</td>
+                            <td className='clusterFeaturesValues'
+                                style={{width: width / 2}}>{this.SSCluster.length}</td>
                         </tr>
                         <tr>
                             <td style={{width: width / 2}}>Cluster radius</td>
-                            <td style={{width: width / 2}}>{formatValue(this.clusteringScores.clusterRadiuses[this.state.cluster])}</td>
+                            <td className='clusterFeaturesValues'
+                                style={{width: width / 2}}>{formatValue(this.clusteringScores.clusterRadiuses[this.state.cluster])}</td>
                         </tr>
+                        <tr>
+                            <td style={{width: width / 2}}>Average data point number</td>
+                            <td className='clusterFeaturesValues'
+                                style={{width: width / 2}}>{formatValue(aveDataPointNum)}</td>
+                        </tr>
+                        <tr>
+                            <td style={{width: width / 2}}>Average period</td>
+                            <td className='clusterFeaturesValues'
+                                style={{width: width / 2}}>{formatValue(avePeriod)}</td>
+                        </tr>
+                        {aveDataValuesTable}
                         {/* <tr>
                             <td style={{width: width / 2}}></td>
                             <td style={{width: width / 2}}></td>
@@ -255,7 +300,7 @@ export default class ClusteringDetail extends React.Component {
                         .y(function(d) {
                             return yScale(d[this.variables[i]]);
                         }.bind(this))
-                        .curve(d3.curveCatmullRom)
+                        .curve(d3.curveCatmullRom.alpha(1))
                     );
             }
 
@@ -272,7 +317,7 @@ export default class ClusteringDetail extends React.Component {
                     .y(function(d) {
                         return yScale(d[this.variables[i]]);
                     }.bind(this))
-                    .curve(d3.curveCatmullRom)
+                    .curve(d3.curveCatmullRom.alpha(1))
                 );
             let label = '';
             if (this.variableLabels[this.variables[i]].length > 1) {
@@ -489,10 +534,10 @@ export default class ClusteringDetail extends React.Component {
                 .y(function(d) {
                     return yScales[this.variables[i]](d[this.variables[i]]);
                 }.bind(this))
-                .curve(d3.curveCatmullRom);
+                .curve(d3.curveCatmullRom.alpha(1));
         }
         
-        let rowCounterColor = 0, rowCounter = 0;
+        let rowCounter = 0;
         let dataColors = {};
         for (let i = 0; i < this.datasetsIdx.length; i++) {
             dataColors[this.datasetsIdx[i]] = TimeTubeesStore.getPlotColor(this.datasetsIdx[i]);

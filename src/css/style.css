@@ -540,6 +540,10 @@ img.selectorIcon:active {
 .sparkTable th, .sparkTable td {
     padding: 3px;
 }
+
+.clusterFeaturesValues {
+    text-align: right;
+}
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
@@ -778,4 +782,7 @@ img.selectorIcon:active {
 #clusteringScoresTable tr, #clusteringScoresTable td {
     border: 1px solid;
     border-color: #fff;
+    padding: 0px 5px;
 }
+
+

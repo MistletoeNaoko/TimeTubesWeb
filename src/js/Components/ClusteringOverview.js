@@ -101,15 +101,18 @@ export default class ClusteringOverview extends React.Component {
                         <tbody>
                             <tr>
                                 <td>Pseudo F</td>
-                                <td id='pseudoFValue'></td>
+                                <td id='pseudoFValue'
+                                    className='clusteringScoresValues'></td>
                             </tr>
                             <tr>
                                 <td>Silhouette coefficient</td>
-                                <td id='silhouetteValue'></td>
+                                <td id='silhouetteValue'
+                                    className='clusteringScoresValues'></td>
                             </tr>
                             <tr>
                                 <td>Davis Bouldin index</td>
-                                <td id='davisBouldinValue'></td>
+                                <td id='davisBouldinValue'
+                                    className='clusteringScoresValues'></td>
                             </tr>
                         </tbody>
                     </table>

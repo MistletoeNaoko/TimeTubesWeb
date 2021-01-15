@@ -441,6 +441,8 @@ export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = t
                     dataPoints.push(dataPointTmp);
                 }
                 SStmp.dataPoints = dataPoints;
+            } else {
+                SStmp.dataPoints = SSDataPoints;
             }
             isometricSS.push(SStmp);
         }
@@ -502,6 +504,8 @@ export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = t
                         dataPoints.push(dataPointTmp);
                     }
                     SStmp.dataPoints = dataPoints;
+                } else {
+                    SStmp.dataPoints = SSDataPoints;
                 }
                 isometricSSTmp.push(SStmp);
             }
