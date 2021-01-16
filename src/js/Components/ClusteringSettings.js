@@ -211,7 +211,8 @@ export default class clusteringSettings extends React.Component {
 
             for (let key in variables) {
                 let label = '';
-                if (key !== 'z') {
+                // TODO: PAPDを考慮したクラスタリングもできるように！！
+                if (key !== 'z' && key !== 'PA' && key !== 'PD') {
                     if (variables[key].length > 1) {
                         label = variables[key].join(',');
                     } else {

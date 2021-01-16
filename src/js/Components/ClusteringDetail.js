@@ -133,8 +133,9 @@ export default class ClusteringDetail extends React.Component {
                 this.variables.forEach(key => {
                     aveDataValuesTable.push(
                         <tr key={key}>
-                            <td>Average of {this.variableLabels[key]}</td>
-                            <td>{formatValue(aveDataValues[key])}</td>
+                            <td style={{width: width / 2}}>Average of {this.variableLabels[key]}</td>
+                            <td className='clusterFeaturesValues'
+                                style={{width: width / 2}}>{formatValue(aveDataValues[key])}</td>
                         </tr>
                     )
                 });

@@ -76,6 +76,7 @@ export default class ClusteringOverview extends React.Component {
             this.clusterCenters = ClusteringStore.getClusterCenters();
             this.clusterColors = ClusteringStore.getClusterColors();
             this.clusteringScores = ClusteringStore.getClusteringScores();
+            console.log(this.clusterCenters);
             this.setRendererSize();
             this.computeSplines();
             this.drawClusterCentersAsTubes();
@@ -268,30 +269,230 @@ export default class ClusteringOverview extends React.Component {
         this.minmax = {};
         this.splines = [];
         this.range = undefined;
-        for (let key in this.clusterCenters[0][0]) {
-            this.minmax[key] = [this.clusterCenters[0][0][key], this.clusterCenters[0][0][key]];
-        }
-        for (let i = 0; i < this.clusterCenters.length; i++) {
-            let position = [], radius = [], color = [], PAPD = [];
-            for (let j = 0; j < this.clusterCenters[i].length; j++) {
-                let curdata = this.clusterCenters[i][j];
-                // TODO: x, yがなくてPAPDしかなかった場合も座標に変換して
-                position.push(new THREE.Vector3('x' in curdata? curdata.x: 0, 'y' in curdata? curdata.y: 0, j));
-                radius.push(new THREE.Vector3('r_x' in curdata? curdata.r_x: 0.5, 'r_y' in curdata? curdata.r_y: 0.5, j));
-                color.push(new THREE.Vector3('H' in curdata? curdata.H: 0.5, 'V' in curdata? curdata.V: 0.5, j));
-                for (let key in curdata) {
-                    if (curdata[key] < this.minmax[key][0]) 
-                        this.minmax[key][0] = curdata[key];
-                    if (this.minmax[key][1] < curdata[key])
-                        this.minmax[key][1] = curdata[key];
+        let variables = Object.keys(this.clusterCenters[0][0]);
+        // variables = variables.map(x => x !== 'z');
+        // for (let i = 0; i < variables.length; i++) {
+        //     this.minmax[variables[i]] = [this.clusterCenters[0][0][variables[i]], this.clusterCenters[0][0][variables[i]]];
+        // }
+        this.minmax.x = [Infinity, -Infinity];
+        this.minmax.y = [Infinity, -Infinity];
+        this.minmax.H = [Infinity, -Infinity];
+        this.minmax.V = [Infinity, -Infinity];
+        if (variables.indexOf('x') >= 0 && variables.indexOf('y') >= 0) {
+            for (let i = 0; i < this.clusterCenters.length; i++) {
+                let position = [], radius = [], color = [];
+                for (let j = 0; j < this.clusterCenters[i].length; j++) {
+                    let curdata = this.clusterCenters[i][j];
+                    // TODO: x, yがなくてPAPDしかなかった場合も座標に変換して
+                    let currentValues = {
+                        x: curdata.x,
+                        y: curdata.y,
+                        r_x: 'r_x' in curdata? curdata.r_x: 0.5,
+                        r_y: 'r_y' in curdata? curdata.r_y: 0.5,
+                        H: 'H' in curdata? curdata.H: 0.5, 
+                        V: 'V' in curdata? curdata.V: 0.5
+                    };
+                    position.push(new THREE.Vector3(currentValues.x, currentValues.y, j));
+                    radius.push(new THREE.Vector3(currentValues.r_x, currentValues.r_y, j));
+                    color.push(new THREE.Vector3(currentValues.H, currentValues.V, j));
+                    // for (let k = 0; k < variables.length; k++) {
+                    //     if (curdata[variables[k]] < this.minmax[variables[k]][0]) 
+                    //         this.minmax[variables[k]][0] = curdata[variables[k]];
+                    //     if (this.minmax[variables[k]][1] < curdata[variables[k]])
+                    //         this.minmax[variables[k]][1] = curdata[variables[k]];
+                    // }
+                    for (let key in this.minmax) {
+                        if (currentValues[key] < this.minmax[key][0])
+                            this.minmax[key][0] = currentValues[key];
+                        if (this.minmax[key][1] < currentValues[key])
+                            this.minmax[key][1] = currentValues[key];
+                    }
                 }
+                let spline = {};
+                spline.position = new THREE.CatmullRomCurve3(position, false, 'catmullrom');
+                spline.radius = new THREE.CatmullRomCurve3(radius, false, 'catmullrom');
+                spline.color = new THREE.CatmullRomCurve3(color, false, 'catmullrom');
+                this.splines.push(spline);
             }
-            let spline = {};
-            spline.position = new THREE.CatmullRomCurve3(position, false, 'catmullrom');
-            spline.radius = new THREE.CatmullRomCurve3(radius, false, 'catmullrom');
-            spline.color = new THREE.CatmullRomCurve3(color, false, 'catmullrom');
-            this.splines.push(spline);
+        } else if (variables.indexOf('PA') >= 0 && variables.indexOf('PD') >= 0) {
+            for (let i = 0; i < this.clusterCenters.length; i++) {
+                let position = [], radius = [], color = [];
+                for (let j = 0; j < this.clusterCenters[i].length; j++) {
+                    let curdata = this.clusterCenters[i][j];
+                    let PARad = curdata.PA * Math.PI / 180;//curdata.PA * Math.PI / 180;
+                    // if (90 < curdata.PA) {
+                    //     PARad = (curdata.PA - 180) * Math.PI / 180;
+                    // }
+                    let currentValues = {
+                        x: curdata.PD * Math.cos(2 * PARad),
+                        y: curdata.PD * Math.sin(2 * PARad),
+                        r_x: 'r_x' in curdata? curdata.r_x: 0.5,
+                        r_y: 'r_y' in curdata? curdata.r_y: 0.5,
+                        H: 'H' in curdata? curdata.H: 0.5, 
+                        V: 'V' in curdata? curdata.V: 0.5
+                    };
+                    position.push(new THREE.Vector3(currentValues.x, currentValues.y, j));
+                    radius.push(new THREE.Vector3(currentValues.r_x, currentValues.r_y, j));
+                    color.push(new THREE.Vector3(currentValues.H, currentValues.V, j));
+                    for (let key in this.minmax) {
+                        if (currentValues[key] < this.minmax[key][0])
+                            this.minmax[key][0] = currentValues[key];
+                        if (this.minmax[key][1] < currentValues[key])
+                            this.minmax[key][1] = currentValues[key];
+                    }
+                }
+                let spline = {};
+                spline.position = new THREE.CatmullRomCurve3(position, false, 'catmullrom');
+                spline.radius = new THREE.CatmullRomCurve3(radius, false, 'catmullrom');
+                spline.color = new THREE.CatmullRomCurve3(color, false, 'catmullrom');
+                this.splines.push(spline);
+            }
+        } else if ((variables.indexOf('x') >= 0 || variables.indexOf('y') >= 0) && (variables.indexOf('PA') >= 0 || variables.indexOf('PD') >= 0)) {
+            for (let i = 0; i < this.clusterCenters.length; i++) {
+                let position = [], radius = [], color = [];
+                for (let j = 0; j < this.clusterCenters[i].length; j++) {
+                    let curdata = this.clusterCenters[i][j];
+                    let xCur, yCur;
+                    if (variables.indexOf('PA') >= 0) {
+                        let PDCur;
+                        if (variables.indexOf('x') >= 0) {
+                            // PDCur = Math.abs(curdata.x / Math.cos(2 * curdata.PA));
+                            xCur = curdata.x;
+                            // if (curdata.PA >= 0) {
+                            //     yCur = Math.sqrt(Math.pow(PDCur, 2) - Math.pow(curdata.x, 2));
+                            // } else if (curdata.PA <= 0) {
+                            //     yCur = -1 * Math.sqrt(Math.pow(PDCur, 2) - Math.pow(curdata.x, 2));
+                            // }
+                            // yCur = PDCur * Math.sin(2 * curdata.PA);
+                            // let xy = Math.tan(2 * curdata.PA * Math.PI / 180);
+                            // yCur = xy * curdata.x;
+                            // yCur = Math.sqrt(Math.pow(curdata.x / Math.cos(2 * curdata.PA * Math.PI / 180), 2) - Math.pow(curdata.x, 2));
+                            // if (curdata.PA < 0)
+                            //     yCur = -1 * yCur;
+                            let PARad = curdata.PA * Math.PI / 180;
+                            if (90 < curdata.PA) {
+                                PARad = (curdata.PA - 180) * Math.PI / 180;
+                            }
+                            // yCur = Math.sin(2 * PARad * Math.PI / 180) * (curdata.x / Math.cos(2 * PARad * Math.PI / 180));
+                            let xy = Math.tan(2 * PARad);
+                            yCur = xy * curdata.x;
+                            // if (curdata.PA >= 0) {
+                            //     yCur = Math.sin(2 * curdata.PA * Math.PI / 180) * (x / Math.cos(2 * curdata.PA * Math.PI / 180));
+                            // } else if (curdata.PA <= 0) {
+
+                            // }
+                            console.log(curdata.PA, PARad, xCur, yCur)
+                        } else if (variables.indexOf('y') >= 0) {
+                            PDCur = curdata.y / Math.sin(2 * curdata.PA);
+                            xCur = PDCur * Math.cos(2 * curdata.PA);
+                            yCur = curdata.y;
+                        }
+                    } else if (variables.indexOf('PD') >= 0) {
+                        let PACur;
+                        if (variables.indexOf('x') >= 0) {
+                            PACur = Math.acos(curdata.x / curdata.PD) / 2;
+                            xCur = curdata.x;
+                            yCur = curdata.PD * Math.sin(2 * PACur);
+                        } else if (variables.indexOf('y') >= 0) {
+                            PACur = Math.asin(curdata.y / curdata.PD) / 2;
+                            xCur = curdata.PD * Math.cos(2 * PACur);
+                            yCur = curdata.y;
+                        }
+                    }
+                    let currentValues = {
+                        x: xCur,
+                        y: yCur,
+                        r_x: 'r_x' in curdata? curdata.r_x: 0.5,
+                        r_y: 'r_y' in curdata? curdata.r_y: 0.5,
+                        H: 'H' in curdata? curdata.H: 0.5, 
+                        V: 'V' in curdata? curdata.V: 0.5
+                    };
+                    position.push(new THREE.Vector3(currentValues.x, currentValues.y, j));
+                    radius.push(new THREE.Vector3(currentValues.r_x, currentValues.r_y, j));
+                    color.push(new THREE.Vector3(currentValues.H, currentValues.V, j));
+                    for (let key in this.minmax) {
+                        if (currentValues[key] < this.minmax[key][0])
+                            this.minmax[key][0] = currentValues[key];
+                        if (this.minmax[key][1] < currentValues[key])
+                            this.minmax[key][1] = currentValues[key];
+                    }
+                }
+                let spline = {};
+                spline.position = new THREE.CatmullRomCurve3(position, false, 'catmullrom');
+                spline.radius = new THREE.CatmullRomCurve3(radius, false, 'catmullrom');
+                spline.color = new THREE.CatmullRomCurve3(color, false, 'catmullrom');
+                this.splines.push(spline);
+            }
+        } else if (variables.indexOf('x') >= 0 || variables.indexOf('y') >= 0) {
+            for (let i = 0; i < this.clusterCenters.length; i++) {
+                let position = [], radius = [], color = [];
+                for (let j = 0; j < this.clusterCenters[i].length; j++) {
+                    let curdata = this.clusterCenters[i][j];
+                    let currentValues = {
+                        x: 'x' in curdata? curdata.x: 0,
+                        y: 'y' in curdata? curdata.y: 0,
+                        r_x: 'r_x' in curdata? curdata.r_x: 0.5,
+                        r_y: 'r_y' in curdata? curdata.r_y: 0.5,
+                        H: 'H' in curdata? curdata.H: 0.5, 
+                        V: 'V' in curdata? curdata.V: 0.5
+                    };
+                    position.push(new THREE.Vector3(currentValues.x, currentValues.y, j));
+                    radius.push(new THREE.Vector3(currentValues.r_x, currentValues.r_y, j));
+                    color.push(new THREE.Vector3(currentValues.H, currentValues.V, j));
+                    for (let key in this.minmax) {
+                        if (currentValues[key] < this.minmax[key][0])
+                            this.minmax[key][0] = currentValues[key];
+                        if (this.minmax[key][1] < currentValues[key])
+                            this.minmax[key][1] = currentValues[key];
+                    }
+                }
+                let spline = {};
+                spline.position = new THREE.CatmullRomCurve3(position, false, 'catmullrom');
+                spline.radius = new THREE.CatmullRomCurve3(radius, false, 'catmullrom');
+                spline.color = new THREE.CatmullRomCurve3(color, false, 'catmullrom');
+                this.splines.push(spline);
+            }
+        } else if (variables.indexOf('PA') >= 0 || variables.indexOf('PD') >= 0) {
+            for (let i = 0; i < this.clusterCenters.length; i++) {
+                let position = [], radius = [], color = [];
+                for (let j = 0; j < this.clusterCenters[i].length; j++) {
+                    let curdata = this.clusterCenters[i][j];
+                    let xCur, yCur;
+                    if (variables.indexOf('PA') >= 0) {
+                        let PDTmp = 1;
+                        xCur = PDTmp * Math.cos(2 * curdata.PA);
+                        yCur = PDTmp * Math.sin(2 * curdata.PA);
+                    } else if (variables.indexOf('PD') >= 0) {
+                        let PATmp = 0.5 * Math.PI / 180;
+                        xCur = curdata.PD * Math.cos(PATmp);
+                        yCur = curdata.PD * Math.sin(PATmp);
+                    }
+                    let currentValues = {
+                        x: xCur,
+                        y: yCur,
+                        r_x: 'r_x' in curdata? curdata.r_x: 0.5,
+                        r_y: 'r_y' in curdata? curdata.r_y: 0.5,
+                        H: 'H' in curdata? curdata.H: 0.5, 
+                        V: 'V' in curdata? curdata.V: 0.5
+                    };
+                    position.push(new THREE.Vector3(currentValues.x, currentValues.y, j));
+                    radius.push(new THREE.Vector3(currentValues.r_x, currentValues.r_y, j));
+                    color.push(new THREE.Vector3(currentValues.H, currentValues.V, j));
+                    for (let key in this.minmax) {
+                        if (currentValues[key] < this.minmax[key][0])
+                            this.minmax[key][0] = currentValues[key];
+                        if (this.minmax[key][1] < currentValues[key])
+                            this.minmax[key][1] = currentValues[key];
+                    }
+                }
+                let spline = {};
+                spline.position = new THREE.CatmullRomCurve3(position, false, 'catmullrom');
+                spline.radius = new THREE.CatmullRomCurve3(radius, false, 'catmullrom');
+                spline.color = new THREE.CatmullRomCurve3(color, false, 'catmullrom');
+                this.splines.push(spline);
+            }
         }
+        console.log(this.minmax, this.splines)
         let xRange = this.minmax.x[1] - this.minmax.x[0];
         let yRange = this.minmax.y[1] - this.minmax.y[0];
         let range = Math.round(Math.max(xRange, yRange) * Math.pow(10, 2 - Math.ceil(Math.log10(Math.max(xRange, yRange)))));
