@@ -2,7 +2,7 @@ import { cluster, path } from 'd3';
 import {objectSum, objectSub, objectMul, objectDiv, objectAbsSub, objectTotal} from '../lib/mathLib';
 import DataStore from '../Stores/DataStore';
 
-export function performClustering(datasets, clusteringParameters, subsequenceParameters, variables) {
+export function performClustering(datasets, clusteringParameters, subsequenceParameters) {
     // Overview of subsequence clustering
     // 1: extract all possible subsequences (SS)
     // 2: make all SS isometric + z-normalize SS if needed
@@ -17,6 +17,7 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
     // 4: update cluster centeres again
     
     // ignore z (=JD) in clustering, but keep z in the objects for references
+    let variables = clusteringParameters.variables;
     variables.push('z');
 
     let rawData = {}, mins = {}, maxs = {};
@@ -37,16 +38,20 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
 
     let subsequences = {}, subsequenceData = [], ranges = [];
     let isometricData, anomalyDegrees;
+    let filteringProcess = {};
 
     // filtering subsequences according to selected options
     // subsequences by datasets
     if (subsequenceParameters.filtering.indexOf('dataDrivenSlidingWindow') >= 0) {
         let SSRanges = extractRanges(rawData, subsequenceParameters.SSperiod);
+        filteringProcess['dataDrivenSlidingWindow'] = {};
         // store indexes of subsequences for initialization
         for (let dataIdx in SSRanges) {
             subsequences[dataIdx] = [];
+            filteringProcess['dataDrivenSlidingWindow'][dataIdx] = [];
             for (let i = 0; i < SSRanges[dataIdx].length; i++) {
                 subsequences[dataIdx].push(i);
+                filteringProcess['dataDrivenSlidingWindow'][dataIdx].push(i);
             }
         }
 
@@ -59,11 +64,15 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                 mins,
                 maxs
             );
+        filteringProcess['subsequences'] = isometricData;
+
         // pick up a SS with the highest changeDegrees from SS which has the same starting data point
         if (subsequenceParameters.filtering.indexOf('sameStartingPoint') >= 0) {
+            filteringProcess['sameStartingPoint'] = {};
             for (let dataIdx in SSRanges) {
                 let i = 0,
                     filteredSameStartsIdx = [];
+                
                 while (i < SSRanges[dataIdx].length) {
                     let startIdx = SSRanges[dataIdx][i][0],
                         maxChangeDegreeIdx = i;
@@ -84,11 +93,13 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                     i++;
                 }
                 subsequences[dataIdx] = filteredSameStartsIdx;
+                filteringProcess['sameStartingPoint'][dataIdx] = filteredSameStartsIdx;
             }
         }
 
         // if needed, filter out SS with high overlapping degree
-        if (subsequenceParameters.filtering.indexOf('overlappingDegreeFilter') >= 0) {
+        if (subsequenceParameters.filtering.indexOf('overlappingDegree') >= 0) {
+            filteringProcess['overlappingDegree'] = {};
             if (subsequenceParameters.overlappingTh > 0) {
                 for (let dataIdx in SSRanges) {
                     let filteredSS = [];
@@ -119,6 +130,7 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                         i = j;
                     }
                     subsequences[dataIdx] = filteredSS;
+                    filteringProcess['overlappingDegree'][dataIdx] = filteredSS;
                 }
             }
         }
@@ -134,16 +146,18 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
     } else {
         // extract subsequences by the normal sliding window
         let step = 1;
+        filteringProcess['normalSlidingWindow'] = {};
         for (let i = 0; i < datasets.length; i++) {
             let dataIdx = datasets[i].id;
             let targetData = DataStore.getDataArray(dataIdx, step);
             targetData = convertDataStyle(targetData, variables);
             let SSRanges = extractRangesFromInterpolatedData(targetData, subsequenceParameters.SSperiod);
-
             // store indexes of subsequences for initialization
             subsequences[dataIdx] = [];
+            filteringProcess['normalSlidingWindow'][dataIdx] = [];
             for (let i = 0; i < SSRanges.length; i++) {
                 subsequences[dataIdx].push(i);
+                filteringProcess['normalSlidingWindow'][dataIdx].push(i);
             }
 
             [isometricData, anomalyDegrees] = timeSeriesIsometry(
@@ -154,11 +168,13 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                 mins[dataIdx],
                 maxs[dataIdx]
             );
+            filteringProcess['subsequences'] = isometricData;
 
             // pick up a SS with the highest changeDegrees from SS which has the same starting data point
             if (subsequenceParameters.filtering.indexOf('sameStartingPoint') >= 0) {
                 let i = 0,
                     filteredSameStartsIdx = [];
+                filteringProcess['sameStartingPoint'] = {};
                 while (i < SSRanges.length) {
                     let startIdx = SSRanges[i][0],
                         maxChangeDegreeIdx = i;
@@ -179,10 +195,12 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                     i++;
                 }
                 subsequences[dataIdx] = filteredSameStartsIdx;
+                filteringProcess['sameStartingPoint'][dataIdx] = filteredSameStartsIdx;
             }
 
             // if needed, filter out SS with high overlapping degree
-            if (subsequenceParameters.filtering.indexOf('overlappingDegreeFilter') >= 0) {
+            if (subsequenceParameters.filtering.indexOf('overlappingDegree') >= 0) {
+                filteringProcess['overlappingDegree'] = {};
                 if (subsequenceParameters.overlappingTh > 0) {
                     let filteredSS = [];
                     let i = 0;
@@ -212,6 +230,7 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                         i = j;
                     }
                     subsequences[dataIdx] = filteredSS;
+                    filteringProcess['overlappingDegree'][dataIdx] = filteredSS;
                 }
             }
             // data collection only for filtered subsequences
@@ -249,7 +268,7 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
     let labelsCluster = divideSSIntoClusters(labels, clusteringParameters.clusterNum);
     
     clusteringScores.pseudoF = pseudoF(clusteringScores.clusterRadiuses, clusterCenters, dataCenter, labelsCluster.map(x => x.length), distanceParameters, variables.filter(ele => ele !== 'z'));
-    return [subsequenceData, ranges, clusterCenters, labels, clusteringScores];
+    return [subsequenceData, ranges, clusterCenters, labels, clusteringScores, filteringProcess];
 }
 
 function divideSSIntoClusters (labels, clusterNum) {

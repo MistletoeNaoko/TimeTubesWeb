@@ -270,7 +270,7 @@ export default class ClusteringOverview extends React.Component {
         this.splines = [];
         this.range = undefined;
         let variables = Object.keys(this.clusterCenters[0][0]);
-        // variables = variables.map(x => x !== 'z');
+        variables = variables.filter(ele => ele !== 'z');
         // for (let i = 0; i < variables.length; i++) {
         //     this.minmax[variables[i]] = [this.clusterCenters[0][0][variables[i]], this.clusterCenters[0][0][variables[i]]];
         // }

@@ -544,6 +544,10 @@ img.selectorIcon:active {
 .clusterFeaturesValues {
     text-align: right;
 }
+
+.filteringProcessLabel {
+    font-size: 0.7rem;
+}
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
@@ -785,4 +789,20 @@ img.selectorIcon:active {
     padding: 0px 5px;
 }
 
+#clusteringProcess {
+    margin: 0px 10px;
+}
 
+#subsequencesFilteringProcessTableHeader, #subsequencesFilteringProcessTableBody {
+    display: block;
+}
+
+#subsequencesFilteringProcessTableBody {
+    overflow-x: hidden;
+    overflow-y: scroll;
+}
+
+#subsequenceOverviewTableBody {
+    overflow-x: hidden;
+    overflow-y: scroll;
+}

@@ -15,6 +15,7 @@ class ClusteringStore extends EventEmitter {
         this.clusteringParameters = {};
         this.subsequenceParameters = {};
         this.clusteringScores = {}; // clusteringRadiuses, silhouette, silhouetteSS, davisBouldin, pseudoF
+        this.filteringProcess = {}; // subsequences (rawdata), normalSlidingWindow/dataDrivenSlidingWindow, sameStartingPoint, overlappingDegraa
     }
 
     handleActions(action) {
@@ -28,12 +29,15 @@ class ClusteringStore extends EventEmitter {
                     action.labels, 
                     action.clusteringParameters, 
                     action.subsequenceParameters,
-                    action.clusteringScores
+                    action.clusteringScores,
+                    action.filteringProcess
                 );
                 break;
             case 'SHOW_CLUSTER_DETAILS':
                 this.showClusterDetails(action.cluster);
                 break;
+            case 'SHOW_FILTERING_STEP':
+                this.showFilteringStep(action.selectedProcess);
             default:
                 break;
         }
@@ -83,7 +87,20 @@ class ClusteringStore extends EventEmitter {
         return this.clusteringScores;
     }
 
-    showClusteringResults (datasets, subsequences, ranges, clusterCenters, labels, clusteringParameters, subsequenceParameters, clusteringScores) {
+    getFilteringProcess() {
+        return this.filteringProcess;
+    }
+
+    showClusteringResults (
+        datasets, 
+        subsequences, 
+        ranges, 
+        clusterCenters, 
+        labels, 
+        clusteringParameters, 
+        subsequenceParameters, 
+        clusteringScores, 
+        filteringProcess) {
         this.datasets = datasets;
         this.subsequences = subsequences;
         this.ranges = ranges;
@@ -101,11 +118,16 @@ class ClusteringStore extends EventEmitter {
         this.clusteringParameters = clusteringParameters;
         this.subsequenceParameters = subsequenceParameters;
         this.clusteringScores = clusteringScores;
+        this.filteringProcess = filteringProcess;
         this.emit('showClusteringResults');
     }
 
     showClusterDetails(cluster) {
         this.emit('showClusterDetails', cluster);
+    }
+
+    showFilteringStep(selectedProcess) {
+        this.emit('showFilteringStep', selectedProcess);
     }
 }
 

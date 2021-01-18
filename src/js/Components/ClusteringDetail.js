@@ -58,7 +58,7 @@ export default class ClusteringDetail extends React.Component {
         });
         ClusteringStore.on('showClusterDetails', (cluster) => {
             this.cluster = cluster;
-            this.variables = Object.keys(this.clusterCenters[cluster][0]);
+            this.variables = ClusteringStore.getClusteringParameters().variables;//Object.keys(this.clusterCenters[cluster][0]);
             this.variables = this.variables.filter(ele => ele !== 'z')
             this.createVariableLabels();
             this.extractSubsequencesInCluster();
@@ -474,7 +474,7 @@ export default class ClusteringDetail extends React.Component {
             .data(labels)
             .enter()
             .append('th')
-            .attr('width', clientWidth)
+            .attr('width', cellWidth)
             .attr('height', cellHeight)
             .text(function(d) {return d});
 
@@ -488,7 +488,9 @@ export default class ClusteringDetail extends React.Component {
             .attr('width', clientWidth)
             .attr('height', Math.min(clientWidth, cellHeight * this.SSCluster.length));//cellHeight * (this.SSCluster.length + 1));
         let tbody = tableMain.append('tbody')
-                .attr('width', clientWidth);
+                .attr('width', clientWidth)
+                .attr('height', Math.min(clientWidth, cellHeight * this.SSCluster.length) - cellHeight)
+                .attr('id', 'subsequenceOverviewTableBody');
         
         let rows = tbody.selectAll('tr')
             .data(this.SSCluster)
@@ -500,7 +502,7 @@ export default class ClusteringDetail extends React.Component {
             .append('td')
             .attr('width', cellWidth)
             .attr('height', cellHeight);
-        let xMinMax = [0, this.SSCluster[0].length - 1];
+        let xMinMax = [0, ClusteringStore.getSubsequenceParameters().isometryLen];
         let yMinMax = {};
         for (let i = 0; i < this.variables.length; i++) {
             yMinMax[this.variables[i]] = [Infinity, -Infinity];

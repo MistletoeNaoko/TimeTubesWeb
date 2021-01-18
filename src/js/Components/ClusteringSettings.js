@@ -16,7 +16,7 @@ export default class clusteringSettings extends React.Component {
             distanceMetric: 'DTW',
             medoidDefinition: 'each',
             targetList: FeatureStore.getTarget(),
-            filteringSS: ['dataDrivenSlidingWindow', 'sameStartingPoint', 'overlappingDegreeFilter']
+            filteringSS: ['dataDrivenSlidingWindow', 'sameStartingPoint', 'overlappingDegree']
         };
     }    
 
@@ -56,7 +56,7 @@ export default class clusteringSettings extends React.Component {
 
     subsequenceSetting() {
         let overlappingDegree;
-        if (this.state.filteringSS.indexOf("overlappingDegreeFilter") >= 0) {
+        if (this.state.filteringSS.indexOf("overlappingDegree") >= 0) {
             overlappingDegree = (
                 <div className='row matchingOption'>
                     <div className='col-5'>Threshold of overlapping degree</div>
@@ -165,8 +165,8 @@ export default class clusteringSettings extends React.Component {
                                 className="custom-control-input" 
                                 id="SSFilterOverlappingDegree" 
                                 name="filteringSS"
-                                value="overlappingDegreeFilter"
-                                checked={(this.state.filteringSS.indexOf('overlappingDegreeFilter') >= 0)? true: false}/>
+                                value="overlappingDegree"
+                                checked={(this.state.filteringSS.indexOf('overlappingDegree') >= 0)? true: false}/>
                             <label className="custom-control-label" htmlFor="SSFilterOverlappingDegree">Filtering out highly overlapping subsequences</label>
                         </div>
                     </div>
@@ -499,6 +499,13 @@ export default class clusteringSettings extends React.Component {
         for (let i = 0; i < this.state.targetList.length; i++) {
             datasets.push(DataStore.getData(this.state.targetList[i]));
         }
+        let variables = [];
+        let variableList = document.getElementsByName('clusteringVariables');
+        for (let i = 0; i < variableList.length; i++) {
+            if (variableList[i].checked) {
+                variables.push(variableList[i].value);
+            }
+        }
         let clusteringParameters;
         switch (this.state.clusteringMethod) {
             case 'kmedoids':
@@ -507,7 +514,8 @@ export default class clusteringSettings extends React.Component {
                     clusterNum: Number($('#clusterNumber').val()),
                     medoidDefinition: this.state.medoidDefinition,
                     distanceMetric: this.state.distanceMetric,
-                    window: 0
+                    window: 0,
+                    variables: variables
                 };
                 break;
             case 'kmeans':
@@ -516,7 +524,8 @@ export default class clusteringSettings extends React.Component {
                     clusterNum: Number($('#clusterNumber').val()),
                     distanceMetric: this.state.distanceMetric,
                     window: 0,
-                    clusterCenter: $('input[name=clusterCenter]:checked').val()
+                    clusterCenter: $('input[name=clusterCenter]:checked').val(),
+                    variables: variables
                 };
                 break;
             default:
@@ -527,17 +536,10 @@ export default class clusteringSettings extends React.Component {
         subsequenceParameters.SSperiod = [Number($('#targetLengthMinClustering').val()), Number($('#targetLengthMaxClustering').val())];
         subsequenceParameters.isometryLen = Number($('#resolutionOfTimeNormalizedSS').val());
         subsequenceParameters.normalize = this.state.normalize;
-        if (this.state.filteringSS.indexOf('overlappingDegreeFilter') >= 0) {
+        if (this.state.filteringSS.indexOf('overlappingDegree') >= 0) {
             subsequenceParameters.overlappingTh = Number($('#overlappingDegreeThreshold').val());
         }
-        let variables = [];
-        let variableList = document.getElementsByName('clusteringVariables');
-        for (let i = 0; i < variableList.length; i++) {
-            if (variableList[i].checked) {
-                variables.push(variableList[i].value);
-            }
-        }
-        let [subsequences, ranges, clusterCenters, labels, clusteringScores] = performClustering(datasets, clusteringParameters, subsequenceParameters, variables);
+        let [subsequences, ranges, clusterCenters, labels, clusteringScores, filteringProcess] = performClustering(datasets, clusteringParameters, subsequenceParameters);
         // let data = DataStore.getData(0),
         //     clusteringParameters = {
         //         method: 'kmedoids',
@@ -566,7 +568,8 @@ export default class clusteringSettings extends React.Component {
             labels, 
             clusteringParameters, 
             subsequenceParameters,
-            clusteringScores
+            clusteringScores,
+            filteringProcess
         );
     }
 }
