@@ -425,7 +425,7 @@ export default class ClusteringProcess extends React.Component {
                             className={'subsequenceCheckbox'} 
                             name='subsequenceSelector'
                             id={'selectUpdatedSSFilteringProcess_' + dataId + '_' + SSId}
-                            // onClick={this.onClickUpdatedSSSelector().bind(this)}
+                            onClick={this.onClickUpdatedSSSelector().bind(this)}
                             />
                     </td>);
                 for (let j = 0; j < this.variables.length; j++) {
@@ -464,6 +464,75 @@ export default class ClusteringProcess extends React.Component {
     }
 
     onClickSSSelector() {
+        return function(d) {
+            let targetId = d.target.id;
+            if (targetId) {
+                let targetIdEle = targetId.split('_');
+                let dataId = targetIdEle[1],
+                    SSId = Number(targetIdEle[2]);
+
+                let currentState = $('#' + d.target.id).prop('checked');
+                let SSInClustering = this.filteringProcess[this.steps[this.steps.length - 1]][dataId].indexOf(SSId) < 0? false: true;
+
+                if (currentState) {
+                    // add a row to updatedSubsequencesTable
+                    let newSelectedSS = this.state.selectedSS;
+                    newSelectedSS[dataId].push(SSId);
+                    let newUpdatedSS = this.state.updatedSS;
+                    if (SSInClustering) {
+                        // cancel removing SS from clustering
+                        for (let i = 0; i < newUpdatedSS[dataId].length; i++) {
+                            if (newUpdatedSS[dataId][i].idx === SSId) {
+                                newUpdatedSS[dataId].splice(i, 1);
+                                d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                                    .classed('table-danger', false);
+                                break;
+                            }
+                        }
+                    } else {
+                        newUpdatedSS[dataId].push({idx: SSId, status: 'add'});
+                        d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                            .classed('table-success', true);
+                    }
+
+                    this.updataUpdatedSSSparklineTableFlag = true;
+                    this.setState({
+                        selectedSS: newSelectedSS,
+                        updatedSS: newUpdatedSS
+                    });
+                } else {
+                    // remove a row from updatedSubsequencesTable
+                    let newSelectedSS = this.state.selectedSS;
+                    newSelectedSS[dataId].splice(newSelectedSS[dataId].indexOf(SSId), 1);
+                    let newUpdatedSS = this.state.updatedSS;
+                    if (SSInClustering) {
+                        // this SS is removed from clustering
+                        newUpdatedSS[dataId].push({idx: SSId, status: 'remove'});
+                        d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                            .classed('table-danger', true);
+                    } else {
+                        // cancel the addition of SS
+                        for (let i = 0; i < newUpdatedSS[dataId].length; i++) {
+                            if (newUpdatedSS[dataId][i].idx === SSId) {
+                                newUpdatedSS[dataId].splice(i, 1);
+                                d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                                    .classed('table-success', false);
+                                break;
+                            }
+                        }
+                    }
+
+                    this.updataUpdatedSSSparklineTableFlag = true;
+                    this.setState({
+                        selectedSS: newSelectedSS,
+                        updatedSS: newUpdatedSS
+                    });
+                }
+            }
+        };
+    }
+
+    onClickUpdatedSSSelector() {
         return function(d) {
             let targetId = d.target.id;
             if (targetId) {
@@ -732,6 +801,8 @@ export default class ClusteringProcess extends React.Component {
             //         $('#selectSSFilteringProcess_' + dataId + '_' + SSId).prop('checked', true);
             //     }
             // }
+            // reset checked
+            $('.subsequenceCheckbox').prop('checked', false);
             for (let dataId in this.state.selectedSS) {
                 for (let i = 0; i < this.state.selectedSS[dataId].length; i++) {
                     $('#selectSSFilteringProcess_' + dataId + '_' + this.state.selectedSS[dataId][i]).prop('checked', true);
