@@ -123,16 +123,27 @@ export default class ClusteringProcess extends React.Component {
                 </div>
                 <div id='SSFilteringStep'
                     className='resultAreaElem'>
-                    Subsequences in the selected filtering step
+                    <h6>Subsequences in the selected filtering step</h6>
                     {subsequencesTable}
                 </div>
                 <div id='selectedSSList'
                     className='resultAreaElem'>
-                    Newly selected subsequences
+                    <h6>Subsequences that will be <span style={{color: '#80b139'}}>added</span>/<span style={{color: '#d9534f'}}>removed</span></h6>
                     {updatedTable}
                 </div>
                 <div id='updateClusteringControllers'
-                    className='resultAreaElem'></div>
+                    className='resultAreaElem'>
+                    <button type="button" 
+                        className="btn btn-sm btn-primary"
+                        style={{display: 'block', margin: '0 0 0 auto'}}>
+                        Clear
+                    </button>
+                    <button type="button" 
+                        className="btn btn-sm btn-primary"
+                        style={{display: 'block', margin: '0 0 0 auto'}}>
+                        Run again
+                    </button>
+                </div>
             </div>
         );
     }
