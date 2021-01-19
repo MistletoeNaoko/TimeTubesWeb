@@ -73,8 +73,8 @@ export default class ClusteringTimeline extends React.Component {
             this.xAxes = [];
         }
 
-        let clientWidth = this.mount.clientWidth,
-            width = this.mount.clientWidth - this.margin.left - this.margin.right,
+        let clientWidth = this.mount.clientWidth - (this.margin.left + this.margin.right),//this.mount.clientWidth,
+            width = clientWidth - (this.margin.left + this.margin.right),//this.mount.clientWidth - this.margin.left - this.margin.right,
             fileNameWidth = 100;
         let widthTimeline = width - fileNameWidth,
             height = 40;

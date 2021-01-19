@@ -159,7 +159,7 @@ export default class ClusteringProcess extends React.Component {
     filteringSummary() {
         $('#filteringProcessSummarySVG').children().remove();
 
-        let svgWidth = this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
+        let svgWidth = $('#clusteringProcess').width() - this.areaPadding.left - this.areaPadding.right;//this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
         let triangleSideLength = svgWidth - this.margin.left - this.margin.right;
         let triangleHeight = Math.sqrt(3) * triangleSideLength / 2;
         let svgHeight = triangleHeight * this.steps.length / (this.steps.length + 1) + this.margin.top + this.margin.bottom;
@@ -291,8 +291,8 @@ export default class ClusteringProcess extends React.Component {
         let previousStep = this.steps[this.steps.indexOf(this.state.selectedProcess) - 1];
 
         let paddingCell = 3, checkCellWidth = 30;
-        let tableWidth = this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
-        let tableHeight = (this.mount.clientHeight - $('#filteringProcessSummary').height()) / 2
+        let tableWidth = $('#clusteringProcess').width() - this.areaPadding.left - this.areaPadding.right;//this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
+        let tableHeight = (this.mount.clientHeight - $('#filteringProcessSummary').height()) / 2;//(this.mount.clientHeight - $('#filteringProcessSummary').height()) / 2
         let cellWidth = (tableWidth - checkCellWidth) / this.variables.length,
             cellHeight = 30;
 
@@ -382,8 +382,10 @@ export default class ClusteringProcess extends React.Component {
 
     updatedSubsequencesTable() {
         let paddingCell = 3, checkCellWidth = 30;
-        let tableWidth = this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
+        let tableWidth = $('#clusteringProcess').width() - this.areaPadding.left - this.areaPadding.right;
         let tableHeight = (this.mount.clientHeight - $('#filteringProcessSummary').height()) * 0.3;
+        // let tableWidth = this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
+        // let tableHeight = (this.mount.clientHeight - $('#filteringProcessSummary').height()) * 0.3;
         let cellWidth = (tableWidth - checkCellWidth) / this.variables.length,
             cellHeight = 30;
 
@@ -661,7 +663,8 @@ export default class ClusteringProcess extends React.Component {
             let previousStep = this.steps[this.steps.indexOf(this.state.selectedProcess) - 1];
 
             let paddingCell = 3, checkCellWidth = 30, paddingSVG = 1;
-            let tableWidth = this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
+            let tableWidth = $('#clusteringProcess').width() - this.areaPadding.left - this.areaPadding.right;
+            // let tableWidth = this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
             let cellWidth = (tableWidth - checkCellWidth) / this.variables.length,
                 cellHeight = 30;
             let svgWidth = cellWidth - paddingCell * 2,
@@ -750,7 +753,8 @@ export default class ClusteringProcess extends React.Component {
             let previousStep = this.steps[this.steps.indexOf(this.state.selectedProcess) - 1];
 
             let paddingCell = 3, checkCellWidth = 30, paddingSVG = 1;
-            let tableWidth = this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
+            let tableWidth = $('#clusteringProcess').width() - this.areaPadding.left - this.areaPadding.right;
+            // let tableWidth = this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
             let cellWidth = (tableWidth - checkCellWidth) / this.variables.length,
                 cellHeight = 30;
             let svgWidth = cellWidth - paddingCell * 2,

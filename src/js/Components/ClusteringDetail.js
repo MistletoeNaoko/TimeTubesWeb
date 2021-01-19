@@ -106,7 +106,7 @@ export default class ClusteringDetail extends React.Component {
     clusterFeatureTable() {
         let table;
         if (this.state.cluster >= 0) {
-            let width = this.mount.clientWidth - this.paddingCard * 2;
+            let width = $('#clusteringDetail').width() - this.paddingCard * 2;//this.mount.clientWidth - this.paddingCard * 2;
             let aveDataPointNum = 0, avePeriod = 0, aveDataValues = {};
             this.variables.forEach(key => {
                 aveDataValues[key] = 0;
@@ -255,8 +255,8 @@ export default class ClusteringDetail extends React.Component {
 
     drawClusterCenterLineCharts() {
         $('#clusterCenterLineChartsSVG').remove();
-
-        let clientWidth = this.mount.clientWidth - this.paddingCard * 2;
+        let clientWidth = $('#clusteringDetail').width() - this.paddingCard * 2;
+        // let clientWidth = this.mount.clientWidth - this.paddingCard * 2;
         let lineChartWidth = clientWidth / 2,
             lineChartHeight = clientWidth / 2 * 0.6;
 
@@ -340,7 +340,8 @@ export default class ClusteringDetail extends React.Component {
         $('#subsequenceLengthHistogramSVG').remove();
 
 
-        let clientWidth = this.mount.clientWidth - this.paddingCard * 2;
+        let clientWidth = $('#clusteringDetail').width() - this.paddingCard * 2;
+        // let clientWidth = this.mount.clientWidth - this.paddingCard * 2;
         let height = clientWidth * 0.5;
         
         let svg = d3.select('#subsequenceLengthHistogram')
@@ -447,7 +448,9 @@ export default class ClusteringDetail extends React.Component {
         $('#subsequenceOverviewTableMain').remove();
 
         let paddingCell = 3;
-        let clientWidth = this.mount.clientWidth - this.paddingCard * 2;
+
+        let clientWidth = $('#clusteringDetail').width() - this.paddingCard * 2;
+        // let clientWidth = this.mount.clientWidth - this.paddingCard * 2;
         let cellWidth = clientWidth / this.variables.length,
             cellHeight = 30;
         let tableHeader = d3.select('#subsequencesOverview')
