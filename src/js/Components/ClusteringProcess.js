@@ -3,6 +3,7 @@ import * as d3 from 'd3';
 import * as ClusteringAction from '../Actions/ClusteringAction';
 import ClusteringStore from '../Stores/ClusteringStore';
 import DataStore from '../Stores/DataStore';
+
 d3.selection.prototype.moveToFront =
     function() {
         return this.each(function(){this.parentNode.appendChild(this);});
@@ -15,6 +16,8 @@ export default class ClusteringProcess extends React.Component {
         this.steps = [];
         this.filteringProcess = {};
         this.yMinMax = {};
+        this.updateSparklineTableFlag = false;
+        this.updataUpdatedSSSparklineTableFlag = false;
         this.filteringStepColors = [
             // '#284a6c',
             // '#7b7971',
@@ -43,7 +46,9 @@ export default class ClusteringProcess extends React.Component {
         };
         this.state = {
             subsequencesFilteringProcess: [],
-            selectedProcess: ''
+            selectedProcess: '',
+            selectedSS: {},
+            updatedSS: {}
         };
     }
 
@@ -66,11 +71,26 @@ export default class ClusteringProcess extends React.Component {
             this.datasetsIdx = ClusteringStore.getDatasets();
             this.variables = ClusteringStore.getClusteringParameters().variables;
             this.variables = this.variables.filter(ele => ele !== 'z');
+            let selectedSS = {}, updatedSS = {};
+            for (let dataId in this.filteringProcess.subsequences) {
+                selectedSS[dataId] = [];
+                updatedSS[dataId] = [];
+            }
+            for (let dataId in this.filteringProcess[this.steps[this.steps.length - 1]]) {
+                for (let i = 0; i < this.filteringProcess[this.steps[this.steps.length - 1]][dataId].length; i++) {
+                    selectedSS[dataId].push(this.filteringProcess[this.steps[this.steps.length - 1]][dataId][i]);
+                }
+            }
             this.createVariableLabels();
             this.filteringSummary();
+            this.setState({
+                selectedSS: selectedSS,
+                updatedSS: updatedSS
+            });
         });
         ClusteringStore.on('showFilteringStep', (selectedProcess) => {
             // this.showSubsequencesInTheSelectedStep(selectedProcess);
+            this.updateSparklineTableFlag = true;
             this.setState({
                 selectedProcess: selectedProcess
             })
@@ -80,12 +100,16 @@ export default class ClusteringProcess extends React.Component {
     componentDidUpdate() {
         // この時点でテーブルは生成されてるから、それにd3を使ってグラフを描く
         this.drawSparklinesOfSubsequencesInTheSelectedStep();
+        this.checkCurrentlySelectedSS();
+        this.drawSparklinesOfUpdatedSubsequences();
     }
 
     render() {
         let subsequencesTable;
+        let updatedTable;
         if (this.state.selectedProcess !== '') {
             subsequencesTable = this.subsequencesInTheSelectedStepTable();
+            updatedTable = this.updatedSubsequencesTable();
         }
         return (
             <div id="clusteringProcess"
@@ -105,6 +129,7 @@ export default class ClusteringProcess extends React.Component {
                 <div id='selectedSSList'
                     className='resultAreaElem'>
                     Newly selected subsequences
+                    {updatedTable}
                 </div>
                 <div id='updateClusteringControllers'
                     className='resultAreaElem'></div>
@@ -304,30 +329,37 @@ export default class ClusteringProcess extends React.Component {
         for (let dataId in this.filteringProcess[previousStep]) {
             for (let i = 0; i < this.filteringProcess[previousStep][dataId].length; i++) {
                 let tdItems = [];
+                let SSId = this.filteringProcess[previousStep][dataId][i];
                 tdItems.push(
                     <td key='checkbox' style={{textAlign: 'center', width: checkCellWidth, height: cellHeight}}>
-                        <input type="checkbox" className={'subsequenceCheckbox'} name='subsequenceSelector'/>
+                        <input 
+                            type="checkbox" 
+                            className={'subsequenceCheckbox'} 
+                            name='subsequenceSelector'
+                            id={'selectSSFilteringProcess_' + dataId + '_' + SSId}
+                            onClick={this.onClickSSSelector().bind(this)}/>
                     </td>);
                 for (let j = 0; j < this.variables.length; j++) {
                     tdItems.push(
                         <td
                             key={this.variables[j]}
-                            id={'subsequenceTd_' + dataId + '_' + i + '_' + this.variables[j]}
+                            id={'subsequenceTd_' + dataId + '_' + SSId + '_' + this.variables[j]}
                             style={{width: cellWidth, height: cellHeight}}>
                             {/* <svg className='spark'
                                 style={{width: cellWidth - paddingCell * 2, height: cellHeight - paddingCell * 2}}></svg> */}
                         </td>);
-                    for (let k = 0; k < this.filteringProcess.subsequences[dataId][i].length; k++) {
-                        if (this.filteringProcess.subsequences[dataId][i][k][this.variables[j]] < this.yMinMax[this.variables[j]][0]) {
-                            this.yMinMax[this.variables[j]][0] = this.filteringProcess.subsequences[dataId][i][k][this.variables[j]];
+                    for (let k = 0; k < this.filteringProcess.subsequences[dataId][SSId].length; k++) {
+                        if (this.filteringProcess.subsequences[dataId][SSId][k][this.variables[j]] < this.yMinMax[this.variables[j]][0]) {
+                            this.yMinMax[this.variables[j]][0] = this.filteringProcess.subsequences[dataId][SSId][k][this.variables[j]];
                         }
-                        if (this.yMinMax[this.variables[j]][1] < this.filteringProcess.subsequences[dataId][i][k][this.variables[j]]) {
-                            this.yMinMax[this.variables[j]][1] = this.filteringProcess.subsequences[dataId][i][k][this.variables[j]];
+                        if (this.yMinMax[this.variables[j]][1] < this.filteringProcess.subsequences[dataId][SSId][k][this.variables[j]]) {
+                            this.yMinMax[this.variables[j]][1] = this.filteringProcess.subsequences[dataId][SSId][k][this.variables[j]];
                         }
                     }
                 }
                 trItems.push(
-                    <tr key={'subsequenceTr_' + dataId + '_' + i}
+                    <tr id={'subsequenceTr_' + dataId + '_' + SSId}
+                        key={'subsequenceTr_' + dataId + '_' + SSId}
                         style={{width: tableWidth, height: cellHeight}}
                         onMouseOver={this.onMouseOverFilteringStepSSRow().bind(this)}
                         onMouseOut={this.onMouseOutFilteringStepSSRow().bind(this)}>
@@ -348,34 +380,188 @@ export default class ClusteringProcess extends React.Component {
         )
     }
 
+    updatedSubsequencesTable() {
+        let paddingCell = 3, checkCellWidth = 30;
+        let tableWidth = this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
+        let tableHeight = (this.mount.clientHeight - $('#filteringProcessSummary').height()) * 0.3;
+        let cellWidth = (tableWidth - checkCellWidth) / this.variables.length,
+            cellHeight = 30;
+
+        let labels = [];
+        labels.push('');
+        for (let i = 0; i < this.variables.length; i++) {
+            if (this.variableLabels[this.variables[i]].length > 1) {
+                labels.push(this.variableLabels[this.variables[i]].join(', '));
+            } else {
+                labels.push(this.variableLabels[this.variables[i]]);
+            }
+        }
+        let headerItems = [];
+        for (let i = 0; i < labels.length; i++) {
+            headerItems.push(
+                <th key={i} style={{width: (i === 0)? checkCellWidth: cellWidth, height: cellHeight}}>
+                    {labels[i]}
+                </th>
+            );
+        }
+        let tableHeader = (
+            <thead style={{width: tableWidth, height: cellHeight}}
+                id='updatedSubsequencesTableHeader'>
+                <tr style={{textAlign: 'center', fontSize: '10px'}}>
+                    {headerItems}
+                </tr>
+            </thead>
+        );
+
+        let trItems = [];
+        for (let dataId in this.state.updatedSS) {
+            for (let i = 0; i < this.state.updatedSS[dataId].length; i++) {
+                let tdItems = [];
+                let SSId = this.state.updatedSS[dataId][i].idx;
+                tdItems.push(
+                    <td key='checkbox' style={{textAlign: 'center', width: checkCellWidth, height: cellHeight}}>
+                        <input 
+                            type="checkbox" 
+                            className={'subsequenceCheckbox'} 
+                            name='subsequenceSelector'
+                            id={'selectUpdatedSSFilteringProcess_' + dataId + '_' + SSId}
+                            // onClick={this.onClickUpdatedSSSelector().bind(this)}
+                            />
+                    </td>);
+                for (let j = 0; j < this.variables.length; j++) {
+                    tdItems.push(
+                        <td
+                            key={this.variables[j]}
+                            id={'updatedSubsequenceTd_' + dataId + '_' + SSId + '_' + this.variables[j]}
+                            style={{width: cellWidth, height: cellHeight}}>
+
+                        </td>
+                    );
+                }
+                trItems.push(
+                    <tr id={'updatedSubsequenceTr_' + dataId + '_' + SSId}
+                        key={'updatedSubsequenceTr_' + dataId + '_' + SSId}
+                        style={{width: tableWidth, height: cellHeight}}
+                        // onMouseOver={this.onMouseOverFilteringStepSSRow().bind(this)}
+                        // onMouseOut={this.onMouseOutFilteringStepSSRow().bind(this)}>
+                        >
+                        {tdItems}
+                    </tr>
+                );
+            }
+        }
+
+        return (
+            <table id='updatedSubsequencesTable'
+                className='table table-hover sparkTable'
+                style={{width: tableWidth}}>
+                {tableHeader}
+                <tbody id='updatedSubsequencesTableBody'>
+                    {trItems}
+                </tbody>
+            </table>
+        );
+    }
+
+    onClickSSSelector() {
+        return function(d) {
+            let targetId = d.target.id;
+            if (targetId) {
+                let targetIdEle = targetId.split('_');
+                let dataId = targetIdEle[1],
+                    SSId = Number(targetIdEle[2]);
+
+                let currentState = $('#' + d.target.id).prop('checked');
+                let SSInClustering = this.filteringProcess[this.steps[this.steps.length - 1]][dataId].indexOf(SSId) < 0? false: true;
+
+                if (currentState) {
+                    // add a row to updatedSubsequencesTable
+                    let newSelectedSS = this.state.selectedSS;
+                    newSelectedSS[dataId].push(SSId);
+                    let newUpdatedSS = this.state.updatedSS;
+                    if (SSInClustering) {
+                        // cancel removing SS from clustering
+                        for (let i = 0; i < newUpdatedSS[dataId].length; i++) {
+                            if (newUpdatedSS[dataId][i].idx === SSId) {
+                                newUpdatedSS[dataId].splice(i, 1);
+                                d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                                    .classed('table-danger', false);
+                                break;
+                            }
+                        }
+                    } else {
+                        newUpdatedSS[dataId].push({idx: SSId, status: 'add'});
+                        d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                            .classed('table-success', true);
+                    }
+
+                    this.updataUpdatedSSSparklineTableFlag = true;
+                    this.setState({
+                        selectedSS: newSelectedSS,
+                        updatedSS: newUpdatedSS
+                    });
+                } else {
+                    // remove a row from updatedSubsequencesTable
+                    let newSelectedSS = this.state.selectedSS;
+                    newSelectedSS[dataId].splice(newSelectedSS[dataId].indexOf(SSId), 1);
+                    let newUpdatedSS = this.state.updatedSS;
+                    if (SSInClustering) {
+                        // this SS is removed from clustering
+                        newUpdatedSS[dataId].push({idx: SSId, status: 'remove'});
+                        d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                            .classed('table-danger', true);
+                    } else {
+                        // cancel the addition of SS
+                        for (let i = 0; i < newUpdatedSS[dataId].length; i++) {
+                            if (newUpdatedSS[dataId][i].idx === SSId) {
+                                newUpdatedSS[dataId].splice(i, 1);
+                                d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                                    .classed('table-success', false);
+                                break;
+                            }
+                        }
+                    }
+
+                    this.updataUpdatedSSSparklineTableFlag = true;
+                    this.setState({
+                        selectedSS: newSelectedSS,
+                        updatedSS: newUpdatedSS
+                    });
+                }
+            }
+        };
+    }
+
     onMouseOverFilteringStepSSRow() {
         return function(d) {
             let targetId = d.target.id;
-            let targetIdEle = targetId.split('_');
-            let dataId = targetIdEle[1],
-                SSId = targetIdEle[2];
-            let xMinMax = this.xScale.domain();
-            // show data points on sparklines
-            let data = this.filteringProcess.subsequences[dataId][SSId];
-            for (let i = 0; i < this.variables.length; i++) {
-                let svg = d3.select('#subsequenceSVG_' + dataId + '_' + SSId + '_' + this.variables[i]);
-                svg.select('g')
-                    .selectAll('circle')
-                    .data(data.dataPoints)
-                    .enter()
-                    .append('circle')
-                    .attr('cx', function(d) {
-                        let xVal = (d.z - data.dataPoints[0].z) 
-                            / (data.dataPoints[data.dataPoints.length - 1].z - data.dataPoints[0].z) * xMinMax[1];
-                        return this.xScale(xVal);
-                    }.bind(this))
-                    .attr('cy', function(d) {
-                        return this.yScales[this.variables[i]](d[this.variables[i]]);
-                    }.bind(this))
-                    .attr('fill', 'white')
-                    .attr('stroke', 'black')
-                    .attr('stroke-width', 0.5)
-                    .attr('r', 1.2);
+            if (targetId) {
+                let targetIdEle = targetId.split('_');
+                let dataId = targetIdEle[1],
+                    SSId = Number(targetIdEle[2]);
+                let xMinMax = this.xScale.domain();
+                // show data points on sparklines
+                let data = this.filteringProcess.subsequences[dataId][SSId];
+                for (let i = 0; i < this.variables.length; i++) {
+                    let svg = d3.select('#subsequenceSVG_' + dataId + '_' + SSId + '_' + this.variables[i]);
+                    svg.select('g')
+                        .selectAll('circle')
+                        .data(data.dataPoints)
+                        .enter()
+                        .append('circle')
+                        .attr('cx', function(d) {
+                            let xVal = (d.z - data.dataPoints[0].z) 
+                                / (data.dataPoints[data.dataPoints.length - 1].z - data.dataPoints[0].z) * xMinMax[1];
+                            return this.xScale(xVal);
+                        }.bind(this))
+                        .attr('cy', function(d) {
+                            return this.yScales[this.variables[i]](d[this.variables[i]]);
+                        }.bind(this))
+                        .attr('fill', 'white')
+                        .attr('stroke', 'black')
+                        .attr('stroke-width', 0.5)
+                        .attr('r', 1.2);
+                }
             }
         };
     }
@@ -384,97 +570,175 @@ export default class ClusteringProcess extends React.Component {
         return function(d) {
             // remove data points on sparklines
             let targetId = d.target.id;
-            let targetIdEle = targetId.split('_');
-            let dataId = targetIdEle[1],
-                SSId = targetIdEle[2];
-            for (let i = 0; i < this.variables.length; i++) {
-                let svg = d3.select('#subsequenceSVG_' + dataId + '_' + SSId + '_' + this.variables[i]);
-                svg.select('g')
-                    .selectAll('circle')
-                    .remove();
+            if (targetId) {
+                let targetIdEle = targetId.split('_');
+                let dataId = targetIdEle[1],
+                    SSId = targetIdEle[2];
+                for (let i = 0; i < this.variables.length; i++) {
+                    let svg = d3.select('#subsequenceSVG_' + dataId + '_' + SSId + '_' + this.variables[i]);
+                    svg.select('g')
+                        .selectAll('circle')
+                        .remove();
+                }
             }
         };
     }
 
     drawSparklinesOfSubsequencesInTheSelectedStep() {
-        $('#subsequencesFilteringProcessTable svg').remove();
+        if (this.state.selectedProcess && this.updateSparklineTableFlag) {
+            $('#subsequencesFilteringProcessTable svg').remove();
 
-        let selectedStepIdx = this.steps.indexOf(this.state.selectedProcess);
-        let previousStep = this.steps[this.steps.indexOf(this.state.selectedProcess) - 1];
+            let selectedStepIdx = this.steps.indexOf(this.state.selectedProcess);
+            let previousStep = this.steps[this.steps.indexOf(this.state.selectedProcess) - 1];
 
-        let paddingCell = 3, checkCellWidth = 30, paddingSVG = 1;
-        let tableWidth = this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
-        let cellWidth = (tableWidth - checkCellWidth) / this.variables.length,
-            cellHeight = 30;
-        let svgWidth = cellWidth - paddingCell * 2,
-            svgHeight = cellHeight - paddingCell * 2;
+            let paddingCell = 3, checkCellWidth = 30, paddingSVG = 1;
+            let tableWidth = this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
+            let cellWidth = (tableWidth - checkCellWidth) / this.variables.length,
+                cellHeight = 30;
+            let svgWidth = cellWidth - paddingCell * 2,
+                svgHeight = cellHeight - paddingCell * 2;
 
-        let xMinMax = [0, ClusteringStore.getSubsequenceParameters().isometryLen];
-        let xScale = d3.scaleLinear()
-            .range([paddingSVG, svgWidth - paddingSVG])
-            .domain(xMinMax);
-        let yScales = {}, curves = {};
-        for (let i = 0; i < this.variables.length; i++) {
-            yScales[this.variables[i]] = d3.scaleLinear()
-                .range([svgHeight - paddingSVG, paddingSVG])
-                .domain(this.yMinMax[this.variables[i]])
-                .nice();
-            curves[this.variables[i]] = d3.line()
-                .x(function(d, i) {
-                    return xScale(i);
-                })
-                .y(function(d) {
-                    return yScales[this.variables[i]](d[this.variables[i]]);
-                }.bind(this))
-                .curve(d3.curveCatmullRom.alpha(1));
-        }
-        this.xScale = xScale;
-        this.yScales = yScales;
-        for (let dataId in this.filteringProcess[previousStep]) {
-            for (let i = 0; i < this.filteringProcess[previousStep][dataId].length; i++) {
-                let data = this.filteringProcess.subsequences[dataId][this.filteringProcess[previousStep][dataId][i]];
-                for (let j = 0; j < this.variables.length; j++) {
-                    // td's id is ('subsequenceTd_' + dataId + '_' + i + '_' + this.variables[j])
-                    let svg = d3.select('#subsequenceTd_' + dataId + '_' + i + '_' + this.variables[j])
-                        .append('svg')
-                        .attr('id', 'subsequenceSVG_' + dataId + '_' + i + '_' + this.variables[j])
-                        .attr('class', 'spark')
-                        .attr('width', svgWidth)
-                        .attr('height', svgHeight);
-                    let strokeColor = (
-                        this.filteringProcess[this.state.selectedProcess][dataId].indexOf(this.filteringProcess[previousStep][dataId][i]) < 0
-                        ? this.filteringStepColors[selectedStepIdx - 1]: this.filteringStepColors[selectedStepIdx]
-                        );
-                    let sparklineGroup = svg.append('g');
-                    let sparkline = sparklineGroup
-                        .datum(data)
-                        .append('path')
-                        .attr('fill', 'none')
-                        .attr('stroke', strokeColor)
-                        .attr('stroke-width', 1.5);
-                    sparkline
-                        .attr('d', function(d, i) {
-                            return curves[this.variables[j]](d);
-                        }.bind(this));
-                    // sparklineGroup
-                    //     .selectAll('circle')
-                    //     .data(data.dataPoints)
-                    //     .enter()
-                    //     .append('circle')
-                    //     .attr('cx', function(d) {
-                    //         let xVal = (d.z - data.dataPoints[0].z) 
-                    //             / (data.dataPoints[data.dataPoints.length - 1].z - data.dataPoints[0].z) * xMinMax[1];
-                    //         return xScale(xVal);
-                    //     })
-                    //     .attr('cy', function(d) {
-                    //         return yScales[this.variables[j]](d[this.variables[j]]);
-                    //     }.bind(this))
-                    //     .attr('fill', 'white')
-                    //     .attr('stroke', 'black')
-                    //     .attr('stroke-width', 0.5)
-                    //     .attr('r', 1.2);
+            let xMinMax = [0, ClusteringStore.getSubsequenceParameters().isometryLen];
+            let xScale = d3.scaleLinear()
+                .range([paddingSVG, svgWidth - paddingSVG])
+                .domain(xMinMax);
+            let yScales = {}, curves = {};
+            for (let i = 0; i < this.variables.length; i++) {
+                yScales[this.variables[i]] = d3.scaleLinear()
+                    .range([svgHeight - paddingSVG, paddingSVG])
+                    .domain(this.yMinMax[this.variables[i]])
+                    .nice();
+                curves[this.variables[i]] = d3.line()
+                    .x(function(d, i) {
+                        return xScale(i);
+                    })
+                    .y(function(d) {
+                        return yScales[this.variables[i]](d[this.variables[i]]);
+                    }.bind(this))
+                    .curve(d3.curveCatmullRom.alpha(1));
+            }
+            this.xScale = xScale;
+            this.yScales = yScales;
+            this.curves = curves;
+            for (let dataId in this.filteringProcess[previousStep]) {
+                for (let i = 0; i < this.filteringProcess[previousStep][dataId].length; i++) {
+                    let SSId = this.filteringProcess[previousStep][dataId][i];
+                    let data = this.filteringProcess.subsequences[dataId][SSId];
+                    for (let j = 0; j < this.variables.length; j++) {
+                        // td's id is ('subsequenceTd_' + dataId + '_' + this.filteringProcess[previousStep][dataId][i] + '_' + this.variables[j])
+                        // this.filteringProcess[previousStep][dataId][i] is data's index in this.filteringProcess.subsequences
+                        let svg = d3.select('#subsequenceTd_' + dataId + '_' + SSId + '_' + this.variables[j])
+                            .append('svg')
+                            .attr('id', 'subsequenceSVG_' + dataId + '_' + SSId + '_' + this.variables[j])
+                            .attr('class', 'spark')
+                            .attr('width', svgWidth)
+                            .attr('height', svgHeight);
+                        let strokeColor = (
+                            this.filteringProcess[this.state.selectedProcess][dataId].indexOf(SSId) < 0
+                            ? this.filteringStepColors[selectedStepIdx - 1]: this.filteringStepColors[selectedStepIdx]
+                            );
+                        let sparklineGroup = svg.append('g');
+                        let sparkline = sparklineGroup
+                            .datum(data)
+                            .append('path')
+                            .attr('fill', 'none')
+                            .attr('stroke', strokeColor)
+                            .attr('stroke-width', 1.5);
+                        sparkline
+                            .attr('d', function(d, i) {
+                                return curves[this.variables[j]](d);
+                            }.bind(this));
+                        // sparklineGroup
+                        //     .selectAll('circle')
+                        //     .data(data.dataPoints)
+                        //     .enter()
+                        //     .append('circle')
+                        //     .attr('cx', function(d) {
+                        //         let xVal = (d.z - data.dataPoints[0].z) 
+                        //             / (data.dataPoints[data.dataPoints.length - 1].z - data.dataPoints[0].z) * xMinMax[1];
+                        //         return xScale(xVal);
+                        //     })
+                        //     .attr('cy', function(d) {
+                        //         return yScales[this.variables[j]](d[this.variables[j]]);
+                        //     }.bind(this))
+                        //     .attr('fill', 'white')
+                        //     .attr('stroke', 'black')
+                        //     .attr('stroke-width', 0.5)
+                        //     .attr('r', 1.2);
+                    }
+                    
                 }
-                
+            }
+            this.updateSparklineTableFlag = false;
+        }
+    }
+
+    drawSparklinesOfUpdatedSubsequences() {
+        if (this.state.selectedProcess && this.updataUpdatedSSSparklineTableFlag) {
+            $('#updatedSubsequencesTable svg').remove();
+
+            let selectedStepIdx = this.steps.indexOf(this.state.selectedProcess);
+            let previousStep = this.steps[this.steps.indexOf(this.state.selectedProcess) - 1];
+
+            let paddingCell = 3, checkCellWidth = 30, paddingSVG = 1;
+            let tableWidth = this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
+            let cellWidth = (tableWidth - checkCellWidth) / this.variables.length,
+                cellHeight = 30;
+            let svgWidth = cellWidth - paddingCell * 2,
+                svgHeight = cellHeight - paddingCell * 2;
+
+            for (let dataId in this.state.updatedSS) {
+                for (let i = 0; i < this.state.updatedSS[dataId].length; i++) {
+                    let SSId = this.state.updatedSS[dataId][i].idx;
+                    let data = this.filteringProcess.subsequences[dataId][SSId];
+                    for (let j = 0; j < this.variables.length; j++) {
+                        let trClass = (this.state.updatedSS[dataId][i].status === 'add')? 'table-success': 'table-danger';
+                        d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
+                            .classed(trClass, true);
+                        let svg = d3.select('#updatedSubsequenceTd_' + dataId + '_' + SSId + '_' + this.variables[j])
+                            .append('svg')
+                            .attr('id', 'updateSubsequenceSVG_' + dataId + '_' + SSId + '_' + this.variables[j])
+                            .attr('class', 'spark')
+                            .attr('width', svgWidth)
+                            .attr('height', svgHeight);
+                        let strokeColor = (
+                            this.filteringProcess[this.state.selectedProcess][dataId].indexOf(SSId) < 0
+                            ? this.filteringStepColors[selectedStepIdx - 1]: this.filteringStepColors[selectedStepIdx]
+                            );
+                        let sparklineGroup = svg.append('g');
+                        let sparkline = sparklineGroup
+                            .datum(data)
+                            .append('path')
+                            .attr('fill', 'none')
+                            .attr('stroke', strokeColor)
+                            .attr('stroke-width', 1.5);
+                        sparkline
+                            .attr('d', function(d, i) {
+                                return this.curves[this.variables[j]](d);
+                            }.bind(this));
+                    }
+                }
+            }
+
+            this.updataUpdatedSSSparklineTableFlag = false;
+        }
+    }
+
+    checkCurrentlySelectedSS() {
+        if (this.state.selectedProcess) {
+            // for (let dataId in this.filteringProcess[this.steps[this.steps.length - 1]]) {
+            //     for (let i = 0; i < this.filteringProcess[this.steps[this.steps.length - 1]][dataId].length; i++) {
+            //         let SSId = this.filteringProcess[this.steps[this.steps.length - 1]][dataId][i];
+            //         $('#selectSSFilteringProcess_' + dataId + '_' + SSId).prop('checked', true);
+            //     }
+            // }
+            for (let dataId in this.state.selectedSS) {
+                for (let i = 0; i < this.state.selectedSS[dataId].length; i++) {
+                    $('#selectSSFilteringProcess_' + dataId + '_' + this.state.selectedSS[dataId][i]).prop('checked', true);
+                    if ($('#selectUpdatedSSFilteringProcess_' + dataId + '_' + this.state.selectedSS[dataId][i]).length) {
+                        $('#selectUpdatedSSFilteringProcess_' + dataId + '_' + this.state.selectedSS[dataId][i]).prop('checked', true);
+                    }
+                }
             }
         }
     }

@@ -806,3 +806,12 @@ img.selectorIcon:active {
     overflow-x: hidden;
     overflow-y: scroll;
 }
+
+#updatedSubsequencesTableHeader, #updatedSubsequencesTableBody {
+    display: block;
+}
+
+#updatedSubsequencesTableBody {
+    overflow-x: hidden;
+    overflow-y: scroll;
+}
