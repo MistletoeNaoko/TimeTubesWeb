@@ -591,8 +591,10 @@ export default class ClusteringDetail extends React.Component {
                     .attr('cy', function(d) {
                         return yScales[varTd](d[varTd]);
                     }.bind(this))
-                    .attr('fill', 'gray')
-                    .attr('r', 1);
+                    .attr('fill', 'white')
+                    .attr('stroke', 'black')
+                    .attr('stroke-width', 0.5)
+                    .attr('r', 1.2);
             }
         }
         // let dataForSP = observationDataPoints();
