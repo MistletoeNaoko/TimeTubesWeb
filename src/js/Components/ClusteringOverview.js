@@ -76,7 +76,6 @@ export default class ClusteringOverview extends React.Component {
             this.clusterCenters = ClusteringStore.getClusterCenters();
             this.clusterColors = ClusteringStore.getClusterColors();
             this.clusteringScores = ClusteringStore.getClusteringScores();
-            console.log(this.clusterCenters);
             this.setRendererSize();
             this.computeSplines();
             this.drawClusterCentersAsTubes();

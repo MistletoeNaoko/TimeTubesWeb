@@ -8,7 +8,7 @@ import AppStore from '../Stores/AppStore';
 export default class ClusteringTimeline extends React.Component {
     constructor() {
         super();
-        this.margin = {left: 20, right: 50};
+        this.margin = {left: 20, right: 20};
         this.datasets = [];
         this.custerCenters = [];
         this.subsequences = [];
@@ -34,6 +34,7 @@ export default class ClusteringTimeline extends React.Component {
 
     componentDidMount() {
         ClusteringStore.on('showClusteringResults', () => {
+            console.log('show clustering results')
             this.datasets = ClusteringStore.getDatasets();
             this.clusterCenters = ClusteringStore.getClusterCenters();
             this.subsequences = ClusteringStore.getSubsequences();
@@ -43,6 +44,7 @@ export default class ClusteringTimeline extends React.Component {
             this.drawTimelines();
         });
         AppStore.on('resizeExtractionResultsArea', () => {
+            console.log('resize clustering timeline')
             this.resizeTimelines();
         });
     }
@@ -76,6 +78,7 @@ export default class ClusteringTimeline extends React.Component {
             fileNameWidth = 100;
         let widthTimeline = width - fileNameWidth,
             height = 40;
+        
         let timelineArea = d3.select('#clusteringTimeline')
             .append('div')
             .attr('id', 'clusteringTimelineArea');
@@ -84,7 +87,7 @@ export default class ClusteringTimeline extends React.Component {
             let timeline = timelineArea.append('svg')
                 .attr('id', 'clusteringTimelineSVG_' + this.datasets[i])
                 .attr('class', 'clusteringTimelineSVG')
-                .attr('width', width)
+                .attr('width', clientWidth)
                 .attr('height', 40);
             let fileName = timeline
                 .append('text')
@@ -195,8 +198,8 @@ export default class ClusteringTimeline extends React.Component {
     }
 
     resizeTimelines() {
-        let clientWidth = this.mount.clientWidth,
-            width = this.mount.clientWidth - this.margin.left - this.margin.right,
+        let clientWidth = this.mount.clientWidth - (this.margin.left + this.margin.right),
+            width = clientWidth - (this.margin.left + this.margin.right),
             fileNameWidth = 100;
         let widthTimeline = width - fileNameWidth,
             height = 40;
