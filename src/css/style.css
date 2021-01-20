@@ -799,7 +799,11 @@ img.selectorIcon:active {
     overflow-y: scroll;
 }
 
-#subsequenceOverviewTableBody {
+#subsequencesOverviewTableHeader, #subsequencesOverviewTableBody {
+    display: block;
+}
+
+#subsequencesOverviewTableBody {
     overflow-x: hidden;
     overflow-y: scroll;
 }
@@ -811,4 +815,8 @@ img.selectorIcon:active {
 #updatedSubsequencesTableBody {
     overflow-x: hidden;
     overflow-y: scroll;
+}
+
+#subsequencesOverviewTable {
+    table-layout: fixed;
 }

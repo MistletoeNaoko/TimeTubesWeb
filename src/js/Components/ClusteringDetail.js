@@ -10,6 +10,7 @@ export default class ClusteringDetail extends React.Component {
         super();
         this.margin = {left: 30, right: 10, top: 20, bottom: 20};
         this.paddingCard = 16;
+        this.areaPadding = {left: 16, right: 16, top: 8, bottom: 8};
         this.cluster = -1;
         this.state = {
             cluster: -1
@@ -64,7 +65,7 @@ export default class ClusteringDetail extends React.Component {
             this.extractSubsequencesInCluster();
             this.drawClusterCenterLineCharts();
             this.drawSubsequenceLengthHistogram();
-            this.drawSparklinesTable();
+            // this.drawSparklinesTable();
             this.setState({
                 cluster: cluster
             });
@@ -207,15 +208,86 @@ export default class ClusteringDetail extends React.Component {
     }
 
     subsequencesOverview() {
-        return (
-            <div id='subsequencesOverview'
-                className='resultAreaElem'>
-            </div>
-        );
+        if (this.state.cluster >= 0) {
+            let paddingCell = 3, checkCellWidth = 30;
+            let tableWidth = $('#subsequencesOverview').width() - this.areaPadding.left - this.areaPadding.right;//this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
+            let tableHeight = tableWidth;//(this.mount.clientHeight - $('#filteringProcessSummary').height()) / 2
+            let cellWidth = (tableWidth - checkCellWidth) / this.variables.length,
+                cellHeight = 30;
+            let labels = [];
+            labels.push('');
+            for (let i = 0; i < this.variables.length; i++) {
+                if (this.variableLabels[this.variables[i]].length > 1) {
+                    labels.push(this.variableLabels[this.variables[i]].join(', '));
+                } else {
+                    labels.push(this.variableLabels[this.variables[i]]);
+                }
+            }
+            let headerItems = [];
+            for (let i = 0; i < labels.length; i++) {
+                headerItems.push(
+                    <th key={i} 
+                        id={(i === 0)? 'subsequencesOverviewTableTh_checkbox': 'subsequencesOverviewTableTh_' + this.variables[i - 1]}
+                        style={{width: (i === 0)? checkCellWidth: cellWidth, height: cellHeight}}>
+                        {labels[i]}
+                    </th>
+                );
+            }
+            let tableHeader = (
+                <thead style={{width: tableWidth, height: cellHeight}}
+                    id='subsequencesOverviewTableHeader'>
+                    <tr style={{textAlign: 'center', fontSize: '10px'}}>
+                        {headerItems}
+                    </tr>
+                </thead>
+            );
+            let trItems = [];
+            for (let i = 0; i < this.SSCluster.length; i++) {
+                let tdItems = [];
+                let dataId = this.SSCluster[i].id;
+                let SSId = this.SSIdxs[i];
+                tdItems.push(
+                    <td key='checkbox' style={{textAlign: 'center', width: checkCellWidth, height: cellHeight}}>
+                        <input 
+                            type="checkbox" 
+                            className={'subsequenceCheckbox'} 
+                            name='subsequenceSelector'
+                            id={'selectSSDetail_' + dataId + '_' + SSId}/>
+                    </td>);
+                for (let j = 0; j < this.variables.length; j++) {
+                    tdItems.push(
+                        <td
+                            key={this.variables[j]}
+                            id={'subsequenceDetailTd_' + dataId + '_' + SSId + '_' + this.variables[j]}
+                            style={{width: cellWidth, height: cellHeight}}>
+                        </td>);
+                }
+                trItems.push(
+                    <tr id={'subsequenceDetailTr_' + dataId + '_' + SSId}
+                        key={'subsequenceDetailTr_' + dataId + '_' + SSId}
+                        style={{width: tableWidth, height: cellHeight}}>
+                        {tdItems}
+                    </tr>);
+            }
+            return (
+                <div id='subsequencesOverview'
+                    className='resultAreaElem'>
+                    <table id='subsequencesOverviewTable'
+                        className='table table-hover sparkTable'
+                        style={{width: tableWidth}}>
+                        {tableHeader}
+                        <tbody id='subsequencesOverviewTableBody'>
+                            {trItems}
+                        </tbody>
+                    </table>
+                </div>
+            );
+        }
     }
 
     extractSubsequencesInCluster() {
         this.SSCluster = [];
+        this.SSIdxs = [];
         // this.SSRanges = [];
         this.yMinMax = {};
         this.variables.forEach(function(d) {
@@ -225,6 +297,7 @@ export default class ClusteringDetail extends React.Component {
             if (typeof(this.labels[i]) === 'object') {
                 if (this.labels[i].cluster === this.cluster) {
                     this.SSCluster.push(this.subsequences[i]);
+                    this.SSIdxs.push(i);
                     // this.SSRanges.push(this.ranges[i]);
 
                     for (let j = 0; j < this.subsequences[i].length; j++) {
@@ -241,6 +314,7 @@ export default class ClusteringDetail extends React.Component {
             } else {
                 if (this.labels[i] === this.cluster) {
                     this.SSCluster.push(this.subsequences[i]);
+                    this.SSIdxs.push(i);
                     // this.SSRanges.push(this.ranges[i]);
                     
                     for (let j = 0; j < this.subsequences[i].length; j++) {
@@ -472,13 +546,118 @@ export default class ClusteringDetail extends React.Component {
     }
 
     drawSparklinesTable() {
+        $('#clusterFeatureTable svg').remove();
+
+        if (this.state.cluster >= 0) {
+            let paddingCell = 3, paddingSVG = 1;
+            // let clientWidth = $('#clusteringDetail').width() - this.paddingCard * 2;
+
+            let tableWidth = $('#subsequencesOverview').width() - this.areaPadding.left - this.areaPadding.right;
+            let cellWidth = tableWidth / this.variables.length,
+                cellHeight = 30;
+            let svgWidth = cellWidth - paddingCell * 2,
+                svgHeight = cellHeight - paddingCell * 2;
+
+            let xMinMax = [0, ClusteringStore.getSubsequenceParameters().isometryLen];
+            let yMinMax = {};
+            for (let i = 0; i < this.variables.length; i++) {
+                yMinMax[this.variables[i]] = [Infinity, -Infinity];
+                for (let j = 0; j < this.SSCluster.length; j++) {
+                    for (let k = 0; k < this.SSCluster[j].length; k++) {
+                        if (this.SSCluster[j][k][this.variables[i]] < yMinMax[this.variables[i]][0]) {
+                            yMinMax[this.variables[i]][0] = this.SSCluster[j][k][this.variables[i]];
+                        }
+                        if (yMinMax[this.variables[i]][1] < this.SSCluster[j][k][this.variables[i]]) {
+                            yMinMax[this.variables[i]][1] = this.SSCluster[j][k][this.variables[i]];
+                        }
+                    }
+                }
+            }
+
+            let xScale = d3.scaleLinear()
+                .range([paddingSVG, svgWidth - paddingSVG])
+                .domain(xMinMax);
+            let yScales = {}, curves = {};
+            for (let i = 0; i < this.variables.length; i++) {
+                yScales[this.variables[i]] = d3.scaleLinear()
+                    .range([svgHeight - paddingSVG, paddingSVG])
+                    .domain(yMinMax[this.variables[i]])
+                    .nice();
+                curves[this.variables[i]] = d3.line()
+                    .x(function(d, i) {
+                        return xScale(i);
+                    })
+                    .y(function(d) {
+                        return yScales[this.variables[i]](d[this.variables[i]]);
+                    }.bind(this))
+                    .curve(d3.curveCatmullRom.alpha(1));
+            }
+            
+            let dataColors = {};
+            for (let i = 0; i < this.datasetsIdx.length; i++) {
+                dataColors[this.datasetsIdx[i]] = TimeTubeesStore.getPlotColor(this.datasetsIdx[i]);
+            }
+
+            // update the height of the table accroding to the number of cluster members
+            for (let i = 0; i < this.variables.length; i++) {
+                d3.select('#subsequencesOverviewTableTh_' + this.variables[i])
+                    .attr('width', cellWidth);
+            }
+            d3.select('#subsequencesOverviewTable')
+                .style('height', Math.min(tableWidth, cellHeight * (this.SSCluster.length + 1)));
+            d3.select('#subsequencesOverviewTableBody')
+                .style('height', Math.min(tableWidth, cellHeight * this.SSCluster.length));
+            for (let i = 0; i < this.SSCluster.length; i++) {
+                let dataId = this.SSCluster[i].id,
+                    SSId = this.SSIdxs[i];
+                for (let j = 0; j < this.variables.length; j++) {
+                    let svg = d3.select('#subsequenceDetailTd_' + dataId + '_' + SSId + '_' + this.variables[j])
+                        .append('svg')
+                        .attr('id', 'subsequenceDetailSVG_' + dataId + '_' + SSId + '_' + this.variables[j])
+                        .attr('class', 'spark')
+                        .attr('width', svgWidth)
+                        .attr('height', svgHeight);
+                    let sparklineGroup = svg.append('g');
+                    let sparkline = sparklineGroup 
+                        .datum(this.SSCluster[i])
+                        .append('path')
+                        .attr('fill', 'none')
+                        .attr('stroke', dataColors[this.SSCluster[i].id])
+                        .attr('stroke-width', 1.5)
+                        .attr('d', function(d, i) {
+                            return curves[this.variables[j]](d)
+                        }.bind(this));
+                    sparklineGroup 
+                        .selectAll('circle')
+                        .data(this.SSCluster[i].dataPoints)
+                        .enter()
+                        .append('circle')
+                        .attr('cx', function(d) {
+                            let xVal = (d.z - this.SSCluster[i].dataPoints[0].z) 
+                            / (this.SSCluster[i].dataPoints[this.SSCluster[i].dataPoints.length - 1].z - this.SSCluster[i].dataPoints[0].z) 
+                            * xMinMax[1];
+                            return xScale(xVal);
+                        }.bind(this))
+                        .attr('cy', function(d) {
+                            return yScales[this.variables[j]](d[this.variables[j]]);
+                        }.bind(this))
+                        .attr('fill', 'white')
+                        .attr('stroke', 'black')
+                        .attr('stroke-width', 0.5)
+                        .attr('r', 1.2);
+                }
+            }
+        }
+    }
+
+    drawSparklinesTableTmp() {
         $('#subsequenceOverviewTable').remove();
         $('#subsequenceOverviewTableMain').remove();
 
         if (this.state.cluster >= 0) {
             let paddingCell = 3;
             let clientWidth = $('#clusteringDetail').width() - this.paddingCard * 2;
-            // let clientWidth = this.mount.clientWidth - this.paddingCard * 2;
+            let clientHeight = $('#clusteringDetail').width() - this.paddingCard * 2;
             let cellWidth = clientWidth / this.variables.length,
                 cellHeight = 30;
             let tableHeader = d3.select('#subsequencesOverview')
@@ -486,7 +665,7 @@ export default class ClusteringDetail extends React.Component {
                 .attr('id', 'subsequenceOverviewTable')
                 .attr('class', 'table table-hover sparkTable')
                 .attr('width', clientWidth)
-                .attr('height', cellHeight);
+                .attr('height', clientHeight);
             let thead = tableHeader.append('thead')
                     .attr('width', clientWidth)
                     .attr('height', cellHeight);
