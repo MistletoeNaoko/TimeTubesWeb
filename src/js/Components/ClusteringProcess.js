@@ -132,16 +132,14 @@ export default class ClusteringProcess extends React.Component {
                     {updatedTable}
                 </div>
                 <div id='updateClusteringControllers'
-                    className='resultAreaElem'>
+                    className='resultAreaElem' style={{float: 'right'}}>
                     <button type="button" 
-                        className="btn btn-sm btn-primary"
-                        style={{display: 'block', margin: '0 0 0 auto'}}>
-                        Clear
+                        className="btn btn-sm btn-primary" style={{float: 'right'}}>
+                        Run again
                     </button>
                     <button type="button" 
-                        className="btn btn-sm btn-primary"
-                        style={{display: 'block', margin: '0 0 0 auto'}}>
-                        Run again
+                        className="btn btn-sm btn-primary" style={{float: 'right'}}>
+                        Clear
                     </button>
                 </div>
             </div>
