@@ -34,7 +34,6 @@ export default class ClusteringTimeline extends React.Component {
 
     componentDidMount() {
         ClusteringStore.on('showClusteringResults', () => {
-            console.log('show clustering results')
             this.datasets = ClusteringStore.getDatasets();
             this.clusterCenters = ClusteringStore.getClusterCenters();
             this.subsequences = ClusteringStore.getSubsequences();
@@ -43,8 +42,21 @@ export default class ClusteringTimeline extends React.Component {
             this.divideDataIntoCluster();
             this.drawTimelines();
         });
+        ClusteringStore.on('updateClusteringResults', () => {
+            this.clusterCenters = ClusteringStore.getClusterCenters();
+            this.subsequences = ClusteringStore.getSubsequences();
+            this.labels = ClusteringStore.getLabels();
+            this.divideDataIntoCluster();
+            this.drawTimelines();
+        });
+        ClusteringStore.on('resetClusteringResults', () => {
+            this.clusterCenters = ClusteringStore.getClusterCenters();
+            this.subsequences = ClusteringStore.getSubsequences();
+            this.labels = ClusteringStore.getLabels();
+            this.divideDataIntoCluster();
+            this.drawTimelines();
+        });
         AppStore.on('resizeExtractionResultsArea', () => {
-            console.log('resize clustering timeline')
             this.resizeTimelines();
         });
     }

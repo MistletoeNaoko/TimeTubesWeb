@@ -26,3 +26,11 @@ export function showClusterDetails(cluster) {
 export function showFilteringStep(selectedProcess) {
     dispatcher.dispatch({type: 'SHOW_FILTERING_STEP', selectedProcess});
 }
+
+export function updateClusteringResults(subsequences, clusterCenters, labels, clusteringScores, updatedSS) {
+    dispatcher.dispatch({type: 'UPDATE_CLUSTERING_RESULTS', subsequences, clusterCenters, labels, clusteringScores, updatedSS});
+}
+
+export function resetClusteringResults() {
+    dispatcher.dispatch({type: 'RESET_CLUSTERING_RESULTS'});
+}

@@ -1,5 +1,6 @@
 import React from 'react';
 import * as d3 from 'd3';
+import {reperformClustering} from '../lib/subsequenceClustering';
 import * as ClusteringAction from '../Actions/ClusteringAction';
 import ClusteringStore from '../Stores/ClusteringStore';
 import DataStore from '../Stores/DataStore';
@@ -134,11 +135,15 @@ export default class ClusteringProcess extends React.Component {
                 <div id='updateClusteringControllers'
                     className='resultAreaElem' style={{float: 'right'}}>
                     <button type="button" 
-                        className="btn btn-sm btn-primary" style={{float: 'right'}}>
+                        className="btn btn-sm btn-primary" 
+                        style={{float: 'right'}}
+                        onClick={this.onClickRunClusteringAgainButton().bind(this)}>
                         Run again
                     </button>
                     <button type="button" 
-                        className="btn btn-sm btn-primary" style={{float: 'right'}}>
+                        className="btn btn-sm btn-primary" 
+                        style={{float: 'right'}}
+                        onClick={this.onClickClearButton().bind(this)}>
                         Clear
                     </button>
                 </div>
@@ -609,6 +614,27 @@ export default class ClusteringProcess extends React.Component {
                     });
                 }
             }
+        };
+    }
+
+    onClickRunClusteringAgainButton() {
+        return function() {
+            let subsequences = [];
+            for (let dataId in this.state.selectedSS) {
+                for (let i = 0; i < this.state.selectedSS[dataId].length; i++) {
+                    subsequences.push(this.filteringProcess.subsequences[dataId][this.state.selectedSS[dataId][i]]);
+                }
+            }
+            let clusteringParameters = ClusteringStore.getClusteringParameters();
+            let dataLen = ClusteringStore.getSubsequenceParameters().isometryLen;
+            let [clusterCenters, labels, clusteringScores] = reperformClustering(subsequences, clusteringParameters, dataLen);
+            ClusteringAction.updateClusteringResults(subsequences, clusterCenters, labels, clusteringScores, this.state.updatedSS);
+        };
+    }
+
+    onClickClearButton() {
+        return function() {
+            ClusteringAction.resetClusteringResults();
         };
     }
 

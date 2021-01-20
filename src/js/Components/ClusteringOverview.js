@@ -84,6 +84,24 @@ export default class ClusteringOverview extends React.Component {
         ClusteringStore.on('showClusterDetails', (cluster) => {
             this.setDetailView(cluster);
         });
+        ClusteringStore.on('updateClusteringResults', () => {
+            this.clusterCenters = ClusteringStore.getClusterCenters();
+            this.clusteringScores = ClusteringStore.getClusteringScores();
+            this.setRendererSize();
+            this.computeSplines();
+            this.drawClusterCentersAsTubes();
+            this.showClusteringScores();
+            this.resetDetailView();
+        });
+        ClusteringStore.on('resetClusteringResults', () => {
+            this.clusterCenters = ClusteringStore.getClusterCenters();
+            this.clusteringScores = ClusteringStore.getClusteringScores();
+            this.setRendererSize();
+            this.computeSplines();
+            this.drawClusterCentersAsTubes();
+            this.showClusteringScores();
+            this.resetDetailView();
+        });
         AppStore.on('resizeExtractionResultsArea', () => {
             this.setRendererSize();
         });
@@ -183,7 +201,7 @@ export default class ClusteringOverview extends React.Component {
     }
 
     setDetailView(cluster) {
-        if (typeof(cluster) !== 'undefined' && $('#selectedClusterCenterTimeTubes')) {
+        if (typeof(cluster) !== 'undefined' && $('#selectedClusterCenterTimeTubes').length) {
             let rendererSize = $('#selectedClusterCenterTimeTubes').width() - 16 * 2;
             this.detailRenderer.setSize(rendererSize, rendererSize);
             let viewportSize = ClusteringStore.getViewportSize() * 0.7;
@@ -194,6 +212,16 @@ export default class ClusteringOverview extends React.Component {
             this.cameraDetail.lookAt(posX, posY, 0);
             let canvas = document.getElementById('selectedClusterCenterTimeTubes');
             canvas.appendChild(this.detailRenderer.domElement);
+        }
+    }
+
+    resetDetailView() {
+        if ($('#selectedClusterCenterTimeTubes').length) {
+            let rendererSize = $('#selectedClusterCenterTimeTubes').width() - 16 * 2;
+            this.detailRenderer.setSize(rendererSize, rendererSize);
+            this.cameraDetail.position.x = 0;
+            this.cameraDetail.position.y = 0;
+            this.cameraDetail.lookAt(0, 0, 0);
         }
     }
 
@@ -380,7 +408,6 @@ export default class ClusteringOverview extends React.Component {
                             // } else if (curdata.PA <= 0) {
 
                             // }
-                            console.log(curdata.PA, PARad, xCur, yCur)
                         } else if (variables.indexOf('y') >= 0) {
                             PDCur = curdata.y / Math.sin(2 * curdata.PA);
                             xCur = PDCur * Math.cos(2 * curdata.PA);
@@ -491,7 +518,6 @@ export default class ClusteringOverview extends React.Component {
                 this.splines.push(spline);
             }
         }
-        console.log(this.minmax, this.splines)
         let xRange = this.minmax.x[1] - this.minmax.x[0];
         let yRange = this.minmax.y[1] - this.minmax.y[0];
         let range = Math.round(Math.max(xRange, yRange) * Math.pow(10, 2 - Math.ceil(Math.log10(Math.max(xRange, yRange)))));

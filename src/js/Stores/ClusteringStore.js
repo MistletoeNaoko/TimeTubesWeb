@@ -1,4 +1,5 @@
 import {EventEmitter} from 'events';
+import { update } from 'lodash';
 import dispatcher from '../Dispatcher/dispatcher';
 
 class ClusteringStore extends EventEmitter {
@@ -16,6 +17,8 @@ class ClusteringStore extends EventEmitter {
         this.subsequenceParameters = {};
         this.clusteringScores = {}; // clusteringRadiuses, silhouette, silhouetteSS, davisBouldin, pseudoF
         this.filteringProcess = {}; // subsequences (rawdata), normalSlidingWindow/dataDrivenSlidingWindow, sameStartingPoint, overlappingDegraa
+        this.originalResults = {};
+        this.updatedSS = [];
     }
 
     handleActions(action) {
@@ -38,6 +41,13 @@ class ClusteringStore extends EventEmitter {
                 break;
             case 'SHOW_FILTERING_STEP':
                 this.showFilteringStep(action.selectedProcess);
+                break;
+            case 'UPDATE_CLUSTERING_RESULTS':
+                this.updateClusteringResults(action.subsequences, action.clusterCenters, action.labels, action.clusteringScores, action.updatedSS);
+                break;
+            case 'RESET_CLUSTERING_RESULTS':
+                this.resetClusteringResults();
+                break;
             default:
                 break;
         }
@@ -91,6 +101,10 @@ class ClusteringStore extends EventEmitter {
         return this.filteringProcess;
     }
 
+    getUpdatedSS() {
+        return this.updatedSS;
+    }
+
     showClusteringResults (
         datasets, 
         subsequences, 
@@ -119,6 +133,13 @@ class ClusteringStore extends EventEmitter {
         this.subsequenceParameters = subsequenceParameters;
         this.clusteringScores = clusteringScores;
         this.filteringProcess = filteringProcess;
+        this.originalResults = {
+            subsequences: subsequences,
+            clusterCenters: clusterCenters,
+            labels: labels,
+            clusteringScores: clusteringScores
+        };
+        this.updatedSS = [];
         this.emit('showClusteringResults');
     }
 
@@ -128,6 +149,24 @@ class ClusteringStore extends EventEmitter {
 
     showFilteringStep(selectedProcess) {
         this.emit('showFilteringStep', selectedProcess);
+    }
+
+    updateClusteringResults(subsequences, clusterCenters, labels, clusteringScores, updatedSS) {
+        this.subsequences = subsequences;
+        this.clusterCenters = clusterCenters;
+        this.labels = labels;
+        this.clusteringScores = clusteringScores;
+        this.updatedSS = updatedSS;
+        this.emit('updateClusteringResults');
+    }
+
+    resetClusteringResults() {
+        this.subsequences = this.originalResults.subsequences;
+        this.clusterCenters = this.originalResults.clusterCenters;
+        this.labels = this.originalResults.labels;
+        this.clusteringScores = this.originalResults.clusteringScores;
+        this.updatedSS = [];
+        this.emit('resetClusteringResults');
     }
 }
 

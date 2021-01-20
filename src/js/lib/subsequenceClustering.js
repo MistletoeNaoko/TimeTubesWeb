@@ -17,7 +17,7 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
     // 4: update cluster centeres again
     
     // ignore z (=JD) in clustering, but keep z in the objects for references
-    let variables = clusteringParameters.variables;
+    let variables = clusteringParameters.variables.slice();
     variables.push('z');
 
     let rawData = {}, mins = {}, maxs = {};
@@ -269,6 +269,39 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
     
     clusteringScores.pseudoF = pseudoF(clusteringScores.clusterRadiuses, clusterCenters, dataCenter, labelsCluster.map(x => x.length), distanceParameters, variables.filter(ele => ele !== 'z'));
     return [subsequenceData, ranges, clusterCenters, labels, clusteringScores, filteringProcess];
+}
+
+export function reperformClustering(data, clusteringParameters, dataLen) {
+    let variablesZ = clusteringParameters.variables.slice();
+    variablesZ.push('z');
+    
+    let distanceParameters = {
+        window: clusteringParameters.window,
+        metric: clusteringParameters.distanceMetric,
+        distFunc: EuclideanDist
+    }
+
+
+    let clusterCenters, labels, clusteringScores;
+    switch (clusteringParameters.method) {
+        case 'kmedoids':
+            if (clusteringParameters.medoidDefinition === 'unified') {
+                [clusterCenters, labels, clusteringScores] = kMedoidsUnified(data, clusteringParameters.clusterNum, distanceParameters, variablesZ);
+            } else if (clusteringParameters.medoidDefinition === 'each') {
+                [clusterCenters, labels, clusteringScores] = kMedoidsEach(data, clusteringParameters.clusterNum, distanceParameters, variablesZ);
+            }
+            break;
+        case 'kmeans':
+            [clusterCenters, labels, clusteringScores] = kMeans(data, clusteringParameters.clusterNum, distanceParameters, variablesZ);
+            break;
+        default:
+            break;
+    }
+
+    let dataCenter = computeDataCenter(data, distanceParameters, clusteringParameters.variables, dataLen);
+    let labelsCluster = divideSSIntoClusters(labels, clusteringParameters.clusterNum);
+    clusteringScores.pseudoF = pseudoF(clusteringScores.clusterRadiuses, clusterCenters, dataCenter, labelsCluster.map(x => x.length), distanceParameters, clusteringParameters.variables);
+    return [clusterCenters, labels, clusteringScores];
 }
 
 function divideSSIntoClusters (labels, clusterNum) {
