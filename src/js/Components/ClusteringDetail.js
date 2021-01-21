@@ -27,7 +27,6 @@ export default class ClusteringDetail extends React.Component {
             subsequencesOverview;
         clusterCenterTimeTubes = this.clusterCenterTimeTubesView();
         clusterCenterLineCharts = this.clusterCenterLineCharts();
-        datasetDistribution = this.datasetDistribution();
         subsequenceLengthDistribution = this.subsequenceLengthDistribution();
         clusterFeatureTable = this.clusterFeatureTable();
         subsequencesOverview = this.subsequencesOverview();
@@ -39,7 +38,6 @@ export default class ClusteringDetail extends React.Component {
                 }}>
                 {clusterCenterTimeTubes}
                 {clusterCenterLineCharts}
-                {/* {datasetDistribution} */}
                 {subsequenceLengthDistribution}
                 {clusterFeatureTable}
                 {subsequencesOverview}
@@ -114,14 +112,6 @@ export default class ClusteringDetail extends React.Component {
     clusterCenterLineCharts() {
         return (
             <div id='selectedClusterCenterLineCharts'
-                className='resultAreaElem'>
-            </div>
-        );
-    }
-
-    datasetDistribution() {
-        return (
-            <div
                 className='resultAreaElem'>
             </div>
         );
@@ -448,7 +438,8 @@ export default class ClusteringDetail extends React.Component {
         if (this.state.cluster >= 0) { 
             let clientWidth = $('#clusteringDetail').width() - this.paddingCard * 2;
             // let clientWidth = this.mount.clientWidth - this.paddingCard * 2;
-            let height = clientWidth * 0.5;
+            let height = clientWidth * 0.3;
+            let svgPadding = {left: 30, right: 10, top: 5, bottom: 20};
             
             let svg = d3.select('#subsequenceLengthHistogram')
                 .append('svg')
@@ -459,9 +450,9 @@ export default class ClusteringDetail extends React.Component {
             let subsequenceLength = ClusteringStore.getSubsequenceParameters().SSperiod;
             let xScale = d3.scaleLinear()
                 .domain(subsequenceLength)
-                .range([this.margin.left, clientWidth - this.margin.right]);
+                .range([svgPadding.left, clientWidth - svgPadding.right]);
             svg.append('g')
-                .attr('transform', 'translate(0,' + (height - this.margin.bottom) + ')')
+                .attr('transform', 'translate(0,' + (height - svgPadding.bottom) + ')')
                 .call(d3.axisBottom(xScale));
 
             let subsequencesCluster = [];
@@ -477,10 +468,10 @@ export default class ClusteringDetail extends React.Component {
                 .thresholds(xScale.ticks(10));
             let bins = histogram(subsequencesCluster);
             let yScale = d3.scaleLinear()
-                .range([height - this.margin.bottom, this.margin.top])
+                .range([height - svgPadding.bottom, svgPadding.top])
                 .domain([0, d3.max(bins, function(d) {return d.length})]);
             svg.append('g')
-                .attr('transform', 'translate(' + this.margin.left + ',0)')
+                .attr('transform', 'translate(' + svgPadding.left + ',0)')
                 .call(d3.axisLeft(yScale).ticks(5));
                 
             if (this.datasetsIdx.length === 1) {
@@ -498,7 +489,7 @@ export default class ClusteringDetail extends React.Component {
                         return xScale(d.x1) - xScale(d.x0) - 1;
                     })
                     .attr('height', function(d) {
-                        return height - this.margin.bottom - yScale(d.length);
+                        return height - svgPadding.bottom - yScale(d.length);
                     }.bind(this))
                     .attr('fill', rectColor);
             } else if (this.datasetsIdx.length > 1) {
