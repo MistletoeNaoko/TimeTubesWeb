@@ -638,6 +638,8 @@ img.selectorIcon:active {
     width: 70%;
     background-color: #F8F5F0;
     position: relative;
+    overflow: hidden;
+    display: flex;
 }
 
 #collapseSourcePanel{
@@ -728,13 +730,10 @@ img.selectorIcon:active {
     clear: both;
 }
 
-#clusteringResults {
-    display: flex;
-    overflow-y: hidden;
-}
 #clusteringProcess {
     width: 20%;
     padding: 0px 10px;
+    overflow: auto;
 }
 
 #clusteringDetail {
@@ -817,6 +816,6 @@ img.selectorIcon:active {
     overflow-y: scroll;
 }
 
-#subsequencesOverviewTable {
+/* #subsequencesOverviewTable {
     table-layout: fixed;
-}
+} */

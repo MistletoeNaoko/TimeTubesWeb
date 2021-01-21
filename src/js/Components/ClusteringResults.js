@@ -20,7 +20,8 @@ export default class ClusteringResults extends React.Component {
     
     render() {
         return (
-            <div id='clusteringResults' className='clusteringPanel'>
+            <div id='clusteringResults' 
+                className='clusteringPanel'>
                 <ClusteringProcess/>
                 <div id='clusteringResultsOverview'>
                     <ClusteringTimeline/>

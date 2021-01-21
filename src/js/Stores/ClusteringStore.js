@@ -18,7 +18,8 @@ class ClusteringStore extends EventEmitter {
         this.clusteringScores = {}; // clusteringRadiuses, silhouette, silhouetteSS, davisBouldin, pseudoF
         this.filteringProcess = {}; // subsequences (rawdata), normalSlidingWindow/dataDrivenSlidingWindow, sameStartingPoint, overlappingDegraa
         this.originalResults = {};
-        this.updatedSS = [];
+        this.selectedSS = {};
+        this.updatedSS = {};
     }
 
     handleActions(action) {
@@ -43,7 +44,7 @@ class ClusteringStore extends EventEmitter {
                 this.showFilteringStep(action.selectedProcess);
                 break;
             case 'UPDATE_CLUSTERING_RESULTS':
-                this.updateClusteringResults(action.subsequences, action.clusterCenters, action.labels, action.clusteringScores, action.updatedSS);
+                this.updateClusteringResults(action.subsequences, action.clusterCenters, action.labels, action.clusteringScores, action.selectedSS, action.updatedSS);
                 break;
             case 'RESET_CLUSTERING_RESULTS':
                 this.resetClusteringResults();
@@ -101,6 +102,10 @@ class ClusteringStore extends EventEmitter {
         return this.filteringProcess;
     }
 
+    getSelectedSS() {
+        return this.selectedSS;
+    }
+
     getUpdatedSS() {
         return this.updatedSS;
     }
@@ -139,7 +144,16 @@ class ClusteringStore extends EventEmitter {
             labels: labels,
             clusteringScores: clusteringScores
         };
-        this.updatedSS = [];
+        this.selectedSS = {};
+        for (let i = 0; i < datasets.length; i++) {
+            this.selectedSS[datasets[i]] = [];
+            this.updatedSS[datasets[i]] = [];
+        }
+        for (let i = 0; i < datasets.length; i++) {
+            for (let j = 0; j < subsequences.length; j++) {
+                this.selectedSS[datasets[i]].push(subsequences[j].idx);
+            }   
+        }
         this.emit('showClusteringResults');
     }
 
@@ -151,11 +165,12 @@ class ClusteringStore extends EventEmitter {
         this.emit('showFilteringStep', selectedProcess);
     }
 
-    updateClusteringResults(subsequences, clusterCenters, labels, clusteringScores, updatedSS) {
+    updateClusteringResults(subsequences, clusterCenters, labels, clusteringScores, selectedSS, updatedSS) {
         this.subsequences = subsequences;
         this.clusterCenters = clusterCenters;
         this.labels = labels;
         this.clusteringScores = clusteringScores;
+        this.selectedSS = selectedSS;
         this.updatedSS = updatedSS;
         this.emit('updateClusteringResults');
     }

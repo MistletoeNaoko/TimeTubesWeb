@@ -34,7 +34,7 @@ export default class ClusteringOverview extends React.Component {
 
     componentDidMount() {
         const width = this.mount.clientWidth;
-        let appHeaderHeight = $('#appHeader').height();
+        let appHeaderHeight = $('#appHeader').outerHeight(true);
         const height = $('#clusteringResultsOverview').height() - appHeaderHeight;
         this.scene = new THREE.Scene();
 
@@ -167,8 +167,8 @@ export default class ClusteringOverview extends React.Component {
     
     setRendererSize() {
         const width = this.mount.clientWidth;
-        let appHeaderHeight = $('#appHeader').height();
-        let timelineHeight = $('#clusteringTimeline').height();//40 * ClusteringStore.getDatasets().length + 16 + 2;
+        let appHeaderHeight = $('#appHeader').outerHeight(true);
+        let timelineHeight = $('#clusteringTimeline').outerHeight(true);//40 * ClusteringStore.getDatasets().length + 16 + 2;
         const height = window.innerHeight - appHeaderHeight - timelineHeight;
         this.renderer.setSize(width, height);
         let aspect = width / height, 

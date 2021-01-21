@@ -72,21 +72,21 @@ export default class ClusteringProcess extends React.Component {
             this.datasetsIdx = ClusteringStore.getDatasets();
             this.variables = ClusteringStore.getClusteringParameters().variables;
             this.variables = this.variables.filter(ele => ele !== 'z');
-            let selectedSS = {}, updatedSS = {};
-            for (let dataId in this.filteringProcess.subsequences) {
-                selectedSS[dataId] = [];
-                updatedSS[dataId] = [];
-            }
-            for (let dataId in this.filteringProcess[this.steps[this.steps.length - 1]]) {
-                for (let i = 0; i < this.filteringProcess[this.steps[this.steps.length - 1]][dataId].length; i++) {
-                    selectedSS[dataId].push(this.filteringProcess[this.steps[this.steps.length - 1]][dataId][i]);
-                }
-            }
+            // let selectedSS = {}, updatedSS = {};
+            // for (let dataId in this.filteringProcess.subsequences) {
+            //     selectedSS[dataId] = [];
+            //     updatedSS[dataId] = [];
+            // }
+            // for (let dataId in this.filteringProcess[this.steps[this.steps.length - 1]]) {
+            //     for (let i = 0; i < this.filteringProcess[this.steps[this.steps.length - 1]][dataId].length; i++) {
+            //         selectedSS[dataId].push(this.filteringProcess[this.steps[this.steps.length - 1]][dataId][i]);
+            //     }
+            // }
             this.createVariableLabels();
             this.filteringSummary();
             this.setState({
-                selectedSS: selectedSS,
-                updatedSS: updatedSS
+                selectedSS: ClusteringStore.getSelectedSS(),//selectedSS,
+                updatedSS: ClusteringStore.getUpdatedSS()//updatedSS
             });
         });
         ClusteringStore.on('showFilteringStep', (selectedProcess) => {
@@ -115,6 +115,7 @@ export default class ClusteringProcess extends React.Component {
         return (
             <div id="clusteringProcess"
                 className='clusteringPanel'
+                style={{height: window.innerHeight - $('#appHeader').height()}}
                 ref={mount => {
                     this.mount = mount;
                 }}>
@@ -470,9 +471,10 @@ export default class ClusteringProcess extends React.Component {
         return (
             <table id='updatedSubsequencesTable'
                 className='table table-hover sparkTable'
-                style={{width: tableWidth}}>
+                style={{width: tableWidth, height: tableHeight}}>
                 {tableHeader}
-                <tbody id='updatedSubsequencesTableBody'>
+                <tbody id='updatedSubsequencesTableBody'
+                    style={{height: tableHeight - cellHeight}}>
                     {trItems}
                 </tbody>
             </table>
@@ -489,7 +491,6 @@ export default class ClusteringProcess extends React.Component {
 
                 let currentState = $('#' + d.target.id).prop('checked');
                 let SSInClustering = this.filteringProcess[this.steps[this.steps.length - 1]][dataId].indexOf(SSId) < 0? false: true;
-
                 if (currentState) {
                     // add a row to updatedSubsequencesTable
                     let newSelectedSS = this.state.selectedSS;
@@ -628,7 +629,7 @@ export default class ClusteringProcess extends React.Component {
             let clusteringParameters = ClusteringStore.getClusteringParameters();
             let dataLen = ClusteringStore.getSubsequenceParameters().isometryLen;
             let [clusterCenters, labels, clusteringScores] = reperformClustering(subsequences, clusteringParameters, dataLen);
-            ClusteringAction.updateClusteringResults(subsequences, clusterCenters, labels, clusteringScores, this.state.updatedSS);
+            ClusteringAction.updateClusteringResults(subsequences, clusterCenters, labels, clusteringScores, this.state.selectedSS, this.state.updatedSS);
         };
     }
 

@@ -4,6 +4,7 @@ import ClusteringStore from '../Stores/ClusteringStore';
 import DataStore from '../Stores/DataStore';
 import TimeTubeesStore from '../Stores/TimeTubesStore';
 import {tickFormatting, formatValue} from '../lib/2DGraphLib';
+import { update } from 'lodash';
 
 export default class ClusteringDetail extends React.Component {
     constructor() {
@@ -32,7 +33,7 @@ export default class ClusteringDetail extends React.Component {
         subsequencesOverview = this.subsequencesOverview();
         return (
             <div id='clusteringDetail' className='clusteringPanel'
-                style={{height: window.innerHeight - $('#appHeader').height()}}
+                style={{height: window.innerHeight - $('#appHeader').outerHeight(true)}}
                 ref={mount => {
                     this.mount = mount;
                 }}>
@@ -75,6 +76,7 @@ export default class ClusteringDetail extends React.Component {
             this.labels = ClusteringStore.getLabels();
             this.subsequences = ClusteringStore.getSubsequences();
             this.clusteringScores = ClusteringStore.getClusteringScores();
+            this.extractSubsequencesInCluster();
             this.setState({
                 cluster: -1
             });
@@ -84,6 +86,7 @@ export default class ClusteringDetail extends React.Component {
             this.labels = ClusteringStore.getLabels();
             this.subsequences = ClusteringStore.getSubsequences();
             this.clusteringScores = ClusteringStore.getClusteringScores();
+            this.extractSubsequencesInCluster();
             this.setState({
                 cluster: -1
             });
@@ -94,6 +97,7 @@ export default class ClusteringDetail extends React.Component {
         this.drawClusterCenterLineCharts();
         this.drawSubsequenceLengthHistogram();
         this.drawSparklinesTable();
+        this.showSSStatus();
     }
 
     clusterCenterTimeTubesView() {
@@ -210,7 +214,7 @@ export default class ClusteringDetail extends React.Component {
     subsequencesOverview() {
         if (this.state.cluster >= 0) {
             let paddingCell = 3, checkCellWidth = 30;
-            let tableWidth = $('#subsequencesOverview').width() - this.areaPadding.left - this.areaPadding.right;//this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
+            let tableWidth = $('#clusteringDetail').width() - this.areaPadding.left - this.areaPadding.right;//this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
             let tableHeight = tableWidth;//(this.mount.clientHeight - $('#filteringProcessSummary').height()) / 2
             let cellWidth = (tableWidth - checkCellWidth) / this.variables.length,
                 cellHeight = 30;
@@ -245,7 +249,7 @@ export default class ClusteringDetail extends React.Component {
             for (let i = 0; i < this.SSCluster.length; i++) {
                 let tdItems = [];
                 let dataId = this.SSCluster[i].id;
-                let SSId = this.SSIdxs[i];
+                let SSId = this.SSCluster[i].idx;
                 tdItems.push(
                     <td key='checkbox' style={{textAlign: 'center', width: checkCellWidth, height: cellHeight}}>
                         <input 
@@ -287,7 +291,6 @@ export default class ClusteringDetail extends React.Component {
 
     extractSubsequencesInCluster() {
         this.SSCluster = [];
-        this.SSIdxs = [];
         // this.SSRanges = [];
         this.yMinMax = {};
         this.variables.forEach(function(d) {
@@ -297,7 +300,6 @@ export default class ClusteringDetail extends React.Component {
             if (typeof(this.labels[i]) === 'object') {
                 if (this.labels[i].cluster === this.cluster) {
                     this.SSCluster.push(this.subsequences[i]);
-                    this.SSIdxs.push(i);
                     // this.SSRanges.push(this.ranges[i]);
 
                     for (let j = 0; j < this.subsequences[i].length; j++) {
@@ -314,7 +316,6 @@ export default class ClusteringDetail extends React.Component {
             } else {
                 if (this.labels[i] === this.cluster) {
                     this.SSCluster.push(this.subsequences[i]);
-                    this.SSIdxs.push(i);
                     // this.SSRanges.push(this.ranges[i]);
                     
                     for (let j = 0; j < this.subsequences[i].length; j++) {
@@ -546,14 +547,14 @@ export default class ClusteringDetail extends React.Component {
     }
 
     drawSparklinesTable() {
-        $('#clusterFeatureTable svg').remove();
+        $('#subsequencesOverviewTable svg').remove();
 
         if (this.state.cluster >= 0) {
-            let paddingCell = 3, paddingSVG = 1;
+            let paddingCell = 3, paddingSVG = 1, checkCellWidth = 30;
             // let clientWidth = $('#clusteringDetail').width() - this.paddingCard * 2;
 
-            let tableWidth = $('#subsequencesOverview').width() - this.areaPadding.left - this.areaPadding.right;
-            let cellWidth = tableWidth / this.variables.length,
+            let tableWidth = $('#clusteringDetail').width() - this.areaPadding.left - this.areaPadding.right;
+            let cellWidth = (tableWidth - checkCellWidth) / this.variables.length,
                 cellHeight = 30;
             let svgWidth = cellWidth - paddingCell * 2,
                 svgHeight = cellHeight - paddingCell * 2;
@@ -609,7 +610,7 @@ export default class ClusteringDetail extends React.Component {
                 .style('height', Math.min(tableWidth, cellHeight * this.SSCluster.length));
             for (let i = 0; i < this.SSCluster.length; i++) {
                 let dataId = this.SSCluster[i].id,
-                    SSId = this.SSIdxs[i];
+                    SSId = this.SSCluster[i].idx;
                 for (let j = 0; j < this.variables.length; j++) {
                     let svg = d3.select('#subsequenceDetailTd_' + dataId + '_' + SSId + '_' + this.variables[j])
                         .append('svg')
@@ -650,173 +651,199 @@ export default class ClusteringDetail extends React.Component {
         }
     }
 
-    drawSparklinesTableTmp() {
-        $('#subsequenceOverviewTable').remove();
-        $('#subsequenceOverviewTableMain').remove();
-
-        if (this.state.cluster >= 0) {
-            let paddingCell = 3;
-            let clientWidth = $('#clusteringDetail').width() - this.paddingCard * 2;
-            let clientHeight = $('#clusteringDetail').width() - this.paddingCard * 2;
-            let cellWidth = clientWidth / this.variables.length,
-                cellHeight = 30;
-            let tableHeader = d3.select('#subsequencesOverview')
-                .append('table')
-                .attr('id', 'subsequenceOverviewTable')
-                .attr('class', 'table table-hover sparkTable')
-                .attr('width', clientWidth)
-                .attr('height', clientHeight);
-            let thead = tableHeader.append('thead')
-                    .attr('width', clientWidth)
-                    .attr('height', cellHeight);
-            let labels = [];
-            for (let i = 0; i < this.variables.length; i++) {
-                if (this.variableLabels[this.variables[i]].length > 1) {
-                    labels.push(this.variableLabels[this.variables[i]].join(', '));
-                } else {
-                    labels.push(this.variableLabels[this.variables[i]]);
-                }
-            }
-            thead.append('tr')
-                .style('text-align', 'center')
-                .style('font-size', '10px')
-                .selectAll('th')
-                .data(labels)
-                .enter()
-                .append('th')
-                .attr('width', cellWidth)
-                .attr('height', cellHeight)
-                .text(function(d) {return d});
-
-            let tableMain = d3.select('#subsequencesOverview')
-                .append('div')
-                .attr('id', 'subsequenceOverviewTableMain')
-                .style('overflow', 'auto')
-                .style('height', Math.min(clientWidth, cellHeight * this.SSCluster.length))
-                .append('table')
-                .attr('class', 'table table-hover sparkTable')
-                .attr('width', clientWidth)
-                .attr('height', Math.min(clientWidth, cellHeight * this.SSCluster.length));//cellHeight * (this.SSCluster.length + 1));
-            let tbody = tableMain.append('tbody')
-                    .attr('width', clientWidth)
-                    .attr('height', Math.min(clientWidth, cellHeight * this.SSCluster.length) - cellHeight)
-                    .attr('id', 'subsequenceOverviewTableBody');
-            
-            let rows = tbody.selectAll('tr')
-                .data(this.SSCluster)
-                .enter()
-                .append('tr');
-            let cells = rows.selectAll('td')
-                .data(this.variables)
-                .enter()
-                .append('td')
-                .attr('width', cellWidth)
-                .attr('height', cellHeight);
-            let xMinMax = [0, ClusteringStore.getSubsequenceParameters().isometryLen];
-            let yMinMax = {};
-            for (let i = 0; i < this.variables.length; i++) {
-                yMinMax[this.variables[i]] = [Infinity, -Infinity];
-                for (let j = 0; j < this.SSCluster.length; j++) {
-                    for (let k = 0; k < this.SSCluster[j].length; k++) {
-                        if (this.SSCluster[j][k][this.variables[i]] < yMinMax[this.variables[i]][0]) {
-                            yMinMax[this.variables[i]][0] = this.SSCluster[j][k][this.variables[i]];
-                        }
-                        if (yMinMax[this.variables[i]][1] < this.SSCluster[j][k][this.variables[i]]) {
-                            yMinMax[this.variables[i]][1] = this.SSCluster[j][k][this.variables[i]];
-                        }
-                    }
-                }
-            }
-
-            let svgWidth = cellWidth - paddingCell * 2,
-                svgHeight = cellHeight - paddingCell * 2;
-
-            let xScale = d3.scaleLinear()
-                .range([paddingCell, svgWidth - paddingCell])
-                .domain(xMinMax);
-            let yScales = {}, curves = {};
-            for (let i = 0; i < this.variables.length; i++) {
-                yScales[this.variables[i]] = d3.scaleLinear()
-                    .range([svgHeight - paddingCell, paddingCell])
-                    .domain(yMinMax[this.variables[i]])
-                    .nice();
-                curves[this.variables[i]] = d3.line()
-                    .x(function(d, i) {
-                        return xScale(i);
-                    })
-                    .y(function(d) {
-                        return yScales[this.variables[i]](d[this.variables[i]]);
-                    }.bind(this))
-                    .curve(d3.curveCatmullRom.alpha(1));
-            }
-            
-            let rowCounter = 0;
-            let dataColors = {};
-            for (let i = 0; i < this.datasetsIdx.length; i++) {
-                dataColors[this.datasetsIdx[i]] = TimeTubeesStore.getPlotColor(this.datasetsIdx[i]);
-            }
-            let sparklinesSVG = rows
-                .selectAll('td')
-                .append('svg')
-                .attr('class', 'spark')
-                .attr('id', function(d, i) {
-                    let idName = 'sparkLineSVG_' + d + '_' + ((i === this.variables.length - 1)? rowCounter++: rowCounter);
-                    return idName;
-                }.bind(this))
-                .attr('width', svgWidth)
-                .attr('height', svgHeight);
-            rowCounter = 0;
-            let sparklines = sparklinesSVG
-                .append('path')
-                .attr('fill', 'none')
-                .attr('stroke', function(d, i) {
-                    return dataColors[this.SSCluster[(i === this.variables.length - 1)? rowCounter++: rowCounter].id]
-                }.bind(this))
-                .attr('stroke-width', 1.5);
-            rowCounter = 0;
-            sparklines
-                .attr('d', function(d, i) {
-                    return curves[d](this.SSCluster[(i === this.variables.length - 1)? rowCounter++: rowCounter]);
-                }.bind(this));
-                
-            for (let i = 0; i < sparklinesSVG._groups.length; i++) {
-                // iは行数に一致
-                    // let data = DataStore.getData(this.SSCluster[i].id).data.spatial.slice(this.SSRanges[i][0], this.SSRanges[i][1] + 1);
-                for (let j = 0; j < sparklinesSVG._groups[i].length; j++) {
-                    // jは変数に一致
-                    let svgId = sparklinesSVG._groups[i][j].id;
-                    let varTd = svgId.split('_')[1];
-                    // let data = DataStore.getData(this.SSCluster[SSIdx].id).data.spatial.slice(this.SSRanges[SSIdx][0], this.SSRanges[SSIdx][1] + 1);
-                    d3.select('#' + svgId)
-                        .append('g')
-                        .attr('class', 'dataPointsSparkLine')
-                        .selectAll('circle')
-                        .data(this.SSCluster[i].dataPoints)
-                        .enter()
-                        .append('circle')
-                        .attr('cx', function(d) {
-                            let xVal = (d.z - this.SSCluster[i].dataPoints[0].z) / (this.SSCluster[i].dataPoints[this.SSCluster[i].dataPoints.length - 1].z - this.SSCluster[i].dataPoints[0].z) * xMinMax[1];
-                            return xScale(xVal);
-                        }.bind(this))
-                        .attr('cy', function(d) {
-                            return yScales[varTd](d[varTd]);
-                        }.bind(this))
-                        .attr('fill', 'white')
-                        .attr('stroke', 'black')
-                        .attr('stroke-width', 0.5)
-                        .attr('r', 1.2);
-                }
+    showSSStatus() {
+        // 現在選択されてるSSにチェック、selectedSSをClusteringProcessと共有？
+        // updatedSSを参照して、追加されたSSがあれば背景色を緑にする
+        let selectedSS = ClusteringStore.getSelectedSS(),
+            updatedSS = ClusteringStore.getUpdatedSS();
+        for (let dataId in selectedSS) {
+            for (let i = 0; i < selectedSS[dataId].length; i++) {
+                let SSId = selectedSS[dataId][i];
+                let checkbox = $('#selectSSDetail_' + dataId + '_' + SSId);
+                if (checkbox.length > 0) {
+                    checkbox.attr('checked', true);
+                } 
             }
         }
-        // let dataForSP = observationDataPoints();
-        // let dataPoints = sparklines
-        //     .selectAll('circle')
-        //     .data();
-
-        // function observationDataPoints() {
-        //     // 実データと変数から各セルに打つべきデータ点一覧を返す？
-        // }
+        for (let dataId in updatedSS) {
+            for (let i = 0; i < updatedSS[dataId].length; i++) {
+                let SSId = updatedSS[dataId][i].idx;
+                let tr = $('#subsequenceDetailTr_' + dataId + '_' + SSId);
+                if (tr.length > 0) {
+                    if (updatedSS[dataId][i].status === 'add')
+                        tr.addClass('table-success');
+                } 
+            }
+        }
     }
+
+    // drawSparklinesTableTmp() {
+    //     $('#subsequenceOverviewTable').remove();
+    //     $('#subsequenceOverviewTableMain').remove();
+
+    //     if (this.state.cluster >= 0) {
+    //         let paddingCell = 3;
+    //         let clientWidth = $('#clusteringDetail').width() - this.paddingCard * 2;
+    //         let clientHeight = $('#clusteringDetail').width() - this.paddingCard * 2;
+    //         let cellWidth = clientWidth / this.variables.length,
+    //             cellHeight = 30;
+    //         let tableHeader = d3.select('#subsequencesOverview')
+    //             .append('table')
+    //             .attr('id', 'subsequenceOverviewTable')
+    //             .attr('class', 'table table-hover sparkTable')
+    //             .attr('width', clientWidth)
+    //             .attr('height', clientHeight);
+    //         let thead = tableHeader.append('thead')
+    //                 .attr('width', clientWidth)
+    //                 .attr('height', cellHeight);
+    //         let labels = [];
+    //         for (let i = 0; i < this.variables.length; i++) {
+    //             if (this.variableLabels[this.variables[i]].length > 1) {
+    //                 labels.push(this.variableLabels[this.variables[i]].join(', '));
+    //             } else {
+    //                 labels.push(this.variableLabels[this.variables[i]]);
+    //             }
+    //         }
+    //         thead.append('tr')
+    //             .style('text-align', 'center')
+    //             .style('font-size', '10px')
+    //             .selectAll('th')
+    //             .data(labels)
+    //             .enter()
+    //             .append('th')
+    //             .attr('width', cellWidth)
+    //             .attr('height', cellHeight)
+    //             .text(function(d) {return d});
+
+    //         let tableMain = d3.select('#subsequencesOverview')
+    //             .append('div')
+    //             .attr('id', 'subsequenceOverviewTableMain')
+    //             .style('overflow', 'auto')
+    //             .style('height', Math.min(clientWidth, cellHeight * this.SSCluster.length))
+    //             .append('table')
+    //             .attr('class', 'table table-hover sparkTable')
+    //             .attr('width', clientWidth)
+    //             .attr('height', Math.min(clientWidth, cellHeight * this.SSCluster.length));//cellHeight * (this.SSCluster.length + 1));
+    //         let tbody = tableMain.append('tbody')
+    //                 .attr('width', clientWidth)
+    //                 .attr('height', Math.min(clientWidth, cellHeight * this.SSCluster.length) - cellHeight)
+    //                 .attr('id', 'subsequenceOverviewTableBody');
+            
+    //         let rows = tbody.selectAll('tr')
+    //             .data(this.SSCluster)
+    //             .enter()
+    //             .append('tr');
+    //         let cells = rows.selectAll('td')
+    //             .data(this.variables)
+    //             .enter()
+    //             .append('td')
+    //             .attr('width', cellWidth)
+    //             .attr('height', cellHeight);
+    //         let xMinMax = [0, ClusteringStore.getSubsequenceParameters().isometryLen];
+    //         let yMinMax = {};
+    //         for (let i = 0; i < this.variables.length; i++) {
+    //             yMinMax[this.variables[i]] = [Infinity, -Infinity];
+    //             for (let j = 0; j < this.SSCluster.length; j++) {
+    //                 for (let k = 0; k < this.SSCluster[j].length; k++) {
+    //                     if (this.SSCluster[j][k][this.variables[i]] < yMinMax[this.variables[i]][0]) {
+    //                         yMinMax[this.variables[i]][0] = this.SSCluster[j][k][this.variables[i]];
+    //                     }
+    //                     if (yMinMax[this.variables[i]][1] < this.SSCluster[j][k][this.variables[i]]) {
+    //                         yMinMax[this.variables[i]][1] = this.SSCluster[j][k][this.variables[i]];
+    //                     }
+    //                 }
+    //             }
+    //         }
+
+    //         let svgWidth = cellWidth - paddingCell * 2,
+    //             svgHeight = cellHeight - paddingCell * 2;
+
+    //         let xScale = d3.scaleLinear()
+    //             .range([paddingCell, svgWidth - paddingCell])
+    //             .domain(xMinMax);
+    //         let yScales = {}, curves = {};
+    //         for (let i = 0; i < this.variables.length; i++) {
+    //             yScales[this.variables[i]] = d3.scaleLinear()
+    //                 .range([svgHeight - paddingCell, paddingCell])
+    //                 .domain(yMinMax[this.variables[i]])
+    //                 .nice();
+    //             curves[this.variables[i]] = d3.line()
+    //                 .x(function(d, i) {
+    //                     return xScale(i);
+    //                 })
+    //                 .y(function(d) {
+    //                     return yScales[this.variables[i]](d[this.variables[i]]);
+    //                 }.bind(this))
+    //                 .curve(d3.curveCatmullRom.alpha(1));
+    //         }
+            
+    //         let rowCounter = 0;
+    //         let dataColors = {};
+    //         for (let i = 0; i < this.datasetsIdx.length; i++) {
+    //             dataColors[this.datasetsIdx[i]] = TimeTubeesStore.getPlotColor(this.datasetsIdx[i]);
+    //         }
+    //         let sparklinesSVG = rows
+    //             .selectAll('td')
+    //             .append('svg')
+    //             .attr('class', 'spark')
+    //             .attr('id', function(d, i) {
+    //                 let idName = 'sparkLineSVG_' + d + '_' + ((i === this.variables.length - 1)? rowCounter++: rowCounter);
+    //                 return idName;
+    //             }.bind(this))
+    //             .attr('width', svgWidth)
+    //             .attr('height', svgHeight);
+    //         rowCounter = 0;
+    //         let sparklines = sparklinesSVG
+    //             .append('path')
+    //             .attr('fill', 'none')
+    //             .attr('stroke', function(d, i) {
+    //                 return dataColors[this.SSCluster[(i === this.variables.length - 1)? rowCounter++: rowCounter].id]
+    //             }.bind(this))
+    //             .attr('stroke-width', 1.5);
+    //         rowCounter = 0;
+    //         sparklines
+    //             .attr('d', function(d, i) {
+    //                 return curves[d](this.SSCluster[(i === this.variables.length - 1)? rowCounter++: rowCounter]);
+    //             }.bind(this));
+                
+    //         for (let i = 0; i < sparklinesSVG._groups.length; i++) {
+    //             // iは行数に一致
+    //                 // let data = DataStore.getData(this.SSCluster[i].id).data.spatial.slice(this.SSRanges[i][0], this.SSRanges[i][1] + 1);
+    //             for (let j = 0; j < sparklinesSVG._groups[i].length; j++) {
+    //                 // jは変数に一致
+    //                 let svgId = sparklinesSVG._groups[i][j].id;
+    //                 let varTd = svgId.split('_')[1];
+    //                 // let data = DataStore.getData(this.SSCluster[SSIdx].id).data.spatial.slice(this.SSRanges[SSIdx][0], this.SSRanges[SSIdx][1] + 1);
+    //                 d3.select('#' + svgId)
+    //                     .append('g')
+    //                     .attr('class', 'dataPointsSparkLine')
+    //                     .selectAll('circle')
+    //                     .data(this.SSCluster[i].dataPoints)
+    //                     .enter()
+    //                     .append('circle')
+    //                     .attr('cx', function(d) {
+    //                         let xVal = (d.z - this.SSCluster[i].dataPoints[0].z) / (this.SSCluster[i].dataPoints[this.SSCluster[i].dataPoints.length - 1].z - this.SSCluster[i].dataPoints[0].z) * xMinMax[1];
+    //                         return xScale(xVal);
+    //                     }.bind(this))
+    //                     .attr('cy', function(d) {
+    //                         return yScales[varTd](d[varTd]);
+    //                     }.bind(this))
+    //                     .attr('fill', 'white')
+    //                     .attr('stroke', 'black')
+    //                     .attr('stroke-width', 0.5)
+    //                     .attr('r', 1.2);
+    //             }
+    //         }
+    //     }
+    //     // let dataForSP = observationDataPoints();
+    //     // let dataPoints = sparklines
+    //     //     .selectAll('circle')
+    //     //     .data();
+
+    //     // function observationDataPoints() {
+    //     //     // 実データと変数から各セルに打つべきデータ点一覧を返す？
+    //     // }
+    // }
 
     // drawClusterFeatureTable() {
     //     $('#clusterFeatureTable').remove();

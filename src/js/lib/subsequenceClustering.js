@@ -138,7 +138,6 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
         for (let dataIdx in subsequences) {
             for (let i = 0; i < subsequences[dataIdx].length; i++) {
                 let dataTmp = isometricData[dataIdx][subsequences[dataIdx][i]];
-                dataTmp.id = dataIdx;
                 subsequenceData.push(dataTmp);
                 ranges.push(SSRanges[dataIdx][subsequences[dataIdx][i]]);
             }
@@ -236,7 +235,6 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
             // data collection only for filtered subsequences
             for (let i = 0; i < subsequences[dataIdx].length; i++) {
                 let dataTmp = isometricData[subsequences[dataIdx][i]];
-                dataTmp.id = dataIdx;
                 subsequenceData.push(dataTmp);
                 ranges.push(SSRanges[subsequences[dataIdx][i]]);
             }
@@ -493,8 +491,10 @@ export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = t
                     dataPoints.push(dataPointTmp);
                 }
                 SStmp.dataPoints = dataPoints;
+                SStmp.idx = i;
             } else {
                 SStmp.dataPoints = SSDataPoints;
+                SStmp.idx = i;
             }
             isometricSS.push(SStmp);
         }
@@ -556,8 +556,12 @@ export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = t
                         dataPoints.push(dataPointTmp);
                     }
                     SStmp.dataPoints = dataPoints;
+                    SStmp.id = dataIdx;
+                    SStmp.idx = i;
                 } else {
                     SStmp.dataPoints = SSDataPoints;
+                    SStmp.id = dataIdx;
+                    SStmp.idx = i;
                 }
                 isometricSSTmp.push(SStmp);
             }

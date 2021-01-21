@@ -27,8 +27,8 @@ export function showFilteringStep(selectedProcess) {
     dispatcher.dispatch({type: 'SHOW_FILTERING_STEP', selectedProcess});
 }
 
-export function updateClusteringResults(subsequences, clusterCenters, labels, clusteringScores, updatedSS) {
-    dispatcher.dispatch({type: 'UPDATE_CLUSTERING_RESULTS', subsequences, clusterCenters, labels, clusteringScores, updatedSS});
+export function updateClusteringResults(subsequences, clusterCenters, labels, clusteringScores, selectedSS, updatedSS) {
+    dispatcher.dispatch({type: 'UPDATE_CLUSTERING_RESULTS', subsequences, clusterCenters, labels, clusteringScores, selectedSS, updatedSS});
 }
 
 export function resetClusteringResults() {
