@@ -927,11 +927,13 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
     // step 2
     // find the inital medoids which make the errors inside the clusters minimum
     let initSearch = 5, maxTrial = 10;
-    let score = Infinity, medoids, labels;
+    let medoids = [], labels = [];
     let clusteringScores = {};
     let bestMedoids, bestLabels, bestDist = Infinity, bestDists;
 
     for (let trial = 0; trial < maxTrial; trial++) {
+        let score = Infinity;
+        medoids = [], labels = [];
         for (let i = 0; i < initSearch; i++) {
             // step 3
             let [medoidsTmp, scoreTmp, labelsTmp] = initMedoids(variableList);
@@ -956,6 +958,8 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
             newLabels = assignSSToMedoids(newMedoids, variableList);
             loop++;
         }
+        medoids = newMedoids;
+        newLabels = labels;
         let distSumTmp = 0, distCluster = [];
         for (let i = 0; i < distSum.length; i++) {
             let distClusterTmp = 0;
@@ -968,8 +972,8 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
         if (distSumTmp < bestDist) {
             bestDist = distSumTmp;
             bestDists = distCluster;
-            bestMedoids = newMedoids;
-            bestLabels = newLabels;
+            bestMedoids = medoids;
+            bestLabels = labels;
         }
     }
     medoids = bestMedoids;
@@ -993,7 +997,7 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
     clusteringScores.clusterRadiuses = clusterRadius(clusters.map(x => x.length));
     [clusteringScores.silhouette, clusteringScores.silhouetteSS] = silhouetteCoefficient();
     clusteringScores.davisBouldin = davisBouldinIndex();
-
+    
     return [medoidData, labels, clusteringScores];
 
     function divideSSIntoClusters() {

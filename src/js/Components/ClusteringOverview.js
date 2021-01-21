@@ -296,8 +296,8 @@ export default class ClusteringOverview extends React.Component {
         this.minmax = {};
         this.splines = [];
         this.range = undefined;
-        let variables = Object.keys(this.clusterCenters[0][0]);
-        variables = variables.filter(ele => ele !== 'z');
+        let variables = ClusteringStore.getClusteringParameters().variables;
+        // variables = variables.filter(ele => ele !== 'z');
         // for (let i = 0; i < variables.length; i++) {
         //     this.minmax[variables[i]] = [this.clusterCenters[0][0][variables[i]], this.clusterCenters[0][0][variables[i]]];
         // }
@@ -306,6 +306,7 @@ export default class ClusteringOverview extends React.Component {
         this.minmax.H = [Infinity, -Infinity];
         this.minmax.V = [Infinity, -Infinity];
         if (variables.indexOf('x') >= 0 && variables.indexOf('y') >= 0) {
+            // console.log('compute splines, x, y')
             for (let i = 0; i < this.clusterCenters.length; i++) {
                 let position = [], radius = [], color = [];
                 for (let j = 0; j < this.clusterCenters[i].length; j++) {
@@ -525,7 +526,6 @@ export default class ClusteringOverview extends React.Component {
     }
 
     drawClusterCentersAsTubes() {
-        // TODO: 各チューブの場所にグリッドもしくは軸とクラスタ番号を表示
         if (typeof(this.texture) === 'undefined') {
             let texture = new THREE.TextureLoader();
             texture.load('img/1_256.png', function(texture) {
@@ -540,6 +540,7 @@ export default class ClusteringOverview extends React.Component {
     }
 
     drawTubes() {
+        // remove previous tubes
         for (let i = 0; i < this.tubes.length; i++) {
             let geometry = this.tubes[i].geometry,
                 material = this.tubes[i].material;
@@ -549,20 +550,23 @@ export default class ClusteringOverview extends React.Component {
             this.tubes[i] = undefined;
         }
         this.tubes = [];
-        let tubeGeometry;
 
-        let divNum = this.division * this.clusterCenters[0].length;
+        let variables = ClusteringStore.getClusteringParameters().variables;
+        let dataLen = ClusteringStore.getSubsequenceParameters().isometryLen + 1;
+        let divNum = this.division * dataLen;
         let del = Math.PI * 2 / (this.segment - 1);
-
-        for (let i = 0; i < this.clusterCenters.length; i++) {
+        let viewportSize = ClusteringStore.getViewportSize() * 0.7;
+        for (let i = 0; i < this.splines.length; i++) {
+            let tubeGeometry;
             let vertices = [],
                 colors = [],
                 indices = [];
             let cen = this.splines[i].position.getSpacedPoints(divNum),
                 rad = this.splines[i].radius.getSpacedPoints(divNum),
                 col = this.splines[i].color.getSpacedPoints(divNum);
-
-            if ('r_x' in this.clusterCenters[0][0] || 'r_y' in this.clusterCenters[0][0]) {
+            let posX = viewportSize * Math.cos(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
+            let posY = viewportSize * Math.sin(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
+            if ('r_x' in variables || 'r_y' in variables) {
                 let opacityPoints = this.opacityCurve.getSpacedPoints(this.tubeNum);
                 let opacityList = [];
                 for (let i = 1; i <= this.tubeNum; i++) {
@@ -579,8 +583,8 @@ export default class ClusteringOverview extends React.Component {
                         for (let l = 0; l < this.tubeNum; l++) {
                             let currad = (1 / this.tubeNum) * (l + 1);
                             let deg = del * k;
-                            vertices[l].push((cen[j].x * this.range + currad * radX * Math.cos(deg)) * -1);
-                            vertices[l].push(cen[j].y * this.range + currad * radY * Math.sin(deg));
+                            vertices[l].push((posX + cen[j].x * this.range + currad * radX * Math.cos(deg)) * -1);
+                            vertices[l].push(posY + cen[j].y * this.range + currad * radY * Math.sin(deg));
                             vertices[l].push(cen[j].z);
 
                             colors[l].push(col[j].x);
@@ -614,8 +618,8 @@ export default class ClusteringOverview extends React.Component {
                 for (let j = 0; j <= divNum; j++) {
                     for (let k = 0; k < this.segment; k++) {
                         let deg = del * k;
-                        vertices.push((cen[j].x * this.range + 0.5 * Math.cos(deg)) * -1);
-                        vertices.push(cen[j].y * this.range + 0.5 * Math.sin(deg));
+                        vertices.push((posX + cen[j].x * this.range + 0.5 * Math.cos(deg)) * -1);
+                        vertices.push(posY + cen[j].y * this.range + 0.5 * Math.sin(deg));
                         vertices.push(cen[j].z);
 
                         colors.push(col[j].x);
@@ -655,14 +659,10 @@ export default class ClusteringOverview extends React.Component {
                 side: THREE.DoubleSide,
                 transparent: true
             });
-            this.tubes.push(new THREE.Mesh(tubeGeometry, tubeMaterial));
-            this.tubes[this.tubes.length - 1].rotateY(Math.PI);
-            let viewportSize = ClusteringStore.getViewportSize() * 0.7;
-            let posX = viewportSize * Math.cos(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
-            let posY = viewportSize * Math.sin(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
-            this.tubes[this.tubes.length - 1].translateX(posX);
-            this.tubes[this.tubes.length - 1].translateY(posY);
-            this.scene.add(this.tubes[this.tubes.length - 1]);
+            let tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
+            tube.rotateY(Math.PI);
+            this.scene.add(tube);
+            this.tubes.push(tube);
         }
     }
 
