@@ -49,6 +49,9 @@ class ClusteringStore extends EventEmitter {
             case 'RESET_CLUSTERING_RESULTS':
                 this.resetClusteringResults();
                 break;
+            case 'UPDATE_SS_SELECTION':
+                this.updateSSSelection(action.selectedSS, action.updatedSS);
+                break;
             default:
                 break;
         }
@@ -182,6 +185,12 @@ class ClusteringStore extends EventEmitter {
         this.clusteringScores = this.originalResults.clusteringScores;
         this.updatedSS = [];
         this.emit('resetClusteringResults');
+    }
+
+    updateSSSelection(selectedSS, updatedSS) {
+        this.selectedSS = selectedSS;
+        this.updatedSS = updatedSS;
+        this.emit('updateSSSelection');
     }
 }
 

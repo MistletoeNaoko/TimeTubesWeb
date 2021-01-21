@@ -34,3 +34,7 @@ export function updateClusteringResults(subsequences, clusterCenters, labels, cl
 export function resetClusteringResults() {
     dispatcher.dispatch({type: 'RESET_CLUSTERING_RESULTS'});
 }
+
+export function updateSSSelection(selectedSS, updatedSS) {
+    dispatcher.dispatch({type: 'UPDATE_SS_SELECTION', selectedSS, updatedSS});
+}

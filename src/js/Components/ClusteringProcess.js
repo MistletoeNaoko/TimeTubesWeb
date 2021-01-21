@@ -84,6 +84,7 @@ export default class ClusteringProcess extends React.Component {
             // }
             this.createVariableLabels();
             this.filteringSummary();
+            this.initSparklines();
             this.setState({
                 selectedSS: ClusteringStore.getSelectedSS(),//selectedSS,
                 updatedSS: ClusteringStore.getUpdatedSS()//updatedSS
@@ -95,6 +96,13 @@ export default class ClusteringProcess extends React.Component {
             this.setState({
                 selectedProcess: selectedProcess
             })
+        });
+        ClusteringStore.on('updateSSSelection', () => {
+            this.updataUpdatedSSSparklineTableFlag = true;
+            this.setState({
+                selectedSS: ClusteringStore.getSelectedSS(),
+                updatedSS: ClusteringStore.getUpdatedSS()
+            });
         });
     }
 
@@ -110,6 +118,8 @@ export default class ClusteringProcess extends React.Component {
         let updatedTable;
         if (this.state.selectedProcess !== '') {
             subsequencesTable = this.subsequencesInTheSelectedStepTable();
+            updatedTable = this.updatedSubsequencesTable();
+        } else if (this.updataUpdatedSSSparklineTableFlag) {
             updatedTable = this.updatedSubsequencesTable();
         }
         return (
@@ -150,6 +160,57 @@ export default class ClusteringProcess extends React.Component {
                 </div>
             </div>
         );
+    }
+
+    initSparklines() {
+        this.yMinMax = {};
+        for (let i = 0; i < this.variables.length; i++) {
+            this.yMinMax[this.variables[i]] = [Infinity, -Infinity];
+        }
+        for (let dataId in this.filteringProcess.subsequences) {
+            for (let i = 0; i < this.filteringProcess.subsequences[dataId].length; i++) {
+                for (let j = 0; j < this.filteringProcess.subsequences[dataId][i].length; j++) {
+                    for (let k = 0; k < this.variables.length; k++) {
+                        if (this.filteringProcess.subsequences[dataId][i][j][this.variables[k]] < this.yMinMax[this.variables[k]][0]) {
+                            this.yMinMax[this.variables[k]][0] = this.filteringProcess.subsequences[dataId][i][j][this.variables[k]];
+                        }
+                        if (this.yMinMax[this.variables[k]][1] < this.filteringProcess.subsequences[dataId][i][j][this.variables[k]]) {
+                            this.yMinMax[this.variables[k]][1] = this.filteringProcess.subsequences[dataId][i][j][this.variables[k]];
+                        }
+                    }
+                }
+            }
+        }
+        let paddingCell = 3, checkCellWidth = 30, paddingSVG = 1;
+        let tableWidth = $('#clusteringProcess').width() - this.areaPadding.left - this.areaPadding.right;
+        // let tableWidth = this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
+        let cellWidth = (tableWidth - checkCellWidth) / this.variables.length,
+            cellHeight = 30;
+        let svgWidth = cellWidth - paddingCell * 2,
+            svgHeight = cellHeight - paddingCell * 2;
+
+        let xMinMax = [0, ClusteringStore.getSubsequenceParameters().isometryLen];
+        let xScale = d3.scaleLinear()
+            .range([paddingSVG, svgWidth - paddingSVG])
+            .domain(xMinMax);
+        let yScales = {}, curves = {};
+        for (let i = 0; i < this.variables.length; i++) {
+            yScales[this.variables[i]] = d3.scaleLinear()
+                .range([svgHeight - paddingSVG, paddingSVG])
+                .domain(this.yMinMax[this.variables[i]])
+                .nice();
+            curves[this.variables[i]] = d3.line()
+                .x(function(d, i) {
+                    return xScale(i);
+                })
+                .y(function(d) {
+                    return yScales[this.variables[i]](d[this.variables[i]]);
+                }.bind(this))
+                .curve(d3.curveCatmullRom.alpha(1));
+        }
+        this.xScale = xScale;
+        this.yScales = yScales;
+        this.curves = curves;
     }
 
     createVariableLabels() {
@@ -349,7 +410,7 @@ export default class ClusteringProcess extends React.Component {
                     <td key='checkbox' style={{textAlign: 'center', width: checkCellWidth, height: cellHeight}}>
                         <input 
                             type="checkbox" 
-                            className={'subsequenceCheckbox'} 
+                            className={'subsequenceFilteringCheckbox'} 
                             name='subsequenceSelector'
                             id={'selectSSFilteringProcess_' + dataId + '_' + SSId}
                             onClick={this.onClickSSSelector().bind(this)}/>
@@ -540,6 +601,7 @@ export default class ClusteringProcess extends React.Component {
                     }
 
                     this.updataUpdatedSSSparklineTableFlag = true;
+                    ClusteringAction.updateSSSelection(newSelectedSS, newUpdatedSS);
                     this.setState({
                         selectedSS: newSelectedSS,
                         updatedSS: newUpdatedSS
@@ -582,6 +644,7 @@ export default class ClusteringProcess extends React.Component {
                     }
 
                     this.updataUpdatedSSSparklineTableFlag = true;
+                    ClusteringAction.updateSSSelection(newSelectedSS, newUpdatedSS);
                     this.setState({
                         selectedSS: newSelectedSS,
                         updatedSS: newUpdatedSS
@@ -609,6 +672,7 @@ export default class ClusteringProcess extends React.Component {
                     }
 
                     this.updataUpdatedSSSparklineTableFlag = true;
+                    ClusteringAction.updateSSSelection(newSelectedSS, newUpdatedSS);
                     this.setState({
                         selectedSS: newSelectedSS,
                         updatedSS: newUpdatedSS
@@ -706,28 +770,28 @@ export default class ClusteringProcess extends React.Component {
             let svgWidth = cellWidth - paddingCell * 2,
                 svgHeight = cellHeight - paddingCell * 2;
 
-            let xMinMax = [0, ClusteringStore.getSubsequenceParameters().isometryLen];
-            let xScale = d3.scaleLinear()
-                .range([paddingSVG, svgWidth - paddingSVG])
-                .domain(xMinMax);
-            let yScales = {}, curves = {};
-            for (let i = 0; i < this.variables.length; i++) {
-                yScales[this.variables[i]] = d3.scaleLinear()
-                    .range([svgHeight - paddingSVG, paddingSVG])
-                    .domain(this.yMinMax[this.variables[i]])
-                    .nice();
-                curves[this.variables[i]] = d3.line()
-                    .x(function(d, i) {
-                        return xScale(i);
-                    })
-                    .y(function(d) {
-                        return yScales[this.variables[i]](d[this.variables[i]]);
-                    }.bind(this))
-                    .curve(d3.curveCatmullRom.alpha(1));
-            }
-            this.xScale = xScale;
-            this.yScales = yScales;
-            this.curves = curves;
+            // let xMinMax = [0, ClusteringStore.getSubsequenceParameters().isometryLen];
+            // let xScale = d3.scaleLinear()
+            //     .range([paddingSVG, svgWidth - paddingSVG])
+            //     .domain(xMinMax);
+            // let yScales = {}, curves = {};
+            // for (let i = 0; i < this.variables.length; i++) {
+            //     yScales[this.variables[i]] = d3.scaleLinear()
+            //         .range([svgHeight - paddingSVG, paddingSVG])
+            //         .domain(this.yMinMax[this.variables[i]])
+            //         .nice();
+            //     curves[this.variables[i]] = d3.line()
+            //         .x(function(d, i) {
+            //             return xScale(i);
+            //         })
+            //         .y(function(d) {
+            //             return yScales[this.variables[i]](d[this.variables[i]]);
+            //         }.bind(this))
+            //         .curve(d3.curveCatmullRom.alpha(1));
+            // }
+            // this.xScale = xScale;
+            // this.yScales = yScales;
+            // this.curves = curves;
             for (let dataId in this.filteringProcess[previousStep]) {
                 for (let i = 0; i < this.filteringProcess[previousStep][dataId].length; i++) {
                     let SSId = this.filteringProcess[previousStep][dataId][i];
@@ -754,7 +818,7 @@ export default class ClusteringProcess extends React.Component {
                             .attr('stroke-width', 1.5);
                         sparkline
                             .attr('d', function(d, i) {
-                                return curves[this.variables[j]](d);
+                                return this.curves[this.variables[j]](d);
                             }.bind(this));
                         // sparklineGroup
                         //     .selectAll('circle')
@@ -782,7 +846,7 @@ export default class ClusteringProcess extends React.Component {
     }
 
     drawSparklinesOfUpdatedSubsequences() {
-        if (this.state.selectedProcess && this.updataUpdatedSSSparklineTableFlag) {
+        if (this.updataUpdatedSSSparklineTableFlag) {
             $('#updatedSubsequencesTable svg').remove();
 
             let selectedStepIdx = this.steps.indexOf(this.state.selectedProcess);
@@ -790,12 +854,20 @@ export default class ClusteringProcess extends React.Component {
 
             let paddingCell = 3, checkCellWidth = 30, paddingSVG = 1;
             let tableWidth = $('#clusteringProcess').width() - this.areaPadding.left - this.areaPadding.right;
-            // let tableWidth = this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
+            let tableHeight = (this.mount.clientHeight - $('#filteringProcessSummary').height()) * 0.3;
             let cellWidth = (tableWidth - checkCellWidth) / this.variables.length,
                 cellHeight = 30;
             let svgWidth = cellWidth - paddingCell * 2,
                 svgHeight = cellHeight - paddingCell * 2;
 
+            let updatedNum = 0;
+            Object.keys(this.state.updatedSS).forEach(function(d) {
+                updatedNum += this.state.updatedSS[d].length;
+            }.bind(this));
+            d3.select('#updatedSubsequencesTable')
+                .style(Math.min(tableHeight, cellHeight * (updatedNum + 1)));
+            d3.select('#updatedSubsequencesTableBody')
+                .style('height', Math.min(tableHeight - cellHeight, cellHeight * updatedNum));
             for (let dataId in this.state.updatedSS) {
                 for (let i = 0; i < this.state.updatedSS[dataId].length; i++) {
                     let SSId = this.state.updatedSS[dataId][i].idx;
@@ -804,16 +876,23 @@ export default class ClusteringProcess extends React.Component {
                         let trClass = (this.state.updatedSS[dataId][i].status === 'add')? 'table-success': 'table-danger';
                         d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
                             .classed(trClass, true);
+                        d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                            .classed(trClass, true);
                         let svg = d3.select('#updatedSubsequenceTd_' + dataId + '_' + SSId + '_' + this.variables[j])
                             .append('svg')
                             .attr('id', 'updateSubsequenceSVG_' + dataId + '_' + SSId + '_' + this.variables[j])
                             .attr('class', 'spark')
                             .attr('width', svgWidth)
                             .attr('height', svgHeight);
-                        let strokeColor = (
-                            this.filteringProcess[this.state.selectedProcess][dataId].indexOf(SSId) < 0
-                            ? this.filteringStepColors[selectedStepIdx - 1]: this.filteringStepColors[selectedStepIdx]
-                            );
+                        let strokeColor;
+                        if (this.state.selectedProcess) {
+                            strokeColor = (
+                                this.filteringProcess[this.state.selectedProcess][dataId].indexOf(SSId) < 0
+                                ? this.filteringStepColors[selectedStepIdx - 1]: this.filteringStepColors[selectedStepIdx]
+                                );
+                        } else {
+                            strokeColor = this.filteringStepColors[this.steps.length - 1];
+                        }
                         let sparklineGroup = svg.append('g');
                         let sparkline = sparklineGroup
                             .datum(data)
@@ -842,13 +921,21 @@ export default class ClusteringProcess extends React.Component {
             //     }
             // }
             // reset checked
-            $('.subsequenceCheckbox').prop('checked', false);
+            $('.subsequenceFilteringCheckbox').prop('checked', false);
             for (let dataId in this.state.selectedSS) {
                 for (let i = 0; i < this.state.selectedSS[dataId].length; i++) {
                     $('#selectSSFilteringProcess_' + dataId + '_' + this.state.selectedSS[dataId][i]).prop('checked', true);
                     if ($('#selectUpdatedSSFilteringProcess_' + dataId + '_' + this.state.selectedSS[dataId][i]).length) {
                         $('#selectUpdatedSSFilteringProcess_' + dataId + '_' + this.state.selectedSS[dataId][i]).prop('checked', true);
                     }
+                }
+            }
+            for (let dataId in this.state.updatedSS) {
+                for (let i = 0; i < this.state.updatedSS[dataId].length; i++) {
+                    let trClass = this.state.updatedSS[dataId][i].status === 'add'? 'table-success': 'table-danger';
+                    d3.select('#subsequenceTr_' + dataId + '_' + this.state.updatedSS[dataId][i].idx)
+                        .attr('class', '')
+                        .classed(trClass, true);
                 }
             }
         }

@@ -1,10 +1,10 @@
 import React from 'react';
 import * as d3 from 'd3';
+import * as ClusteringAction from '../Actions/ClusteringAction';
 import ClusteringStore from '../Stores/ClusteringStore';
 import DataStore from '../Stores/DataStore';
 import TimeTubeesStore from '../Stores/TimeTubesStore';
 import {tickFormatting, formatValue} from '../lib/2DGraphLib';
-import { update } from 'lodash';
 
 export default class ClusteringDetail extends React.Component {
     constructor() {
@@ -90,6 +90,9 @@ export default class ClusteringDetail extends React.Component {
             this.setState({
                 cluster: -1
             });
+        });
+        ClusteringStore.on('updateSSSelection', () => {
+            this.showSSStatus();
         });
     }
 
@@ -254,9 +257,10 @@ export default class ClusteringDetail extends React.Component {
                     <td key='checkbox' style={{textAlign: 'center', width: checkCellWidth, height: cellHeight}}>
                         <input 
                             type="checkbox" 
-                            className={'subsequenceCheckbox'} 
+                            className={'subsequenceDetailCheckbox'} 
                             name='subsequenceSelector'
-                            id={'selectSSDetail_' + dataId + '_' + SSId}/>
+                            id={'selectSSDetail_' + dataId + '_' + SSId}
+                            onClick={this.onClickSSSelector().bind(this)}/>
                     </td>);
                 for (let j = 0; j < this.variables.length; j++) {
                     tdItems.push(
@@ -661,7 +665,7 @@ export default class ClusteringDetail extends React.Component {
                 let SSId = selectedSS[dataId][i];
                 let checkbox = $('#selectSSDetail_' + dataId + '_' + SSId);
                 if (checkbox.length > 0) {
-                    checkbox.attr('checked', true);
+                    checkbox.prop('checked', true);
                 } 
             }
         }
@@ -670,11 +674,54 @@ export default class ClusteringDetail extends React.Component {
                 let SSId = updatedSS[dataId][i].idx;
                 let tr = $('#subsequenceDetailTr_' + dataId + '_' + SSId);
                 if (tr.length > 0) {
-                    if (updatedSS[dataId][i].status === 'add')
+                    if (updatedSS[dataId][i].status === 'add') {
                         tr.addClass('table-success');
+                    } else if (updatedSS[dataId][i].status === 'remove') {
+                        tr.addClass('table-danger');
+                    }
                 } 
             }
         }
+    }
+
+    onClickSSSelector() {
+        return function(d) {
+            let targetId = d.target.id;
+            if (targetId) {
+                let targetEle = targetId.split('_');
+                let dataId = targetEle[1],
+                    SSId = Number(targetEle[2]);
+
+                let selectedSS = ClusteringStore.getSelectedSS(),
+                    updatedSS = ClusteringStore.getUpdatedSS();
+                
+                let currentState = $('#' + d.target.id).prop('checked');
+                if (currentState) {
+                    // add to selectedSS, remove from updatedSS
+                    if (selectedSS[dataId].indexOf(SSId) < 0) {
+                        selectedSS[dataId].push(SSId);
+                        d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
+                            .classed('table-danger', false);
+                    }
+                    for (let i = 0; i < updatedSS[dataId].length; i++) {
+                        if (updatedSS[dataId][i].idx === SSId) {
+                            updatedSS[dataId].splice(i, 1);
+                            break;
+                        }
+                    }
+                } else {
+                    // remove from selectedSS, add to updatedSS
+                    selectedSS[dataId].splice(selectedSS[dataId].indexOf(SSId), 1);
+                    updatedSS[dataId].push({
+                        idx: SSId,
+                        status: 'remove'
+                    });
+                    d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
+                        .classed('table-danger', true);
+                }
+                ClusteringAction.updateSSSelection(selectedSS, updatedSS);
+            }
+        };
     }
 
     // drawSparklinesTableTmp() {
