@@ -1,11 +1,17 @@
 import React from 'react';
 import * as d3 from 'd3';
+import {selectMenu} from '../Actions/AppAction';
+import {showTimeTubesOfTimeSlice} from '../Actions/TimeTubesAction';
 import * as ClusteringAction from '../Actions/ClusteringAction';
 import ClusteringStore from '../Stores/ClusteringStore';
 import DataStore from '../Stores/DataStore';
 import TimeTubeesStore from '../Stores/TimeTubesStore';
 import {tickFormatting, formatValue} from '../lib/2DGraphLib';
 
+d3.selection.prototype.moveToFront =
+    function() {
+        return this.each(function(){this.parentNode.appendChild(this);});
+    };
 export default class ClusteringDetail extends React.Component {
     constructor() {
         super();
@@ -615,9 +621,9 @@ export default class ClusteringDetail extends React.Component {
                     .attr('width', cellWidth);
             }
             d3.select('#subsequencesOverviewTable')
-                .style('height', Math.min(tableWidth, cellHeight * (this.SSCluster.length + 1)));
+                .attr('height', Math.min(tableWidth, cellHeight * (this.SSCluster.length + 1)));
             d3.select('#subsequencesOverviewTableBody')
-                .style('height', Math.min(tableWidth, cellHeight * this.SSCluster.length));
+                .attr('height', Math.min(tableWidth, cellHeight * this.SSCluster.length));
             for (let i = 0; i < this.SSCluster.length; i++) {
                 let dataId = this.SSCluster[i].id,
                     SSId = this.SSCluster[i].idx;
@@ -772,6 +778,13 @@ export default class ClusteringDetail extends React.Component {
                 // highlight cluster center line chart
                 d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
                     .attr('stroke', '#f26418');
+
+                // highlight a subsequence in the timeline
+                d3.select('#clusterLine_' + dataId + '_' + SSId)
+                    .attr('stroke', 'black')
+                    .attr('stroke-width', 1.5)
+                    .moveToFront();
+
             }
         };
     }
@@ -780,7 +793,6 @@ export default class ClusteringDetail extends React.Component {
         return function(d) {
             let targetId = d.target.id;
             if (targetId) {
-                let tooltip = $('#tooltipClusteringResults');
                 let targetEle = targetId.split('_');
                 let dataId = targetEle[1],
                     SSId = Number(targetEle[2]);
@@ -794,6 +806,11 @@ export default class ClusteringDetail extends React.Component {
                 // make a highlighted path in cluster center line chart lightgray
                 d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
                     .attr('stroke', 'lightgray');
+
+                // remove highlight from the timeline
+                d3.select('#clusterLine_' + dataId + '_' + SSId)
+                    .attr('stroke-width', 0);
+
             }
         };
     }
@@ -801,6 +818,21 @@ export default class ClusteringDetail extends React.Component {
     onDoubleClickSubsequenceDetailTr() {
         return function(d) {
             // jump to TimeTubes view
+            let targetId = d.target.id;
+            if (targetId) {
+                let targetEle = targetId.split('_');
+                let dataId = targetEle[1],
+                    SSId = Number(targetEle[2]);
+                let data;
+                for (let i = 0; i < this.subsequences.length; i++) {
+                    if (this.subsequences[i].id === dataId && this.subsequences[i].idx === SSId) {
+                        data = this.subsequences[i];
+                        break;
+                    }
+                }
+                selectMenu('visualization');
+                showTimeTubesOfTimeSlice(Number(dataId), [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
+            }
         };
     }
     // drawSparklinesTableTmp() {

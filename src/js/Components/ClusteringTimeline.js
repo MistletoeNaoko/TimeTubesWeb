@@ -13,7 +13,7 @@ export default class ClusteringTimeline extends React.Component {
         this.custerCenters = [];
         this.subsequences = [];
         this.labels = [];
-        this.clusters = [];
+        this.dataIdxInCluster = [];
         this.clusterColors = [];
         this.timelines = [];
         this.xScales = [];
@@ -39,7 +39,6 @@ export default class ClusteringTimeline extends React.Component {
             this.subsequences = ClusteringStore.getSubsequences();
             this.labels = ClusteringStore.getLabels();
             this.clusterColors = ClusteringStore.getClusterColors();
-            console.log('showClusteringResults', this.labels, this.subsequences, this.timelines);
             this.divideDataIntoCluster();
             this.drawTimelines();
         });
@@ -72,15 +71,15 @@ export default class ClusteringTimeline extends React.Component {
     }
 
     divideDataIntoCluster() {
-        this.clusters = [];
+        this.dataIdxInCluster = [];
         for (let i = 0; i < this.clusterCenters.length; i++) {
-            this.clusters.push([]);
+            this.dataIdxInCluster.push([]);
         }
         for (let i = 0; i < this.labels.length; i++) {
             if (typeof(this.labels[i]) === 'object') {
-                this.clusters[this.labels[i].cluster].push(i);
+                this.dataIdxInCluster[this.labels[i].cluster].push(i);
             } else {
-                this.clusters[this.labels[i]].push(i);
+                this.dataIdxInCluster[this.labels[i]].push(i);
             }
         }
     }
@@ -141,28 +140,44 @@ export default class ClusteringTimeline extends React.Component {
             this.xAxes.push(xAxis);
         }
         // labelsとsubsequencesのzの値に応じて幅20の半透明の線を引いていく
-        for (let i = 0; i < this.clusters.length; i++) {
+        for (let i = 0; i < this.dataIdxInCluster.length; i++) {
             for (let j = 0; j < this.datasets.length; j++) {
                 let clusterLines = this.timelines[j]
                     .selectAll('line.clusterLine_' + this.datasets[j] + '_' + i)
-                    .data(this.clusters[i].filter(function(d) {
+                    .data(this.dataIdxInCluster[i].filter(function(d) {
                         return Number(this.subsequences[d].id) === this.datasets[j]
                     }.bind(this)))
                     .enter()
-                    .append('line')
+                    .append('rect')
                     .attr('class', 'clusterLine_' + this.datasets[j] + ' clusterLine_' + this.datasets[j] + '_' + i)
-                    .attr('x1', function(d) {
+                    .attr('id', function(d) {
+                        return 'clusterLine_' + this.datasets[j] + '_' + this.subsequences[d].idx;
+                    }.bind(this))
+                    .attr('x', function(d) {
                         return this.xScales[j](this.subsequences[d][0].z);
                     }.bind(this))
-                    .attr('y1', height / 2 - 5)
-                    .attr('x2', function(d) {
-                        return this.xScales[j](this.subsequences[d][this.subsequences[d].length - 1].z);
+                    .attr('y', 5)
+                    .attr('width', function(d) {
+                        return this.xScales[j](this.subsequences[d][this.subsequences[d].length - 1].z) - this.xScales[j](this.subsequences[d][0].z);
                     }.bind(this))
-                    .attr('y2', height / 2 - 5)
-                    .attr('stroke', d3.hsl(this.clusterColors[i][0], this.clusterColors[i][1], this.clusterColors[i][2]))
-                    .attr('stroke-width', 20)
+                    .attr('height', 20)
+                    .attr('fill', d3.hsl(this.clusterColors[i][0], this.clusterColors[i][1], this.clusterColors[i][2]))
                     .attr('opacity', 0.5)
                     .attr('transform', 'translate(' + (this.margin.left + fileNameWidth) + ',0)');
+                    // .append('line')
+                    // .attr('class', 'clusterLine_' + this.datasets[j] + ' clusterLine_' + this.datasets[j] + '_' + i)
+                    // .attr('x1', function(d) {
+                    //     return this.xScales[j](this.subsequences[d][0].z);
+                    // }.bind(this))
+                    // .attr('y1', height / 2 - 5)
+                    // .attr('x2', function(d) {
+                    //     return this.xScales[j](this.subsequences[d][this.subsequences[d].length - 1].z);
+                    // }.bind(this))
+                    // .attr('y2', height / 2 - 5)
+                    // .attr('stroke', d3.hsl(this.clusterColors[i][0], this.clusterColors[i][1], this.clusterColors[i][2]))
+                    // .attr('stroke-width', 20)
+                    // .attr('opacity', 0.5)
+                    // .attr('transform', 'translate(' + (this.margin.left + fileNameWidth) + ',0)');
             }
         }
         function expandTimeline() {
@@ -187,7 +202,7 @@ export default class ClusteringTimeline extends React.Component {
                                 .call(this.xLabels[dataId]);
                         }
                         this.timelines[dataId]
-                            .selectAll('line.clusterLine_' + dataId + '_' + i)
+                            .selectAll('rect.clusterLine_' + dataId + '_' + i)
                             .transition()
                             .duration(1000)
                             .attr('transform', 'translate('　+ (this.margin.left + fileNameWidth) + ',' + (height * i) + ')');
@@ -195,7 +210,7 @@ export default class ClusteringTimeline extends React.Component {
                 } else {
                     // collapse
                     this.timelines[dataId]
-                        .selectAll('line.clusterLine_' + dataId)
+                        .selectAll('rect.clusterLine_' + dataId)
                         .transition()
                         .duration(1000)
                         .attr('transform', 'translate('　+ (this.margin.left + fileNameWidth) + ',0)');
@@ -238,14 +253,20 @@ export default class ClusteringTimeline extends React.Component {
                 .call(this.xLabels[i]);
             d3.selectAll('.x-axis.clusteringTimelineXAxis_' + this.datasets[i])
                 .call(this.xLabels[i]);
-            for (let j = 0; j < this.clusters.length; j++) {
-                d3.selectAll('line.clusterLine_' + this.datasets[i] + '_' + j)
-                    .attr('x1', function(d) {
+            for (let j = 0; j < this.dataIdxInCluster.length; j++) {
+                d3.selectAll('rect.clusterLine_' + this.datasets[i] + '_' + j)
+                    .attr('x', function(d) {
                         return this.xScales[i](this.subsequences[d][0].z);
                     }.bind(this))
-                    .attr('x2', function(d) {
-                        return this.xScales[i](this.subsequences[d][this.subsequences[d].length - 1].z);
+                    .attr('width', function(d) {
+                        return this.xScales[i](this.subsequences[d][this.subsequences[d].length - 1].z) - this.xScales[i](this.subsequences[d][0].z);
                     }.bind(this));
+                    // .attr('x1', function(d) {
+                    //     return this.xScales[i](this.subsequences[d][0].z);
+                    // }.bind(this))
+                    // .attr('x2', function(d) {
+                    //     return this.xScales[i](this.subsequences[d][this.subsequences[d].length - 1].z);
+                    // }.bind(this));
             }
         }
     }
