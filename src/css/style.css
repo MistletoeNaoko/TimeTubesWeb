@@ -548,6 +548,10 @@ img.selectorIcon:active {
 .filteringProcessLabel {
     font-size: 0.7rem;
 }
+
+.tooltipTableValues {
+    text-align: right;
+}
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
@@ -828,4 +832,14 @@ img.selectorIcon:active {
 #tooltipClusteringResults {
     opacity: 0.75;
     position: absolute;
+}
+
+#tooltipClusteringResults table {
+    margin: 0.3rem;
+}
+
+#tooltipClusteringResults tr, #tooltipClusteringResults td {
+    border: 1px solid;
+    border-color: gray;
+    padding: 0px 5px;
 }

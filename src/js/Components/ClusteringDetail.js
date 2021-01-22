@@ -760,13 +760,15 @@ export default class ClusteringDetail extends React.Component {
                 let silhouette = this.clusteringScores.silhouetteSS[i];
                 let mouseX = window.innerWidth - d.clientX + 5;
                 let mouseY = window.innerHeight - d.clientY + 5;//$(window).scrollTop() + d.clientY + 2;
-                tooltip.html('<table><tbody><tr><td>File name</td><td>' + fileName + '</td></tr>' +
-                    '<tr><td>Period</td><td>' + period[0] + '-' + period[1] + '</td></tr>' +
-                    '<tr><td>Data points number</td><td>' + dataPointNum + '</td></tr>' +
-                    '<tr><td>Silhouette coefficient</td><td>' + formatValue(silhouette) + '</td></tr></tbody></table>');
+                tooltip.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                    '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
+                    '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr>' +
+                    '<tr><td>Silhouette coefficient</td><td class="tooltipTableValues">' + formatValue(silhouette) + '</td></tr></tbody></table>');
                 tooltip.css({
                     right: mouseX + 'px',
-                    bottom: mouseY + 'px'
+                    bottom: mouseY + 'px',
+                    left: 'unset',
+                    top: 'unset'
                 });
                 tooltip.css('display', 'block');
 

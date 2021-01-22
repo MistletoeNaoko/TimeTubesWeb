@@ -1,10 +1,15 @@
 import React from 'react';
 import * as d3 from 'd3';
 import {resizeExtractionResultsArea} from '../Actions/AppAction';
+import {showClusterDetails} from '../Actions/ClusteringAction';
 import DataStore from '../Stores/DataStore';
 import ClusteringStore from '../Stores/ClusteringStore';
 import AppStore from '../Stores/AppStore';
 
+d3.selection.prototype.moveToFront =
+    function() {
+        return this.each(function(){this.parentNode.appendChild(this);});
+    };
 export default class ClusteringTimeline extends React.Component {
     constructor() {
         super();
@@ -163,7 +168,10 @@ export default class ClusteringTimeline extends React.Component {
                     .attr('height', 20)
                     .attr('fill', d3.hsl(this.clusterColors[i][0], this.clusterColors[i][1], this.clusterColors[i][2]))
                     .attr('opacity', 0.5)
-                    .attr('transform', 'translate(' + (this.margin.left + fileNameWidth) + ',0)');
+                    .attr('transform', 'translate(' + (this.margin.left + fileNameWidth) + ',0)')
+                    .on('mouseover', this.onMouseOverClusterLine().bind(this))
+                    .on('mouseout', this.onMouseOutClusterLine().bind(this))
+                    .on('click', this.onClickClusterLine().bind(this));
                     // .append('line')
                     // .attr('class', 'clusterLine_' + this.datasets[j] + ' clusterLine_' + this.datasets[j] + '_' + i)
                     // .attr('x1', function(d) {
@@ -232,6 +240,107 @@ export default class ClusteringTimeline extends React.Component {
                 }, 1000);
             };
         }
+    }
+
+    onMouseOverClusterLine() {
+        return function(d) {
+            // show tooltip
+            let targetId = d3.event.target.id;
+            if (targetId) {
+                let tooltip = $('#tooltipClusteringResults');
+                let targetEle = targetId.split('_');
+                let dataId = targetEle[1],
+                    SSId = Number(targetEle[2]);
+                let data;
+                let i = 0;
+                for (i = 0; i < this.subsequences.length; i++) {
+                    if (this.subsequences[i].id === dataId && this.subsequences[i].idx === SSId) {
+                        data = this.subsequences[i];
+                        break;
+                    }
+                }
+                // show detail information of the subsequence
+                let fileName = DataStore.getFileName(dataId);
+                let period = [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z];
+                let dataPointNum = data.dataPoints.length;
+                let mouseX = d3.event.clientX + 5;
+                let mouseY = d3.event.clientY + 5;//$(window).scrollTop() + d.clientY + 2;
+                tooltip.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                    '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
+                    '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
+                tooltip.css({
+                    left: mouseX + 'px',
+                    top: mouseY + 'px',
+                    right: 'unset',
+                    bottom: 'unset'
+                });
+                tooltip.css('display', 'block');
+
+                // highlight SS on the timeline
+                d3.select('#' + targetId)
+                    .attr('stroke', 'black')
+                    .attr('stroke-width', 1.5)
+                    .moveToFront();
+
+                // highlight the clustering detail panel if the currently focused cluster is the cluster of the selected SS
+                if ($('#subsequenceDetailTr_' + dataId + '_' + SSId).length > 0) {
+                    // highlight cluster center line chart
+                    d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
+                        .attr('stroke', '#f26418');
+                    // highlight histogram
+                    d3.select('#SSLengthBar_' + Math.floor(period[1] - period[0]))
+                        .attr('stroke', 'black')
+                        .attr('stroke-width', 1.5);
+                    // highlight sparkline
+                    d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
+                        .classed('table-active', true);
+                }
+            }
+        };    
+    }
+
+    onMouseOutClusterLine() {
+        return function(d) {
+            // hide tooltip
+            let targetId = d3.event.target.id;
+            if (targetId) {
+                let targetEle = targetId.split('_');
+                let dataId = targetEle[1],
+                    SSId = Number(targetEle[2]);
+                // hide the tooltip
+                $('#tooltipClusteringResults').css('display', 'none');
+                
+                // remove highlight from timeline
+                d3.select('#' + targetId)
+                    .attr('stroke-width', 0);
+
+                // remove highlights from clustering detail panel if the currently focued cluster coincides with the selected SS's cluster
+                if ($('#subsequenceDetailTr_' + dataId + '_' + SSId).length > 0) {
+                    // remove highlight from cluster center line chart
+                    d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
+                        .attr('stroke', 'lightgray');
+                    // remove highlight from histogram
+                    d3.selectAll('.SSLengthBar')
+                        .attr('stroke-width', 0);
+                    // remove highlight from sparkline
+                    d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
+                        .classed('table-active', false);
+                }
+            }
+        };
+    }
+
+    onClickClusterLine() {
+        return function(d) {
+            // show the cluster which the selected SS belongs to
+            if (d3.event.target) {
+                let targetClass = d3.event.target.classList[1];
+                let targetEle = targetClass.split('_');
+                let clusterNum = Number(targetEle[2]);
+                console.log(clusterNum);
+                showClusterDetails(clusterNum);
+            }
+        };
     }
 
     resizeTimelines() {
