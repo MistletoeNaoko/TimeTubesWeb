@@ -94,6 +94,15 @@ export default class ClusteringDetail extends React.Component {
         });
     }
 
+    componentWillUnmount() {
+        let parent = document.getElementById('clusteringDetail');
+        if (parent) {
+            while (parent.firstChild) {
+                parent.removeChild(parent.firstChild);
+            }
+        }
+    }
+
     componentDidUpdate() {
         this.drawClusterCenterLineCharts();
         this.drawSubsequenceLengthHistogram();

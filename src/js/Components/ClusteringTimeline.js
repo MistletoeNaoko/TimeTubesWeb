@@ -39,6 +39,7 @@ export default class ClusteringTimeline extends React.Component {
             this.subsequences = ClusteringStore.getSubsequences();
             this.labels = ClusteringStore.getLabels();
             this.clusterColors = ClusteringStore.getClusterColors();
+            console.log('showClusteringResults', this.labels, this.subsequences, this.timelines);
             this.divideDataIntoCluster();
             this.drawTimelines();
         });
@@ -61,6 +62,15 @@ export default class ClusteringTimeline extends React.Component {
         });
     }
 
+    componentWillUnmount() {
+        let parent = document.getElementById('clusteringTimeline');
+        if (parent) {
+            while (parent.firstChild) {
+                parent.removeChild(parent.firstChild);
+            }
+        }
+    }
+
     divideDataIntoCluster() {
         this.clusters = [];
         for (let i = 0; i < this.clusterCenters.length; i++) {
@@ -77,15 +87,15 @@ export default class ClusteringTimeline extends React.Component {
 
     drawTimelines() {
         // TODO: それまでにタイムラインが描かれていたら削除
-        if (this.timelines.length > 0) {
+        // if (this.timelines.length > 0) {
             $('#clusteringTimelineArea').remove();
             this.timelines = [];
             this.xScales = [];
             this.xLabels = [];
             this.xAxes = [];
-        }
+        // }
 
-        let clientWidth = this.mount.clientWidth - (this.margin.left + this.margin.right),//this.mount.clientWidth,
+        let clientWidth = $('#clusteringResultsOverview').width() - (this.margin.left + this.margin.right),//this.mount.clientWidth,
             width = clientWidth - (this.margin.left + this.margin.right),//this.mount.clientWidth - this.margin.left - this.margin.right,
             fileNameWidth = 100;
         let widthTimeline = width - fileNameWidth,
@@ -210,7 +220,7 @@ export default class ClusteringTimeline extends React.Component {
     }
 
     resizeTimelines() {
-        let clientWidth = this.mount.clientWidth - (this.margin.left + this.margin.right),
+        let clientWidth = $('#clusteringResultsOverview').width() - (this.margin.left + this.margin.right),
             width = clientWidth - (this.margin.left + this.margin.right),
             fileNameWidth = 100;
         let widthTimeline = width - fileNameWidth,

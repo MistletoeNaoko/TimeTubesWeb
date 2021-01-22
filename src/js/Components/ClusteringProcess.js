@@ -106,6 +106,15 @@ export default class ClusteringProcess extends React.Component {
         });
     }
 
+    componentWillUnmount() {
+        let parent = document.getElementById('clusteringProcess');
+        if (parent) {
+            while (parent.firstChild) {
+                parent.removeChild(parent.firstChild);
+            }
+        }
+    }
+
     componentDidUpdate() {
         // この時点でテーブルは生成されてるから、それにd3を使ってグラフを描く
         this.drawSparklinesOfSubsequencesInTheSelectedStep();

@@ -33,7 +33,7 @@ export default class ClusteringOverview extends React.Component {
     }
 
     componentDidMount() {
-        const width = this.mount.clientWidth;
+        const width = $('#clusteringResultsOverview').width();//this.mount.clientWidth;
         let appHeaderHeight = $('#appHeader').outerHeight(true);
         const height = $('#clusteringResultsOverview').height() - appHeaderHeight;
         this.scene = new THREE.Scene();
@@ -82,6 +82,7 @@ export default class ClusteringOverview extends React.Component {
             this.showClusteringScores();
         });
         ClusteringStore.on('showClusterDetails', (cluster) => {
+            this.setCameraDetail();
             this.setDetailView(cluster);
         });
         ClusteringStore.on('updateClusteringResults', () => {
@@ -166,7 +167,7 @@ export default class ClusteringOverview extends React.Component {
     }
     
     setRendererSize() {
-        const width = this.mount.clientWidth;
+        const width = $('#clusteringResultsOverview').width();//this.mount.clientWidth;
         let appHeaderHeight = $('#appHeader').outerHeight(true);
         let timelineHeight = $('#clusteringTimeline').outerHeight(true);//40 * ClusteringStore.getDatasets().length + 16 + 2;
         const height = window.innerHeight - appHeaderHeight - timelineHeight;
@@ -202,8 +203,10 @@ export default class ClusteringOverview extends React.Component {
 
     setDetailView(cluster) {
         if (typeof(cluster) !== 'undefined' && $('#selectedClusterCenterTimeTubes').length) {
+            $('#selectedClusterCenterTimeTubesRenderer').remove();
             let rendererSize = $('#selectedClusterCenterTimeTubes').width() - 16 * 2;
             this.detailRenderer.setSize(rendererSize, rendererSize);
+            this.detailRenderer.domElement.id = 'selectedClusterCenterTimeTubesRenderer';
             let viewportSize = ClusteringStore.getViewportSize() * 0.7;
             let posX = viewportSize * Math.cos(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * cluster);
             let posY = viewportSize * Math.sin(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * cluster);
@@ -289,7 +292,19 @@ export default class ClusteringOverview extends React.Component {
             axisSize / 2, -axisSize / 2, 0.1,
             far
         );
-        this.cameraDetail.position.z = 10;
+        this.cameraDetail.position.z = this.cameraPosZ;
+    }
+
+
+    setCameraDetail() {
+        let far = 1000;
+        let axisSize = ClusteringStore.getViewportSize() * 0.7;
+        this.cameraDetail = new THREE.OrthographicCamera(
+            -axisSize / 2, axisSize / 2,
+            axisSize / 2, -axisSize / 2, 0.1,
+            far
+        );
+        this.cameraDetail.position.z = this.cameraPosZ;
     }
 
     computeSplines() {
@@ -306,7 +321,6 @@ export default class ClusteringOverview extends React.Component {
         this.minmax.H = [Infinity, -Infinity];
         this.minmax.V = [Infinity, -Infinity];
         if (variables.indexOf('x') >= 0 && variables.indexOf('y') >= 0) {
-            // console.log('compute splines, x, y')
             for (let i = 0; i < this.clusterCenters.length; i++) {
                 let position = [], radius = [], color = [];
                 for (let j = 0; j < this.clusterCenters[i].length; j++) {
