@@ -272,7 +272,10 @@ export default class ClusteringDetail extends React.Component {
                 trItems.push(
                     <tr id={'subsequenceDetailTr_' + dataId + '_' + SSId}
                         key={'subsequenceDetailTr_' + dataId + '_' + SSId}
-                        style={{width: tableWidth, height: cellHeight}}>
+                        style={{width: tableWidth, height: cellHeight}}
+                        onMouseOver={this.onMouseOverSubsequenceDetailTr().bind(this)}
+                        onMouseOut={this.onMouseOutSubsequenceDetailTr().bind(this)}
+                        onDoubleClick={this.onDoubleClickSubsequenceDetailTr().bind(this)}>
                         {tdItems}
                     </tr>);
             }
@@ -398,9 +401,11 @@ export default class ClusteringDetail extends React.Component {
                         .attr('fill', 'none')
                         .attr('stroke', 'lightgray')
                         .attr('stroke-width', 0.7)
+                        .attr('class', 'clusterMemberLineChart_' + this.SSCluster[j].id + '_' + this.SSCluster[j].idx)
+                        .attr('id', 'clusterMemberLineChart_' + this.SSCluster[j].id + '_' + this.SSCluster[j].idx + '_' + this.variables[i])
                         .attr('d', d3.line()
-                            .x(function(d, i) {
-                                return xScale(i);
+                            .x(function(d, idx) {
+                                return xScale(idx);
                             })
                             .y(function(d) {
                                 return yScale(d[this.variables[i]]);
@@ -490,6 +495,7 @@ export default class ClusteringDetail extends React.Component {
                     .enter()
                     .append('rect')
                     .attr('class', 'SSLengthBar')
+                    .attr('id', function(d) {return 'SSLengthBar_' + d.x0})
                     .attr('x', 1)
                     .attr('transform', function(d) {
                         return 'translate(' + xScale(d.x0) + ',' + yScale(d.length) + ')'
@@ -724,6 +730,79 @@ export default class ClusteringDetail extends React.Component {
         };
     }
 
+    onMouseOverSubsequenceDetailTr() {
+        return function(d) {
+            // show detail information of the subsequence on the tooltip
+            let targetId = d.target.id;
+            if (targetId) {
+                let tooltip = $('#tooltipClusteringResults');
+                let targetEle = targetId.split('_');
+                let dataId = targetEle[1],
+                    SSId = Number(targetEle[2]);
+                let data;
+                let i = 0;
+                for (i = 0; i < this.subsequences.length; i++) {
+                    if (this.subsequences[i].id === dataId && this.subsequences[i].idx === SSId) {
+                        data = this.subsequences[i];
+                        break;
+                    }
+                }
+                // show detail information of the subsequence
+                let fileName = DataStore.getFileName(dataId);
+                let period = [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z];
+                let dataPointNum = data.dataPoints.length;
+                let silhouette = this.clusteringScores.silhouetteSS[i];
+                let mouseX = window.innerWidth - d.clientX + 5;
+                let mouseY = window.innerHeight - d.clientY + 5;//$(window).scrollTop() + d.clientY + 2;
+                tooltip.html('<table><tbody><tr><td>File name</td><td>' + fileName + '</td></tr>' +
+                    '<tr><td>Period</td><td>' + period[0] + '-' + period[1] + '</td></tr>' +
+                    '<tr><td>Data points number</td><td>' + dataPointNum + '</td></tr>' +
+                    '<tr><td>Silhouette coefficient</td><td>' + formatValue(silhouette) + '</td></tr></tbody></table>');
+                tooltip.css({
+                    right: mouseX + 'px',
+                    bottom: mouseY + 'px'
+                });
+                tooltip.css('display', 'block');
+
+                // highlight histogram
+                d3.select('#SSLengthBar_' + Math.floor(period[1] - period[0]))
+                    .attr('stroke', 'black')
+                    .attr('stroke-width', 1.5);
+
+                // highlight cluster center line chart
+                d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
+                    .attr('stroke', '#f26418');
+            }
+        };
+    }
+
+    onMouseOutSubsequenceDetailTr() {
+        return function(d) {
+            let targetId = d.target.id;
+            if (targetId) {
+                let tooltip = $('#tooltipClusteringResults');
+                let targetEle = targetId.split('_');
+                let dataId = targetEle[1],
+                    SSId = Number(targetEle[2]);
+                // hide the tooltip
+                $('#tooltipClusteringResults').css('display', 'none');
+                
+                // remove stroke from histogram
+                d3.selectAll('.SSLengthBar')
+                    .attr('stroke-width', 0);
+
+                // make a highlighted path in cluster center line chart lightgray
+                d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
+                    .attr('stroke', 'lightgray');
+            }
+        };
+    }
+
+    onDoubleClickSubsequenceDetailTr() {
+        return function(d) {
+            // jump to TimeTubes view
+        };
+    }
     // drawSparklinesTableTmp() {
     //     $('#subsequenceOverviewTable').remove();
     //     $('#subsequenceOverviewTableMain').remove();

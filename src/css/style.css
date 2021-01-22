@@ -640,6 +640,7 @@ img.selectorIcon:active {
     position: relative;
     overflow: hidden;
     display: flex;
+    position: relative;
 }
 
 #collapseSourcePanel{
@@ -822,4 +823,9 @@ img.selectorIcon:active {
 
 #selectedClusterCenterTimeTubesRenderer {
     margin: auto;
+}
+
+#tooltipClusteringResults {
+    opacity: 0.75;
+    position: absolute;
 }

@@ -31,6 +31,9 @@ export default class ClusteringResults extends React.Component {
                 {/* <div id='clusteringLineCharts'>
 
                 </div> */}
+                <div className='tooltip clusteringResults'
+                    id='tooltipClusteringResults'
+                    style={{display: 'none'}}></div>
             </div>
         );
     }
