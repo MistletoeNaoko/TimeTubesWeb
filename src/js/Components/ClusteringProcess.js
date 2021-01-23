@@ -72,16 +72,9 @@ export default class ClusteringProcess extends React.Component {
             this.datasetsIdx = ClusteringStore.getDatasets();
             this.variables = ClusteringStore.getClusteringParameters().variables;
             this.variables = this.variables.filter(ele => ele !== 'z');
-            // let selectedSS = {}, updatedSS = {};
-            // for (let dataId in this.filteringProcess.subsequences) {
-            //     selectedSS[dataId] = [];
-            //     updatedSS[dataId] = [];
-            // }
-            // for (let dataId in this.filteringProcess[this.steps[this.steps.length - 1]]) {
-            //     for (let i = 0; i < this.filteringProcess[this.steps[this.steps.length - 1]][dataId].length; i++) {
-            //         selectedSS[dataId].push(this.filteringProcess[this.steps[this.steps.length - 1]][dataId][i]);
-            //     }
-            // }
+            this.clusterColors = ClusteringStore.getClusterColors();
+            this.subsequences = ClusteringStore.getSubsequences();
+            this.labels = ClusteringStore.getLabels();
             this.createVariableLabels();
             this.filteringSummary();
             this.initSparklines();
@@ -447,7 +440,8 @@ export default class ClusteringProcess extends React.Component {
                         key={'subsequenceTr_' + dataId + '_' + SSId}
                         style={{width: tableWidth, height: cellHeight}}
                         onMouseOver={this.onMouseOverFilteringStepSSRow().bind(this)}
-                        onMouseOut={this.onMouseOutFilteringStepSSRow().bind(this)}>
+                        onMouseOut={this.onMouseOutFilteringStepSSRow().bind(this)}
+                        onClick={this.onClickFilteringStepSSRow().bind(this)}>
                         {tdItems}
                     </tr>);
             }
@@ -529,9 +523,9 @@ export default class ClusteringProcess extends React.Component {
                     <tr id={'updatedSubsequenceTr_' + dataId + '_' + SSId}
                         key={'updatedSubsequenceTr_' + dataId + '_' + SSId}
                         style={{width: tableWidth, height: cellHeight}}
-                        // onMouseOver={this.onMouseOverFilteringStepSSRow().bind(this)}
-                        // onMouseOut={this.onMouseOutFilteringStepSSRow().bind(this)}>
-                        >
+                        onMouseOver={this.onMouseOverUpdatedSSRow().bind(this)}
+                        onMouseOut={this.onMouseOutUpdatedSSRow().bind(this)}
+                        onClick={this.onClickUpdatedSSRow().bind(this)}>
                         {tdItems}
                     </tr>
                 );
@@ -742,6 +736,52 @@ export default class ClusteringProcess extends React.Component {
                         .attr('stroke-width', 0.5)
                         .attr('r', 1.2);
                 }
+
+                // show detail information of the subsequence on a tooltip
+                let tooltip = $('#tooltipClusteringResults');
+                let fileName = DataStore.getFileName(dataId);
+                let period = [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z];
+                let dataPointNum = data.dataPoints.length;
+                let mouseX = d.clientX + 5;
+                let mouseY = window.innerHeight - d.clientY + 5;
+                tooltip.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                    '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
+                    '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
+                tooltip.css({
+                    left: mouseX + 'px',
+                    top: 'unset',
+                    right: 'unset',
+                    bottom: mouseY + 'px'
+                });
+                tooltip.css('display', 'block');
+
+                // highlight sparklines in the filtering process panel
+                if ($('#updatedSubsequenceTr_' + dataId + '_' + SSId).length) {
+                    d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
+                        .classed('table-active', true);
+                }
+
+                // highlight SS on the timeline
+                if ($('#clusterLine_' + dataId + '_' + SSId).length) {
+                    d3.select('#clusterLine_' + dataId + '_' + SSId)
+                        .attr('stroke', 'black')
+                        .attr('stroke-width', 1.5)
+                        .moveToFront();
+                }
+
+                // highlight the clustering detail panel if the currently focused cluster is the cluster of the selected SS
+                if ($('#subsequenceDetailTr_' + dataId + '_' + SSId).length > 0) {
+                    // highlight cluster center line chart
+                    d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
+                        .attr('stroke', '#f26418');
+                    // highlight histogram
+                    d3.select('#SSLengthBar_' + Math.floor(period[1] - period[0]))
+                        .attr('stroke', 'black')
+                        .attr('stroke-width', 1.5);
+                    // highlight sparkline
+                    d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
+                        .classed('table-active', true);
+                }
             }
         };
     }
@@ -759,6 +799,206 @@ export default class ClusteringProcess extends React.Component {
                     svg.select('g')
                         .selectAll('circle')
                         .remove();
+                }
+
+                // hide the tooltip
+                $('#tooltipClusteringResults').css('display', 'none');
+
+                // remove highlight sparklines in the filtering process panel
+                if ($('#updatedSubsequenceTr_' + dataId + '_' + SSId).length) {
+                    d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
+                        .classed('table-active', false);
+                }
+
+                // remove highlight from timeline
+                if ($('#clusterLine_' + dataId + '_' + SSId).length) {
+                    d3.select('#clusterLine_' + dataId + '_' + SSId)
+                        .attr('stroke-width', 0);
+                }
+
+                // remove highlights from clustering detail panel if the currently focued cluster coincides with the selected SS's cluster
+                if ($('#subsequenceDetailTr_' + dataId + '_' + SSId).length > 0) {
+                    // remove highlight from cluster center line chart
+                    d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
+                        .attr('stroke', 'lightgray');
+                    // remove highlight from histogram
+                    d3.selectAll('.SSLengthBar')
+                        .attr('stroke-width', 0);
+                    // remove highlight from sparkline
+                    d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
+                        .classed('table-active', false);
+                }
+            }
+        };
+    }
+
+    onClickFilteringStepSSRow() {
+        return function(d) {
+            // show the cluster which the selected SS belongs to
+            let targetId = d.target.id;
+            if (targetId) {
+                let targetIdEle = targetId.split('_');
+                let dataId = targetIdEle[1],
+                    SSId = targetIdEle[2];
+                
+                let targetClasses = document.getElementById('subsequenceTr_' + dataId + '_' + SSId).classList;
+                if (targetClasses.length > 0) {//.indexOf('subsequenceTrCluster')) {
+                    for (let i = 0; i < targetClasses.length; i++) {
+                        if (targetClasses[i].indexOf('subsequenceTrCluster') >= 0) {
+                            let targetEle = targetClasses[i].split('_');
+                            let clusterNum = Number(targetEle[1]);
+                            ClusteringAction.showClusterDetails(clusterNum);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    onMouseOverUpdatedSSRow() {
+        return function(d) {
+            let targetId = d.target.id;
+            if (targetId) {
+                let targetIdEle = targetId.split('_');
+                let dataId = targetIdEle[1],
+                    SSId = Number(targetIdEle[2]);
+                let xMinMax = this.xScale.domain();
+                // show data points on sparklines
+                let data = this.filteringProcess.subsequences[dataId][SSId];
+                for (let i = 0; i < this.variables.length; i++) {
+                    let svg = d3.select('#updateSubsequenceSVG_' + dataId + '_' + SSId + '_' + this.variables[i]);
+                    svg.select('g')
+                        .selectAll('circle')
+                        .data(data.dataPoints)
+                        .enter()
+                        .append('circle')
+                        .attr('cx', function(d) {
+                            let xVal = (d.z - data.dataPoints[0].z) 
+                                / (data.dataPoints[data.dataPoints.length - 1].z - data.dataPoints[0].z) * xMinMax[1];
+                            return this.xScale(xVal);
+                        }.bind(this))
+                        .attr('cy', function(d) {
+                            return this.yScales[this.variables[i]](d[this.variables[i]]);
+                        }.bind(this))
+                        .attr('fill', 'white')
+                        .attr('stroke', 'black')
+                        .attr('stroke-width', 0.5)
+                        .attr('r', 1.2);
+                }
+
+                // show detail information of the subsequence on a tooltip
+                let tooltip = $('#tooltipClusteringResults');
+                let fileName = DataStore.getFileName(dataId);
+                let period = [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z];
+                let dataPointNum = data.dataPoints.length;
+                let mouseX = d.clientX + 5;
+                let mouseY = window.innerHeight - d.clientY + 5;
+                tooltip.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                    '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
+                    '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
+                tooltip.css({
+                    left: mouseX + 'px',
+                    top: 'unset',
+                    right: 'unset',
+                    bottom: mouseY + 'px'
+                });
+                tooltip.css('display', 'block');
+
+                // highlight sparklines in the filtering process panel
+                if ($('#subsequenceTr_' + dataId + '_' + SSId).length) {
+                    d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                        .classed('table-active', true);
+                }
+
+                // highlight SS on the timeline
+                if ($('#clusterLine_' + dataId + '_' + SSId).length) {
+                    d3.select('#clusterLine_' + dataId + '_' + SSId)
+                        .attr('stroke', 'black')
+                        .attr('stroke-width', 1.5)
+                        .moveToFront();
+                }
+
+                // highlight the clustering detail panel if the currently focused cluster is the cluster of the selected SS
+                if ($('#subsequenceDetailTr_' + dataId + '_' + SSId).length > 0) {
+                    // highlight cluster center line chart
+                    d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
+                        .attr('stroke', '#f26418');
+                    // highlight histogram
+                    d3.select('#SSLengthBar_' + Math.floor(period[1] - period[0]))
+                        .attr('stroke', 'black')
+                        .attr('stroke-width', 1.5);
+                    // highlight sparkline
+                    d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
+                        .classed('table-active', true);
+                }
+            }
+        };
+    }
+
+    onMouseOutUpdatedSSRow() {
+        return function(d) {
+            // remove data points on sparklines
+            let targetId = d.target.id;
+            if (targetId) {
+                let targetIdEle = targetId.split('_');
+                let dataId = targetIdEle[1],
+                    SSId = targetIdEle[2];
+                for (let i = 0; i < this.variables.length; i++) {
+                    let svg = d3.select('#updatedSubsequenceSVG_' + dataId + '_' + SSId + '_' + this.variables[i]);
+                    svg.select('g')
+                        .selectAll('circle')
+                        .remove();
+                }
+
+                // hide the tooltip
+                $('#tooltipClusteringResults').css('display', 'none');
+
+                // remove highlight sparklines in the filtering process panel
+                if ($('#subsequenceTr_' + dataId + '_' + SSId).length) {
+                    d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                        .classed('table-active', false);
+                }
+
+                // remove highlight from timeline
+                if ($('#clusterLine_' + dataId + '_' + SSId).length) {
+                    d3.select('#clusterLine_' + dataId + '_' + SSId)
+                        .attr('stroke-width', 0);
+                }
+
+                // remove highlights from clustering detail panel if the currently focued cluster coincides with the selected SS's cluster
+                if ($('#subsequenceDetailTr_' + dataId + '_' + SSId).length > 0) {
+                    // remove highlight from cluster center line chart
+                    d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
+                        .attr('stroke', 'lightgray');
+                    // remove highlight from histogram
+                    d3.selectAll('.SSLengthBar')
+                        .attr('stroke-width', 0);
+                    // remove highlight from sparkline
+                    d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
+                        .classed('table-active', false);
+                }
+            }
+        };
+    }
+
+    onClickUpdatedSSRow() {
+        return function(d) {
+            // show the cluster which the selected SS belongs to
+            let targetId = d.target.id;
+            if (targetId) {
+                let targetIdEle = targetId.split('_');
+                let dataId = targetIdEle[1],
+                    SSId = targetIdEle[2];
+                
+                let targetClasses = document.getElementById('updatedSubsequenceTr_' + dataId + '_' + SSId).classList;
+                if (targetClasses.length > 0) {//.indexOf('subsequenceTrCluster')) {
+                    for (let i = 0; i < targetClasses.length; i++) {
+                        if (targetClasses[i].indexOf('updatedSubsequenceTrCluster') >= 0) {
+                            let targetEle = targetClasses[i].split('_');
+                            let clusterNum = Number(targetEle[1]);
+                            ClusteringAction.showClusterDetails(clusterNum);
+                        }
+                    }
                 }
             }
         };
@@ -817,7 +1057,22 @@ export default class ClusteringProcess extends React.Component {
                         let strokeColor = (
                             this.filteringProcess[this.state.selectedProcess][dataId].indexOf(SSId) < 0
                             ? this.filteringStepColors[selectedStepIdx - 1]: this.filteringStepColors[selectedStepIdx]
-                            );
+                        );
+                        for (let k = 0; k < this.subsequences.length; k++) {
+                            if (this.subsequences[k].id === dataId && this.subsequences[k].idx === SSId) {
+                                strokeColor = (typeof(this.labels[k]) === 'object')? 
+                                    d3.hsl(this.clusterColors[this.labels[k].cluster][0],
+                                        this.clusterColors[this.labels[k].cluster][1],
+                                        this.clusterColors[this.labels[k].cluster][2]):
+                                    d3.hsl(this.clusterColors[this.labels[k]][0],
+                                        this.clusterColors[this.labels[k]][1],
+                                        this.clusterColors[this.labels[k]][2]);
+                                let trClass = 'subsequenceTrCluster_' + this.labels[k];
+                                d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                                    .classed(trClass, true);
+                                break;
+                            }
+                        }
                         let sparklineGroup = svg.append('g');
                         let sparkline = sparklineGroup
                             .datum(data)
@@ -899,8 +1154,24 @@ export default class ClusteringProcess extends React.Component {
                                 this.filteringProcess[this.state.selectedProcess][dataId].indexOf(SSId) < 0
                                 ? this.filteringStepColors[selectedStepIdx - 1]: this.filteringStepColors[selectedStepIdx]
                                 );
-                        } else {
-                            strokeColor = this.filteringStepColors[this.steps.length - 1];
+                        }
+                        //  else {
+                        //     strokeColor = this.filteringStepColors[this.steps.length - 1];
+                        // }
+                        for (let k = 0; k < this.subsequences.length; k++) {
+                            if (this.subsequences[k].id === dataId && this.subsequences[k].idx === SSId) {
+                                strokeColor = (typeof(this.labels[k]) === 'object')? 
+                                    d3.hsl(this.clusterColors[this.labels[k].cluster][0],
+                                        this.clusterColors[this.labels[k].cluster][1],
+                                        this.clusterColors[this.labels[k].cluster][2]):
+                                    d3.hsl(this.clusterColors[this.labels[k]][0],
+                                        this.clusterColors[this.labels[k]][1],
+                                        this.clusterColors[this.labels[k]][2]);
+                                let trClass = 'updatedSubsequenceTrCluster_' + this.labels[k];
+                                d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
+                                    .classed(trClass, true);
+                                break;
+                            }
                         }
                         let sparklineGroup = svg.append('g');
                         let sparkline = sparklineGroup

@@ -295,6 +295,16 @@ export default class ClusteringTimeline extends React.Component {
                     d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
                         .classed('table-active', true);
                 }
+
+                // highlight sparklines in the filtering process panel
+                if ($('#subsequenceTr_' + dataId + '_' + SSId).length) {
+                    d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                        .classed('table-active', true);
+                }
+                if ($('#updatedSubsequenceTr_' + dataId + '_' + SSId).length) {
+                    d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
+                        .classed('table-active', true);
+                }
             }
         };    
     }
@@ -326,6 +336,16 @@ export default class ClusteringTimeline extends React.Component {
                     d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
                         .classed('table-active', false);
                 }
+
+                // remove highlight sparklines in the filtering process panel
+                if ($('#subsequenceTr_' + dataId + '_' + SSId).length) {
+                    d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                        .classed('table-active', false);
+                }
+                if ($('#updatedSubsequenceTr_' + dataId + '_' + SSId).length) {
+                    d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
+                        .classed('table-active', false);
+                }
             }
         };
     }
@@ -337,7 +357,6 @@ export default class ClusteringTimeline extends React.Component {
                 let targetClass = d3.event.target.classList[1];
                 let targetEle = targetClass.split('_');
                 let clusterNum = Number(targetEle[2]);
-                console.log(clusterNum);
                 showClusterDetails(clusterNum);
             }
         };

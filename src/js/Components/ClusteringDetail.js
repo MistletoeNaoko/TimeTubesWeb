@@ -787,6 +787,15 @@ export default class ClusteringDetail extends React.Component {
                     .attr('stroke-width', 1.5)
                     .moveToFront();
 
+                // highlight sparklines in the filtering process panel
+                if ($('#subsequenceTr_' + dataId + '_' + SSId).length) {
+                    d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                        .classed('table-active', true);
+                }
+                if ($('#updatedSubsequenceTr_' + dataId + '_' + SSId).length) {
+                    d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
+                        .classed('table-active', true);
+                }
             }
         };
     }
@@ -813,6 +822,15 @@ export default class ClusteringDetail extends React.Component {
                 d3.select('#clusterLine_' + dataId + '_' + SSId)
                     .attr('stroke-width', 0);
 
+                // highlight sparklines in the filtering process panel
+                if ($('#subsequenceTr_' + dataId + '_' + SSId).length) {
+                    d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                        .classed('table-active', false);
+                }
+                if ($('#updatedSubsequenceTr_' + dataId + '_' + SSId).length) {
+                    d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
+                        .classed('table-active', false);
+                }
             }
         };
     }
