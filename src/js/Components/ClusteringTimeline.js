@@ -1,6 +1,7 @@
 import React from 'react';
 import * as d3 from 'd3';
-import {resizeExtractionResultsArea} from '../Actions/AppAction';
+import {resizeExtractionResultsArea, selectMenu} from '../Actions/AppAction';
+import {showTimeTubesOfTimeSlice} from '../Actions/TimeTubesAction';
 import {showClusterDetails} from '../Actions/ClusteringAction';
 import DataStore from '../Stores/DataStore';
 import ClusteringStore from '../Stores/ClusteringStore';
@@ -171,7 +172,8 @@ export default class ClusteringTimeline extends React.Component {
                     .attr('transform', 'translate(' + (this.margin.left + fileNameWidth) + ',0)')
                     .on('mouseover', this.onMouseOverClusterLine().bind(this))
                     .on('mouseout', this.onMouseOutClusterLine().bind(this))
-                    .on('click', this.onClickClusterLine().bind(this));
+                    .on('click', this.onClickClusterLine().bind(this))
+                    .on('dblclick', this.onDoubleClickClusterLine().bind(this));
                     // .append('line')
                     // .attr('class', 'clusterLine_' + this.datasets[j] + ' clusterLine_' + this.datasets[j] + '_' + i)
                     // .attr('x1', function(d) {
@@ -360,6 +362,26 @@ export default class ClusteringTimeline extends React.Component {
                 showClusterDetails(clusterNum);
             }
         };
+    }
+
+    onDoubleClickClusterLine() {
+        return function(d) {
+            let targetId = d3.event.target.id;
+            if (targetId) {
+                let targetEle = targetId.split('_');
+                let dataId = targetEle[1],
+                    SSId = Number(targetEle[2]);
+                let data;
+                for (let i = 0; i < this.subsequences.length; i++) {
+                    if (this.subsequences[i].id === dataId && this.subsequences[i].idx === SSId) {
+                        data = this.subsequences[i];
+                        break;
+                    }
+                }
+                selectMenu('visualization');
+                showTimeTubesOfTimeSlice(Number(dataId), [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
+            }
+        } 
     }
 
     resizeTimelines() {

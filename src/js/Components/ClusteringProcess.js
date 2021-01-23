@@ -1,6 +1,8 @@
 import React from 'react';
 import * as d3 from 'd3';
 import {reperformClustering} from '../lib/subsequenceClustering';
+import {selectMenu} from '../Actions/AppAction';
+import {showTimeTubesOfTimeSlice} from '../Actions/TimeTubesAction';
 import * as ClusteringAction from '../Actions/ClusteringAction';
 import ClusteringStore from '../Stores/ClusteringStore';
 import DataStore from '../Stores/DataStore';
@@ -441,7 +443,8 @@ export default class ClusteringProcess extends React.Component {
                         style={{width: tableWidth, height: cellHeight}}
                         onMouseOver={this.onMouseOverFilteringStepSSRow().bind(this)}
                         onMouseOut={this.onMouseOutFilteringStepSSRow().bind(this)}
-                        onClick={this.onClickFilteringStepSSRow().bind(this)}>
+                        onClick={this.onClickFilteringStepSSRow().bind(this)}
+                        onDoubleClick={this.onDoubleClickFilteringStepSSRow().bind(this)}>
                         {tdItems}
                     </tr>);
             }
@@ -525,7 +528,8 @@ export default class ClusteringProcess extends React.Component {
                         style={{width: tableWidth, height: cellHeight}}
                         onMouseOver={this.onMouseOverUpdatedSSRow().bind(this)}
                         onMouseOut={this.onMouseOutUpdatedSSRow().bind(this)}
-                        onClick={this.onClickUpdatedSSRow().bind(this)}>
+                        onClick={this.onClickUpdatedSSRow().bind(this)}
+                        onDoubleClick={this.onDoubleClickUpdatedSSRow().bind(this)}>
                         {tdItems}
                     </tr>
                 );
@@ -855,6 +859,27 @@ export default class ClusteringProcess extends React.Component {
         }
     }
 
+    onDoubleClickFilteringStepSSRow() {
+        return function(d) {
+            // jump to TimeTubes view
+            let targetId = d.target.id;
+            if (targetId) {
+                let targetEle = targetId.split('_');
+                let dataId = targetEle[1],
+                    SSId = Number(targetEle[2]);
+                let data;
+                for (let i = 0; i < this.filteringProcess.subsequences[dataId].length; i++) {
+                    if (this.filteringProcess.subsequences[dataId][i].id === dataId && this.filteringProcess.subsequences[dataId][i].idx === SSId) {
+                        data = this.filteringProcess.subsequences[dataId][i];
+                        break;
+                    }
+                }
+                selectMenu('visualization');
+                showTimeTubesOfTimeSlice(Number(dataId), [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
+            }
+        };
+    }
+
     onMouseOverUpdatedSSRow() {
         return function(d) {
             let targetId = d.target.id;
@@ -1000,6 +1025,27 @@ export default class ClusteringProcess extends React.Component {
                         }
                     }
                 }
+            }
+        };
+    }
+
+    onDoubleClickUpdatedSSRow() {
+        return function(d) {
+            // jump to TimeTubes view
+            let targetId = d.target.id;
+            if (targetId) {
+                let targetEle = targetId.split('_');
+                let dataId = targetEle[1],
+                    SSId = Number(targetEle[2]);
+                let data;
+                for (let i = 0; i < this.filteringProcess.subsequences[dataId].length; i++) {
+                    if (this.filteringProcess.subsequences[dataId][i].id === dataId && this.filteringProcess.subsequences[dataId][i].idx === SSId) {
+                        data = this.filteringProcess.subsequences[dataId][i];
+                        break;
+                    }
+                }
+                selectMenu('visualization');
+                showTimeTubesOfTimeSlice(Number(dataId), [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
             }
         };
     }
