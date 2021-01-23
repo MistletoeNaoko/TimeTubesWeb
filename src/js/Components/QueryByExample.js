@@ -1,4 +1,5 @@
 import React from 'react';
+import {showExtractionSourcePanel} from '../Actions/AppAction';
 import * as FeatureAction from '../Actions/FeatureAction';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
@@ -50,7 +51,13 @@ export default class QueryByExample extends React.Component {
         let sourceList = document.getElementById('sourceList');
         let selectedIdx = sourceList.selectedIndex;
         let selectedId = sourceList.options[selectedIdx].value; // get id
-        FeatureAction.updateSource(selectedId);
+        let promise = Promise.resolve();
+        promise
+            .then(function() {
+                showExtractionSourcePanel(selectedId);
+            }).then(function() {
+                FeatureAction.updateSource(selectedId);
+            })
     }
 
     render() {

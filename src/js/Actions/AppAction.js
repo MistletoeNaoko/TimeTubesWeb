@@ -7,3 +7,7 @@ export function selectMenu(menu) {
 export function resizeExtractionResultsArea() {
     dispatcher.dispatch({type: 'RESIZE_EXTRACTION_RESULTS_AREA'});
 }
+
+export function showExtractionSourcePanel(id) {
+    dispatcher.dispatch({type: 'SHOW_EXTRACTION_SOURCE_PANEL', id});
+}

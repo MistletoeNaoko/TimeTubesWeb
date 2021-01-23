@@ -305,6 +305,7 @@ class FeatureStore extends EventEmitter {
 
     setQuery(query) {
         this.query = query;
+        this.emit('setQuery');
     }
 
     convertResultIntoQuery(id, period, ignored) {
