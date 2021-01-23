@@ -378,6 +378,7 @@ export default class ClusteringTimeline extends React.Component {
                         break;
                     }
                 }
+                $('#tooltipClusteringResults').css('display', 'none');
                 selectMenu('visualization');
                 showTimeTubesOfTimeSlice(Number(dataId), [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
             }

@@ -325,6 +325,7 @@ export default class ClusteringProcess extends React.Component {
                 path.attr('fill', textColor)
                     .attr('stroke-width', 0);
                 text.attr('fill', 'white');
+                ClusteringAction.showFilteringStep('');
             } else {
                 let trapezoidGroups = $(this).parent()
                     .children('g.filteringTrapezoidGroup');
@@ -539,10 +540,9 @@ export default class ClusteringProcess extends React.Component {
         return (
             <table id='updatedSubsequencesTable'
                 className='table table-hover sparkTable'
-                style={{width: tableWidth, height: tableHeight}}>
+                style={{width: tableWidth}}>
                 {tableHeader}
-                <tbody id='updatedSubsequencesTableBody'
-                    style={{height: tableHeight - cellHeight}}>
+                <tbody id='updatedSubsequencesTableBody'>
                     {trItems}
                 </tbody>
             </table>
@@ -874,6 +874,7 @@ export default class ClusteringProcess extends React.Component {
                         break;
                     }
                 }
+                $('#tooltipClusteringResults').css('display', 'none');
                 selectMenu('visualization');
                 showTimeTubesOfTimeSlice(Number(dataId), [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
             }
@@ -1044,6 +1045,7 @@ export default class ClusteringProcess extends React.Component {
                         break;
                     }
                 }
+                $('#tooltipClusteringResults').css('display', 'none');
                 selectMenu('visualization');
                 showTimeTubesOfTimeSlice(Number(dataId), [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
             }
@@ -1175,9 +1177,9 @@ export default class ClusteringProcess extends React.Component {
                 updatedNum += this.state.updatedSS[d].length;
             }.bind(this));
             d3.select('#updatedSubsequencesTable')
-                .style(Math.min(tableHeight, cellHeight * (updatedNum + 1)));
+                .attr('height', Math.min(tableHeight, cellHeight * (updatedNum + 1)));
             d3.select('#updatedSubsequencesTableBody')
-                .style('height', Math.min(tableHeight - cellHeight, cellHeight * updatedNum));
+                .attr('height', Math.min(tableHeight - cellHeight, cellHeight * updatedNum));
             for (let dataId in this.state.updatedSS) {
                 for (let i = 0; i < this.state.updatedSS[dataId].length; i++) {
                     let SSId = this.state.updatedSS[dataId][i].idx;

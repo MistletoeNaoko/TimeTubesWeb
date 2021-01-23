@@ -20,6 +20,7 @@ export default class Layout extends React.Component {
     componentDidMount() {
         AppStore.on('selectMenu', (menu) => {
             this.selectMainView(menu);
+            scrollTo(0, 0);
             this.setState({
                 menu: menu
             });
