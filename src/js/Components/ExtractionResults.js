@@ -361,6 +361,12 @@ export default class ExtractionResults extends React.Component {
                                     textTmp.push(this.state.importedResults.query.query[keyQuery][i].join(', '));
                                 }
                                 textQuery = textTmp.join(', ');
+                            } else if (keyQuery === 'activeVariables') {
+                                let textTmp = [];
+                                for (let i = 0; i < this.state.importedResults.query.query[keyQuery].length; i++) {
+                                    textTmp.push(this.state.importedResults.query.query[keyQuery][i].join(', '));
+                                }
+                                textQuery = textTmp.join(', ');
                             } else if (Array.isArray(textQuery)) {
                                 textQuery = textQuery.join(', ');
                             }
@@ -650,17 +656,17 @@ export default class ExtractionResults extends React.Component {
                 } 
             }
             let lookup = DataStore.getData(this.state.selected.id).data.lookup;
-            let ignored = FeatureStore.getIgnored();
-            if (ignored) {
-                let variables = [];
-                for (let key in lookup) {
-                    if (ignored.indexOf(key) < 0 && key !== 'z') {
-                        variables.push(key);
-                    }
-                }
+            let activeVar = FeatureStore.getActive();
+            if (activeVar) {
+                // let variables = [];
+                // for (let key in lookup) {
+                //     if (ignored.indexOf(key) < 0 && key !== 'z') {
+                //         variables.push(key);
+                //     }
+                // }
                 let variablesLabel = '';
-                for (let i = 0; i < variables.length; i++) {
-                    variablesLabel += lookup[variables[i]] + ', ';
+                for (let i = 0; i < activeVar.length; i++) {
+                    variablesLabel += lookup[activeVar[i]] + ', ';
                 }
                 variablesLabel = variablesLabel.slice(0, variablesLabel.length - 2);
                      

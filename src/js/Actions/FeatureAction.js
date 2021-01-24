@@ -37,12 +37,12 @@ export function switchQueryMode(mode) {
     dispatcher.dispatch({type: 'SWITCH_QUERY_MODE', mode});
 }
 
-export function setIgnoredVariables(varList) {
-    dispatcher.dispatch({type: 'SET_IGNORED_VARIALES', varList});
+export function setActiveVariables(varList) {
+    dispatcher.dispatch({type: 'SET_ACTIVE_VARIABLES', varList});
 }
 
-export function setExtractionResults(parameters, results, query, ignored) {
-    dispatcher.dispatch({type: 'SET_EXTRACTION_RESULTS', parameters, results, query, ignored});
+export function setExtractionResults(parameters, results, query, activeVar) {
+    dispatcher.dispatch({type: 'SET_EXTRACTION_RESULTS', parameters, results, query, activeVar});
 }
 
 export function showLineCharts(LC) {
@@ -61,9 +61,9 @@ export function setQuery(query) {
     dispatcher.dispatch({type: 'SET_QUERY', query});
 }
 
-export function convertResultIntoQuery(id, period, ignored) {
+export function convertResultIntoQuery(id, period, activeVar) {
     // console.log(id, period, ignored)
-    dispatcher.dispatch({type: 'CONVERT_RESULT_INTO_QUERY', id, period, ignored});
+    dispatcher.dispatch({type: 'CONVERT_RESULT_INTO_QUERY', id, period, activeVar});
 }
 
 export function updateAEOption(option, value) {

@@ -75,7 +75,7 @@ export default class VisualQuery extends React.Component {
                 this.updateSelectedInterval();
             }
         });
-        FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
+        FeatureStore.on('convertResultIntoQuery', (id, period, activeVar) => {
             this.setState({
                 source: id,
                 selectedInterval: period
@@ -198,9 +198,9 @@ export default class VisualQuery extends React.Component {
         $('#targetLengthMax').val(Math.floor(this.state.selectedInterval[1]) - Math.ceil(this.state.selectedInterval[0]));
     }
 
-    updateIgnoredVariables() {
-        let ignored = domActions.getIgnoredVariables();
-        FeatureAction.setIgnoredVariables(ignored);
+    updateActiveVariables() {
+        let activeVar = domActions.getActiveVariables();
+        FeatureAction.setActiveVariables(activeVar);
     }
 
     queryModes() {
@@ -290,9 +290,9 @@ export default class VisualQuery extends React.Component {
         let items = [];
         if (this.state.source >= 0) {
             let lookup = DataStore.getData(Number(this.state.source)).data.lookup;
-            let inactiveVariables = FeatureStore.getIgnored();
+            let activeVariables = FeatureStore.getActive();
             // if inactive variables are already determined, check the checkboxes
-            if (inactiveVariables.length === 0) {
+            if (activeVariables.length === 0) {
                 for (let key in lookup) {
                     let label = '';
                     if (key !== 'z' && key !== 'PA' && key !== 'PD') {
@@ -307,20 +307,20 @@ export default class VisualQuery extends React.Component {
                                 <input
                                     className="form-check-input"
                                     type="checkbox"
-                                    name='QBEIgnored'
+                                    name='QBEActive'
                                     value={key}
-                                    id={"QBEIgnored_" + key}
+                                    id={"QBEActive_" + key}
                                 />
                                 <label
                                     className="form-check-label"
-                                    htmlFor={"QBEIgnored_" + key}>
+                                    htmlFor={"QBEActive_" + key}>
                                     {label}
                                 </label>
                             </div>
                         );
                     }
                 }
-            } else if (inactiveVariables.length > 0) {
+            } else if (activeVariables.length > 0) {
                 for (let key in lookup) {
                     let label = '';
                     if (lookup[key].length > 1) {
@@ -329,21 +329,21 @@ export default class VisualQuery extends React.Component {
                         label = lookup[key];
                     }
                     if (key !== 'z' && key !== 'PA' && key !== 'PD') {
-                        let defaultChecked = (inactiveVariables.indexOf(key) >= 0)? true: false;
+                        let defaultChecked = (activeVariables.indexOf(key) >= 0)? true: false;
                         items.push(
                             <div className="form-check form-check-inline"
                                 key={key}>
                                 <input
                                     className="form-check-input"
                                     type="checkbox"
-                                    name='QBEIgnored'
+                                    name='QBEActive'
                                     value={key}
                                     defaultChecked={defaultChecked}
-                                    id={"QBEIgnored_" + key}
+                                    id={"QBEActive_" + key}
                                 />
                                 <label
                                     className="form-check-label"
-                                    htmlFor={"QBEIgnored_" + key}>
+                                    htmlFor={"QBEActive_" + key}>
                                     {label}
                                 </label>
                             </div>
@@ -356,9 +356,9 @@ export default class VisualQuery extends React.Component {
             <div className='featureElem' style={{position: 'relative'}}>
                 <h5 onClick={this.collapseMatchingOptions}>Matching</h5>
                 <div id='matchingOptionsMain'>
-                    <div id='ignoredVariablesArea' style={{display: (this.state.queryMode === 'QBE')? 'block': 'none'}}>
-                        <h6>Inactive variables</h6>
-                        <form id='QBEIgnoredVariables' onChange={this.updateIgnoredVariables.bind(this)}>
+                    <div id='activeVariablesArea' style={{display: (this.state.queryMode === 'QBE')? 'block': 'none'}}>
+                        <h6>Active variables</h6>
+                        <form id='QBEActiveVariables' onChange={this.updateActiveVariables.bind(this)}>
                             {items}
                         </form>
                     </div>
@@ -594,10 +594,10 @@ export default class VisualQuery extends React.Component {
                     // get selected time period: FeatureStore.getSelectedPeriod()
                     let period = FeatureStore.getSelectedPeriod();
                     // get what to ignore: this.getIgnoredVariables
-                    let ignored = domActions.getIgnoredVariables();
+                    let activeVar = domActions.getActiveVariables();
                     // PA,PD should always be inactive because PDPA and QIUI means same
-                    ignored.push('PD');
-                    ignored.push('PA');
+                    // ignored.push('PD');
+                    // ignored.push('PA');
                     let parameters = {};
                     parameters = {
                         normalize: normalization,
@@ -616,12 +616,12 @@ export default class VisualQuery extends React.Component {
                         // compute distance between time slices!
                         // scores of matching with starting JD and period will be returned
                         // result stores {id, start, period, dtw distance, path} (not sorted)
-                        let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, ignored, this.state.coordinate);
+                        let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, activeVar, this.state.coordinate);
                         if (query) {
                             results = TimeSeriesQuerying.runMatching(query.values, targets, parameters);
                             // results = TimeSeriesQuerying.runMatching(query.values, targets, DTWType, normalization, normlizationOption, selectedDist, windowSize, step, [periodMin, periodMax]);
                             results = TimeSeriesQuerying.removeOverlappingQBE(source, period, results);
-                            FeatureAction.setExtractionResults(parameters, results, query, ignored);
+                            FeatureAction.setExtractionResults(parameters, results, query, activeVar);
                             TimeSeriesQuerying.setDefaltOrderOfResults();
                         }
                     }
@@ -630,10 +630,11 @@ export default class VisualQuery extends React.Component {
             case 'QBS':
                 if (targets.length > 0) {
                     let query = FeatureStore.getQuery();
-                    let ignored = [];
+                    let activeVar = [];
                     for (let key in query.values) {
                         if (Array.isArray(query.values[key])) {
                             if (query.values[key].indexOf(null) < 0) {
+                                activeVar.push(key);
                                 continue;
                             }
                             let flag = true;
@@ -643,7 +644,8 @@ export default class VisualQuery extends React.Component {
                                     break;
                                 }
                             }
-                            if (flag) ignored.push(key);
+                            // if (flag) ignored.push(key);
+                            if (!flag) activeVar.push(key);
                         }
                     }
                     // let variableList = document.getElementById('widthVariables');
@@ -671,7 +673,7 @@ export default class VisualQuery extends React.Component {
                     if (query.values) {
                         results = TimeSeriesQuerying.runMatchingSketch(query.values, targets, parameters);
                         // results = TimeSeriesQuerying.runMatchingSketch(query.values, targets, DTWType, normalization, normlizationOption, selectedDist, windowSize, step, [periodMin, periodMax]);
-                        FeatureAction.setExtractionResults(parameters, results, query, ignored);
+                        FeatureAction.setExtractionResults(parameters, results, query, activeVar);
                         TimeSeriesQuerying.setDefaltOrderOfResults();
                     }
                 }

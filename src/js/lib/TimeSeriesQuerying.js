@@ -10,16 +10,17 @@ import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 
-export function makeQueryfromQBE(source, period, ignored, coordinates) {
+export function makeQueryfromQBE(source, period, activeVar, coordinates) {
     let roundedPeriod = [Math.floor(period[0]), Math.ceil(period[1])];
     let minJD = DataStore.getData(source).data.meta.min.z;
     let lookup = DataStore.getData(source).data.lookup;
     let queryVal = {}, keys = [];
-    for (let key in lookup) {
-        if (ignored.indexOf(key) < 0) {
-            keys.push(key);
-        }
-    }
+    keys = activeVar;
+    // for (let key in lookup) {
+    //     if (ignored.indexOf(key) < 0) {
+    //         keys.push(key);
+    //     }
+    // }
     if (coordinates === 'rectangular') {
         for (let keyIdx = 0; keyIdx < keys.length; keyIdx++) {
             queryVal[keys[keyIdx]] = [];
@@ -74,9 +75,9 @@ export function makeQueryfromQBE(source, period, ignored, coordinates) {
             queryVal['arrayLength'] = roundedPeriod[1] - roundedPeriod[0] + 1;
         }
     }
-    let inactiveVarName = [];
-    for (let i = 0; i < ignored.length; i++) {
-        inactiveVarName.push(lookup[ignored[i]]);
+    let activeVarName = [];
+    for (let i = 0; i < activeVar.length; i++) {
+        activeVarName.push(lookup[activeVar[i]]);
     }
     let query = {
         mode: 'visual query',
@@ -84,7 +85,7 @@ export function makeQueryfromQBE(source, period, ignored, coordinates) {
         query: {
             source: DataStore.getData(Number(FeatureStore.getSource())).name,
             period: roundedPeriod,
-            inactiveVariables: inactiveVarName
+            activeVariables: activeVarName
         },
         values: queryVal
     };

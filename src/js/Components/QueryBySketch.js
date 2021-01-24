@@ -134,7 +134,7 @@ export default class QueryBySketch extends React.Component{
                 this.updateWidthVariable();
             }
         });
-        FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
+        FeatureStore.on('convertResultIntoQuery', (id, period, activeVar) => {
             if (FeatureStore.getMode() === 'QBS') {
                 this.clearCanvas();
                 let targets = FeatureStore.getTarget();

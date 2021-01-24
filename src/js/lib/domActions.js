@@ -60,17 +60,17 @@ export function toggleExtractionDetailPanel() {
     }
 }
 
-export function getIgnoredVariables() {
-    let checked = $('input[name=QBEIgnored]:checked');
-    let ignored = [];
+export function getActiveVariables() {
+    let checked = $('input[name=QBEActive]:checked');
+    let active = [];
     for (let i = 0; i < checked.length; i++) {
-        ignored.push(checked[i].value);
+        active.push(checked[i].value);
     }
-    return ignored;
+    return active;
 }
 
-export function uncheckIgnoredVariables() {
-    let checked = $('input[name=QBEIgnored]:checked');
+export function uncheckActiveVariables() {
+    let checked = $('input[name=QBEActive]:checked');
     for (let i = 0; i < checked.length; i++) {
         checked[i].checked = false;
     }

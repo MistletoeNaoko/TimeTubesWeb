@@ -2,7 +2,8 @@ import {EventEmitter} from 'events';
 import dispatcher from "../Dispatcher/dispatcher";
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import DataStore from '../Stores/DataStore';
-import {uncheckIgnoredVariables} from '../lib/domActions';
+import {uncheckActiveVariables} from '../lib/domActions';
+import { active } from 'd3';
 
 class FeatureStore extends EventEmitter {
     constructor() {
@@ -22,7 +23,7 @@ class FeatureStore extends EventEmitter {
         this.selectedPeriod = [-1, -1];
         this.extractionResults = [];
         this.query = {};
-        this.ignored = [];
+        this.activeVar = ['x', 'y', 'H', 'V'];
         this.parameters = {};
         this.kValue = 20;
         this.order = 'timeStamp';
@@ -61,11 +62,11 @@ class FeatureStore extends EventEmitter {
             case 'SELECT_PERIOD_FROM_SP':
                 this.selectPeriodfromSP(action.period);
                 break;
-            case 'SET_IGNORED_VARIALES':
-                this.setIgnoredVariables(action.varList);
+            case 'SET_ACTIVE_VARIABLES':
+                this.setActiveVariables(action.varList);
                 break;
             case 'SET_EXTRACTION_RESULTS':
-                this.setExtractionResults(action.parameters, action.results, action.query, action.ignored);
+                this.setExtractionResults(action.parameters, action.results, action.query, action.activeVar);
                 break;
             case 'SHOW_LINE_CHARTS':
                 this.showLineCharts(action.LC);
@@ -80,7 +81,7 @@ class FeatureStore extends EventEmitter {
                 this.setQuery(action.query);
                 break;
             case 'CONVERT_RESULT_INTO_QUERY':
-                this.convertResultIntoQuery(action.id, action.period, action.ignored);
+                this.convertResultIntoQuery(action.id, action.period, action.activeVar);
                 break;
             case 'UPDATE_AE_OPTION':
                 this.updateAEOption(action.option, action.value);
@@ -152,8 +153,8 @@ class FeatureStore extends EventEmitter {
         return this.extractionResults;
     }
 
-    getIgnored() {
-        return this.ignored;
+    getActive() {
+        return this.activeVar;
     }
 
     getQuery() {
@@ -253,8 +254,8 @@ class FeatureStore extends EventEmitter {
         }
         if (mode !== 'QBE') {
             this.source = 'default';
-            this.ignored = [];
-            uncheckIgnoredVariables();
+            this.activeVar = ['x', 'y', 'H', 'V'];
+            uncheckActiveVariables();
         }
         this.emit('switchQueryMode', mode);
     }
@@ -278,15 +279,15 @@ class FeatureStore extends EventEmitter {
         this.emit('updateSelectedPeriod');
     }
 
-    setIgnoredVariables(varList) {
-        this.emit('setIgnoredVariables', varList);
+    setActiveVariables(varList) {
+        this.emit('setActiveVariables', varList);
     }
 
-    setExtractionResults(parameters, results, query, ignored) {
+    setExtractionResults(parameters, results, query, activeVar) {
         this.parameters = (parameters !== undefined)? parameters: {};
         this.extractionResults = results;
         this.query = query;
-        this.ignored = (ignored !== undefined)? ignored: [];
+        this.activeVar = (activeVar !== undefined)? activeVar: [];
         this.emit('setExtractionResults');
     }
 
@@ -308,12 +309,12 @@ class FeatureStore extends EventEmitter {
         this.emit('setQuery');
     }
 
-    convertResultIntoQuery(id, period, ignored) {
+    convertResultIntoQuery(id, period, activeVar) {
         if (this.mode == 'QBE') {
             this.selectedPeriod = period;
-            this.ignored = ignored;
+            this.activeVar = activeVar;
         }
-        this.emit('convertResultIntoQuery', id, period, ignored);
+        this.emit('convertResultIntoQuery', id, period, activeVar);
     }
 
     updateAEOption(option, value) {
@@ -353,6 +354,7 @@ class FeatureStore extends EventEmitter {
     }
 
     recoverQuery(query) {
+        console.log(query);
         if (query.mode === 'automatic extraction') {
             this.mode = 'AE';
             this.resetAEOptions();
@@ -364,18 +366,35 @@ class FeatureStore extends EventEmitter {
                 this.mode = 'QBE';
                 this.selectedPeriod = query.query.period;
                 this.source = DataStore.getIdFromName(query.query.source);
-                // set ignored variable
+                // set active variable
                 let lookup = DataStore.getData(this.source).data.lookup;
-                let ignoredTmp = [];
-
-                for (let i = 0; i < query.query.inactiveVariables.length; i++) { 
-                    for (let key in lookup) {
-                        if (lookup[key].indexOf(query.query.inactiveVariables[i][0]) >= 0) {
-                            ignoredTmp.push(key);
+                let activeVarTmp = [];
+                // TODO: 要検討！！そもそも変数名で変数管理してるから混乱するのでは
+                if (query.query.inactiveVariables) {
+                    let inactiveVarTmp = [];
+                    // for (let i = 0; i < query.query.inactiveVariables.length; i++) { 
+                    //     for (let key in lookup) {
+                    //         if (lookup[key].indexOf(query.query.inactiveVariables[i][0]) < 0) {
+                    //             inactiveVarTmp.push(key);
+                    //         }
+                    //     }
+                    // }
+                    for (let i = 0; i < query.query.inactiveVariables.length; i++) {
+                        for (let key in lookup) {
+                            if (lookup[key].indexOf(query.query.inactiveVariables[i][0]) >= 0) {
+                                inactiveVarTmp.push(key);
+                            }
                         }
                     }
+                    for (let key in lookup) {
+                        if (inactiveVarTmp.indexOf(key) < 0) {
+                            activeVarTmp.push(key);
+                        }
+                    }
+                } else if (query.query.activeVariables) {
+                    activeVarTmp = query.query.activeVariables;
                 }
-                this.ignored = ignoredTmp;
+                this.activeVar = activeVarTmp;
                 this.parameters = query.parameters;
             } else if (query.option === 'query-by-sketch') {
                 this.mode = 'QBS';

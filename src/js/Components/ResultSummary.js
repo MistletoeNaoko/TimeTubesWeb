@@ -19,7 +19,7 @@ export default class ResultSummary extends React.Component {
         // this.distance = props.distance;
         this.rank = props.rank;
         // this.path = props.path;
-        this.ignored = FeatureStore.getIgnored();
+        this.activeVar = FeatureStore.getActive();
         this.lookup = DataStore.getData(this.id).data.lookup;
         this.variables = [];
         // relative position on the result summary panel
@@ -27,13 +27,13 @@ export default class ResultSummary extends React.Component {
         this.clickedY = null;
         // flag to identify whether the action is click or mousedown
         this.moved = false;
-        if (this.ignored) {
-            for (let key in this.lookup) {
-                if (this.ignored.indexOf(key) < 0 && key !== 'z') {
-                    this.variables.push(key);
-                }
-            }
-        }
+        // if (this.ignored) {
+        //     for (let key in this.lookup) {
+        //         if (this.ignored.indexOf(key) < 0 && key !== 'z') {
+        //             this.variables.push(key);
+        //         }
+        //     }
+        // }
     }
 
     componentDidMount() {
@@ -313,7 +313,7 @@ export default class ResultSummary extends React.Component {
                                 domActions.toggleSourcePanel();
                                 resizeExtractionResultsArea();
                             }
-                            FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
+                            FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.activeVar);
                             if ($('#resultDetailArea').css('display') === 'block') {
                                 domActions.toggleExtractionDetailPanel();
                             }
@@ -333,7 +333,7 @@ export default class ResultSummary extends React.Component {
                         if ((sketchPadPos.left <= event.pageX && event.pageX <= sketchPadPos.left + sketchPadWidth)
                         && (sketchPadPos.top <= event.pageY && event.pageY <= sketchPadPos.top + sketchPadHeight)) {
                             // convert the result into a new query
-                            FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
+                            FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.activeVar);
                             if ($('#resultDetailArea').css('display') === 'block') {
                                 domActions.toggleExtractionDetailPanel();
                             }

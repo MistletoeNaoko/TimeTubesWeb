@@ -14,7 +14,7 @@ export default class SelectedTimeSlice extends React.Component {
         this.texture = TimeTubesStore.getTexture();
         this.segment = TimeTubesStore.getSegment();
         this.division = TimeTubesStore.getDivision();
-        this.ignoredVariables = FeatureStore.getIgnored();
+        this.activeVar = FeatureStore.getActive();
     }
 
     render() {
@@ -59,7 +59,7 @@ export default class SelectedTimeSlice extends React.Component {
         FeatureStore.on('switchQueryMode', (mode) => {
             if (mode !== 'QBE') {
                 this.sourceId = FeatureStore.getSource();
-                this.ignoredVariables = [];
+                this.activeVar = [];
                 if (this.tube) {
                     this.deselectAll();
                 }
@@ -93,15 +93,15 @@ export default class SelectedTimeSlice extends React.Component {
             this.selectedPeriod = FeatureStore.getSelectedPeriod();
             this.updateTimePeriod();
         });
-        FeatureStore.on('setIgnoredVariables', (varList) => {
-            this.ignoredVariables = varList;
+        FeatureStore.on('setActiveVariables', (varList) => {
+            this.activeVar = varList;
             this.redrawTube();
         });
-        FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
+        FeatureStore.on('convertResultIntoQuery', (id, period, activeVar) => {
             if (FeatureStore.getMode() === 'QBE') {
                 this.sourceId = id;
                 this.selectedPeriod = period;
-                this.ignoredVariables = ignored;
+                this.activeVar = activeVar;
                 this.data = DataStore.getData(this.sourceId);
                 if (!this.tube) {
                     this.setUpScene();
@@ -120,10 +120,10 @@ export default class SelectedTimeSlice extends React.Component {
                 $('#targetLengthMax').val(Math.floor(period[1]) - Math.ceil(period[0]));
 
                 // update ignored variables
-                if (ignored) {
-                    let checkList = $('input[name=QBEIgnored]');
+                if (activeVar) {
+                    let checkList = $('input[name=QBEActive]');
                     checkList.each(function(index, element) {
-                        if (ignored.indexOf(element.value) < 0) {
+                        if (activeVar.indexOf(element.value) < 0) {
                             element.checked = false;
                         } else {
                             element.checked = true;
@@ -138,7 +138,7 @@ export default class SelectedTimeSlice extends React.Component {
             if (FeatureStore.getMode() === 'QBE') {
                 this.sourceId = FeatureStore.getSource();
                 this.selectedPeriod = FeatureStore.getSelectedPeriod();
-                this.ignoredVariables = FeatureStore.getIgnored();
+                this.activeVar = FeatureStore.getActive();
                 this.data = DataStore.getData(this.sourceId);
                 if (!this.tube) {
                     this.setUpScene();
@@ -386,12 +386,18 @@ export default class SelectedTimeSlice extends React.Component {
     }
 
     redrawTube() {
-        let ignoredX = (this.ignoredVariables)? this.ignoredVariables.indexOf('x'): -1,
-            ignoredY = (this.ignoredVariables)? this.ignoredVariables.indexOf('y'): -1,
-            ignoredRX = (this.ignoredVariables)? this.ignoredVariables.indexOf('r_x'): -1,
-            ignoredRY = (this.ignoredVariables)? this.ignoredVariables.indexOf('r_y'): -1,
-            ignoredH = (this.ignoredVariables)? this.ignoredVariables.indexOf('H'): -1,
-            ignoredV = (this.ignoredVariables)? this.ignoredVariables.indexOf('V'): -1;
+        // let ignoredX = (this.ignoredVariables)? this.ignoredVariables.indexOf('x'): -1,
+        //     ignoredY = (this.ignoredVariables)? this.ignoredVariables.indexOf('y'): -1,
+        //     ignoredRX = (this.ignoredVariables)? this.ignoredVariables.indexOf('r_x'): -1,
+        //     ignoredRY = (this.ignoredVariables)? this.ignoredVariables.indexOf('r_y'): -1,
+        //     ignoredH = (this.ignoredVariables)? this.ignoredVariables.indexOf('H'): -1,
+        //     ignoredV = (this.ignoredVariables)? this.ignoredVariables.indexOf('V'): -1;
+        let activeX = (this.activeVar.indexOf('x') >= 0)? true: false,
+            activeY = (this.activeVar.indexOf('y') >= 0)? true: false,
+            activeRX = (this.activeVar.indexOf('r_x') >= 0)? true: false,
+            activeRY = (this.activeVar.indexOf('r_y') >= 0)? true: false,
+            activeH = (this.activeVar.indexOf('H') >= 0)? true: false,
+            activeV = (this.activeVar.indexOf('V') >= 0)? true: false;
         // if any ignored variables on positions (x, y, r_x, r_y) are set, recompute position attribute
         let minJD = this.data.data.meta.min.z;
         let maxJD = this.data.data.meta.max.z;
@@ -417,10 +423,10 @@ export default class SelectedTimeSlice extends React.Component {
         let vertices = [], colors = [];
         let deg, cenX, cenY, radX, radY;
         for (let i = minIdx; i < minIdx + attrSize; i++) {//i <= maxIdx; i++) {
-            cenX = (ignoredX >= 0) ? 0 : cen[i].x;
-            cenY = (ignoredY >= 0) ? 0 : cen[i].y;
-            radX = (ignoredRX >= 0) ? 1 / range : rad[i].x;
-            radY = (ignoredRY >= 0) ? 1 / range : rad[i].y;
+            cenX = (activeX)? cen[i].x: 0;
+            cenY = (activeY)? cen[i].y: 0;
+            radX = (activeRX)? rad[i].x: 1 / range;
+            radY = (activeRY)? rad[i].y: 1 / range;
             for (let j = 0; j < this.segment; j++) {
                 deg = del * j;
                 vertices.push((cenX * range + radX * range * Math.cos(deg)) * -1);
@@ -429,8 +435,8 @@ export default class SelectedTimeSlice extends React.Component {
             }
         }
         // if any ignored variables on colors (H, V) are set, pass a flag as a uniform
-        this.tube.material.uniforms.flagH.value = (ignoredH >= 0)? false: true;
-        this.tube.material.uniforms.flagV.value = (ignoredV >= 0)? false: true;
+        this.tube.material.uniforms.flagH.value = activeH;
+        this.tube.material.uniforms.flagV.value = activeV;
         this.tube.geometry.attributes.position.needsUpdate = true;
         this.tube.geometry.attributes.position = new THREE.BufferAttribute(new Float32Array(vertices), 3);
         this.tube.geometry.computeVertexNormals();

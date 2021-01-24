@@ -84,7 +84,7 @@ export default class ScatterplotsQBE extends React.Component{
                 this.updateTimeRange();
             }
         });
-        FeatureStore.on('convertResultIntoQuery', (id, period, ignored) => {
+        FeatureStore.on('convertResultIntoQuery', (id, period, activeVar) => {
             if (FeatureStore.getMode() === 'QBE' && Number(id) === this.id) {
                 this.selectedPeriod = FeatureStore.getSelectedPeriod();
                 this.highlightSelectedTimePeriod();
