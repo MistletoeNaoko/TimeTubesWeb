@@ -1,7 +1,7 @@
 import React from 'react';
 import * as domActions from '../lib/domActions';
 import {formatValue} from '../lib/2DGraphLib';
-import {resizeExtractionResultsArea} from '../Actions/AppAction';
+import {resizeExtractionResultsArea, showExtractionSourcePanel} from '../Actions/AppAction';
 import * as FeatureAction from '../Actions/FeatureAction';
 import * as d3 from 'd3';
 import {isEqual} from 'lodash';
@@ -349,7 +349,13 @@ export default class ResultSummary extends React.Component {
             // set up a line chart for comparison between query and time slice
             let width = $('#extractionDetailLC').width();
             let height = 200;
-            FeatureAction.updateSelectedResult(this.result, width, height);
+            let promise = Promise.resolve();
+            promise
+                .then(function() {
+                    showExtractionSourcePanel(this.result.id);
+                }.bind(this)).then(function() {
+                    FeatureAction.updateSelectedResult(this.result, width, height);
+                }.bind(this));
         }
     }
 

@@ -20,6 +20,7 @@ class ClusteringStore extends EventEmitter {
         this.originalResults = {};
         this.selectedSS = {};
         this.updatedSS = {};
+        this.selectedCluster = -1;
     }
 
     handleActions(action) {
@@ -113,6 +114,10 @@ class ClusteringStore extends EventEmitter {
         return this.updatedSS;
     }
 
+    getSelectedCluster() {
+        return this.selectedCluster;
+    }
+
     showClusteringResults (
         datasets, 
         subsequences, 
@@ -157,10 +162,12 @@ class ClusteringStore extends EventEmitter {
                 this.selectedSS[datasets[i]].push(subsequences[j].idx);
             }   
         }
+        this.selectedCluster = -1;
         this.emit('showClusteringResults');
     }
 
     showClusterDetails(cluster) {
+        this.selectedCluster = cluster;
         this.emit('showClusterDetails', cluster);
     }
 

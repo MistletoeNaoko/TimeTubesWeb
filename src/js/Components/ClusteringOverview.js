@@ -3,6 +3,7 @@ import React from 'react';
 import ClusteringStore from '../Stores/ClusteringStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import AppStore from '../Stores/AppStore';
+import FeatureStore from '../Stores/FeatureStore';
 import BufferGeometryUtils from '../lib/BufferGeometryUtils';
 import OrbitControls from "three-orbitcontrols";
 import * as THREE from 'three';
@@ -30,6 +31,10 @@ export default class ClusteringOverview extends React.Component {
         this.clusterCenters = [];
         this.clusterColors = [];
         this.clusteringScores = {};
+
+        this.queryMode = FeatureStore.getMode();
+        this.clickedX;
+        this.clickedY;
     }
 
     componentDidMount() {
@@ -215,7 +220,146 @@ export default class ClusteringOverview extends React.Component {
             this.cameraDetail.lookAt(posX, posY, 0);
             let canvas = document.getElementById('selectedClusterCenterTimeTubes');
             canvas.appendChild(this.detailRenderer.domElement);
+
+            document.getElementById('selectedClusterCenterTimeTubesRenderer')
+                .addEventListener('mousedown', this.onMouseDownClusterCenterTimeTubesRenderer().bind(this), false);
         }
+    }
+
+    onMouseDownClusterCenterTimeTubesRenderer() {
+        return function(d) {
+            this.queryMode = FeatureStore.getMode();
+            if (this.queryMode === 'QBE' || this.queryMode === 'QBS') {
+                let elem = d.target;
+                elem.classList.add('drag');
+                this.clickedX = d.pageX - elem.offsetLeft;
+                this.clickedY = d.pageY - elem.offsetTop;
+                document.body.addEventListener('mousemove', this.onMouseMoveClusterCenterTimeTubesRenderer().bind(this), false);
+                elem.addEventListener('mouseup', this.onMouseUpClusterCenterTimeTubesRenderer().bind(this), false);
+            }
+        };
+    }
+
+    onMouseMoveClusterCenterTimeTubesRenderer() {
+        return function(d) {
+            let drag = document.getElementsByClassName('drag')[0];
+            if (drag) {
+                drag.style.position = 'absolute';
+                d.preventDefault();
+
+                drag.style.top = d.pageY - this.clickedY + 'px';
+                drag.style.left = d.pageX - this.clickedX + 'px';
+
+                switch(this.queryMode) {
+                    case 'QBE':
+                        let selectedTimeSlice = $('#selectedTimeSliceView');
+                        let selectedTimeSlicePos = selectedTimeSlice.offset(),
+                            selectedTimeSliceWidth = selectedTimeSlice.width(),
+                            selectedTimeSliceHeight = selectedTimeSlice.height();
+                        
+                        if ((selectedTimeSlicePos.left <= d.pageX && d.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
+                        && (selectedTimeSlicePos.top <= d.pageY && d.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
+                            let overlayPanel = $('#selectedTimeSliceView > .overlayHidingPanel');
+                            overlayPanel.css('display', 'block');
+                            overlayPanel.css('width', Math.min(selectedTimeSliceWidth, selectedTimeSliceHeight));
+                            overlayPanel.css('height', Math.min(selectedTimeSliceWidth, selectedTimeSliceHeight));
+                        }
+                        break;
+                    case 'QBS':
+                        let sketchPad = $('#QBSSketchPad');
+                        let sketchPadPos = sketchPad.offset(),
+                            sketchPadWidth = sketchPad.width(),
+                            sketchPadHeight = sketchPad.innerHeight();
+
+                        if ((sketchPadPos.left <= d.pageX && d.pageX <= sketchPadPos.left + sketchPadWidth)
+                        && (sketchPadPos.top <= d.pageY && d.pageY <= sketchPadPos.top + sketchPadHeight)) {
+                            let overlayPanel = $('#QBSCanvasArea > .overlayHidingPanel');
+                            overlayPanel.css('display', 'block');
+                            overlayPanel.css('width', Math.min(sketchPadWidth, sketchPadHeight));
+                            overlayPanel.css('height', Math.min(sketchPadWidth, sketchPadHeight));
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        };
+    }
+
+    onMouseUpClusterCenterTimeTubesRenderer() {
+        return function(d) {
+            document.body.removeEventListener('mousemove', this.onMouseMoveClusterCenterTimeTubesRenderer().bind(this), false);
+
+            let drag = document.getElementsByClassName('drag')[0];
+            if (drag) {
+                drag.removeEventListener('mouseup', this.onMouseUpClusterCenterTimeTubesRenderer.bind(this), false);
+                drag.classList.remove('drag');
+                drag.style.position = 'static';
+            }
+            let selectedCluster = ClusteringStore.getSelectedCluster();
+            let clusteringParameters = ClusteringStore.getClusteringParameters();
+            switch(this.queryMode) {
+                case 'QBE':
+                    $('#selectedTimeSliceView > .overlayHidingPanel').css('display', 'none');
+                    let selectedTimeSlice = $('#selectedTimeSliceView');
+                    let selectedTimeSlicePos = selectedTimeSlice.offset(),
+                        selectedTimeSliceWidth = selectedTimeSlice.width(),
+                        selectedTimeSliceHeight = selectedTimeSlice.height();
+                    if (selectedTimeSlicePos) {
+                        if ((selectedTimeSlicePos.left <= d.pageX && d.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
+                        && (selectedTimeSlicePos.top <= d.pageY && d.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
+                            // convert the result into a new query
+                            // if ($('#QBESourceMain').css('display') === 'none') {
+                            //     domActions.toggleSourcePanel();
+                            //     resizeExtractionResultsArea();
+                            // }
+                            // FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
+                            // if ($('#resultDetailArea').css('display') === 'block') {
+                            //     domActions.toggleExtractionDetailPanel();
+                            // }
+                            // if (FeatureStore.getSource() !== this.result.id) {
+                            //     FeatureAction.updateSource(this.result.id);
+                            // }
+                            console.log(this.clusterCenters[selectedCluster]);
+                            switch(clusteringParameters.method) {
+                                case 'kmedoids':
+                                    if (clusteringParameters.medoidDefinition === 'unified') {
+                                        let query = {
+                                            mode: 'visual query',
+                                            option: 'query-by-example',
+                                            // query: 
+                                        }
+                                    } else if (clusteringParameters.medoidDefinition === 'each') {
+
+                                    }
+                                    break;
+                                case 'kmeans':
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+                    }
+                    break;
+                case 'QBS':
+                    $('#QBSCanvasArea > .overlayHidingPanel').css('display', 'none');
+                    let sketchPad = $('#QBSSketchPad');
+                    let sketchPadPos = sketchPad.offset(),
+                        sketchPadWidth = sketchPad.width(),
+                        sketchPadHeight = sketchPad.innerHeight();
+                    if (sketchPadPos) {
+                        if ((sketchPadPos.left <= d.pageX && d.pageX <= sketchPadPos.left + sketchPadWidth)
+                        && (sketchPadPos.top <= d.pageY && d.pageY <= sketchPadPos.top + sketchPadHeight)) {
+                            // convert the result into a new query
+                            // FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
+                            // if ($('#resultDetailArea').css('display') === 'block') {
+                            //     domActions.toggleExtractionDetailPanel();
+                            // }
+                        }
+                    }
+                    break;
+            }
+        };
     }
 
     resetDetailView() {

@@ -1,5 +1,6 @@
 import React from 'react';
 import * as FeatureAction from '../Actions/FeatureAction';
+import AppStore from '../Stores/AppStore';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 import SelectedTimeSlice from './SelectedTimeSlice';
@@ -25,6 +26,11 @@ export default class VisualQuery extends React.Component {
     componentDidMount() {
         $('#stepSizeOfSlidingWindow').val(5);
 
+        AppStore.on('showExtractionSourcePanel', (id) => {
+            this.setState({
+                queryMode: 'QBE'
+            });
+        })
         FeatureStore.on('updateSource', () => {
             this.setState({
                 source: FeatureStore.getSource()
@@ -84,7 +90,8 @@ export default class VisualQuery extends React.Component {
                         source: FeatureStore.getSource(),
                         selectedInterval: interval,
                         coordinate: query.parameters.coordinate,
-                        DTWMode: query.parameters.DTWType
+                        DTWMode: query.parameters.DTWType,
+                        queryMode: mode
                     });
                     if ($('#QBESourceMain').css('display') === 'none') {
                         domActions.toggleSourcePanel();
@@ -92,7 +99,8 @@ export default class VisualQuery extends React.Component {
                 } else if (mode === 'QBS') {
                     this.setState({
                         coordinate: query.parameters.coordinate,
-                        DTWMode: query.parameters.DTWType
+                        DTWMode: query.parameters.DTWType,
+                        queryMode: mode
                     });
                 }
 
@@ -136,10 +144,11 @@ export default class VisualQuery extends React.Component {
                 $('#targetLengthMin').val(parameters.timeSliceLength[0]);
                 $('#targetLengthMax').val(parameters.timeSliceLength[1]);
                 $('#stepSizeOfSlidingWindow').val(parameters.slidingWindow);
+            } else {
+                this.setState({
+                    queryMode: mode
+                });
             }
-            this.setState({
-                queryMode: mode
-            });
         });
     }
 

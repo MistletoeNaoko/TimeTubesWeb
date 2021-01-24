@@ -57,7 +57,7 @@ export default class QueryByExample extends React.Component {
                 showExtractionSourcePanel(selectedId);
             }).then(function() {
                 FeatureAction.updateSource(selectedId);
-            })
+            });
     }
 
     render() {

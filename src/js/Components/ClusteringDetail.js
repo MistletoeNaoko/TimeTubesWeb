@@ -5,7 +5,8 @@ import {showTimeTubesOfTimeSlice} from '../Actions/TimeTubesAction';
 import * as ClusteringAction from '../Actions/ClusteringAction';
 import ClusteringStore from '../Stores/ClusteringStore';
 import DataStore from '../Stores/DataStore';
-import TimeTubeesStore from '../Stores/TimeTubesStore';
+import TimeTubesStore from '../Stores/TimeTubesStore';
+import FeatureStore from '../Stores/FeatureStore';
 import {tickFormatting, formatValue} from '../lib/2DGraphLib';
 
 d3.selection.prototype.moveToFront =
@@ -19,6 +20,9 @@ export default class ClusteringDetail extends React.Component {
         this.paddingCard = 16;
         this.areaPadding = {left: 16, right: 16, top: 8, bottom: 8};
         this.cluster = -1;
+        this.queryMode;
+        this.clickedX;
+        this.clickedY;
         this.state = {
             cluster: -1
         };
@@ -281,6 +285,7 @@ export default class ClusteringDetail extends React.Component {
                         style={{width: tableWidth, height: cellHeight}}
                         onMouseOver={this.onMouseOverSubsequenceDetailTr().bind(this)}
                         onMouseOut={this.onMouseOutSubsequenceDetailTr().bind(this)}
+                        // onMouseDown={this.onMouseDownSubsequenceDetailTr().bind(this)}
                         onDoubleClick={this.onDoubleClickSubsequenceDetailTr().bind(this)}>
                         {tdItems}
                     </tr>);
@@ -495,7 +500,7 @@ export default class ClusteringDetail extends React.Component {
                 .call(d3.axisLeft(yScale).ticks(5));
                 
             if (this.datasetsIdx.length === 1) {
-                let rectColor = TimeTubeesStore.getPlotColor(this.datasetsIdx[0]);
+                let rectColor = TimeTubesStore.getPlotColor(this.datasetsIdx[0]);
                 svg.selectAll('rect')
                     .data(bins)
                     .enter()
@@ -529,7 +534,7 @@ export default class ClusteringDetail extends React.Component {
                     .keys(this.datasetsIdx);
                 let rectColors = [];
                 for (let i = 0; i < this.datasetsIdx.length; i++) {
-                    rectColors.push(TimeTubeesStore.getPlotColor(this.datasetsIdx[i]));
+                    rectColors.push(TimeTubesStore.getPlotColor(this.datasetsIdx[i]));
                 }
                 let series = stack(binsStack);
                 let groups = svg.selectAll('g.stackedBarGroup')
@@ -612,7 +617,7 @@ export default class ClusteringDetail extends React.Component {
             
             let dataColors = {};
             for (let i = 0; i < this.datasetsIdx.length; i++) {
-                dataColors[this.datasetsIdx[i]] = TimeTubeesStore.getPlotColor(this.datasetsIdx[i]);
+                dataColors[this.datasetsIdx[i]] = TimeTubesStore.getPlotColor(this.datasetsIdx[i]);
             }
 
             // update the height of the table accroding to the number of cluster members
@@ -833,6 +838,136 @@ export default class ClusteringDetail extends React.Component {
                 }
             }
         };
+    }
+
+    onMouseDownSubsequenceDetailTr() {
+        return function(d) {
+            this.queryMode = FeatureStore.getMode();
+            if (this.queryMode === 'QBE' || this.queryMode === 'QBS') {
+                let targetIdElem = d.target.id.split('_');
+                let elem = document.getElementById('subsequenceDetailTr_' + targetIdElem[1] + '_' + targetIdElem[2]);
+                console.log(elem, d.pageX, d.pageY);
+                elem.classList.add('drag');
+                this.clickedX = elem.offsetLeft;//d.pageX// - elem.offsetLeft;
+                this.clickedY = elem.offsetTop;//d.pageY// - elem.offsetTop;
+                document.body.addEventListener('mousemove', this.onMouseMoveSubsequenceDetailTr().bind(this), false);
+                elem.addEventListener('mouseup', this.onMouseUpSubsequenceDetailTr().bind(this), false);
+            }
+        };
+    }
+
+    onMouseMoveSubsequenceDetailTr() {
+        return function(d) {
+            let drag = document.getElementsByClassName('drag')[0];
+            if (drag) {
+                drag.style.position = 'absolute';
+                d.preventDefault();
+
+                drag.style.top = d.pageY - this.clickedY + 'px';
+                drag.style.left = d.pageX - this.clickedX + 'px';
+
+                switch(this.queryMode) {
+                    case 'QBE':
+                        let selectedTimeSlice = $('#selectedTimeSliceView');
+                        let selectedTimeSlicePos = selectedTimeSlice.offset(),
+                            selectedTimeSliceWidth = selectedTimeSlice.width(),
+                            selectedTimeSliceHeight = selectedTimeSlice.height();
+                        
+                        if ((selectedTimeSlicePos.left <= d.pageX && d.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
+                        && (selectedTimeSlicePos.top <= d.pageY && d.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
+                            let overlayPanel = $('#selectedTimeSliceView > .overlayHidingPanel');
+                            overlayPanel.css('display', 'block');
+                            overlayPanel.css('width', Math.min(selectedTimeSliceWidth, selectedTimeSliceHeight));
+                            overlayPanel.css('height', Math.min(selectedTimeSliceWidth, selectedTimeSliceHeight));
+                        }
+                        break;
+                    case 'QBS':
+                        let sketchPad = $('#QBSSketchPad');
+                        let sketchPadPos = sketchPad.offset(),
+                            sketchPadWidth = sketchPad.width(),
+                            sketchPadHeight = sketchPad.innerHeight();
+
+                        if ((sketchPadPos.left <= d.pageX && d.pageX <= sketchPadPos.left + sketchPadWidth)
+                        && (sketchPadPos.top <= d.pageY && d.pageY <= sketchPadPos.top + sketchPadHeight)) {
+                            let overlayPanel = $('#QBSCanvasArea > .overlayHidingPanel');
+                            overlayPanel.css('display', 'block');
+                            overlayPanel.css('width', Math.min(sketchPadWidth, sketchPadHeight));
+                            overlayPanel.css('height', Math.min(sketchPadWidth, sketchPadHeight));
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        };
+    }
+
+    onMouseUpSubsequenceDetailTr() {
+        return function(d) {
+            document.body.removeEventListener('mousemove', this.onMouseMoveSubsequenceDetailTr().bind(this), false);
+
+            let drag = document.getElementsByClassName('drag')[0];
+            if (drag) {
+                drag.removeEventListener('mouseup', this.onMouseUpSubsequenceDetailTr.bind(this), false);
+                drag.classList.remove('drag');
+                drag.style.position = 'static';
+            }
+
+            switch(this.queryMode) {
+                case 'QBE':
+                    $('#selectedTimeSliceView > .overlayHidingPanel').css('display', 'none');
+                    let selectedTimeSlice = $('#selectedTimeSliceView');
+                    let selectedTimeSlicePos = selectedTimeSlice.offset(),
+                        selectedTimeSliceWidth = selectedTimeSlice.width(),
+                        selectedTimeSliceHeight = selectedTimeSlice.height();
+                    if (selectedTimeSlicePos) {
+                        if ((selectedTimeSlicePos.left <= d.pageX && d.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
+                        && (selectedTimeSlicePos.top <= d.pageY && d.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
+                            // convert the result into a new query
+                            // if ($('#QBESourceMain').css('display') === 'none') {
+                            //     domActions.toggleSourcePanel();
+                            //     resizeExtractionResultsArea();
+                            // }
+                            // FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
+                            // if ($('#resultDetailArea').css('display') === 'block') {
+                            //     domActions.toggleExtractionDetailPanel();
+                            // }
+                            // if (FeatureStore.getSource() !== this.result.id) {
+                            //     FeatureAction.updateSource(this.result.id);
+                            // }
+                        }
+                    }
+                    break;
+                case 'QBS':
+                    $('#QBSCanvasArea > .overlayHidingPanel').css('display', 'none');
+                    let sketchPad = $('#QBSSketchPad');
+                    let sketchPadPos = sketchPad.offset(),
+                        sketchPadWidth = sketchPad.width(),
+                        sketchPadHeight = sketchPad.innerHeight();
+                    if (sketchPadPos) {
+                        if ((sketchPadPos.left <= d.pageX && d.pageX <= sketchPadPos.left + sketchPadWidth)
+                        && (sketchPadPos.top <= d.pageY && d.pageY <= sketchPadPos.top + sketchPadHeight)) {
+                            // convert the result into a new query
+                            // FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
+                            // if ($('#resultDetailArea').css('display') === 'block') {
+                            //     domActions.toggleExtractionDetailPanel();
+                            // }
+                        }
+                    }
+                    break;
+            }
+            this.moveToOriginalPos();
+        };
+    }
+
+    moveToOriginalPos() {
+        // let nextResult = $('#resultSummaryHolder_' + (this.rank + 1));
+        // if (nextResult) {
+        //     nextResult.before($('#resultSummaryHolder_' + this.rank));
+        // } else {
+        //     let previousResult = $('#resultSummaryHolder_' + (this.rank - 1));
+        //     previousResult.after($('#resultSummaryHolder_' + this.rank));
+        // }
     }
 
     onDoubleClickSubsequenceDetailTr() {

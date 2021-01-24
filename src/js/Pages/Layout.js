@@ -26,9 +26,11 @@ export default class Layout extends React.Component {
             });
         });
         FeatureStore.on('recoverQuery', (query) => {
-            this.setState({
-                menu: 'feature'
-            });
+            setTimeout(function() {
+                this.setState({
+                    menu: 'feature'
+                });
+            }.bind(this), 0);
         });
     }
 

@@ -2,7 +2,7 @@ import React from 'react';
 import * as dataLib from '../lib/dataLib';
 import {transformCamelToSentence} from '../lib/domActions';
 import {formatValue} from '../lib/2DGraphLib';
-import {selectMenu} from '../Actions/AppAction';
+import {selectMenu, showExtractionSourcePanel} from '../Actions/AppAction';
 import * as DataAction from '../Actions/DataAction';
 import * as FeatureAction from '../Actions/FeatureAction';
 import AppStore from '../Stores/AppStore';
@@ -241,8 +241,20 @@ export default class Comment extends React.Component {
                 // format variable name (e.g. Q/I -> x, V-J -> H)
             }
             if (flag) {
-                FeatureAction.recoverQuery(this.state.selectedQuery);
-                selectMenu('feature');
+                if (this.state.selectedQuery.mode === 'visual query' && this.state.selectedQuery.option === 'query-by-example') {
+                    let promise = Promise.resolve();
+                    promise
+                        .then(function() {
+                            showExtractionSourcePanel(DataStore.getIdFromName(this.state.selectedQuery.query.source));
+                        }.bind(this))
+                        .then(function() {
+                            FeatureAction.recoverQuery(this.state.selectedQuery);
+                            selectMenu('feature');
+                        }.bind(this));
+                } else {
+                    FeatureAction.recoverQuery(this.state.selectedQuery);
+                    selectMenu('feature');
+                }
             }
         } else {
             if (Object.keys(this.state.selectedComment).length > 0) {

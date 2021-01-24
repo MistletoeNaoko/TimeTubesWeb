@@ -29,7 +29,8 @@ export default class ExtractionMenu extends React.Component {
                 queryMode: mode
             });
             let AETab = $('#automaticExtraction'),
-                VQTab = $('#visualQuery');
+                VQTab = $('#visualQuery'),
+                clusteringTab = $('#clusteringSetting');
             if (mode === 'AE') {
                 if (!AETab.hasClass('active')) {
                     AETab.addClass('show').addClass('active');
@@ -37,12 +38,18 @@ export default class ExtractionMenu extends React.Component {
                 if (VQTab.hasClass('active')) {
                     VQTab.removeClass('show').removeClass('active');
                 }
+                if (clusteringTab.hasClass('active')) {
+                    clusteringTab.removeClass('show').removeClass('active');
+                }
             } else if (mode === 'QBE' || mode === 'QBS') {
                 if (!VQTab.hasClass('active')) {
                     VQTab.addClass('show').addClass('active');
                 }
                 if (AETab.hasClass('active')) {
                     AETab.removeClass('show').removeClass('active');
+                }
+                if (clusteringTab.hasClass('active')) {
+                    clusteringTab.removeClass('show').removeClass('active');
                 }
             }
             // select all data sets as target

@@ -149,6 +149,12 @@ export default class SelectedTimeSlice extends React.Component {
         });
     }
 
+    componentDidUpdate() {
+        const width = $('#selectedIntervalViewArea').width();
+        const height = width;
+        this.renderer.setSize(width, height);
+    }
+
     initializeScene() {
         const width = $('#selectedIntervalViewArea').width();//this.mount.clientWidth;
         const height = width;//this.mount.clientHeight;
