@@ -75,17 +75,17 @@ export function makeQueryfromQBE(source, period, activeVar, coordinates) {
             queryVal['arrayLength'] = roundedPeriod[1] - roundedPeriod[0] + 1;
         }
     }
-    let activeVarName = [];
-    for (let i = 0; i < activeVar.length; i++) {
-        activeVarName.push(lookup[activeVar[i]]);
-    }
+    // let activeVarName = [];
+    // for (let i = 0; i < activeVar.length; i++) {
+    //     activeVarName.push(lookup[activeVar[i]]);
+    // }
     let query = {
         mode: 'visual query',
         option: 'query-by-example',
         query: {
             source: DataStore.getData(Number(FeatureStore.getSource())).name,
             period: roundedPeriod,
-            activeVariables: activeVarName
+            activeVariables: activeVar//activeVarName
         },
         values: queryVal
     };
