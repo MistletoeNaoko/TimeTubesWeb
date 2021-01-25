@@ -1,4 +1,5 @@
 import * as ClusteringAction from '../Actions/ClusteringAction';
+import * as FeatureAction from '../Actions/FeatureAction';
 import React from 'react';
 import ClusteringStore from '../Stores/ClusteringStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
@@ -10,6 +11,7 @@ import * as THREE from 'three';
 // import TextSprite from 'three.textsprite';
 import TextSprite from '@seregpie/three.text-sprite';
 import {formatValue} from '../lib/2DGraphLib';
+import {} from '../lib/TimeSeriesQuerying';
 
 export default class ClusteringOverview extends React.Component {
     constructor() {
@@ -297,7 +299,8 @@ export default class ClusteringOverview extends React.Component {
                 drag.style.position = 'static';
             }
             let selectedCluster = ClusteringStore.getSelectedCluster();
-            let clusteringParameters = ClusteringStore.getClusteringParameters();
+            let clusteringParameters = ClusteringStore.getClusteringParameters(),
+                subsequenceParameters = ClusteringStore.getSubsequenceParameters();
             switch(this.queryMode) {
                 case 'QBE':
                     $('#selectedTimeSliceView > .overlayHidingPanel').css('display', 'none');
@@ -319,25 +322,74 @@ export default class ClusteringOverview extends React.Component {
                             // }
                             // if (FeatureStore.getSource() !== this.result.id) {
                             //     FeatureAction.updateSource(this.result.id);
-                            // }
-                            console.log(this.clusterCenters[selectedCluster]);
-                            switch(clusteringParameters.method) {
-                                case 'kmedoids':
-                                    if (clusteringParameters.medoidDefinition === 'unified') {
-                                        let query = {
-                                            mode: 'visual query',
-                                            option: 'query-by-example',
-                                            // query: 
-                                        }
-                                    } else if (clusteringParameters.medoidDefinition === 'each') {
+                            // 
+                            let values = {};
+                            for (let i = 0; i < clusteringParameters.variables.length; i++) {
+                                values[clusteringParameters.variables[i]] = [];
+                            }
+                            for (let i = 0; i < clusteringParameters.variables.length; i++) {
+                                for (let j = 0; j < this.clusterCenters[selectedCluster].length; j++) {
+                                    values[clusteringParameters.variables[i]].push(this.clusterCenters[selectedCluster][j][clusteringParameters.variables[i]]);
+                                }
+                            }
+                            values.arrayLength = this.clusterCenters[selectedCluster].length;
+                            // let query = {
+                            //     mode: 'visual query',
+                            //     option: 'query-by-example',
+                            //     query: {
+                            //         source: 'clustering',
+                            //         clusteringParameters: clusteringParameters,
+                            //         period: [],
+                            //         activeVariables: clusteringParameters.variables
+                            //     },
+                            //     values: values
+                            // };
+                            let clusterCenter = {
+                                parameters: clusteringParameters,
+                                values: values
+                            };
 
+                            // visual queryの設定パネルを設定
+                            // set active variables
+                            FeatureAction.setActiveVariables(clusteringParameters.variables);
+
+                            // normalization setting
+                            if (subsequenceParameters.normalize) {
+                                $('#NormalizeSwitch').prop('checked', true);
+                                let normalizationList = document.getElementById('normalizationOptions');
+                                for (let i = 0; i < normalizationList.options.length; i++) {
+                                    if (normalizationList.options[i].value === 'zScore') {
+                                        normalizationList.selectedIndex = i;
+                                        break;
                                     }
+                                }
+                                $('#NormalizeSwitch').prop('disabled', true);
+                                $('#normalizationOptions').prop('disabled', true);
+                            }
+
+                            // distance metric
+                            switch(clusteringParameters.distanceMetric) {
+                                case 'DTWD':
+                                    FeatureAction.changeDTWMode('DTWD');
+                                    // $('#DTWD').prop('checked', true);
+                                    // $('#DTWI').prop('checked', false);
                                     break;
-                                case 'kmeans':
+                                case 'DTWI':
+                                    FeatureAction.changeDTWMode('DTWI');
+                                    // $('#DTWI').prop('checked', true);
+                                    // $('#DTWD').prop('checked', false);
+                                    break;
+                                case 'DTW':
+                                    FeatureAction.changeDTWMode('DTWI');
+                                    // $('#DTWI').prop('checked', true);
+                                    // $('#DTWD').prop('checked', false);
                                     break;
                                 default:
                                     break;
                             }
+                            $('#warpingWindowSize').val(clusteringParameters.window);
+                            
+                            FeatureAction.convertClusterCenterIntoQuery(clusterCenter);
                         }
                     }
                     break;

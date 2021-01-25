@@ -529,6 +529,10 @@ export function runMatching(query, targets, parameters) {
     return result;
 }
 
+export function runMatchingClusterCenter(query, targets, parameters) {
+    
+}
+
 export function removeOverlappingQBE(source, period, results) {
     let newResults = [];
     let queryLength = period[1] - period[0];

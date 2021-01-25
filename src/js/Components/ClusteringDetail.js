@@ -846,7 +846,6 @@ export default class ClusteringDetail extends React.Component {
             if (this.queryMode === 'QBE' || this.queryMode === 'QBS') {
                 let targetIdElem = d.target.id.split('_');
                 let elem = document.getElementById('subsequenceDetailTr_' + targetIdElem[1] + '_' + targetIdElem[2]);
-                console.log(elem, d.pageX, d.pageY);
                 elem.classList.add('drag');
                 this.clickedX = elem.offsetLeft;//d.pageX// - elem.offsetLeft;
                 this.clickedY = elem.offsetTop;//d.pageY// - elem.offsetTop;

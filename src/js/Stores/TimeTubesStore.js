@@ -55,6 +55,11 @@ class TimeTubesStore extends EventEmitter{
             zoom: 1,
             type: 'Perspective'
         }];
+        this.textureDefault;
+        let texture = new THREE.TextureLoader();
+        texture.load('img/1_256.png', function(texture) {
+            this.textureDefault = texture;
+        }.bind(this));
         this.texture = [];
         this.checked = [];
         // focused is not JD, but the position of the tube in the 3D space
@@ -274,6 +279,10 @@ class TimeTubesStore extends EventEmitter{
 
     getVisualQuery() {
         return this.visualQuery;
+    }
+
+    getTextureDefault() {
+        return this.textureDefault;
     }
 
     getTexture(id) {

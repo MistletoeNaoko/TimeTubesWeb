@@ -105,3 +105,11 @@ export function recoverQuery(query) {
 export function importResultsFromFile(results) {
     dispatcher.dispatch({type: 'IMPORT_RESULTS_FROM_FILE', results});
 }
+
+export function convertClusterCenterIntoQuery(clusterCenter) {
+    dispatcher.dispatch({type: 'CONVERT_CLUSTER_CENTER_INTO_QUERY', clusterCenter});
+}
+
+export function changeDTWMode(DTWMode) {
+    dispatcher.dispatch({type: 'CHANGE_DTW_MODE', DTWMode});
+}

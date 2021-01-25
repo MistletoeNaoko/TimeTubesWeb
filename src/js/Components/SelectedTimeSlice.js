@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import DataStore from '../Stores/DataStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import FeatureStore from '../Stores/FeatureStore';
+import ClusteringStore from '../Stores/ClusteringStore';
 import OrbitControls from "three-orbitcontrols";
 
 export default class SelectedTimeSlice extends React.Component {
@@ -15,6 +16,7 @@ export default class SelectedTimeSlice extends React.Component {
         this.segment = TimeTubesStore.getSegment();
         this.division = TimeTubesStore.getDivision();
         this.activeVar = FeatureStore.getActive();
+        this.splinesClusterCenter = {};
     }
 
     render() {
@@ -82,6 +84,13 @@ export default class SelectedTimeSlice extends React.Component {
         FeatureStore.on('selectPeriodfromSP', (period) => {
             this.selectedPeriod = FeatureStore.getSelectedPeriod();
             if (this.selectedPeriod[1] - this.selectedPeriod[0] > 0) {
+                if (this.tube) {
+                    this.tube.visible = true;
+                }
+                if (this.tubeCluster) {
+                    this.tubeCluster.visible = false;
+                }
+                
                 this.updateTimePeriod();
             } else {
                 if (this.tube) {
@@ -90,6 +99,12 @@ export default class SelectedTimeSlice extends React.Component {
             }
         });
         FeatureStore.on('selectTimeInterval', (id, value) => {
+            if (this.tube) {
+                this.tube.visible = true;
+            }
+            if (this.tubeCluster) {
+                this.tubeCluster.visible = false;
+            }
             this.selectedPeriod = FeatureStore.getSelectedPeriod();
             this.updateTimePeriod();
         });
@@ -130,6 +145,12 @@ export default class SelectedTimeSlice extends React.Component {
                         }
                     });
                 }
+                if (this.tube) {
+                    this.tube.visible = true;
+                }
+                if (this.tubeCluster) {
+                    this.tubeCluster.visible = false;
+                }
                 this.updateTimePeriod();
                 this.redrawTube();
             }
@@ -143,8 +164,25 @@ export default class SelectedTimeSlice extends React.Component {
                 if (!this.tube) {
                     this.setUpScene();
                 }
+                if (this.tube) {
+                    this.tube.visible = true;
+                }
+                if (this.tubeCluster) {
+                    this.tubeCluster.visible = false;
+                }
                 this.updateTimePeriod();
                 this.redrawTube();
+            }
+        });
+        FeatureStore.on('convertClusterCenterIntoQuery', (clusterCenter) => {
+            if (FeatureStore.getMode() === 'QBE') {
+                this.splinesClusterCenter = {}
+                this.computeSplines(clusterCenter);
+                let texture = new THREE.TextureLoader();
+                texture.load('img/1_256.png', function(texture) {
+                    this.textureCluster = texture;
+                    this.drawClusterCenterTube(clusterCenter);
+                }.bind(this));
             }
         });
     }
@@ -241,7 +279,12 @@ export default class SelectedTimeSlice extends React.Component {
     }
 
     updateCameras() {
-        let cameraProp = TimeTubesStore.getCameraProp(this.sourceId);
+        let cameraProp;
+        if (this.sourceId >= 0) {
+            cameraProp = TimeTubesStore.getCameraProp(this.sourceId);
+        } else {
+            cameraProp = TimeTubesStore.getDefaultCameraProp();
+        }
         this.cameraSet.perspective.fov = cameraProp.fov;
         this.cameraSet.perspective.far = cameraProp.far;
 
@@ -392,54 +435,166 @@ export default class SelectedTimeSlice extends React.Component {
         //     ignoredRY = (this.ignoredVariables)? this.ignoredVariables.indexOf('r_y'): -1,
         //     ignoredH = (this.ignoredVariables)? this.ignoredVariables.indexOf('H'): -1,
         //     ignoredV = (this.ignoredVariables)? this.ignoredVariables.indexOf('V'): -1;
-        let activeX = (this.activeVar.indexOf('x') >= 0)? true: false,
-            activeY = (this.activeVar.indexOf('y') >= 0)? true: false,
-            activeRX = (this.activeVar.indexOf('r_x') >= 0)? true: false,
-            activeRY = (this.activeVar.indexOf('r_y') >= 0)? true: false,
-            activeH = (this.activeVar.indexOf('H') >= 0)? true: false,
-            activeV = (this.activeVar.indexOf('V') >= 0)? true: false;
-        // if any ignored variables on positions (x, y, r_x, r_y) are set, recompute position attribute
-        let minJD = this.data.data.meta.min.z;
-        let maxJD = this.data.data.meta.max.z;
-        let range = this.data.data.meta.range;
-        let divNum = this.division * Math.ceil(maxJD - minJD);
-        let delTime = (maxJD - minJD) / divNum;
-        let divNumPol = Math.ceil((this.data.data.splines.position.getPoint(1).z - this.data.data.splines.position.getPoint(0).z) / delTime);
-        // let divNumPho = Math.ceil((this.data.data.splines.color.getPoint(1).z - this.data.data.splines.color.getPoint(0).z) / delTime);
-        let cen = this.data.data.splines.position.getSpacedPoints(divNumPol);
-        let rad = this.data.data.splines.radius.getSpacedPoints(divNumPol);
-        // let col = this.data.data.splines.color.getSpacedPoints(divNumPho);
-        let divNumHue, hue;
-        if (this.data.data.splines.hue.points.length > 0) {
-            divNumHue = Math.ceil((this.data.data.splines.hue.getPoint(1).z - this.data.data.splines.hue.getPoint(0).z) / delTime);
-            hue = this.data.data.splines.hue.getSpacedPoints(divNumHue);
+        if (this.tube) {
+            let activeX = (this.activeVar.indexOf('x') >= 0)? true: false,
+                activeY = (this.activeVar.indexOf('y') >= 0)? true: false,
+                activeRX = (this.activeVar.indexOf('r_x') >= 0)? true: false,
+                activeRY = (this.activeVar.indexOf('r_y') >= 0)? true: false,
+                activeH = (this.activeVar.indexOf('H') >= 0)? true: false,
+                activeV = (this.activeVar.indexOf('V') >= 0)? true: false;
+            // if any ignored variables on positions (x, y, r_x, r_y) are set, recompute position attribute
+            let minJD = this.data.data.meta.min.z;
+            let maxJD = this.data.data.meta.max.z;
+            let range = this.data.data.meta.range;
+            let divNum = this.division * Math.ceil(maxJD - minJD);
+            let delTime = (maxJD - minJD) / divNum;
+            let divNumPol = Math.ceil((this.data.data.splines.position.getPoint(1).z - this.data.data.splines.position.getPoint(0).z) / delTime);
+            // let divNumPho = Math.ceil((this.data.data.splines.color.getPoint(1).z - this.data.data.splines.color.getPoint(0).z) / delTime);
+            let cen = this.data.data.splines.position.getSpacedPoints(divNumPol);
+            let rad = this.data.data.splines.radius.getSpacedPoints(divNumPol);
+            // let col = this.data.data.splines.color.getSpacedPoints(divNumPho);
+            let divNumHue, hue;
+            if (this.data.data.splines.hue.points.length > 0) {
+                divNumHue = Math.ceil((this.data.data.splines.hue.getPoint(1).z - this.data.data.splines.hue.getPoint(0).z) / delTime);
+                hue = this.data.data.splines.hue.getSpacedPoints(divNumHue);
+            }
+            let divNumValue = Math.ceil((this.data.data.splines.value.getPoint(1).z - this.data.data.splines.value.getPoint(0).z) / delTime);
+            let value = this.data.data.splines.value.getSpacedPoints(divNumValue);
+            let del = Math.PI * 2 / (this.segment - 1);
+            let minIdx = Math.ceil((this.selectedPeriod[0] - minJD) / delTime);
+            let attrSize = this.tube.geometry.attributes.position.array.length / 3 / this.segment;
+            let maxIdx = Math.ceil((this.selectedPeriod[1] - minJD) / delTime);
+            let vertices = [], colors = [];
+            let deg, cenX, cenY, radX, radY;
+            for (let i = minIdx; i < minIdx + attrSize; i++) {//i <= maxIdx; i++) {
+                cenX = (activeX)? cen[i].x: 0;
+                cenY = (activeY)? cen[i].y: 0;
+                radX = (activeRX)? rad[i].x: 1 / range;
+                radY = (activeRY)? rad[i].y: 1 / range;
+                for (let j = 0; j < this.segment; j++) {
+                    deg = del * j;
+                    vertices.push((cenX * range + radX * range * Math.cos(deg)) * -1);
+                    vertices.push(cenY * range + radY * range * Math.sin(deg));
+                    vertices.push(cen[i].z - this.selectedPeriod[0]);
+                }
+            }
+            // if any ignored variables on colors (H, V) are set, pass a flag as a uniform
+            this.tube.material.uniforms.flagH.value = activeH;
+            this.tube.material.uniforms.flagV.value = activeV;
+            this.tube.geometry.attributes.position.needsUpdate = true;
+            this.tube.geometry.attributes.position = new THREE.BufferAttribute(new Float32Array(vertices), 3);
+            this.tube.geometry.computeVertexNormals();
+            this.renderer.render(this.scene, this.camera);
         }
-        let divNumValue = Math.ceil((this.data.data.splines.value.getPoint(1).z - this.data.data.splines.value.getPoint(0).z) / delTime);
-        let value = this.data.data.splines.value.getSpacedPoints(divNumValue);
-        let del = Math.PI * 2 / (this.segment - 1);
-        let minIdx = Math.ceil((this.selectedPeriod[0] - minJD) / delTime);
-        let attrSize = this.tube.geometry.attributes.position.array.length / 3 / this.segment;
-        let maxIdx = Math.ceil((this.selectedPeriod[1] - minJD) / delTime);
-        let vertices = [], colors = [];
-        let deg, cenX, cenY, radX, radY;
-        for (let i = minIdx; i < minIdx + attrSize; i++) {//i <= maxIdx; i++) {
-            cenX = (activeX)? cen[i].x: 0;
-            cenY = (activeY)? cen[i].y: 0;
-            radX = (activeRX)? rad[i].x: 1 / range;
-            radY = (activeRY)? rad[i].y: 1 / range;
-            for (let j = 0; j < this.segment; j++) {
-                deg = del * j;
-                vertices.push((cenX * range + radX * range * Math.cos(deg)) * -1);
-                vertices.push(cenY * range + radY * range * Math.sin(deg));
-                vertices.push(cen[i].z - this.selectedPeriod[0]);
+    }
+    
+    computeSplines(clusterCenter) {
+        this.minmax = {};
+        this.minmax.x = [Infinity, -Infinity];
+        this.minmax.y = [Infinity, -Infinity];
+        this.minmax.H = [Infinity, -Infinity];
+        this.minmax.V = [Infinity, -Infinity];
+        let position = [], radius = [], color = [];
+        for (let i = 0; i < clusterCenter.values[Object.keys(clusterCenter.values)[0]].length; i++) {
+            let currentValues = {
+                x: 'x' in clusterCenter.values? clusterCenter.values.x[i]: 0,
+                y: 'y' in clusterCenter.values? clusterCenter.values.y[i]: 0,
+                r_x: 'r_x' in clusterCenter.values? clusterCenter.values.r_x[i]: 0.5,
+                r_y: 'r_y' in clusterCenter.values? clusterCenter.values.r_y[i]: 0.5,
+                H: 'H' in clusterCenter.values? clusterCenter.values.H[i]: 0.5,
+                V: 'V' in clusterCenter.values? clusterCenter.values.V[i]: 0.5
+            };
+            position.push(new THREE.Vector3(currentValues.x, currentValues.y, i));
+            radius.push(new THREE.Vector3(currentValues.r_x, currentValues.r_y, i));
+            color.push(new THREE.Vector3(currentValues.H, currentValues.V, i));
+
+            for (let key in this.minmax) {
+                if (currentValues[key] < this.minmax[key][0])
+                    this.minmax[key][0] = currentValues[key];
+                if (this.minmax[key][1] < currentValues[key])
+                    this.minmax[key][1] = currentValues[key];
             }
         }
-        // if any ignored variables on colors (H, V) are set, pass a flag as a uniform
-        this.tube.material.uniforms.flagH.value = activeH;
-        this.tube.material.uniforms.flagV.value = activeV;
-        this.tube.geometry.attributes.position.needsUpdate = true;
-        this.tube.geometry.attributes.position = new THREE.BufferAttribute(new Float32Array(vertices), 3);
-        this.tube.geometry.computeVertexNormals();
+        this.splinesClusterCenter.position = new THREE.CatmullRomCurve3(position, false, 'catmullrom');
+        this.splinesClusterCenter.radius = new THREE.CatmullRomCurve3(radius, false, 'catmullrom');
+        this.splinesClusterCenter.color = new THREE.CatmullRomCurve3(color, false, 'catmullrom');
+        let xRange = this.minmax.x[1] - this.minmax.x[0];
+        let yRange = this.minmax.y[1] - this.minmax.y[0];
+        let range = Math.round(Math.max(xRange, yRange) * Math.pow(10, 2 - Math.ceil(Math.log10(Math.max(xRange, yRange)))));
+        this.range = TimeTubesStore.getGridSize() / (Math.ceil(range / 5) * 5 * Math.pow(10, - (2 - Math.ceil(Math.log10(Math.max(xRange, yRange))))));
+    }
+
+    drawClusterCenterTube(clusterCenter) {
+        if (this.tube) {
+            this.tube.visible = false;
+        }
+        
+        if (this.tubeCluster) {
+            let geometry = this.tubeCluster.geometry,
+                material = this.tubeCluster.material;
+            this.scene.remove(this.tubeCluster);
+            geometry.dispose();
+            material.dispose();
+            this.tubeCluster = undefined;
+        }
+
+        let texture = TimeTubesStore.getTextureDefault();
+        let dataLen = clusterCenter.values[Object.keys(clusterCenter.values)[0]].length;
+        let divNum = this.division * dataLen;
+        let del = Math.PI * 2 / (this.segment - 1);
+        let vertices = [],
+            colors = [],
+            indices = [];
+        let cen = this.splinesClusterCenter.position.getSpacedPoints(divNum),
+            rad = this.splinesClusterCenter.radius.getSpacedPoints(divNum),
+            col = this.splinesClusterCenter.color.getSpacedPoints(divNum);
+        for (let j = 0; j <= divNum; j++) {
+            for (let k = 0; k < this.segment; k++) {
+                let deg = del * k;
+                vertices.push((cen[j].x * this.range + rad[j].x * this.range * Math.cos(deg)) * -1);
+                vertices.push(cen[j].y * this.range + rad[j].y * this.range * Math.sin(deg));
+                vertices.push(cen[j].z);
+
+                colors.push(col[j].x);
+                colors.push(col[j].y);
+                colors.push(1);
+                if (k !== this.segment - 1) {
+                    indices.push(k + j * (this.segment));
+                    indices.push(k + (this.segment) + j * (this.segment));
+                    indices.push(k + 1 + j * (this.segment));
+                    indices.push(k + (this.segment) + j * (this.segment));
+                    indices.push(k + 1 + (this.segment) + j * (this.segment));
+                    indices.push(k + 1 + j * (this.segment));
+                }
+            }
+        }
+        indices = indices.slice(0, -1 * this.segment * 3 * 2);
+        let normals = new Float32Array(vertices.length);
+        let tubeGeometry = new THREE.BufferGeometry();
+        tubeGeometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+        tubeGeometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+        tubeGeometry.setAttribute('colorData', new THREE.BufferAttribute(new Float32Array(colors), 3));
+        tubeGeometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+        tubeGeometry.computeVertexNormals();
+        let tubeMaterial = new THREE.ShaderMaterial({
+            vertexShader: document.getElementById('vertexShader_tube').textContent,
+            fragmentShader: document.getElementById('fragmentShader_tube').textContent,
+            uniforms: {
+                lightPosition: {value: new THREE.Vector3(-20, 40, 60)},
+                shade: {value: true},
+                texture: {value: texture},
+                minmaxH: {value: new THREE.Vector2(this.minmax.H[0], this.minmax.H[1])},
+                minmaxV: {value: new THREE.Vector2(this.minmax.V[0], this.minmax.V[1])},
+                flagH: {value: true},
+                flagV: {value: true}
+            },
+            side: THREE.DoubleSide,
+            transparent: true
+        });
+        let tube = new THREE.Mesh(tubeGeometry, tubeMaterial);
+        tube.rotateY(Math.PI);
+        this.scene.add(tube);
+        this.tubeCluster = tube;
         this.renderer.render(this.scene, this.camera);
     }
 }

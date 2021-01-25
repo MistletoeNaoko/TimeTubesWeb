@@ -113,6 +113,12 @@ class FeatureStore extends EventEmitter {
             case 'IMPORT_RESULTS_FROM_FILE':
                 this.importResultsFromFile(action.results);
                 break;
+            case 'CONVERT_CLUSTER_CENTER_INTO_QUERY':
+                this.convertClusterCenterIntoQuery(action.clusterCenter);
+                break;
+            case 'CHANGE_DTW_MODE':
+                this.emit('changeDTWMode', action.DTWMode);
+                break;
             default:
         }
     }
@@ -412,6 +418,10 @@ class FeatureStore extends EventEmitter {
 
     importResultsFromFile(results) {
         this.emit('importResultsFromFile', results);
+    }
+
+    convertClusterCenterIntoQuery(clusterCenter) {
+        this.emit('convertClusterCenterIntoQuery', clusterCenter);
     }
 }
 

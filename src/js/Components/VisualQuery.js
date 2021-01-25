@@ -150,6 +150,11 @@ export default class VisualQuery extends React.Component {
                 });
             }
         });
+        FeatureStore.on('changeDTWMode', (DTWMode) => {
+            this.setState({
+                DTWMode: DTWMode
+            });
+        });
     }
 
     switchSelector() {

@@ -642,7 +642,7 @@ img.selectorIcon:active {
     width: 70%;
     background-color: #F8F5F0;
     position: relative;
-    overflow: hidden;
+    /* overflow: hidden; */
     display: flex;
     position: relative;
 }
