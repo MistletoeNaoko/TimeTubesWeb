@@ -87,6 +87,11 @@ export default class FeatureExtraction extends React.Component{
                 });
             }
         });
+        AppStore.on('showResultsPanel', (resultsPanel) => {
+            this.setState({
+                resultsPanel: resultsPanel
+            });
+        });
     }
 
     showResultsPanel(mode) {

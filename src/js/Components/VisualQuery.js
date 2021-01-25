@@ -1,5 +1,6 @@
 import React from 'react';
 import * as FeatureAction from '../Actions/FeatureAction';
+import {showResultsPanel} from '../Actions/AppAction';
 import AppStore from '../Stores/AppStore';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
@@ -667,39 +668,83 @@ export default class VisualQuery extends React.Component {
                 // get source id: this.state.source
                 let source = Number(this.state.source);
                 if (targets.length > 0) {
-                    // get selected time period: FeatureStore.getSelectedPeriod()
-                    let period = FeatureStore.getSelectedPeriod();
-                    // get what to ignore: this.getIgnoredVariables
-                    let activeVar = domActions.getActiveVariables();
-                    // PA,PD should always be inactive because PDPA and QIUI means same
-                    // ignored.push('PD');
-                    // ignored.push('PA');
-                    let parameters = {};
-                    parameters = {
-                        normalize: normalization,
-                        normalizationOption: normlizationOption,
-                        coordinate: this.state.coordinate,
-                        distanceMetric: selectedDist,
-                        distanceNormalization: distNormalizationOption,
-                        warpingWindowSize: windowSize,
-                        timeSliceLength: [periodMin, periodMax],
-                        slidingWindow: step,
-                        DTWType: DTWType
-                    };
-                    if (source !== NaN) {
-                        // convert a query into an object with arrays (divide time series into equal interval (1day))
-                        let results;
-                        // compute distance between time slices!
-                        // scores of matching with starting JD and period will be returned
-                        // result stores {id, start, period, dtw distance, path} (not sorted)
-                        let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, activeVar, this.state.coordinate);
-                        if (query) {
-                            results = TimeSeriesQuerying.runMatching(query.values, targets, parameters);
-                            // results = TimeSeriesQuerying.runMatching(query.values, targets, DTWType, normalization, normlizationOption, selectedDist, windowSize, step, [periodMin, periodMax]);
-                            results = TimeSeriesQuerying.removeOverlappingQBE(source, period, results);
+                    if (Object.keys(this.clusterCenter).length === 0) {
+                        // get selected time period: FeatureStore.getSelectedPeriod()
+                        let period = FeatureStore.getSelectedPeriod();
+                        // get what to ignore: this.getIgnoredVariables
+                        let activeVar = domActions.getActiveVariables();
+                        // PA,PD should always be inactive because PDPA and QIUI means same
+                        // ignored.push('PD');
+                        // ignored.push('PA');
+                        let parameters = {};
+                        parameters = {
+                            normalize: normalization,
+                            normalizationOption: normlizationOption,
+                            coordinate: this.state.coordinate,
+                            distanceMetric: selectedDist,
+                            distanceNormalization: distNormalizationOption,
+                            warpingWindowSize: windowSize,
+                            timeSliceLength: [periodMin, periodMax],
+                            slidingWindow: step,
+                            DTWType: DTWType
+                        };
+                        if (source !== NaN) {
+                            // convert a query into an object with arrays (divide time series into equal interval (1day))
+                            let results;
+                            // compute distance between time slices!
+                            // scores of matching with starting JD and period will be returned
+                            // result stores {id, start, period, dtw distance, path} (not sorted)
+                            let query = TimeSeriesQuerying.makeQueryfromQBE(source, period, activeVar, this.state.coordinate);
+                            if (query) {
+                                results = TimeSeriesQuerying.runMatching(query.values, targets, parameters);
+                                // results = TimeSeriesQuerying.runMatching(query.values, targets, DTWType, normalization, normlizationOption, selectedDist, windowSize, step, [periodMin, periodMax]);
+                                results = TimeSeriesQuerying.removeOverlappingQBE(source, period, results);
+                                FeatureAction.setExtractionResults(parameters, results, query, activeVar);
+                                TimeSeriesQuerying.setDefaltOrderOfResults();
+                            }
+                        }
+                        TimeSeriesQuerying.showExtractionResults();
+                    } else {
+                        // perform QBE with a query created from a cluster center
+                        let promise = Promise.resolve();
+                        promise.then(function() {
+                            showResultsPanel('featureExtraction');
+                        })
+                        .then(function() {
+                            let parameters = {};
+                            parameters = {
+                                normalize: normalization,
+                                normalizationOption: normlizationOption,
+                                coordinate: this.state.coordinate,
+                                distanceMetric: selectedDist,
+                                distanceNormalization: distNormalizationOption,
+                                warpingWindowSize: windowSize,
+                                timeSliceLength: [periodMin, periodMax],
+                                slidingWindow: step,
+                                DTWType: DTWType
+                            };
+                            let activeVar = domActions.getActiveVariables();
+                            let values = {};
+                            for (let i = 0; i < activeVar.length; i++) {
+                                values[activeVar[i]] = this.clusterCenter.values[activeVar[i]];
+                            }
+                            values.arrayLength = this.clusterCenter.values.arrayLength;
+                            let query = {
+                                mode: 'visual query',
+                                option: 'query-by-example',
+                                query: {
+                                    source: 'clustering',
+                                    activeVariables: activeVar
+                                },
+                                values: values
+                            };
+                            let results = TimeSeriesQuerying.runMatchingClusterCenter(values, targets, parameters);
                             FeatureAction.setExtractionResults(parameters, results, query, activeVar);
                             TimeSeriesQuerying.setDefaltOrderOfResults();
-                        }
+                        }.bind(this))
+                        .then(function() {
+                            TimeSeriesQuerying.showExtractionResults();
+                        });
                     }
                 }
                 break;
@@ -753,9 +798,9 @@ export default class VisualQuery extends React.Component {
                         TimeSeriesQuerying.setDefaltOrderOfResults();
                     }
                 }
+                TimeSeriesQuerying.showExtractionResults();
                 break;
         }
-        TimeSeriesQuerying.showExtractionResults();
     }
 
     render() {

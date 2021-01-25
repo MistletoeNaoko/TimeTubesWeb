@@ -360,7 +360,6 @@ class FeatureStore extends EventEmitter {
     }
 
     recoverQuery(query) {
-        console.log(query);
         if (query.mode === 'automatic extraction') {
             this.mode = 'AE';
             this.resetAEOptions();

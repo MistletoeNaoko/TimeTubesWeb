@@ -349,13 +349,14 @@ export default class ResultSummary extends React.Component {
             // set up a line chart for comparison between query and time slice
             let width = $('#extractionDetailLC').width();
             let height = 200;
-            let promise = Promise.resolve();
-            promise
-                .then(function() {
-                    showExtractionSourcePanel(this.result.id);
-                }.bind(this)).then(function() {
-                    FeatureAction.updateSelectedResult(this.result, width, height);
-                }.bind(this));
+            FeatureAction.updateSelectedResult(this.result, width, height);
+            // let promise = Promise.resolve();
+            // promise
+            //     .then(function() {
+            //         showExtractionSourcePanel(this.result.id);
+            //     }.bind(this)).then(function() {
+            //         FeatureAction.updateSelectedResult(this.result, width, height);
+            //     }.bind(this));
         }
     }
 

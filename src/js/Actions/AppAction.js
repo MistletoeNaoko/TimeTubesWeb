@@ -11,3 +11,7 @@ export function resizeExtractionResultsArea() {
 export function showExtractionSourcePanel(id) {
     dispatcher.dispatch({type: 'SHOW_EXTRACTION_SOURCE_PANEL', id});
 }
+
+export function showResultsPanel(resultsPanel) {
+    dispatcher.dispatch({type: 'SHOW_RESULTS_PANEL', resultsPanel});
+}

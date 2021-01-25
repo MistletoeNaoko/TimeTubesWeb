@@ -17,6 +17,9 @@ class AppStore extends EventEmitter {
                 break;
             case 'SHOW_EXTRACTION_SOURCE_PANEL':
                 this.emit('showExtractionSourcePanel', action.id);
+                break;
+            case 'SHOW_RESULTS_PANEL':
+                this.emit('showResultsPanel', action.resultsPanel);
             default:
                 break;
         }
