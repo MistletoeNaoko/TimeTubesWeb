@@ -5,6 +5,7 @@ import TimeTubesStore from '../Stores/TimeTubesStore';
 import FeatureStore from '../Stores/FeatureStore';
 import ClusteringStore from '../Stores/ClusteringStore';
 import OrbitControls from "three-orbitcontrols";
+import { active } from 'd3';
 
 export default class SelectedTimeSlice extends React.Component {
     constructor(props) {
@@ -16,6 +17,7 @@ export default class SelectedTimeSlice extends React.Component {
         this.segment = TimeTubesStore.getSegment();
         this.division = TimeTubesStore.getDivision();
         this.activeVar = FeatureStore.getActive();
+        this.clusterCenter = {};
         this.splinesClusterCenter = {};
     }
 
@@ -49,6 +51,7 @@ export default class SelectedTimeSlice extends React.Component {
             if (!this.tube) {
                 this.setUpScene();
             }
+            this.hideClusteringTube();
             this.updateTimePeriod();
             this.redrawTube();
         }
@@ -78,19 +81,14 @@ export default class SelectedTimeSlice extends React.Component {
             }
         });
         FeatureStore.on('updateSelectedPeriod', () => {
+            this.hideClusteringTube();
             this.selectedPeriod = FeatureStore.getSelectedPeriod();
             this.updateTimePeriod();
         });
         FeatureStore.on('selectPeriodfromSP', (period) => {
             this.selectedPeriod = FeatureStore.getSelectedPeriod();
+            this.hideClusteringTube();
             if (this.selectedPeriod[1] - this.selectedPeriod[0] > 0) {
-                if (this.tube) {
-                    this.tube.visible = true;
-                }
-                if (this.tubeCluster) {
-                    this.tubeCluster.visible = false;
-                }
-                
                 this.updateTimePeriod();
             } else {
                 if (this.tube) {
@@ -99,12 +97,7 @@ export default class SelectedTimeSlice extends React.Component {
             }
         });
         FeatureStore.on('selectTimeInterval', (id, value) => {
-            if (this.tube) {
-                this.tube.visible = true;
-            }
-            if (this.tubeCluster) {
-                this.tubeCluster.visible = false;
-            }
+            this.hideClusteringTube();
             this.selectedPeriod = FeatureStore.getSelectedPeriod();
             this.updateTimePeriod();
         });
@@ -145,12 +138,7 @@ export default class SelectedTimeSlice extends React.Component {
                         }
                     });
                 }
-                if (this.tube) {
-                    this.tube.visible = true;
-                }
-                if (this.tubeCluster) {
-                    this.tubeCluster.visible = false;
-                }
+                this.hideClusteringTube();
                 this.updateTimePeriod();
                 this.redrawTube();
             }
@@ -164,18 +152,14 @@ export default class SelectedTimeSlice extends React.Component {
                 if (!this.tube) {
                     this.setUpScene();
                 }
-                if (this.tube) {
-                    this.tube.visible = true;
-                }
-                if (this.tubeCluster) {
-                    this.tubeCluster.visible = false;
-                }
+                this.hideClusteringTube();
                 this.updateTimePeriod();
                 this.redrawTube();
             }
         });
         FeatureStore.on('convertClusterCenterIntoQuery', (clusterCenter) => {
-            if (FeatureStore.getMode() === 'QBE') {
+        　　 if (FeatureStore.getMode() === 'QBE') {
+                this.clusterCenter = clusterCenter;
                 this.splinesClusterCenter = {}
                 this.computeSplines(clusterCenter);
                 let texture = new THREE.TextureLoader();
@@ -191,6 +175,15 @@ export default class SelectedTimeSlice extends React.Component {
         const width = $('#selectedIntervalViewArea').width();
         const height = width;
         this.renderer.setSize(width, height);
+    }
+
+    hideClusteringTube() {
+        if (this.tube) {
+            this.tube.visible = true;
+        }
+        if (this.tubeCluster) {
+            this.tubeCluster.visible = false;
+        }
     }
 
     initializeScene() {
@@ -435,7 +428,7 @@ export default class SelectedTimeSlice extends React.Component {
         //     ignoredRY = (this.ignoredVariables)? this.ignoredVariables.indexOf('r_y'): -1,
         //     ignoredH = (this.ignoredVariables)? this.ignoredVariables.indexOf('H'): -1,
         //     ignoredV = (this.ignoredVariables)? this.ignoredVariables.indexOf('V'): -1;
-        if (this.tube) {
+        if (this.tube && this.tube.visible) {
             let activeX = (this.activeVar.indexOf('x') >= 0)? true: false,
                 activeY = (this.activeVar.indexOf('y') >= 0)? true: false,
                 activeRX = (this.activeVar.indexOf('r_x') >= 0)? true: false,
@@ -485,6 +478,39 @@ export default class SelectedTimeSlice extends React.Component {
             this.tube.geometry.attributes.position = new THREE.BufferAttribute(new Float32Array(vertices), 3);
             this.tube.geometry.computeVertexNormals();
             this.renderer.render(this.scene, this.camera);
+        } else if (this.tubeCluster && this.tubeCluster.visible) {
+            let activeX = (this.activeVar.indexOf('x') >= 0)? true: false,
+                activeY = (this.activeVar.indexOf('y') >= 0)? true: false,
+                activeRX = (this.activeVar.indexOf('r_x') >= 0)? true: false,
+                activeRY = (this.activeVar.indexOf('r_y') >= 0)? true: false,
+                activeH = (this.activeVar.indexOf('H') >= 0)? true: false,
+                activeV = (this.activeVar.indexOf('V') >= 0)? true: false;
+            let dataLen = this.clusterCenter.values[Object.keys(this.clusterCenter.values)[0]].length;
+            let divNum = this.division * dataLen;
+            let del = Math.PI * 2 / (this.segment - 1);
+
+            let cen = this.splinesClusterCenter.position.getSpacedPoints(divNum),
+                rad = this.splinesClusterCenter.radius.getSpacedPoints(divNum);
+            let vertices = [];
+            let deg, cenX, cenY, radX, radY;
+            for (let j = 0; j <= divNum; j++) {
+                cenX = (activeX)? cen[j].x: 0;
+                cenY = (activeY)? cen[j].y: 0;
+                radX = (activeRX)? rad[j].x: 1 / this.rangeClusterCenter;
+                radY = (activeRY)? rad[j].y: 1 / this.rangeClusterCenter;
+                for (let k = 0; k < this.segment; k++) {
+                    deg = del * k;
+                    vertices.push((cenX * this.rangeClusterCenter + radX * this.rangeClusterCenter * Math.cos(deg)) * -1);
+                    vertices.push(cenY * this.rangeClusterCenter + radY * this.rangeClusterCenter * Math.sin(deg));
+                    vertices.push(cen[j].z);
+                }
+            }
+            this.tubeCluster.material.uniforms.flagH.value = activeH;
+            this.tubeCluster.material.uniforms.flagV.value = activeV;
+            this.tubeCluster.geometry.attributes.position.needsUpdate = true;
+            this.tubeCluster.geometry.attributes.position = new THREE.BufferAttribute(new Float32Array(vertices), 3);
+            this.tubeCluster.geometry.computeVertexNormals();
+            this.renderer.render(this.scene, this.camera);
         }
     }
     
@@ -499,8 +525,8 @@ export default class SelectedTimeSlice extends React.Component {
             let currentValues = {
                 x: 'x' in clusterCenter.values? clusterCenter.values.x[i]: 0,
                 y: 'y' in clusterCenter.values? clusterCenter.values.y[i]: 0,
-                r_x: 'r_x' in clusterCenter.values? clusterCenter.values.r_x[i]: 0.5,
-                r_y: 'r_y' in clusterCenter.values? clusterCenter.values.r_y[i]: 0.5,
+                r_x: 'r_x' in clusterCenter.values? clusterCenter.values.r_x[i]: 1,
+                r_y: 'r_y' in clusterCenter.values? clusterCenter.values.r_y[i]: 1,
                 H: 'H' in clusterCenter.values? clusterCenter.values.H[i]: 0.5,
                 V: 'V' in clusterCenter.values? clusterCenter.values.V[i]: 0.5
             };
@@ -521,7 +547,7 @@ export default class SelectedTimeSlice extends React.Component {
         let xRange = this.minmax.x[1] - this.minmax.x[0];
         let yRange = this.minmax.y[1] - this.minmax.y[0];
         let range = Math.round(Math.max(xRange, yRange) * Math.pow(10, 2 - Math.ceil(Math.log10(Math.max(xRange, yRange)))));
-        this.range = TimeTubesStore.getGridSize() / (Math.ceil(range / 5) * 5 * Math.pow(10, - (2 - Math.ceil(Math.log10(Math.max(xRange, yRange))))));
+        this.rangeClusterCenter = TimeTubesStore.getGridSize() / (Math.ceil(range / 5) * 5 * Math.pow(10, - (2 - Math.ceil(Math.log10(Math.max(xRange, yRange))))));
     }
 
     drawClusterCenterTube(clusterCenter) {
@@ -539,6 +565,7 @@ export default class SelectedTimeSlice extends React.Component {
         }
 
         let texture = TimeTubesStore.getTextureDefault();
+        let variables = Object.keys(clusterCenter.values);
         let dataLen = clusterCenter.values[Object.keys(clusterCenter.values)[0]].length;
         let divNum = this.division * dataLen;
         let del = Math.PI * 2 / (this.segment - 1);
@@ -548,11 +575,16 @@ export default class SelectedTimeSlice extends React.Component {
         let cen = this.splinesClusterCenter.position.getSpacedPoints(divNum),
             rad = this.splinesClusterCenter.radius.getSpacedPoints(divNum),
             col = this.splinesClusterCenter.color.getSpacedPoints(divNum);
+        let activeRX = variables.indexOf('r_x') >= 0? true: false,
+            activeRY = variables.indexOf('r_y') >= 0? true: false;
+        let radX, radY;
         for (let j = 0; j <= divNum; j++) {
+            radX = (activeRX)? rad[j].x: 1 / this.rangeClusterCenter;
+            radY = (activeRY)? rad[j].y: 1 / this.rangeClusterCenter;
             for (let k = 0; k < this.segment; k++) {
                 let deg = del * k;
-                vertices.push((cen[j].x * this.range + rad[j].x * this.range * Math.cos(deg)) * -1);
-                vertices.push(cen[j].y * this.range + rad[j].y * this.range * Math.sin(deg));
+                vertices.push((cen[j].x * this.rangeClusterCenter + radX * this.rangeClusterCenter * Math.cos(deg)) * -1);
+                vertices.push(cen[j].y * this.rangeClusterCenter + radY * this.rangeClusterCenter * Math.sin(deg));
                 vertices.push(cen[j].z);
 
                 colors.push(col[j].x);

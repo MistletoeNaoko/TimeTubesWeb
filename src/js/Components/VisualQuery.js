@@ -19,8 +19,9 @@ export default class VisualQuery extends React.Component {
             source: -1,
             selectedInterval: [-1, -1],
             coordinate: 'rectangular',
-            DTWMode: 'DTWD'
+            DTWMode: 'DTWD',
         };
+        this.clusterCenter = {};
     }
 
     componentDidMount() {
@@ -32,6 +33,7 @@ export default class VisualQuery extends React.Component {
             });
         })
         FeatureStore.on('updateSource', () => {
+            this.clusterCenter = {};
             this.setState({
                 source: FeatureStore.getSource()
             });
@@ -61,29 +63,36 @@ export default class VisualQuery extends React.Component {
         FeatureStore.on('updateSelectedPeriod', () => {
             let period = FeatureStore.getSelectedPeriod();
             if (period[1] - period[0] > 0) {
+                this.clusterCenter = {};
                 this.setState({
                     selectedInterval: period
                 });
+                this.cancelDisablementOfNormalizationOption();
                 this.updateSelectedInterval();
             }
         });
         FeatureStore.on('selectTimeInterval', (id, val) => {
             if (Number(this.state.source) === id) {
+                this.clusterCenter = {};
                 this.setState({
                     selectedInterval: FeatureStore.getSelectedPeriod()
                 });
+                this.cancelDisablementOfNormalizationOption();
                 this.updateSelectedInterval();
             }
         });
         FeatureStore.on('convertResultIntoQuery', (id, period, activeVar) => {
+            this.clusterCenter = {};
             this.setState({
                 source: id,
                 selectedInterval: period
             });
+            this.cancelDisablementOfNormalizationOption();
         });
         FeatureStore.on('recoverQuery', (query) => {
             let mode = FeatureStore.getMode();
             if (mode !== 'AE') {
+                this.clusterCenter = {};
                 if (mode === 'QBE') {
                     let interval = FeatureStore.getSelectedPeriod();
                     this.setState({
@@ -107,6 +116,7 @@ export default class VisualQuery extends React.Component {
                 // recover parameters status for matching
                 let parameters = FeatureStore.getParameters();
                 // recover normalization options
+                this.cancelDisablementOfNormalizationOption();
                 $('#NormalizeSwitch').prop('checked', parameters.normalize);
                 let normalizationOptionList = document.getElementById('normalizationOptions');
                 if (parameters.normalizationOption) {
@@ -153,6 +163,12 @@ export default class VisualQuery extends React.Component {
         FeatureStore.on('changeDTWMode', (DTWMode) => {
             this.setState({
                 DTWMode: DTWMode
+            });
+        });
+        FeatureStore.on('convertClusterCenterIntoQuery', (clusterCenter) => {
+            this.clusterCenter = clusterCenter;
+            this.setState({
+                source: -1
             });
         });
     }
@@ -356,6 +372,56 @@ export default class VisualQuery extends React.Component {
                     }
                 }
             }
+        } else if (this.state.source < 0 && Object.keys(this.clusterCenter).length > 0) {
+            // source file is not selected and cluster center is shown as a QBE
+            let lookup = {};
+            let targets = FeatureStore.getTarget();
+            let activeVariables = FeatureStore.getActive();
+            let variables = this.clusterCenter.parameters.variables;
+            for (let i = 0; i < targets.length; i++) {
+                let lookupTmp = DataStore.getData(targets[i]).data.lookup;
+                for (let j = 0; j < variables.length; j++) {
+                    if (lookup[variables[j]]) {
+                        for (let k = 0; k < lookupTmp[variables[j]].length; k++){
+                            lookup[variables[j]].push(lookupTmp[variables[j]][k]);
+                        }
+                    } else {
+                        lookup[variables[j]] = [];
+                        for (let k = 0; k < lookupTmp[variables[j]].length; k++){
+                            lookup[variables[j]].push(lookupTmp[variables[j]][k]);
+                        }
+                    }
+                }
+            }
+            for (let key in lookup) {
+                let label = '';
+                if (lookup[key].length > 1) {
+                    label = lookup[key].join(',');
+                } else {
+                    label = lookup[key];
+                }
+                if (key !== 'z' && key !== 'PA' && key !== 'PD') {
+                    let defaultChecked = (activeVariables.indexOf(key) >= 0)? true: false;
+                    items.push(
+                        <div className="form-check form-check-inline"
+                            key={key}>
+                            <input
+                                className="form-check-input"
+                                type="checkbox"
+                                name='QBEActive'
+                                value={key}
+                                defaultChecked={defaultChecked}
+                                id={"QBEActive_" + key}
+                            />
+                            <label
+                                className="form-check-label"
+                                htmlFor={"QBEActive_" + key}>
+                                {label}
+                            </label>
+                        </div>
+                    );
+                }
+            }
         }
         return (
             <div className='featureElem' style={{position: 'relative'}}>
@@ -549,6 +615,11 @@ export default class VisualQuery extends React.Component {
                 </div>
             </div>
         );
+    }
+
+    cancelDisablementOfNormalizationOption() {
+        $('#NormalizeSwitch').prop('disabled', false);
+        $('#normalizationOptions').prop('disabled', false);
     }
 
     collapseMatchingOptions() {

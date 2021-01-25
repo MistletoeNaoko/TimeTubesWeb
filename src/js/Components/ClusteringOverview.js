@@ -350,8 +350,6 @@ export default class ClusteringOverview extends React.Component {
                             };
 
                             // visual queryの設定パネルを設定
-                            // set active variables
-                            FeatureAction.setActiveVariables(clusteringParameters.variables);
 
                             // normalization setting
                             if (subsequenceParameters.normalize) {
@@ -389,6 +387,8 @@ export default class ClusteringOverview extends React.Component {
                             }
                             $('#warpingWindowSize').val(clusteringParameters.window);
                             
+                            // set active variables
+                            FeatureAction.setActiveVariables(clusteringParameters.variables);
                             FeatureAction.convertClusterCenterIntoQuery(clusterCenter);
                         }
                     }
