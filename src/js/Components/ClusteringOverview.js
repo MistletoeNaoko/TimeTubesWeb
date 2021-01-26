@@ -311,18 +311,6 @@ export default class ClusteringOverview extends React.Component {
                     if (selectedTimeSlicePos) {
                         if ((selectedTimeSlicePos.left <= d.pageX && d.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
                         && (selectedTimeSlicePos.top <= d.pageY && d.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
-                            // convert the result into a new query
-                            // if ($('#QBESourceMain').css('display') === 'none') {
-                            //     domActions.toggleSourcePanel();
-                            //     resizeExtractionResultsArea();
-                            // }
-                            // FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
-                            // if ($('#resultDetailArea').css('display') === 'block') {
-                            //     domActions.toggleExtractionDetailPanel();
-                            // }
-                            // if (FeatureStore.getSource() !== this.result.id) {
-                            //     FeatureAction.updateSource(this.result.id);
-                            // 
                             let values = {};
                             for (let i = 0; i < clusteringParameters.variables.length; i++) {
                                 values[clusteringParameters.variables[i]] = [];
@@ -333,24 +321,13 @@ export default class ClusteringOverview extends React.Component {
                                 }
                             }
                             values.arrayLength = this.clusterCenters[selectedCluster].length;
-                            // let query = {
-                            //     mode: 'visual query',
-                            //     option: 'query-by-example',
-                            //     query: {
-                            //         source: 'clustering',
-                            //         clusteringParameters: clusteringParameters,
-                            //         period: [],
-                            //         activeVariables: clusteringParameters.variables
-                            //     },
-                            //     values: values
-                            // };
+                            
                             let clusterCenter = {
                                 parameters: clusteringParameters,
                                 values: values
                             };
 
                             // visual queryの設定パネルを設定
-
                             // normalization setting
                             if (subsequenceParameters.normalize) {
                                 $('#NormalizeSwitch').prop('checked', true);
@@ -407,6 +384,43 @@ export default class ClusteringOverview extends React.Component {
                             // if ($('#resultDetailArea').css('display') === 'block') {
                             //     domActions.toggleExtractionDetailPanel();
                             // }
+                            let values = {};
+                            for (let i = 0; i < clusteringParameters.variables.length; i++) {
+                                values[clusteringParameters.variables[i]] = [];
+                            }
+                            for (let i = 0; i < clusteringParameters.variables.length; i++) {
+                                for (let j = 0; j < this.clusterCenters[selectedCluster].length; j++) {
+                                    values[clusteringParameters.variables[i]].push(this.clusterCenters[selectedCluster][j][clusteringParameters.variables[i]]);
+                                }
+                            }
+                            values.arrayLength = this.clusterCenters[selectedCluster].length;
+                            
+                            let clusterCenter = {
+                                parameters: clusteringParameters,
+                                subsequenceParameters: ClusteringStore.getSubsequenceParameters(),
+                                values: values
+                            };
+                            // visual queryの設定パネルを設定
+                            // normalization setting
+                            if (subsequenceParameters.normalize) {
+                                $('#NormalizeSwitch').prop('checked', true);
+                                let normalizationList = document.getElementById('normalizationOptions');
+                                for (let i = 0; i < normalizationList.options.length; i++) {
+                                    if (normalizationList.options[i].value === 'zScore') {
+                                        normalizationList.selectedIndex = i;
+                                        break;
+                                    }
+                                }
+                                // TODO: QBSの場合、いったん正規化オプションの強制無効化はなし（クエリ更新時の解除が面倒）
+                                // $('#NormalizeSwitch').prop('disabled', true);
+                                // $('#normalizationOptions').prop('disabled', true);
+                            }
+
+                            // distance metric (for QBS, only DTWD is allowed)
+                            FeatureAction.changeDTWMode('DTWD');
+
+                            $('#warpingWindowSize').val(clusteringParameters.window);
+                            FeatureAction.convertClusterCenterIntoQuery(clusterCenter);
                         }
                     }
                     break;

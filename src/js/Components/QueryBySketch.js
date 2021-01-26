@@ -113,6 +113,7 @@ export default class QueryBySketch extends React.Component{
             // }
         });
         FeatureStore.on('switchQueryMode', (mode) => {
+            this.initCanvas();
             if (mode === 'QBS') {
                 let targets = FeatureStore.getTarget();
                 let lookup = this.updateLookup();
@@ -229,6 +230,34 @@ export default class QueryBySketch extends React.Component{
                 }
             }.bind(this), 0);
             
+        });
+        FeatureStore.on('convertClusterCenterIntoQuery', (clusterCenter) => {
+            setTimeout(function() {
+                if (FeatureStore.getMode() === 'QBS') {
+                    this.clearCanvas();
+                    let targets = FeatureStore.getTarget();
+                    let lookup = this.updateLookup();
+                    let lists = this.extractMinMaxList(lookup, targets);
+                    this.queryData = {
+                        id: 'clustering',
+                        targetData: clusterCenter.values,
+                        parameters: clusterCenter.parameters,
+                        subsequenceParameters: clusterCenter.subsequenceParameters
+                    };
+
+                    if (!this.widthVar) {
+                        let variableList = document.getElementById('widthVariables');
+                        let selectedIdx = variableList.selectedIndex;
+                        let selectedVal = variableList.options[selectedIdx].value;
+                        this.widthVar = selectedVal;
+                        $('img[name=QBSSelector]').each(function() {
+                            $(this).removeClass('disabled');
+                        });
+                    }
+                    this.transformDataIntoSketch(this.state.xItem, this.state.yItem);
+                    this.convertSketchIntoQuery(this.state.xItem, this.state.yItem);
+                }
+            }.bind(this));
         });
     }
 
@@ -1501,97 +1530,250 @@ export default class QueryBySketch extends React.Component{
             this.path = null;
         }
         this.controlPoints = [];
+        if (this.queryData.id !== 'clustering') {
+            let targetData = this.queryData.targetData;
+            let minIdx = targetData.z.indexOf(this.queryData.period[0]),
+                maxIdx = targetData.z.indexOf(this.queryData.period[1]);
+            if (xItem !== 'z' && yItem !== 'z') {
+                let xData = targetData[xItem].slice(minIdx, maxIdx + 1),
+                    yData = targetData[yItem].slice(minIdx, maxIdx + 1);
+                this.path = new paper.Path();
+                this.path.strokeColor = 'black';
+                this.path.strokeWidth = 5;
 
-        let targetData = this.queryData.targetData;
-        let minIdx = targetData.z.indexOf(this.queryData.period[0]),
-            maxIdx = targetData.z.indexOf(this.queryData.period[1]);
-        if (xItem !== 'z' && yItem !== 'z') {
-            let xData = targetData[xItem].slice(minIdx, maxIdx + 1),
-                yData = targetData[yItem].slice(minIdx, maxIdx + 1);
-            this.path = new paper.Path();
-            this.path.strokeColor = 'black';
-            this.path.strokeWidth = 5;
-
-            for (let i = 0; i < xData.length; i++) {
-                this.path.add(new paper.Point(this.xScale(xData[i]), this.yScale(yData[i])));
-            }
-        } else if (xItem === 'z') {
-            let yData = targetData[yItem].slice(minIdx, maxIdx + 1);
-
-            // put the sketch at the center in the horizontal direction
-            let delta = Math.floor(this.xScale.domain()[1] / 2) - Math.floor(yData.length / 2);
-            this.path = new paper.Path();
-            this.path.strokeColor = 'black';
-            this.path.strokeWidth = 5;
-
-            for (let i = 0; i < yData.length; i++) {
-                this.path.add(new paper.Point(this.xScale(i + delta), this.yScale(yData[i])));
-            }
-        } else if (yItem === 'z') {
-            let xData = targetData[xItem].slice(minIdx, maxIdx + 1);
-
-            // put the sketch at the center in the horizontal direction
-            let delta = Math.floor(this.yScale.domain()[1] / 2) - Math.floor(xData.length / 2);
-            this.path = new paper.Path();
-            this.path.strokeColor = 'black';
-            this.path.strokeWidth = 5;
-
-            for (let i = 0; i < xData.length; i++) {
-                this.path.add(new paper.Point(this.xScale(xData[i]), this.yScale(i + delta)));
-            }
-        }
-
-        let segments = this.path.segments.slice(0, this.path.segments.length);
-        this.path.simplify(10);
-        // create this.controlPoints
-        this.path.segments.forEach(function(e) {
-            this.controlPoints.push({
-                position: {x: e.point.x, y: e.point.y},
-                assignedVariables: {},
-                label: null,
-                labelRect: null
-            });
-
-            for (let key in this.state.lookup) {
-                this.controlPoints[this.controlPoints.length - 1].assignedVariables[key] = [];
-            }
-        }.bind(this));
-
-        if (this.widthVar) {
-            let widthData = targetData[this.widthVar].slice(minIdx, maxIdx + 1);
-            let minWidth = 2.5, maxWidth = 25;
-            let minVal = Math.min.apply(null, widthData), maxVal = Math.max.apply(null, widthData);
-            for (let i = 0; i < widthData.length; i++) {
-                this.radiuses.push((widthData[i] - minVal) / (maxVal - minVal) * (maxWidth - minWidth) + minWidth);
-            }
-            // simplificationDeg should be odd (- - * + +: * is the value of the point)
-            let simplificationDeg = segments.length / this.path.segments.length;
-            simplificationDeg = (Math.floor(simplificationDeg) % 2 === 1) ? Math.floor(simplificationDeg) : Math.ceil(simplificationDeg);
-
-            // get the radius value of each point on the simplified path
-            let idxOriginal = 0, idxSimple = 0;
-            while (idxOriginal < segments.length && idxSimple < this.path.segments.length) {
-                if (segments[idxOriginal].point.x === this.path.segments[idxSimple].point.x
-                    && segments[idxOriginal].point.y === this.path.segments[idxSimple].point.y) {
-                    let radTmp = 0, count = 0;
-                    let startIdx = idxOriginal - Math.floor(simplificationDeg / 2);
-                    let endIdx = idxOriginal + Math.floor(simplificationDeg / 2);
-                    startIdx = Math.max(0, startIdx);
-                    endIdx = Math.min(segments.length - 1, endIdx);
-                    for (let i = startIdx; i <= endIdx; i++) {
-                        radTmp += this.radiuses[i];
-                        count++;
-                    }
-                    radTmp /= count;
-                    this.controlPoints[idxSimple].radius = radTmp;
-                    idxOriginal++;
-                    idxSimple++;
-                    continue;
+                for (let i = 0; i < xData.length; i++) {
+                    this.path.add(new paper.Point(this.xScale(xData[i]), this.yScale(yData[i])));
                 }
-                idxOriginal++;
+            } else if (xItem === 'z') {
+                let yData = targetData[yItem].slice(minIdx, maxIdx + 1);
+
+                // put the sketch at the center in the horizontal direction
+                let delta = Math.floor(this.xScale.domain()[1] / 2) - Math.floor(yData.length / 2);
+                this.path = new paper.Path();
+                this.path.strokeColor = 'black';
+                this.path.strokeWidth = 5;
+
+                for (let i = 0; i < yData.length; i++) {
+                    this.path.add(new paper.Point(this.xScale(i + delta), this.yScale(yData[i])));
+                }
+            } else if (yItem === 'z') {
+                let xData = targetData[xItem].slice(minIdx, maxIdx + 1);
+
+                // put the sketch at the center in the horizontal direction
+                let delta = Math.floor(this.yScale.domain()[1] / 2) - Math.floor(xData.length / 2);
+                this.path = new paper.Path();
+                this.path.strokeColor = 'black';
+                this.path.strokeWidth = 5;
+
+                for (let i = 0; i < xData.length; i++) {
+                    this.path.add(new paper.Point(this.xScale(xData[i]), this.yScale(i + delta)));
+                }
             }
-            this.radiuses = [];
-            this.drawPathWidth();
+
+            let segments = this.path.segments.slice(0, this.path.segments.length);
+            this.path.simplify(10);
+            // create this.controlPoints
+            this.path.segments.forEach(function(e) {
+                this.controlPoints.push({
+                    position: {x: e.point.x, y: e.point.y},
+                    assignedVariables: {},
+                    label: null,
+                    labelRect: null
+                });
+
+                for (let key in this.state.lookup) {
+                    this.controlPoints[this.controlPoints.length - 1].assignedVariables[key] = [];
+                }
+            }.bind(this));
+
+            if (this.widthVar) {
+                let widthData = targetData[this.widthVar].slice(minIdx, maxIdx + 1);
+                let minWidth = 2.5, maxWidth = 25;
+                let minVal = Math.min.apply(null, widthData), maxVal = Math.max.apply(null, widthData);
+                for (let i = 0; i < widthData.length; i++) {
+                    this.radiuses.push((widthData[i] - minVal) / (maxVal - minVal) * (maxWidth - minWidth) + minWidth);
+                }
+                // simplificationDeg should be odd (- - * + +: * is the value of the point)
+                let simplificationDeg = segments.length / this.path.segments.length;
+                simplificationDeg = (Math.floor(simplificationDeg) % 2 === 1) ? Math.floor(simplificationDeg) : Math.ceil(simplificationDeg);
+
+                // get the radius value of each point on the simplified path
+                let idxOriginal = 0, idxSimple = 0;
+                while (idxOriginal < segments.length && idxSimple < this.path.segments.length) {
+                    if (segments[idxOriginal].point.x === this.path.segments[idxSimple].point.x
+                        && segments[idxOriginal].point.y === this.path.segments[idxSimple].point.y) {
+                        let radTmp = 0, count = 0;
+                        let startIdx = idxOriginal - Math.floor(simplificationDeg / 2);
+                        let endIdx = idxOriginal + Math.floor(simplificationDeg / 2);
+                        startIdx = Math.max(0, startIdx);
+                        endIdx = Math.min(segments.length - 1, endIdx);
+                        for (let i = startIdx; i <= endIdx; i++) {
+                            radTmp += this.radiuses[i];
+                            count++;
+                        }
+                        radTmp /= count;
+                        this.controlPoints[idxSimple].radius = radTmp;
+                        idxOriginal++;
+                        idxSimple++;
+                        continue;
+                    }
+                    idxOriginal++;
+                }
+                this.radiuses = [];
+                this.drawPathWidth();
+            }
+        } else {
+            let targetData = this.queryData.targetData;
+            if (xItem !== 'z' && yItem !== 'z') {
+                this.path = new paper.Path();
+                this.path.strokeColor = 'black';
+                this.path.strokeWidth = 5;
+
+                if (this.queryData.subsequenceParameters.normalize) {
+                    let minmaxX = d3.extent(targetData[xItem]),
+                        minmaxY = d3.extent(targetData[yItem]);
+                    minmaxX[0] *= 1.2;
+                    minmaxX[1] *= 1.2;
+                    minmaxY[0] *= 1.2;
+                    minmaxY[1] *= 1.2;
+                    let currentXRange = this.xScale.domain(),
+                        currentYRange = this.yScale.domain();
+                    let scaleX, scaleY;
+                    if (xItem === 'x' || xItem === 'y') {
+                        // ストークスパラメタの場合原点を中心に変換
+                        if (Math.abs(currentXRange[0]) < Math.abs(currentXRange[1])) {
+                            scaleX = Math.abs(currentXRange[0] / minmaxX[0]);
+                        } else {
+                            scaleX = Math.abs(currentXRange[1] / minmaxX[1]);
+                        }
+                    }
+                    if (yItem === 'x' || yItem === 'y') {
+                        // ストークスパラメタの場合原点を中心に変換
+                        if (Math.abs(currentYRange[0]) < Math.abs(currentYRange[1])) {
+                            scaleY = Math.abs(currentYRange[0] / minmaxY[0]);
+                        } else {
+                            scaleY = Math.abs(currentYRange[1] / minmaxY[1]);
+                        }
+                    }
+                    for (let i = 0; i < targetData[xItem].length; i++) {
+                        let xValTmp, yValTmp;
+                        if (typeof(scaleX) !== 'undefined') {
+                            xValTmp = targetData[xItem][i] * scaleX;
+                        } else {
+                            xValTmp = (targetData[xItem][i] - minmaxX[0]) / (minmaxX[1] - minmaxX[0]) * (currentXRange[1] - currentXRange[0]) + currentXRange[0];
+                        }
+                        if (typeof(scaleY) !== 'undefined') {
+                            yValTmp = targetData[yItem][i] * scaleY;
+                        } else {
+                            yValTmp = (targetData[yItem][i] - minmaxY[0]) / (minmaxY[1] - minmaxY[0]) * (currentYRange[1] - currentYRange[0]) + currentYRange[0];
+                        }
+                        this.path.add(new paper.Point(this.xScale(xValTmp), this.yScale(yValTmp)));
+                    }
+                } else {
+                    for (let i = 0; i < targetData[xItem].length; i++) {
+                        this.path.add(new paper.Point(this.xScale(targetData[xItem][i]), this.yScale(targetData[yItem][i])));
+                    }
+                }
+            } else if (xItem === 'z') {
+                this.path = new paper.Path();
+                this.path.strokeColor = 'black';
+                this.path.strokeWidth = 5;
+
+                if (this.queryData.subsequenceParameters.normalize) {
+                    let minmaxY = d3.extent(targetData[yItem]);
+                    minmaxY[0] *= 1.2;
+                    minmaxY[1] *= 1.2;
+                    let currentXRange = this.xScale.domain(),
+                        currentYRange = this.yScale.domain();
+
+                    for (let i = 0; i < targetData[yItem].length; i++) {
+                        let xValTmp = i / targetData[yItem].length * (currentXRange[1] - currentXRange[0]) + currentXRange[0],
+                            yValTmp = (targetData[yItem][i] - minmaxY[0]) / (minmaxY[1] - minmaxY[0]) * (currentYRange[1] - currentYRange[0]) + currentYRange[0];
+                        this.path.add(new paper.Point(this.xScale(xValTmp), this.yScale(yValTmp)));
+                    }
+                } else {
+                    for (let i = 0; i < targetData[yItem].length; i++) {
+                        let xValTmp = i / targetData[yItem].length * (currentXRange[1] - currentXRange[0]) + currentXRange[0];
+                        this.path.add(new paper.Point(this.xScale(xValTmp), this.yScale(targetData[yItem][i])));
+                    }
+                }
+            } else if (yItem === 'z') {
+                this.path = new paper.Path();
+                this.path.strokeColor = 'black';
+                this.path.strokeWidth = 5;
+
+                if (this.queryData.subsequenceParameters.normalize) {
+                    let minmaxX = d3.extent(targetData[xItem]);
+                    minmaxX[0] *= 1.2;
+                    minmaxX[1] *= 1.2;
+                    let currentXRange = this.xScale.domain(),
+                        currentYRange = this.yScale.domain();
+
+                    for (let i = 0; i < targetData[xItem].length; i++) {
+                        let xValTmp = (targetData[xItem][i] - minmaxX[0]) / (minmaxX[1] - minmaxX[0]) * (currentXRange[1] - currentXRange[0]) + currentXRange[0],
+                            yValTmp = i / targetData[yItem].length * (currentYRange[1] - currentYRange[0]) + currentYRange[0];
+                        this.path.add(new paper.Point(this.xScale(xValTmp), this.yScale(yValTmp)));
+                    }
+                } else {
+                    for (let i = 0; i < targetData[yItem].length; i++) {
+                        let yValTmp = i / targetData[yItem].length * (currentYRange[1] - currentYRange[0]) + currentYRange[0];
+                        this.path.add(new paper.Point(this.xScale(targetData[xItem][i]), this.yScale(yValTmp)));
+                    }
+                }
+            }
+
+            let segments = this.path.segments.slice(0, this.path.segments.length);
+            this.path.simplify(10);
+            // create this.controlPoints
+            this.path.segments.forEach(function(e) {
+                this.controlPoints.push({
+                    position: {x: e.point.x, y: e.point.y},
+                    assignedVariables: {},
+                    label: null,
+                    labelRect: null
+                });
+
+                for (let key in this.state.lookup) {
+                    this.controlPoints[this.controlPoints.length - 1].assignedVariables[key] = [];
+                }
+            }.bind(this));
+
+            if (this.widthVar && targetData[this.widthVar]) {
+                let widthData = targetData[this.widthVar];
+                let minWidth = 2.5, maxWidth = 25;
+                let [minVal, maxVal] = d3.extent(widthData);
+                for (let i = 0; i < widthData.length; i++) {
+                    this.radiuses.push((widthData[i] - minVal) / (maxVal - minVal) * (maxWidth - minWidth) + minWidth);
+                }
+                // simplificationDeg should be odd (- - * + +: * is the value of the point)
+                let simplificationDeg = segments.length / this.path.segments.length;
+                simplificationDeg = (Math.floor(simplificationDeg) % 2 === 1) ? Math.floor(simplificationDeg) : Math.ceil(simplificationDeg);
+
+                // get the radius value of each point on the simplified path
+                let idxOriginal = 0, idxSimple = 0;
+                while (idxOriginal < segments.length && idxSimple < this.path.segments.length) {
+                    if (segments[idxOriginal].point.x === this.path.segments[idxSimple].point.x
+                        && segments[idxOriginal].point.y === this.path.segments[idxSimple].point.y) {
+                        let radTmp = 0, count = 0;
+                        let startIdx = idxOriginal - Math.floor(simplificationDeg / 2);
+                        let endIdx = idxOriginal + Math.floor(simplificationDeg / 2);
+                        startIdx = Math.max(0, startIdx);
+                        endIdx = Math.min(segments.length - 1, endIdx);
+                        for (let i = startIdx; i <= endIdx; i++) {
+                            radTmp += this.radiuses[i];
+                            count++;
+                        }
+                        radTmp /= count;
+                        this.controlPoints[idxSimple].radius = radTmp;
+                        idxOriginal++;
+                        idxSimple++;
+                        continue;
+                    }
+                    idxOriginal++;
+                }
+                this.radiuses = [];
+                this.drawPathWidth();
+            }
         }
     }
 
@@ -1788,8 +1970,10 @@ export default class QueryBySketch extends React.Component{
 
         if (Object.keys(this.queryData).length <= 0) {
             this.recoverStroke(this.state.xItemonPanel, this.state.yItem);
-        } else {
+        } else if (Object.keys(this.queryData.targetData).indexOf(this.state.xItemonPanel) >= 0) {
             this.transformDataIntoSketch(this.state.xItemonPanel, this.state.yItem);
+        } else if (Object.keys(this.queryData.targetData).indexOf(this.state.xItemonPanel) < 0) {
+            this.clearCanvas();
         }
 
         this.convertSketchIntoQuery(this.state.xItemonPanel, this.state.yItem);
@@ -1825,8 +2009,10 @@ export default class QueryBySketch extends React.Component{
         // this.recoverStroke(this.state.xItem, this.state.yItemonPanel);
         if (Object.keys(this.queryData).length <= 0) {
             this.recoverStroke(this.state.xItem, this.state.yItemonPanel);
-        } else {
+        } else if (Object.keys(this.queryData.targetData).indexOf(this.state.yItemonPanel) >= 0) {
             this.transformDataIntoSketch(this.state.xItem, this.state.yItemonPanel);
+        } else if (Object.keys(this.queryData.targetData).indexOf(this.state.yItemonPanel) < 0) {
+            this.clearCanvas();
         }
 
         this.convertSketchIntoQuery(this.state.xItem, this.state.yItemonPanel);
