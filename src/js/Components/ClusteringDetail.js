@@ -19,10 +19,17 @@ export default class ClusteringDetail extends React.Component {
         this.margin = {left: 30, right: 10, top: 20, bottom: 20};
         this.paddingCard = 16;
         this.areaPadding = {left: 16, right: 16, top: 8, bottom: 8};
-        this.cluster = -1;
         this.queryMode;
         this.clickedX;
         this.clickedY;
+        this.clusterCenters;
+        this.clusterColors;
+        this.subsequences;
+        this.datasetsIdx;
+        this.labels;
+        this.clusteringScores;
+        this.subsequenceParameters;
+        this.variables;
         this.state = {
             cluster: -1
         };
@@ -67,14 +74,10 @@ export default class ClusteringDetail extends React.Component {
             this.subsequenceParameters = ClusteringStore.getSubsequenceParameters();
         });
         ClusteringStore.on('showClusterDetails', (cluster) => {
-            this.cluster = cluster;
             this.variables = ClusteringStore.getClusteringParameters().variables;//Object.keys(this.clusterCenters[cluster][0]);
-            this.variables = this.variables.filter(ele => ele !== 'z')
+            this.variables = this.variables.filter(ele => ele !== 'z');
             this.createVariableLabels();
-            this.extractSubsequencesInCluster();
-            this.drawClusterCenterLineCharts();
-            this.drawSubsequenceLengthHistogram();
-            // this.drawSparklinesTable();
+            this.extractSubsequencesInCluster(cluster);
             this.setState({
                 cluster: cluster
             });
@@ -84,7 +87,7 @@ export default class ClusteringDetail extends React.Component {
             this.labels = ClusteringStore.getLabels();
             this.subsequences = ClusteringStore.getSubsequences();
             this.clusteringScores = ClusteringStore.getClusteringScores();
-            this.extractSubsequencesInCluster();
+            this.extractSubsequencesInCluster(-1);
             this.setState({
                 cluster: -1
             });
@@ -94,7 +97,7 @@ export default class ClusteringDetail extends React.Component {
             this.labels = ClusteringStore.getLabels();
             this.subsequences = ClusteringStore.getSubsequences();
             this.clusteringScores = ClusteringStore.getClusteringScores();
-            this.extractSubsequencesInCluster();
+            this.extractSubsequencesInCluster(-1);
             this.setState({
                 cluster: -1
             });
@@ -114,6 +117,7 @@ export default class ClusteringDetail extends React.Component {
     }
 
     componentDidUpdate() {
+        // this.extractSubsequencesInCluster();
         this.drawClusterCenterLineCharts();
         this.drawSubsequenceLengthHistogram();
         this.drawSparklinesTable();
@@ -165,7 +169,7 @@ export default class ClusteringDetail extends React.Component {
             }
             this.variables.forEach(key => {
                 aveDataValues[key] /= aveDataPointNum;
-            })
+            });
             aveDataPointNum /= this.SSCluster.length;
             avePeriod /= this.SSCluster.length;
 
@@ -306,44 +310,46 @@ export default class ClusteringDetail extends React.Component {
         }
     }
 
-    extractSubsequencesInCluster() {
+    extractSubsequencesInCluster(cluster) {
         this.SSCluster = [];
         // this.SSRanges = [];
         this.yMinMax = {};
-        this.variables.forEach(function(d) {
-            this.yMinMax[d] = [Infinity, -Infinity];
-        }.bind(this));
-        for (let i = 0; i < this.labels.length; i++) {
-            if (typeof(this.labels[i]) === 'object') {
-                if (this.labels[i].cluster === this.cluster) {
-                    this.SSCluster.push(this.subsequences[i]);
-                    // this.SSRanges.push(this.ranges[i]);
+        if (cluster >= 0) {
+            this.variables.forEach(function(d) {
+                this.yMinMax[d] = [Infinity, -Infinity];
+            }.bind(this));
+            for (let i = 0; i < this.labels.length; i++) {
+                if (typeof(this.labels[i]) === 'object') {
+                    if (this.labels[i].cluster === cluster) {
+                        this.SSCluster.push(this.subsequences[i]);
+                        // this.SSRanges.push(this.ranges[i]);
 
-                    for (let j = 0; j < this.subsequences[i].length; j++) {
-                        this.variables.forEach(function(d) {
-                            if (this.subsequences[i][j][d] < this.yMinMax[d][0]) {
-                                this.yMinMax[d][0] = this.subsequences[i][j][d];
-                            }
-                            if (this.yMinMax[d][1] < this.subsequences[i][j][d]) {
-                                this.yMinMax[d][1] = this.subsequences[i][j][d];
-                            }
-                        }.bind(this));
+                        for (let j = 0; j < this.subsequences[i].length; j++) {
+                            this.variables.forEach(function(d) {
+                                if (this.subsequences[i][j][d] < this.yMinMax[d][0]) {
+                                    this.yMinMax[d][0] = this.subsequences[i][j][d];
+                                }
+                                if (this.yMinMax[d][1] < this.subsequences[i][j][d]) {
+                                    this.yMinMax[d][1] = this.subsequences[i][j][d];
+                                }
+                            }.bind(this));
+                        }
                     }
-                }
-            } else {
-                if (this.labels[i] === this.cluster) {
-                    this.SSCluster.push(this.subsequences[i]);
-                    // this.SSRanges.push(this.ranges[i]);
-                    
-                    for (let j = 0; j < this.subsequences[i].length; j++) {
-                        this.variables.forEach(function(d) {
-                            if (this.subsequences[i][j][d] < this.yMinMax[d][0]) {
-                                this.yMinMax[d][0] = this.subsequences[i][j][d];
-                            }
-                            if (this.yMinMax[d][1] < this.subsequences[i][j][d]) {
-                                this.yMinMax[d][1] = this.subsequences[i][j][d];
-                            }
-                        }.bind(this));
+                } else {
+                    if (this.labels[i] === cluster) {
+                        this.SSCluster.push(this.subsequences[i]);
+                        // this.SSRanges.push(this.ranges[i]);
+                        
+                        for (let j = 0; j < this.subsequences[i].length; j++) {
+                            this.variables.forEach(function(d) {
+                                if (this.subsequences[i][j][d] < this.yMinMax[d][0]) {
+                                    this.yMinMax[d][0] = this.subsequences[i][j][d];
+                                }
+                                if (this.yMinMax[d][1] < this.subsequences[i][j][d]) {
+                                    this.yMinMax[d][1] = this.subsequences[i][j][d];
+                                }
+                            }.bind(this));
+                        }
                     }
                 }
             }
@@ -371,7 +377,6 @@ export default class ClusteringDetail extends React.Component {
 
     drawClusterCenterLineCharts() {
         $('#clusterCenterLineChartsSVG').remove();
-
         if (this.state.cluster >= 0) { 
             let clientWidth = $('#clusteringDetail').width() - this.paddingCard * 2;
             // let clientWidth = this.mount.clientWidth - this.paddingCard * 2;
@@ -386,7 +391,7 @@ export default class ClusteringDetail extends React.Component {
             
             for (let i = 0; i < this.variables.length; i++) {
                 let xScale = d3.scaleLinear()
-                    .domain([0, this.clusterCenters[this.cluster].length - 1])
+                    .domain([0, this.clusterCenters[this.state.cluster].length - 1])
                     .range([lineChartWidth * (i % 2) + this.margin.left, lineChartWidth * (i % 2) + lineChartWidth - this.margin.right]);
                 // let yMinMax = d3.extent(this.clusterCenters[this.cluster], d => d[this.variables[i]]);
                 let yScale = d3.scaleLinear()
@@ -427,9 +432,9 @@ export default class ClusteringDetail extends React.Component {
 
                 // cluster center line
                 svg.append('path')
-                    .datum(this.clusterCenters[this.cluster])
+                    .datum(this.clusterCenters[this.state.cluster])
                     .attr('fill', 'none')
-                    .attr('stroke', d3.hsl(this.clusterColors[this.cluster][0], this.clusterColors[this.cluster][1], this.clusterColors[this.cluster][2]))
+                    .attr('stroke', d3.hsl(this.clusterColors[this.state.cluster][0], this.clusterColors[this.state.cluster][1], this.clusterColors[this.state.cluster][2]))
                     .attr('stroke-width', 1.5)
                     .attr('d', d3.line()
                         .x(function(d, i) {
@@ -483,7 +488,7 @@ export default class ClusteringDetail extends React.Component {
             let subsequencesCluster = [];
             for (let i = 0; i < this.labels.length; i++) {
                 let clusterSS = (typeof(this.labels[i]) === 'object')? this.labels[i].cluster: this.labels[i];
-                if (clusterSS === this.cluster) {
+                if (clusterSS === this.state.cluster) {
                     subsequencesCluster.push(this.subsequences[i]);
                 }
             }
@@ -619,7 +624,6 @@ export default class ClusteringDetail extends React.Component {
             for (let i = 0; i < this.datasetsIdx.length; i++) {
                 dataColors[this.datasetsIdx[i]] = TimeTubesStore.getPlotColor(this.datasetsIdx[i]);
             }
-
             // update the height of the table accroding to the number of cluster members
             for (let i = 0; i < this.variables.length; i++) {
                 d3.select('#subsequencesOverviewTableTh_' + this.variables[i])
