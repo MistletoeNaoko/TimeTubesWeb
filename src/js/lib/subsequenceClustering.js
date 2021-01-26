@@ -1611,7 +1611,7 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
     [labels, distsToClusters] = assignSSToCentroids(centroids);
 
     // step 3 and 4
-    let loop = 0, maxIteration = 10;
+    let loop = 0, maxIteration = 300;
     while (loop < maxIteration && checkUpdates(labels, newLabels)) {
         if (newCentroids.length !== 0 && newLabels.length !== 0) {
             centroids = newCentroids;
@@ -1802,7 +1802,8 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
             case 'DTWD':
                 for (let i = 0; i < clusters.length; i++) {
                     let pCentroid = data[clusters[i][Math.floor(Math.random() * clusters[i].length)]];
-                    let loopInit = 0, maxIterationInit = 300;
+                    let loopInit = 0, maxIterationInit = 10;
+                    // maxIterationInitはDBAを用いた重心導出の最大試行回数
                     if (distanceParameters.window > 0) {
                         while (loopInit < maxIterationInit) {
                             // empty array for storing temporal centroid
@@ -1887,7 +1888,8 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
             case 'DTWI':
                 for (let i = 0; i < clusters.length; i++) {
                     let pCentroid = data[clusters[i][Math.floor(Math.random() * clusters[i].length)]];
-                    let loopInit = 0, maxIterationInit = 300;
+                    let loopInit = 0, maxIterationInit = 10;
+                    // maxIterationInitはDBAを用いた重心導出の最大試行回数
                     if (distanceParameters.window > 0) {
                         while (loopInit < maxIterationInit) {
                             // empty array for storing temporal centroid
