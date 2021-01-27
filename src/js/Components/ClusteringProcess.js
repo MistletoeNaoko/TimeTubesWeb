@@ -92,13 +92,13 @@ export default class ClusteringProcess extends React.Component {
                 selectedProcess: selectedProcess
             })
         });
-        ClusteringStore.on('updateSSSelection', () => {
-            this.updataUpdatedSSSparklineTableFlag = true;
-            this.setState({
-                selectedSS: ClusteringStore.getSelectedSS(),
-                updatedSS: ClusteringStore.getUpdatedSS()
-            });
-        });
+        // ClusteringStore.on('updateSSSelection', () => {
+        //     this.updataUpdatedSSSparklineTableFlag = true;
+        //     this.setState({
+        //         selectedSS: ClusteringStore.getSelectedSS(),
+        //         updatedSS: ClusteringStore.getUpdatedSS()
+        //     });
+        // });
     }
 
     componentWillUnmount() {
@@ -844,14 +844,16 @@ export default class ClusteringProcess extends React.Component {
                 let targetIdEle = targetId.split('_');
                 let dataId = targetIdEle[1],
                     SSId = targetIdEle[2];
-                
-                let targetClasses = document.getElementById('subsequenceTr_' + dataId + '_' + SSId).classList;
-                if (targetClasses.length > 0) {//.indexOf('subsequenceTrCluster')) {
-                    for (let i = 0; i < targetClasses.length; i++) {
-                        if (targetClasses[i].indexOf('subsequenceTrCluster') >= 0) {
-                            let targetEle = targetClasses[i].split('_');
-                            let clusterNum = Number(targetEle[1]);
-                            ClusteringAction.showClusterDetails(clusterNum);
+                // show cluster detail when clicking on tr/svg (do not show when clicking on checkboxes)
+                if (targetId.indexOf('selectSSFilteringProcess_') < 0) {
+                    let targetClasses = document.getElementById('subsequenceTr_' + dataId + '_' + SSId).classList;
+                    if (targetClasses.length > 0) {//.indexOf('subsequenceTrCluster')) {
+                        for (let i = 0; i < targetClasses.length; i++) {
+                            if (targetClasses[i].indexOf('subsequenceTrCluster') >= 0) {
+                                let targetEle = targetClasses[i].split('_');
+                                let clusterNum = Number(targetEle[1]);
+                                ClusteringAction.showClusterDetails(clusterNum);
+                            }
                         }
                     }
                 }
@@ -1016,13 +1018,16 @@ export default class ClusteringProcess extends React.Component {
                 let dataId = targetIdEle[1],
                     SSId = targetIdEle[2];
                 
-                let targetClasses = document.getElementById('updatedSubsequenceTr_' + dataId + '_' + SSId).classList;
-                if (targetClasses.length > 0) {//.indexOf('subsequenceTrCluster')) {
-                    for (let i = 0; i < targetClasses.length; i++) {
-                        if (targetClasses[i].indexOf('updatedSubsequenceTrCluster') >= 0) {
-                            let targetEle = targetClasses[i].split('_');
-                            let clusterNum = Number(targetEle[1]);
-                            ClusteringAction.showClusterDetails(clusterNum);
+                // show cluster detail when clicking on tr/svg (do not show when clicking on checkboxes)
+                if (targetId.indexOf('selectUpdatedSSFilteringProcess_') < 0) {
+                    let targetClasses = document.getElementById('updatedSubsequenceTr_' + dataId + '_' + SSId).classList;
+                    if (targetClasses.length > 0) {//.indexOf('subsequenceTrCluster')) {
+                        for (let i = 0; i < targetClasses.length; i++) {
+                            if (targetClasses[i].indexOf('updatedSubsequenceTrCluster') >= 0) {
+                                let targetEle = targetClasses[i].split('_');
+                                let clusterNum = Number(targetEle[1]);
+                                ClusteringAction.showClusterDetails(clusterNum);
+                            }
                         }
                     }
                 }
@@ -1115,7 +1120,12 @@ export default class ClusteringProcess extends React.Component {
                                     d3.hsl(this.clusterColors[this.labels[k]][0],
                                         this.clusterColors[this.labels[k]][1],
                                         this.clusterColors[this.labels[k]][2]);
-                                let trClass = 'subsequenceTrCluster_' + this.labels[k];
+                                let trClass = '';
+                                if (typeof(this.labels[k]) === 'object') {
+                                    trClass = 'subsequenceTrCluster_' + this.labels[k].cluster;
+                                } else {
+                                    trClass = 'subsequenceTrCluster_' + this.labels[k];
+                                }
                                 d3.select('#subsequenceTr_' + dataId + '_' + SSId)
                                     .classed(trClass, true);
                                 break;

@@ -601,13 +601,26 @@ export default class ClusteringDetail extends React.Component {
                 clusterBefore.push(0);
                 clusterAfter.push(0);
             }
-            for (let i = 0; i < this.labels.length; i++) {
-                if (this.labels[i] === this.state.cluster) {
-                    if (i - 1 >= 0) {
-                        clusterBefore[this.labels[i - 1]]++;
+            if (typeof(this.labels[0]) === 'object') {
+                for (let i = 0; i < this.labels.length; i++) {
+                    if (this.labels[i].cluster === this.state.cluster) {
+                        if (i - 1 >= 0) {
+                            clusterBefore[this.labels[i - 1].cluster]++;
+                        }
+                        if (i + 1 < this.labels.length) {
+                            clusterAfter[this.labels[i + 1].cluster]++;
+                        }
                     }
-                    if (i + 1 < this.labels.length) {
-                        clusterAfter[this.labels[i + 1]]++;
+                }
+            } else {
+                for (let i = 0; i < this.labels.length; i++) {
+                    if (this.labels[i] === this.state.cluster) {
+                        if (i - 1 >= 0) {
+                            clusterBefore[this.labels[i - 1]]++;
+                        }
+                        if (i + 1 < this.labels.length) {
+                            clusterAfter[this.labels[i + 1]]++;
+                        }
                     }
                 }
             }
@@ -926,14 +939,26 @@ export default class ClusteringDetail extends React.Component {
 
                 // highlight histogram for clusters before/after the selected cluster 
                 if (i - 1 >= 0) {
-                    d3.select('#clusterBeforeHistogramRects_' + this.labels[i - 1])
-                        .attr('stroke', 'black')
-                        .attr('stroke-width', 1.5);
+                    if (typeof(this.labels) === 'object') {
+                        d3.select('#clusterBeforeHistogramRects_' + this.labels[i - 1].cluster)
+                            .attr('stroke', 'black')
+                            .attr('stroke-width', 1.5);
+                    } else {
+                        d3.select('#clusterBeforeHistogramRects_' + this.labels[i - 1])
+                            .attr('stroke', 'black')
+                            .attr('stroke-width', 1.5);
+                    }
                 }
                 if (i + 1 < this.labels.length) {
-                    d3.select('#clusterAfterHistogramRects_' + this.labels[i + 1])
-                        .attr('stroke', 'black')
-                        .attr('stroke-width', 1.5);
+                    if (typeof(this.labels) === 'object') {
+                        d3.select('#clusterAfterHistogramRects_' + this.labels[i + 1].cluster)
+                            .attr('stroke', 'black')
+                            .attr('stroke-width', 1.5);
+                    } else {
+                        d3.select('#clusterAfterHistogramRects_' + this.labels[i + 1])
+                            .attr('stroke', 'black')
+                            .attr('stroke-width', 1.5);
+                    }
                 }
 
                 // highlight cluster center line chart
