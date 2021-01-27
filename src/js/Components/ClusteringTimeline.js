@@ -265,8 +265,18 @@ export default class ClusteringTimeline extends React.Component {
                 let fileName = DataStore.getFileName(dataId);
                 let period = [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z];
                 let dataPointNum = data.dataPoints.length;
-                let mouseX = d3.event.clientX + 5;
-                let mouseY = d3.event.clientY + 5;//$(window).scrollTop() + d.clientY + 2;
+                let scrollTop = window.pageYOffset;
+                let resultsPanelOffset = $('#clusteringResults').offset();
+                let mouseX, mouseY;
+                if (scrollTop < resultsPanelOffset.top) {
+                    // header is visible
+                    mouseX = d3.event.clientX - resultsPanelOffset.left + 5;
+                    mouseY = d3.event.clientY - (resultsPanelOffset.top - scrollTop) + 5;
+                } else {
+                    // header is invisible
+                    mouseX = d3.event.clientX - resultsPanelOffset.left + 5;
+                    mouseY = d3.event.clientY + 5;//$(window).scrollTop() + d.clientY + 2;
+                }
                 tooltip.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
                     '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
                     '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
