@@ -26,7 +26,7 @@ export default class FeatureExtraction extends React.Component{
             );
             if (mode === 'QBE') {
                 $('#extractionResults').css({
-                    width: (100 - 30 * 2) + '%'
+                    width: (100 - 30) + '%'
                 });
             } else if (mode === 'Clustering') {
                 $('#clusteringResults').css({
@@ -46,7 +46,7 @@ export default class FeatureExtraction extends React.Component{
             });
             if (mode === 'QBE') {
                 $('#extractionResults').css({
-                    width: (100 - 30 * 2) + '%'
+                    width: (100 - 30) + '%'
                 });
                 this.setState({
                     resultsPanel: 'featureExtraction'
@@ -76,6 +76,9 @@ export default class FeatureExtraction extends React.Component{
         });
         AppStore.on('showExtractionSourcePanel', (id) => {
             if (id !== 'default' && Number(id) >= 0) {
+                $('#extractionResults').css({
+                    width: (100 - 30 * 2) + '%'
+                });
                 this.setState({
                     showQBESource: true,
                     resultsPanel: 'featureExtraction'
