@@ -16,7 +16,7 @@ d3.selection.prototype.moveToFront =
 export default class ClusteringDetail extends React.Component {
     constructor() {
         super();
-        this.margin = {left: 30, right: 10, top: 20, bottom: 20};
+        this.margin = {left: 25, right: 10, top: 20, bottom: 20};
         this.paddingCard = 16;
         this.areaPadding = {left: 16, right: 16, top: 8, bottom: 8};
         this.queryMode;
@@ -38,13 +38,14 @@ export default class ClusteringDetail extends React.Component {
     render() {
         let clusterCenterTimeTubes,
             clusterCenterLineCharts,
-            datasetDistribution,
             subsequenceLengthDistribution,
+            clustersTemporalDistribution,
             clusterFeatureTable,
             subsequencesOverview;
         clusterCenterTimeTubes = this.clusterCenterTimeTubesView();
         clusterCenterLineCharts = this.clusterCenterLineCharts();
         subsequenceLengthDistribution = this.subsequenceLengthDistribution();
+        clustersTemporalDistribution = this.clustersTemporalDistribution();
         clusterFeatureTable = this.clusterFeatureTable();
         subsequencesOverview = this.subsequencesOverview();
         return (
@@ -56,6 +57,7 @@ export default class ClusteringDetail extends React.Component {
                 {clusterCenterTimeTubes}
                 {clusterCenterLineCharts}
                 {subsequenceLengthDistribution}
+                {clustersTemporalDistribution}
                 {clusterFeatureTable}
                 {subsequencesOverview}
             </div>
@@ -120,6 +122,7 @@ export default class ClusteringDetail extends React.Component {
         // this.extractSubsequencesInCluster();
         this.drawClusterCenterLineCharts();
         this.drawSubsequenceLengthHistogram();
+        this.drawClustersTemporalDistributionHistogram();
         this.drawSparklinesTable();
         this.showSSStatus();
     }
@@ -143,6 +146,14 @@ export default class ClusteringDetail extends React.Component {
     subsequenceLengthDistribution() {
         return (
             <div id='subsequenceLengthHistogram'
+                className='resultAreaElem'>
+            </div>
+        );
+    }
+
+    clustersTemporalDistribution() {
+        return (
+            <div id='clustersTemporalDistributionHistogram'
                 className='resultAreaElem'>
             </div>
         );
@@ -468,8 +479,8 @@ export default class ClusteringDetail extends React.Component {
         if (this.state.cluster >= 0) { 
             let clientWidth = $('#clusteringDetail').width() - this.paddingCard * 2;
             // let clientWidth = this.mount.clientWidth - this.paddingCard * 2;
-            let height = clientWidth * 0.3;
-            let svgPadding = {left: 30, right: 10, top: 5, bottom: 20};
+            let height = clientWidth * 0.35;
+            let svgPadding = {left: 30, right: 10, top: 15, bottom: 20};
             
             let svg = d3.select('#subsequenceLengthHistogram')
                 .append('svg')
@@ -504,6 +515,14 @@ export default class ClusteringDetail extends React.Component {
                 .attr('transform', 'translate(' + svgPadding.left + ',0)')
                 .call(d3.axisLeft(yScale).ticks(5));
                 
+            svg.append('text')
+                .attr('x', clientWidth / 2)
+                .attr('y', svgPadding.top / 2)
+                .attr('fill', 'black')
+                .attr('font-size', '0.6rem')
+                .attr('text-anchor', 'middle')
+                .text('Subsequence length');
+
             if (this.datasetsIdx.length === 1) {
                 let rectColor = TimeTubesStore.getPlotColor(this.datasetsIdx[0]);
                 svg.selectAll('rect')
@@ -569,6 +588,125 @@ export default class ClusteringDetail extends React.Component {
                         return (yScale(d[0]) - yScale(d[1]))
                     }.bind(this));
             }
+        }
+    }
+
+    drawClustersTemporalDistributionHistogram() {
+        $('#clustersTemporalDistributionHistogramSVG').remove();
+
+        if (this.state.cluster >= 0) {
+            let clusterBefore = [],
+                clusterAfter = [];
+            for (let i = 0; i < this.clusterCenters.length; i++) {
+                clusterBefore.push(0);
+                clusterAfter.push(0);
+            }
+            for (let i = 0; i < this.labels.length; i++) {
+                if (this.labels[i] === this.state.cluster) {
+                    if (i - 1 >= 0) {
+                        clusterBefore[this.labels[i - 1]]++;
+                    }
+                    if (i + 1 < this.labels.length) {
+                        clusterAfter[this.labels[i + 1]]++;
+                    }
+                }
+            }
+            let maxCount = d3.max([d3.max(clusterBefore), d3.max(clusterAfter)]);
+
+            let clientWidth = $('#clusteringDetail').width() - this.paddingCard * 2;
+            let histogramWidth = clientWidth / 2,
+                histogramHeight = clientWidth / 2 * 0.6;
+            let svgPadding = {left: 20, right: 10, top: 15, bottom: 20};
+
+            let svg = d3.select('#clustersTemporalDistributionHistogram')
+                .append('svg')
+                .attr('id', 'clustersTemporalDistributionHistogramSVG')
+                .attr('width', clientWidth)
+                .attr('height', histogramHeight);
+            
+            // draw axes
+            let xScale = d3.scaleLinear()
+                .domain([0 - 0.5, this.clusterCenters.length - 1 + 0.5])
+                .range([svgPadding.left, histogramWidth - svgPadding.right]);
+            svg.append('g')
+                .attr('id', 'clusterBeforeHistogramAxisX')
+                .attr('transform', 'translate(0,' + (histogramHeight - svgPadding.bottom) + ')')
+                .call(d3.axisBottom(xScale).ticks(this.clusterCenters.length));
+            svg.append('g')
+                .attr('id', 'clusterAfterHistogramAxisX')
+                .attr('transform', 'translate(' + histogramWidth + ',' + (histogramHeight - svgPadding.bottom) + ')')
+                .call(d3.axisBottom(xScale).ticks(this.clusterCenters.length));
+            let yScale = d3.scaleLinear()
+                .domain([0, maxCount])
+                .range([histogramHeight- svgPadding.bottom, svgPadding.top]);
+            svg.append('g')
+                .attr('id', 'clusterBeforeHistogramAxisY')
+                .attr('transform', 'translate(' + svgPadding.left + ',0)')
+                .call(d3.axisLeft(yScale).ticks(maxCount));
+            svg.append('g')
+                .attr('id', 'clusterAfterHistogramAxisY')
+                .attr('transform', 'translate(' + (histogramWidth + svgPadding.left) + ',0)')
+                .call(d3.axisLeft(yScale).ticks(maxCount));
+
+            // draw rects
+            let rectWidth = (histogramWidth - svgPadding.left - svgPadding.right) / this.clusterCenters.length;
+            svg.append('g')
+                .attr('id', 'clusterBeforeHistogramRects')
+                .selectAll('rect')
+                .data(clusterBefore)
+                .enter()
+                .append('rect')
+                .attr('id', function(d, i) {
+                    return 'clusterBeforeHistogramRects_' + i
+                })
+                .attr('x', 1)
+                .attr('transform', function(d, i) {
+                    return 'translate(' + xScale(i - 0.5) + ',' + yScale(d) + ')';
+                })
+                .attr('width', rectWidth - 1)
+                .attr('height', function(d, i) {
+                    return histogramHeight - svgPadding.bottom - yScale(d);
+                })
+                .attr('fill', function(d, i) {
+                    return d3.hsl(this.clusterColors[i][0], this.clusterColors[i][1], this.clusterColors[i][2]);
+                }.bind(this));
+            svg.append('g')
+                .attr('id', 'clusterAfterHistogramRects')
+                .selectAll('rect')
+                .data(clusterAfter)
+                .enter()
+                .append('rect')
+                .attr('id', function(d, i) {
+                    return 'clusterAfterHistogramRects_' + i
+                })
+                .attr('x', 1)
+                .attr('transform', function(d, i) {
+                    return 'translate(' + (histogramWidth + xScale(i - 0.5)) + ',' + yScale(d) + ')';
+                })
+                .attr('width', rectWidth - 1)
+                .attr('height', function(d, i) {
+                    return histogramHeight - svgPadding.bottom - yScale(d);
+                })
+                .attr('fill', function(d, i) {
+                    return d3.hsl(this.clusterColors[i][0], this.clusterColors[i][1], this.clusterColors[i][2]);
+                }.bind(this));
+
+            // draw chart name
+            svg.append('text')
+                .attr('x', histogramWidth / 2)
+                .attr('y', svgPadding.top / 2)
+                .attr('fill', 'black')
+                .attr('font-size', '0.6rem')
+                .attr('text-anchor', 'middle')
+                .text('Before Cluster ' + this.state.cluster);
+            
+            svg.append('text')
+                .attr('x', histogramWidth + histogramWidth / 2)
+                .attr('y', svgPadding.top / 2)
+                .attr('fill', 'black')
+                .attr('font-size', '0.6rem')
+                .attr('text-anchor', 'middle')
+                .text('After Cluster ' + this.state.cluster);
         }
     }
 
@@ -786,6 +924,18 @@ export default class ClusteringDetail extends React.Component {
                     .attr('stroke', 'black')
                     .attr('stroke-width', 1.5);
 
+                // highlight histogram for clusters before/after the selected cluster 
+                if (i - 1 >= 0) {
+                    d3.select('#clusterBeforeHistogramRects_' + this.labels[i - 1])
+                        .attr('stroke', 'black')
+                        .attr('stroke-width', 1.5);
+                }
+                if (i + 1 < this.labels.length) {
+                    d3.select('#clusterAfterHistogramRects_' + this.labels[i + 1])
+                        .attr('stroke', 'black')
+                        .attr('stroke-width', 1.5);
+                }
+
                 // highlight cluster center line chart
                 d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
                     .attr('stroke', '#f26418');
@@ -821,6 +971,12 @@ export default class ClusteringDetail extends React.Component {
                 
                 // remove stroke from histogram
                 d3.selectAll('.SSLengthBar')
+                    .attr('stroke-width', 0);
+
+                // remove stroke from histogram for clusters before/after the selected cluster
+                d3.selectAll('#clusterBeforeHistogramRects rect')
+                    .attr('stroke-width', 0);
+                d3.selectAll('#clusterAfterHistogramRects rect')
                     .attr('stroke-width', 0);
 
                 // make a highlighted path in cluster center line chart lightgray
