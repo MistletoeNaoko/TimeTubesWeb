@@ -88,17 +88,18 @@ export default class ClusteringProcess extends React.Component {
         ClusteringStore.on('showFilteringStep', (selectedProcess) => {
             // this.showSubsequencesInTheSelectedStep(selectedProcess);
             this.updateSparklineTableFlag = true;
+            this.updataUpdatedSSSparklineTableFlag = true;
             this.setState({
                 selectedProcess: selectedProcess
             })
         });
-        // ClusteringStore.on('updateSSSelection', () => {
-        //     this.updataUpdatedSSSparklineTableFlag = true;
-        //     this.setState({
-        //         selectedSS: ClusteringStore.getSelectedSS(),
-        //         updatedSS: ClusteringStore.getUpdatedSS()
-        //     });
-        // });
+        ClusteringStore.on('updateSSSelection', () => {
+            this.updataUpdatedSSSparklineTableFlag = true;
+            this.setState({
+                selectedSS: ClusteringStore.getSelectedSS(),
+                updatedSS: ClusteringStore.getUpdatedSS()
+            });
+        });
     }
 
     componentWillUnmount() {
@@ -1212,10 +1213,9 @@ export default class ClusteringProcess extends React.Component {
                                 this.filteringProcess[this.state.selectedProcess][dataId].indexOf(SSId) < 0
                                 ? this.filteringStepColors[selectedStepIdx - 1]: this.filteringStepColors[selectedStepIdx]
                                 );
+                        } else {
+                            strokeColor = this.filteringStepColors[this.steps.length - 1];
                         }
-                        //  else {
-                        //     strokeColor = this.filteringStepColors[this.steps.length - 1];
-                        // }
                         for (let k = 0; k < this.subsequences.length; k++) {
                             if (this.subsequences[k].id === dataId && this.subsequences[k].idx === SSId) {
                                 strokeColor = (typeof(this.labels[k]) === 'object')? 
