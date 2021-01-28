@@ -1604,11 +1604,14 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
     //     newLabels = assignSSToCentroids(newCentroids);
     //     loop++;
     // }
-
     let labels = [];// = assignSSToCentroids(centroids);
     let newCentroids = [], newLabels = [], distsToClusters;
     let centroids = initCentroids();
-    [labels, distsToClusters] = assignSSToCentroids(centroids);
+    let centroidsTmp;
+    [labels, distsToClusters, centroidsTmp] = assignSSToCentroids(centroids);
+    if (centroidsTmp.length > 0) {
+        centroids = centroidsTmp;
+    }
 
     // step 3 and 4
     let loop = 0, maxIteration = 300;
@@ -1618,7 +1621,11 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
             labels = newLabels;
         }
         newCentroids = updateCentroids(labels, dataLen);
-        [newLabels, distsToClusters] = assignSSToCentroids(newCentroids);
+        let newCentroidsTmp;
+        [newLabels, distsToClusters, newCentroidsTmp] = assignSSToCentroids(newCentroids);
+        if (newCentroidsTmp.length > 0) {
+            newCentroids = newCentroidsTmp;
+        }
         loop++;
     }
 
@@ -1779,32 +1786,35 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
         return db;
     }
     function initCentroids() {
-        let labels = [], clusters = [];
-        // 各データ点を適当なクラスタに割り振る
+        let clusters = [], clustersTmp = [];
+        let newCentroid = [];
+        for (let i = 0; i < clusterNum * 2; i++) {
+        // 空のクラスタが生じるのを防ぐために、最初のk * 2個は順番に番号振ってる
+            clustersTmp.push(i % clusterNum);
+        }
+        for (let i = clusterNum * 2; i < data.length; i++) {
+            clustersTmp.push(Math.floor(Math.random() * clusterNum));
+        }
+        clustersTmp = shuffle(clustersTmp);
         for (let i = 0; i < clusterNum; i++) {
             clusters.push([]);
+            newCentroid.push([]);
         }
-        for (let i = 0; i < clusterNum; i++) {
-            labels.push(i);
-            clusters[labels[labels.length - 1]].push(i);
+        for (let i = 0; i < clustersTmp.length; i++) {
+            clusters[clustersTmp[i]].push(i);
         }
-        for (let i = clusterNum; i < data.length; i++) {
-            labels.push(Math.floor(Math.random() * clusterNum));
-            clusters[labels[labels.length - 1]].push(i);
-        }
-        // TODO:本当はここでラベルをシャッフルすべき
-
         // DBAで各クラスタのセントロイドを求める 
-        let newCentroid = [];
         switch(distanceParameters.metric) {
             case 'Euclidean':
                 break;
             case 'DTWD':
                 for (let i = 0; i < clusters.length; i++) {
+                    // 最初に仮の中心をデータのなかからランダムに決める
                     let pCentroid = data[clusters[i][Math.floor(Math.random() * clusters[i].length)]];
                     let loopInit = 0, maxIterationInit = 10;
                     // maxIterationInitはDBAを用いた重心導出の最大試行回数
                     if (distanceParameters.window > 0) {
+                        loopInit = 0;
                         while (loopInit < maxIterationInit) {
                             // empty array for storing temporal centroid
                             let centroidTmp = [],
@@ -1835,19 +1845,37 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                                     centroidTmp[j][key] /= dataCount[j];
                                 }
                             }
-
                             if (!checkUpdateInitCentroids(pCentroid, centroidTmp)) {
                                 // if pCentroid and centroidTmp is the same (= no updates), stop this iteration
-                                newCentroid.push(centroidTmp);
+                                // newCentroid.push(centroidTmp);
+                                for (let k = 0; k < centroidTmp.length; k++) {
+                                    let dataTmp = {};
+                                    variableList.forEach(key => {
+                                        dataTmp[key] =  centroidTmp[k][key];
+                                    });
+                                    newCentroid[i].push(dataTmp);
+                                }
                                 break;
                             }
                             loopInit++;
+                            if (loopInit === maxIterationInit && newCentroid[i].length !== i + 1) {
+                                // if centroid is not set for cluster i
+                                // newCentroid.push(centroidTmp);
+                                for (let k = 0; k < centroidTmp.length; k++) {
+                                    let dataTmp = {};
+                                    variableList.forEach(key => {
+                                        dataTmp[key] =  centroidTmp[k][key];
+                                    });
+                                    newCentroid[i].push(dataTmp);
+                                }
+                            }
                         }
                     } else {
+                        loopInit = 0;
                         while (loopInit < maxIterationInit) {
                             // empty array for storing temporal centroid
-                            let centroidTmp = [],
-                                dataCount = [];
+                            let centroidTmp = [];
+                            let dataCount = [];
                             for (let j = 0; j < dataLen; j++) {
                                 let dataTmp = {};
                                 variableList.forEach(key => {
@@ -1874,13 +1902,31 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                                     centroidTmp[j][key] /= dataCount[j];
                                 }
                             }
-
                             if (!checkUpdateInitCentroids(pCentroid, centroidTmp)) {
                                 // if pCentroid and centroidTmp is the same (= no updates), stop this iteration
-                                newCentroid.push(centroidTmp);
+                                // newCentroid.push(centroidTmp);
+                                // newCentroid[i] = centroidTmp;
+                                for (let k = 0; k < centroidTmp.length; k++) {
+                                    let dataTmp = {};
+                                    variableList.forEach(key => {
+                                        dataTmp[key] =  centroidTmp[k][key];
+                                    });
+                                    newCentroid[i].push(dataTmp);
+                                }
                                 break;
                             }
                             loopInit++;
+                            if (loopInit === maxIterationInit && newCentroid[i].length === 0) {
+                                // if centroid is not set for cluster i
+                                // newCentroid[i] = centroidTmp;
+                                for (let k = 0; k < centroidTmp.length; k++) {
+                                    let dataTmp = {};
+                                    variableList.forEach(key => {
+                                        dataTmp[key] =  centroidTmp[k][key];
+                                    });
+                                    newCentroid[i].push(dataTmp);
+                                }
+                            }
                         }
                     }
                 }
@@ -1891,6 +1937,7 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                     let loopInit = 0, maxIterationInit = 10;
                     // maxIterationInitはDBAを用いた重心導出の最大試行回数
                     if (distanceParameters.window > 0) {
+                        loopInit = 0;
                         while (loopInit < maxIterationInit) {
                             // empty array for storing temporal centroid
                             let centroidTmp = [],
@@ -1925,12 +1972,31 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
 
                             if (!checkUpdateInitCentroids(pCentroid, centroidTmp)) {
                                 // if pCentroid and centroidTmp is the same (= no updates), stop this iteration
-                                newCentroid.push(centroidTmp);
+                                // newCentroid.push(centroidTmp);
+                                for (let k = 0; k < centroidTmp.length; k++) {
+                                    let dataTmp = {};
+                                    variableList.forEach(key => {
+                                        dataTmp[key] =  centroidTmp[k][key];
+                                    });
+                                    newCentroid[i].push(dataTmp);
+                                }
                                 break;
                             }
                             loopInit++;
+                            if (loopInit === maxIterationInit && newCentroid[i].length !== i + 1) {
+                                // if centroid is not set for cluster i
+                                // newCentroid.push(centroidTmp);
+                                for (let k = 0; k < centroidTmp.length; k++) {
+                                    let dataTmp = {};
+                                    variableList.forEach(key => {
+                                        dataTmp[key] =  centroidTmp[k][key];
+                                    });
+                                    newCentroid[i].push(dataTmp);
+                                }
+                            }
                         }
                     } else {
+                        loopInit = 0;
                         while (loopInit < maxIterationInit) {
                             // empty array for storing temporal centroid
                             let centroidTmp = [],
@@ -1965,10 +2031,28 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
 
                             if (!checkUpdateInitCentroids(pCentroid, centroidTmp)) {
                                 // if pCentroid and centroidTmp is the same (= no updates), stop this iteration
-                                newCentroid.push(centroidTmp);
+                                // newCentroid.push(centroidTmp);
+                                for (let k = 0; k < centroidTmp.length; k++) {
+                                    let dataTmp = {};
+                                    variableList.forEach(key => {
+                                        dataTmp[key] =  centroidTmp[k][key];
+                                    });
+                                    newCentroid[i].push(dataTmp);
+                                }
                                 break;
                             }
                             loopInit++;
+                            if (loopInit === maxIterationInit && newCentroid[i].length !== i + 1) {
+                                // if centroid is not set for cluster i
+                                // newCentroid.push(centroidTmp);
+                                for (let k = 0; k < centroidTmp.length; k++) {
+                                    let dataTmp = {};
+                                    variableList.forEach(key => {
+                                        dataTmp[key] =  centroidTmp[k][key];
+                                    });
+                                    newCentroid[i].push(dataTmp);
+                                }
+                            }
                         }
                     }
                 }
@@ -1978,7 +2062,7 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
         function checkUpdateInitCentroids(pCentroid, nCentroid) {
             let flag = false;
             for (let i = 0; i < pCentroid.length; i++) {
-                for (let key in variableList) {
+                for (let key in pCentroid[i]) {
                     if (pCentroid[i][key] !== nCentroid[i][key]) {
                         flag = true;
                         break;
@@ -1989,8 +2073,9 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
             return flag;
         }
     }
-    function assignSSToCentroids(centroids) {
+    function assignSSToCentroids(currentCentroids) {
         // distToClusters: distances between a data and cluster centers
+        let centroidsTmp = [];//currentCentroids.slice(0, currentCentroids.length);
         let labels = [], distsToClusters = [];
         let clusterCount = [];
         for (let i = 0; i < clusterNum; i++) {
@@ -2001,7 +2086,7 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                 NNDistMat,
                 NNCentroid;
             distsToClusters.push([]);
-            for (let j = 0; j < centroids.length; j++) {
+            for (let j = 0; j < currentCentroids.length; j++) {
                 // compute distances between centroids and SS
                 let distTmp = 0;
                 switch (distanceParameters.metric) {
@@ -2010,7 +2095,7 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                     case 'DTWD':
                         if (distanceParameters.window > 0) {
                             // DTWMD
-                            distTmp = DTWMD(centroids[j], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
+                            distTmp = DTWMD(currentCentroids[j], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
                             distsToClusters[i].push(distTmp[distTmp.length - 1][distTmp[0].length - 1]);
                             if (distTmp[distTmp.length - 1][distTmp[0].length - 1] < NNDist) {
                                 NNDist = distTmp[distTmp.length - 1][distTmp[0].length - 1];
@@ -2020,7 +2105,7 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                             }
                         } else {
                             // DTWSimpleMD
-                            distTmp = DTWSimpleMD(centroids[j], data[i], variableList, distanceParameters.distFunc);
+                            distTmp = DTWSimpleMD(currentCentroids[j], data[i], variableList, distanceParameters.distFunc);
                             distsToClusters[i].push(distTmp[distTmp.length - 1][distTmp[0].length - 1]);
                             if (distTmp[distTmp.length - 1][distTmp[0].length - 1] < NNDist) {
                                 NNDist = distTmp[distTmp.length - 1][distTmp[0].length - 1];
@@ -2033,7 +2118,7 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                     case 'DTWI':
                         if (distanceParameters.window > 0) {
                             // DTW
-                            distTmp = DTW(centroids[j], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
+                            distTmp = DTW(currentCentroids[j], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
                             let distSum = 0;
                             variableList.forEach(key => {
                                 distSum += distTmp[key][distTmp[key].length - 1][distTmp[key][0].length - 1];
@@ -2047,7 +2132,7 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                             }
                         } else {
                             // DTWSimple
-                            distTmp = DTWSimple(centroids[j], data[i], variableList, distanceParameters.distFunc);
+                            distTmp = DTWSimple(currentCentroids[j], data[i], variableList, distanceParameters.distFunc);
                             let distSum = 0;
                             variableList.forEach(key => {
                                 distSum += distTmp[key][distTmp[key].length - 1][distTmp[key][0].length - 1];
@@ -2072,7 +2157,6 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
             // dists.push(NNDist);
             clusterCount[NNCentroid]++;
         }
-
         // check if there are empty clusters
         let singletons = [];
         for (let i = 0; i < clusterNum; i++) {
@@ -2143,22 +2227,37 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                     }
                     path[key] = pathTmp;
                 });
-                singletons.push(maxIdx);
                 labels[maxIdx] = {
                     cluster: i,
                     path: path
                 };
                 // dists[maxIdx] = 0;//maxDist;
                 
-                let centroidTmp = [];
+                // let centroidTmp = [];
+                // for (let j = 0; j < data[maxIdx].length; j++) {
+                //     let tmp = {};
+                //     variableList.forEach(key => {
+                //         tmp[key] = data[maxIdx][key];
+                //     });
+                //     centroidTmp.push(tmp);
+                // }
+                let centroidTmp = [];//data[maxIdx];//centroidTmp;
+                let dataKeys = Object.keys(data[maxIdx][0]);
                 for (let j = 0; j < data[maxIdx].length; j++) {
-                    let tmp = {};
-                    variableList.forEach(key => {
-                        tmp[key] = data[maxIdx][key];
-                    });
-                    centroidTmp.push(tmp);
+                    let dataTmp = Object.assign({}, data[maxIdx][j]);
+                    dataKeys.forEach(key => {
+                        if (variableList.indexOf(key) < 0) {
+                            delete dataTmp[key];
+                        }
+                     });
+                     centroidTmp.push(dataTmp);
                 }
-                centroids[i] = centroidTmp;
+                singletons.push({
+                    maxIdx: maxIdx,
+                    cluster: i,
+                    centroid: centroidTmp
+                });
+
 
                 // update a distance between new cluster and data points
                 for (let j = 0; j < data.length; j++) {
@@ -2173,18 +2272,18 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                         case 'DTWD':
                             if (distanceParameters.window > 0) {
                                 // DTWMD
-                                dist = DTWMD(centroids[i], data[j], variableList, distanceParameters.window, distanceParameters.distFunc);
+                                dist = DTWMD(centroidTmp, data[j], variableList, distanceParameters.window, distanceParameters.distFunc);
                                 distsToClusters[j][i] = dist[dist.length - 1][dist[0].length - 1];
                             } else {
                                 // DTWSimpleMD
-                                dist = DTWSimpleMD(centroids[i], data[j], variableList, distanceParameters.distFunc);
+                                dist = DTWSimpleMD(centroidTmp, data[j], variableList, distanceParameters.distFunc);
                                 distsToClusters[j][i] = dist[dist.length - 1][dist[0].length - 1];
                             }
                             break;
                         case 'DTWI':
                             if (distanceParameters.window > 0) {
                                 // DTW
-                                dist = DTW(centroids[i], data[j], variableList, distanceParameters.window, distanceParameters.distFunc);
+                                dist = DTW(centroidTmp, data[j], variableList, distanceParameters.window, distanceParameters.distFunc);
                                 let distSum = 0;
                                 variableList.forEach(key => {
                                     distSum += dist[key][dist[key].length - 1][dist[key][0].length - 1];
@@ -2192,7 +2291,7 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                                 distsToClusters[j][i] = distSum;
                             } else {
                                 // DTWSimple
-                                dist = DTWSimple(centroids[i], data[j], variableList, distanceParameters.distFunc);
+                                dist = DTWSimple(centroidTmp, data[j], variableList, distanceParameters.distFunc);
                                 let distSum = 0;
                                 variableList.forEach(key => {
                                     distSum += dist[key][dist[key].length - 1][dist[key][0].length - 1];
@@ -2206,10 +2305,51 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
                 }
             }
         }
+        if (singletons.length > 0) {
+            centroidsTmp = currentCentroids.slice(0, currentCentroids.length);
+            for (let i = 0; i < singletons.length; i++) {
+                centroidsTmp[singletons[i].cluster] = singletons[i].centroid;
+            }
+            // reassign SS to new clusters
+            labels = [];
+            for (let i = 0; i < data.length; i++) {
+                let newMinDist = Infinity,
+                    newNNCluster = -1;
+                for (let j = 0; j < clusterNum; j++) {
+                    if (distsToClusters[i][j] < newMinDist) {
+                        newMinDist = distsToClusters[i][j];
+                        newNNCluster = j;
+                    }
+                }
+                let distTmp;
+                switch (distanceParameters.metric) {
+                    case 'Euclidean':
+                        break;
+                    case 'DTWD':
+                        if (distanceParameters.window > 0) {
+                            distTmp = DTWMD(centroidsTmp[newNNCluster], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
+                        } else {
+                            distTmp = DTWSimpleMD(centroidsTmp[newNNCluster], data[i], variableList, distanceParameters.distFunc);
+                        }
+                        break;
+                    case 'DTWI':
+                        if (distanceParameters.window > 0) {
+                            distTmp = DTW(centroidsTmp[newNNCluster], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
+                        } else {
+                            distTmp = DTWSimple(centroidsTmp[newNNCluster], data[i], variableList, distanceParameters.distFunc);
+                        }
+                        break;
+                }
+                labels.push({
+                    cluster: newNNCluster,
+                    path: OptimalWarpingPath(distTmp)
+                });
+            }
+        }
         // for (let i = 0; i < labels.length; i++) {
         //     distSum[labels[i].cluster] += dists[i];
         // }
-        return [labels, distsToClusters];
+        return [labels, distsToClusters, centroidsTmp];
     }
     function updateCentroids(labels, dataLen) {
         // divide SS into clusters according to labels
@@ -2632,4 +2772,13 @@ function EuclideanDist(x, y, variables) {
         });
         return Math.sqrt(sum);
     }
+}
+
+const shuffle = ([...array]) => {
+    // https://www.nxworld.net/js-array-shuffle.html
+    for (let i = array.length - 1; i >= 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
 }
