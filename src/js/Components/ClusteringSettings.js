@@ -122,7 +122,8 @@ export default class clusteringSettings extends React.Component {
                 </div>
                 <div className='row matchingOption'>
                     <div className='col-5'>
-                        Resolution of the time-normalized subsequences
+                        Division number of subsequences
+                        {/* Resolution of the time-normalized subsequences */}
                     </div>
                     <div className='col form-inline'>
                         <input className="form-control form-control-sm"
@@ -157,7 +158,7 @@ export default class clusteringSettings extends React.Component {
                                 name="filteringSS"
                                 value="sameStartingPoint"
                                 checked={(this.state.filteringSS.indexOf('sameStartingPoint') >= 0)? true: false}/>
-                            <label className="custom-control-label" htmlFor="SSFilterStartingPoint">Representative of subsequences starting from the same data points</label>
+                            <label className="custom-control-label" htmlFor="SSFilterStartingPoint">Subsequences starting from the same data sample</label>
                         </div>
                         <div className="custom-control custom-checkbox">
                             <input 
@@ -167,7 +168,7 @@ export default class clusteringSettings extends React.Component {
                                 name="filteringSS"
                                 value="overlappingDegree"
                                 checked={(this.state.filteringSS.indexOf('overlappingDegree') >= 0)? true: false}/>
-                            <label className="custom-control-label" htmlFor="SSFilterOverlappingDegree">Filtering out highly overlapping subsequences</label>
+                            <label className="custom-control-label" htmlFor="SSFilterOverlappingDegree">Highly overlapping subsequences</label>
                         </div>
                     </div>
                 </div>
