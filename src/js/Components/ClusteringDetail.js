@@ -16,7 +16,7 @@ d3.selection.prototype.moveToFront =
 export default class ClusteringDetail extends React.Component {
     constructor() {
         super();
-        this.margin = {left: 25, right: 10, top: 20, bottom: 20};
+        this.margin = {left: 30, right: 10, top: 20, bottom: 20};
         this.paddingCard = 16;
         this.areaPadding = {left: 16, right: 16, top: 8, bottom: 8};
         this.queryMode;
@@ -74,6 +74,9 @@ export default class ClusteringDetail extends React.Component {
             this.datasetsIdx = ClusteringStore.getDatasets();
             this.clusteringScores = ClusteringStore.getClusteringScores();
             this.subsequenceParameters = ClusteringStore.getSubsequenceParameters();
+            this.setState({
+                cluster: -1
+            });
         });
         ClusteringStore.on('showClusterDetails', (cluster) => {
             this.variables = ClusteringStore.getClusteringParameters().variables;//Object.keys(this.clusterCenters[cluster][0]);
@@ -416,10 +419,14 @@ export default class ClusteringDetail extends React.Component {
                     yPos = lineChartHeight * Math.floor(i / 2);
                 svg.append('g')
                     .attr('transform', 'translate(' + 0 + ',' + (yPos + lineChartHeight - this.margin.bottom) + ')')
-                    .call(xAxis);
+                    .call(xAxis)
+                    .selectAll('text')
+                    .attr('font-size', '0.5rem');
                 svg.append('g')
                     .attr('transform', 'translate(' + (xPos + this.margin.left) + ',' + 0 + ')')
-                    .call(yAxis);
+                    .call(yAxis)
+                    .selectAll('text')
+                    .attr('font-size', '0.5rem');
                 
                 // subsequences in the cluster
                 for (let j = 0; j < this.SSCluster.length; j++) {
@@ -494,7 +501,9 @@ export default class ClusteringDetail extends React.Component {
                 .range([svgPadding.left, clientWidth - svgPadding.right]);
             svg.append('g')
                 .attr('transform', 'translate(0,' + (height - svgPadding.bottom) + ')')
-                .call(d3.axisBottom(xScale));
+                .call(d3.axisBottom(xScale))
+                .selectAll('text')
+                .attr('font-size', '0.5rem');
 
             let subsequencesCluster = [];
             for (let i = 0; i < this.labels.length; i++) {
@@ -513,7 +522,9 @@ export default class ClusteringDetail extends React.Component {
                 .domain([0, d3.max(bins, function(d) {return d.length})]);
             svg.append('g')
                 .attr('transform', 'translate(' + svgPadding.left + ',0)')
-                .call(d3.axisLeft(yScale).ticks(5));
+                .call(d3.axisLeft(yScale).ticks(5))
+                .selectAll('text')
+                .attr('font-size', '0.5rem');
                 
             svg.append('text')
                 .attr('x', clientWidth / 2)
@@ -644,22 +655,30 @@ export default class ClusteringDetail extends React.Component {
             svg.append('g')
                 .attr('id', 'clusterBeforeHistogramAxisX')
                 .attr('transform', 'translate(0,' + (histogramHeight - svgPadding.bottom) + ')')
-                .call(d3.axisBottom(xScale).ticks(this.clusterCenters.length));
+                .call(d3.axisBottom(xScale).ticks(this.clusterCenters.length))
+                .selectAll('text')
+                .attr('font-size', '0.5rem');
             svg.append('g')
                 .attr('id', 'clusterAfterHistogramAxisX')
                 .attr('transform', 'translate(' + histogramWidth + ',' + (histogramHeight - svgPadding.bottom) + ')')
-                .call(d3.axisBottom(xScale).ticks(this.clusterCenters.length));
+                .call(d3.axisBottom(xScale).ticks(this.clusterCenters.length))
+                .selectAll('text')
+                .attr('font-size', '0.5rem');
             let yScale = d3.scaleLinear()
                 .domain([0, maxCount])
                 .range([histogramHeight- svgPadding.bottom, svgPadding.top]);
             svg.append('g')
                 .attr('id', 'clusterBeforeHistogramAxisY')
                 .attr('transform', 'translate(' + svgPadding.left + ',0)')
-                .call(d3.axisLeft(yScale).ticks(maxCount));
+                .call(d3.axisLeft(yScale).ticks(maxCount <= 5? maxCount: Math.floor(maxCount / 3)))
+                .selectAll('text')
+                .attr('font-size', '0.5rem');
             svg.append('g')
                 .attr('id', 'clusterAfterHistogramAxisY')
                 .attr('transform', 'translate(' + (histogramWidth + svgPadding.left) + ',0)')
-                .call(d3.axisLeft(yScale).ticks(maxCount));
+                .call(d3.axisLeft(yScale).ticks(maxCount))
+                .selectAll('text')
+                .attr('font-size', '0.5rem');
 
             // draw rects
             let rectWidth = (histogramWidth - svgPadding.left - svgPadding.right) / this.clusterCenters.length;
@@ -939,7 +958,7 @@ export default class ClusteringDetail extends React.Component {
 
                 // highlight histogram for clusters before/after the selected cluster 
                 if (i - 1 >= 0) {
-                    if (typeof(this.labels) === 'object') {
+                    if (typeof(this.labels[i - 1]) === 'object') {
                         d3.select('#clusterBeforeHistogramRects_' + this.labels[i - 1].cluster)
                             .attr('stroke', 'black')
                             .attr('stroke-width', 1.5);
@@ -950,7 +969,7 @@ export default class ClusteringDetail extends React.Component {
                     }
                 }
                 if (i + 1 < this.labels.length) {
-                    if (typeof(this.labels) === 'object') {
+                    if (typeof(this.labels[i + 1]) === 'object') {
                         d3.select('#clusterAfterHistogramRects_' + this.labels[i + 1].cluster)
                             .attr('stroke', 'black')
                             .attr('stroke-width', 1.5);
