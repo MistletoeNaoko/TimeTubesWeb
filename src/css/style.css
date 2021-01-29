@@ -343,6 +343,9 @@ img.selectorIcon:active {
     text-align: right;
 }
 
+.parametersValues {
+    text-align: right;
+}
 #commentFormFeatureExtraction {
     position: absolute;
     left: 50%;
@@ -779,6 +782,19 @@ img.selectorIcon:active {
 
 #clusteringOverview {
     position: relative;
+}
+
+#clusteringParameters {
+    position: absolute;
+    color: #fff;
+    left: 0px;
+    margin: 0.5rem;
+}
+
+#clusteringParametersTable tr, #clusteringParametersTable td {
+    border: 1px solid;
+    border-color: #fff;
+    padding: 0px 5px;
 }
 
 #clusteringScores {

@@ -87,6 +87,7 @@ export default class ClusteringOverview extends React.Component {
             this.computeSplines();
             this.drawClusterCentersAsTubes();
             this.showClusteringScores();
+            this.showClusteringParameters();
         });
         ClusteringStore.on('showClusterDetails', (cluster) => {
             this.setCameraDetail();
@@ -99,6 +100,7 @@ export default class ClusteringOverview extends React.Component {
             this.computeSplines();
             this.drawClusterCentersAsTubes();
             this.showClusteringScores();
+            this.showClusteringParameters();
             this.resetDetailView();
         });
         ClusteringStore.on('resetClusteringResults', () => {
@@ -108,6 +110,7 @@ export default class ClusteringOverview extends React.Component {
             this.computeSplines();
             this.drawClusterCentersAsTubes();
             this.showClusteringScores();
+            this.showClusteringParameters();
             this.resetDetailView();
         });
         AppStore.on('resizeExtractionResultsArea', () => {
@@ -122,6 +125,42 @@ export default class ClusteringOverview extends React.Component {
                 ref={mount => {
                     this.mount = mount;
                 }}>
+                <div id='clusteringParameters'>
+                    <table id='clusteringParametersTable'>
+                        <tbody>
+                            <tr key='clusteringMethod'>
+                                <td>Method</td>
+                                <td id='clusteringTableMethod'
+                                    className='parametersValues'></td>
+                            </tr>
+                            <tr key='clusterNumber'>
+                                <td>Cluster number</td>
+                                <td id='clusteringTableClusterNumber'
+                                    className='parametersValues'></td>
+                            </tr>
+                            <tr key='clusteringVariables'>
+                                <td>Variables</td>
+                                <td id='clusteringTableVariables'
+                                    className='parametersValues'></td>
+                            </tr>
+                            <tr key='distanceMetric'>
+                                <td>Distance metric</td>
+                                <td id='clusteringTableDistanceMetric'
+                                    className='parametersValues'></td>
+                            </tr>
+                            <tr>
+                                <td>Subsequence period</td>
+                                <td id='subsequenceTablePeriod'
+                                    className='parametersValues'></td>
+                            </tr>
+                            <tr>
+                                <td>Normalization</td>
+                                <td id='subsequenceTableNormalization'
+                                    className='parametersValues'></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
                 <div id='clusteringScores'>
                     <table id='clusteringScoresTable'>
                         <tbody>
@@ -151,6 +190,28 @@ export default class ClusteringOverview extends React.Component {
         $('#pseudoFValue').text(formatValue(this.clusteringScores.pseudoF));
         $('#silhouetteValue').text(formatValue(this.clusteringScores.silhouette));
         $('#davisBouldinValue').text(formatValue(this.clusteringScores.davisBouldin));
+    }
+
+    showClusteringParameters() {
+        let clusteringParameters = ClusteringStore.getClusteringParameters();
+        if (Object.keys(clusteringParameters).length > 0) {
+            $('#clusteringTableMethod').text(clusteringParameters.method);
+            $('#clusteringTableClusterNumber').text(clusteringParameters.clusterNum);
+            // variables
+            let labels = '';
+            for (let i = 0; i < clusteringParameters.variables.length; i++) {
+                labels += $('label[for="clusteringVaribales_' + clusteringParameters.variables[i] + '"]').text() + ', ';
+            }
+            labels = labels.slice(0, -2);
+            $('#clusteringTableVariables').text(labels);
+            $('#clusteringTableDistanceMetric').text(clusteringParameters.distanceMetric);
+        }
+
+        let subsequenceParameters = ClusteringStore.getSubsequenceParameters();
+        if (Object.keys(subsequenceParameters).length > 0) {
+            $('#subsequenceTablePeriod').text(subsequenceParameters.SSperiod[0] + '-' + subsequenceParameters.SSperiod[1] + ' days');
+            $('#subsequenceTableNormalization').text(subsequenceParameters.normalize);
+        }
     }
     
     start() {
