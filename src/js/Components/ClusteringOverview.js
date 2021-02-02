@@ -12,7 +12,6 @@ import * as THREE from 'three';
 import TextSprite from '@seregpie/three.text-sprite';
 import {formatValue} from '../lib/2DGraphLib';
 import {} from '../lib/TimeSeriesQuerying';
-import { cluster } from 'd3';
 
 export default class ClusteringOverview extends React.Component {
     constructor() {
@@ -593,7 +592,7 @@ export default class ClusteringOverview extends React.Component {
 
     setCameraDetail() {
         let far = 1000;
-        let axisSize = ClusteringStore.getViewportSize() * 0.7;
+        let axisSize = (typeof(this.gridSize) === 'undefined')? ClusteringStore.getViewportSize() * 0.5: this.gridSize * 1.4;
         this.cameraDetail = new THREE.OrthographicCamera(
             -axisSize / 2, axisSize / 2,
             axisSize / 2, -axisSize / 2, 0.1,
