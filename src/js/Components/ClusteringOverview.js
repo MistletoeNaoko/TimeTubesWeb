@@ -35,6 +35,7 @@ export default class ClusteringOverview extends React.Component {
         this.clusterColors = [];
         this.clusteringScores = {};
         this.tubeCoords = [];
+        this.gridSize = undefined;
 
         this.queryMode = FeatureStore.getMode();
         this.clickedX;
@@ -56,7 +57,8 @@ export default class ClusteringOverview extends React.Component {
         this.renderer.domElement.id = 'clusteringResultsViewport';
         this.canvas = this.renderer.domElement;
 
-        this.mount.appendChild(this.renderer.domElement);
+        // this.mount.appendChild(this.renderer.domElement);
+        document.getElementById('clusteringOverviewTimeTubes').appendChild(this.renderer.domElement);
 
         this.renderScene();
         this.start();
@@ -91,6 +93,7 @@ export default class ClusteringOverview extends React.Component {
             this.drawClusterCentersAsTubes();
             this.showClusteringScores();
             this.showClusteringParameters();
+            this.resetDetailView();
         });
         ClusteringStore.on('showClusterDetails', (cluster) => {
             this.setCameraDetail();
@@ -130,62 +133,79 @@ export default class ClusteringOverview extends React.Component {
                 ref={mount => {
                     this.mount = mount;
                 }}>
-                <div id='clusteringParameters'>
-                    <table id='clusteringParametersTable'>
-                        <tbody>
-                            <tr key='clusteringMethod'>
-                                <td>Method</td>
-                                <td id='clusteringTableMethod'
-                                    className='parametersValues'></td>
-                            </tr>
-                            <tr key='clusterNumber'>
-                                <td>Cluster number</td>
-                                <td id='clusteringTableClusterNumber'
-                                    className='parametersValues'></td>
-                            </tr>
-                            <tr key='clusteringVariables'>
-                                <td>Variables</td>
-                                <td id='clusteringTableVariables'
-                                    className='parametersValues'></td>
-                            </tr>
-                            <tr key='distanceMetric'>
-                                <td>Distance metric</td>
-                                <td id='clusteringTableDistanceMetric'
-                                    className='parametersValues'></td>
-                            </tr>
-                            <tr>
-                                <td>Subsequence period</td>
-                                <td id='subsequenceTablePeriod'
-                                    className='parametersValues'></td>
-                            </tr>
-                            <tr>
-                                <td>Normalization</td>
-                                <td id='subsequenceTableNormalization'
-                                    className='parametersValues'></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div id='clusteringScores'>
-                    <table id='clusteringScoresTable'>
-                        <tbody>
-                            <tr>
-                                <td>Pseudo F</td>
-                                <td id='pseudoFValue'
-                                    className='clusteringScoresValues'></td>
-                            </tr>
-                            <tr>
-                                <td>Silhouette coefficient</td>
-                                <td id='silhouetteValue'
-                                    className='clusteringScoresValues'></td>
-                            </tr>
-                            <tr>
-                                <td>Davis Bouldin index</td>
-                                <td id='davisBouldinValue'
-                                    className='clusteringScoresValues'></td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div id='clusteringOverviewCarousel' className='carousel slide'  data-bs-ride="carousel">
+                    <div className="carousel-inner">
+                        <div id='clusteringOverviewTimeTubes' className="carousel-item active">
+                            <div id='clusteringParameters'>
+                                <table id='clusteringParametersTable'>
+                                    <tbody>
+                                        <tr key='clusteringMethod'>
+                                            <td>Method</td>
+                                            <td id='clusteringTableMethod'
+                                                className='parametersValues'></td>
+                                        </tr>
+                                        <tr key='clusterNumber'>
+                                            <td>Cluster number</td>
+                                            <td id='clusteringTableClusterNumber'
+                                                className='parametersValues'></td>
+                                        </tr>
+                                        <tr key='clusteringVariables'>
+                                            <td>Variables</td>
+                                            <td id='clusteringTableVariables'
+                                                className='parametersValues'></td>
+                                        </tr>
+                                        <tr key='distanceMetric'>
+                                            <td>Distance metric</td>
+                                            <td id='clusteringTableDistanceMetric'
+                                                className='parametersValues'></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Subsequence period</td>
+                                            <td id='subsequenceTablePeriod'
+                                                className='parametersValues'></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Normalization</td>
+                                            <td id='subsequenceTableNormalization'
+                                                className='parametersValues'></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id='clusteringScores'>
+                                <table id='clusteringScoresTable'>
+                                    <tbody>
+                                        <tr>
+                                            <td>Pseudo F</td>
+                                            <td id='pseudoFValue'
+                                                className='clusteringScoresValues'></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Silhouette coefficient</td>
+                                            <td id='silhouetteValue'
+                                                className='clusteringScoresValues'></td>
+                                        </tr>
+                                        <tr>
+                                            <td>Davis Bouldin index</td>
+                                            <td id='davisBouldinValue'
+                                                className='clusteringScoresValues'></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div className="carousel-item">
+                            aaaaaa
+                        </div>
+                    </div>
+                    <a className="carousel-control-prev" href="#clusteringOverviewCarousel" role="button" data-bs-slide="prev">
+                        <span className="carousel-control-prev-icon" aria-hidden="true"></span>
+                        {/* <span className="visually-hidden">Previous</span> */}
+                    </a>
+                    <a className="carousel-control-next" href="#clusteringOverviewCarousel" role="button" data-bs-slide="next">
+                        <span className="carousel-control-next-icon" aria-hidden="true"></span>
+                        {/* <span className="visually-hidden">Next</span> */}
+                    </a>
                 </div>
             </div>
         );
@@ -830,6 +850,7 @@ export default class ClusteringOverview extends React.Component {
 
     computeTubePositions() {
         this.tubeCoords = [];
+        this.gridSize = undefined;
         let clustersCoord = ClusteringStore.getResultsCoordinates().clustersCoord;
         if (clustersCoord) {
             let xPosMinMax = [Infinity, -Infinity],
@@ -860,19 +881,17 @@ export default class ClusteringOverview extends React.Component {
             let aspect = width / height;
             let yRange = Math.max(Math.abs(xPosMinMax[1] - xPosMinMax[0]) / aspect, Math.abs(yPosMinMax[1] - yPosMinMax[0]));
             let xRange = yRange * aspect;
-            let viewportSize = ClusteringStore.getViewportSize() * 0.7;
+            let viewportSize = ClusteringStore.getViewportSize() * 0.8;
             let ratio = viewportSize * 2 / (height < width? yRange: xRange);
-            // let range = Math.max(Math.max(Math.abs(xPosMinMax[0]), Math.abs(xPosMinMax[1])), Math.max(Math.abs(yPosMinMax[0]), Math.abs(yPosMinMax[1])));
-            // let ratio = viewportSize / range;
-            if (minDistBetweenClusters * ratio > ClusteringStore.getGridSize()) {
-                // this.range = ratio;
-            } else {
-                let ratioTmp = ClusteringStore.getGridSize() / minDistBetweenClusters;
-                ratio = ratioTmp;
+            if (minDistBetweenClusters * ratio < ClusteringStore.getGridSize() * 2) {
+                this.gridSize = minDistBetweenClusters * ratio / 2;
+                this.range = this.gridSize * this.range / ClusteringStore.getGridSize();
             }
 
+            let xShift = (xPosMinMax[1] - (xPosMinMax[1] - xPosMinMax[0]) / 2) * -1 * ratio,
+                yShift = (yPosMinMax[1] - (yPosMinMax[1] - yPosMinMax[0]) / 2) * -1 * ratio;
             for (let i = 0; i < clustersCoord.length; i++) {
-                this.tubeCoords.push({x: clustersCoord[i][0] * ratio, y: clustersCoord[i][1] * ratio});
+                this.tubeCoords.push({x: xShift + clustersCoord[i][0] * ratio, y: yShift + clustersCoord[i][1] * ratio});
             }
         } else {
             let viewportSize = ClusteringStore.getViewportSize() * 0.7;
@@ -900,6 +919,7 @@ export default class ClusteringOverview extends React.Component {
         let dataLen = ClusteringStore.getSubsequenceParameters().isometryLen + 1;
         let divNum = this.division * dataLen;
         let del = Math.PI * 2 / (this.segment - 1);
+        let defaultRad = typeof(this.gridSize) === 'undefined'? 0.5: 0.5 * this.gridSize / ClusteringStore.getGridSize();
         for (let i = 0; i < this.splines.length; i++) {
             let tubeGeometry;
             let vertices = [],
@@ -921,8 +941,8 @@ export default class ClusteringOverview extends React.Component {
                     colors[j] = [];
                 }
                 for (let j = 0; j <= divNum; j++) {
-                    let radX = ('r_x' in this.clusterCenters[0][0])? rad[j].x * this.range: 0.5,
-                        radY = ('r_y' in this.clusterCenters[0][0])? rad[j].y * this.range: 0.5;
+                    let radX = ('r_x' in this.clusterCenters[0][0])? rad[j].x * this.range: defaultRad,
+                        radY = ('r_y' in this.clusterCenters[0][0])? rad[j].y * this.range: defaultRad;
                     for (let k = 0; k < this.segment; k++) {
                         for (let l = 0; l < this.tubeNum; l++) {
                             let currad = (1 / this.tubeNum) * (l + 1);
@@ -962,8 +982,8 @@ export default class ClusteringOverview extends React.Component {
                 for (let j = 0; j <= divNum; j++) {
                     for (let k = 0; k < this.segment; k++) {
                         let deg = del * k;
-                        vertices.push((posX + cen[j].x * this.range + 0.5 * Math.cos(deg)) * -1);
-                        vertices.push(posY + cen[j].y * this.range + 0.5 * Math.sin(deg));
+                        vertices.push((posX + cen[j].x * this.range + defaultRad * Math.cos(deg)) * -1);
+                        vertices.push(posY + cen[j].y * this.range + defaultRad * Math.sin(deg));
                         vertices.push(cen[j].z);
 
                         colors.push(col[j].x);
@@ -1020,8 +1040,13 @@ export default class ClusteringOverview extends React.Component {
             material.dispose();
         }
         this.axes = [];
-
-        let axisSize = ClusteringStore.getGridSize() * 0.7;
+        
+        let axisSize;
+        if (typeof(this.gridSize) !== 'undefined') {
+            axisSize = this.gridSize * 0.7;
+        } else {
+            axisSize = ClusteringStore.getGridSize() * 0.7;
+        }
         for (let i = 0; i < this.clusterCenters.length; i++) {
             let axisGeometry = new THREE.BufferGeometry();
             let axisMaterial = new THREE.LineBasicMaterial({
@@ -1062,7 +1087,12 @@ export default class ClusteringOverview extends React.Component {
         }
         this.labels = [];
 
-        let axisSize = ClusteringStore.getGridSize() * 0.7;
+        let axisSize;
+        if (typeof(this.gridSize) !== 'undefined') {
+            axisSize = this.gridSize * 0.7;
+        } else {
+            axisSize = ClusteringStore.getGridSize() * 0.7;
+        }
         for (let i = 0; i < this.clusterCenters.length; i++) {
             let label = new TextSprite({
                 alignment: 'center',
