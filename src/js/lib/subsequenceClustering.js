@@ -250,23 +250,92 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
     let clusterCenters, medoidIdx, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters;
     switch (clusteringParameters.method) {
         case 'kmedoids':
+            distsBetweenClusters = [];
+            for (let i = 0; i < clusteringParameters.clusterNum; i++) {
+                distsBetweenClusters.push([]);
+                for (let j = 0; j < clusteringParameters.clusterNum; j++) {
+                    distsBetweenClusters[i].push(0);
+                }
+            }
             if (clusteringParameters.medoidDefinition === 'unified') {
-                [clusterCenters, medoidIdx,  labels, clusteringScores, distMatrix] = kMedoidsUnified(subsequenceData, clusteringParameters.clusterNum, distanceParameters, variables);
+                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsUnified(subsequenceData, clusteringParameters.clusterNum, distanceParameters, variables);
+                for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
+                    for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
+                        distsBetweenClusters[i][j] = distMatrix[medoidIdx[i]][medoidIdx[j]];
+                        distsBetweenClusters[j][i] = distMatrix[medoidIdx[j]][medoidIdx[i]];
+                    }
+                }
+
             } else if (clusteringParameters.medoidDefinition === 'each') {
                 [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsEach(subsequenceData, clusteringParameters.clusterNum, distanceParameters, variables);
+                for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
+                    for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
+                        let distSum = 0;
+                        variables.forEach(key => {
+                            if (key !== 'z') {
+                                distSum += distMatrix[medoidIdx[i][key]][medoidIdx[j][key]][key];
+                            }
+                        });
+                        distsBetweenClusters[i][j] = distSum;
+                        distsBetweenClusters[j][i] = distSum;
+                    }
+                }
+                // make distMatrix (distances of each variable) unified distance matrix
+                for (let i = 0; i < distMatrix.length - 1; i++) {
+                    distMatrix[i][i] = 0;
+                    for (let j = i + 1; j < distMatrix[i].length; j++) {
+                        let distSum = 0;
+                        for (let key in distMatrix[i][j]) {
+                            distSum += distMatrix[i][j][key];
+                        }
+                        distMatrix[i][j] = distSum;
+                        distMatrix[j][i] = distSum;
+                    }
+                }
+                distMatrix[distMatrix.length - 1][distMatrix.length - 1] = 0;
             }
             break;
         case 'kmeans':
             [clusterCenters, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters] = kMeans(subsequenceData, clusteringParameters.clusterNum, distanceParameters, variables);
+            // merge distance matrix for each SS and distance matrix for clusters
+            // fill 0s to shortcoming parts of the distance matrix
+            for (let i = 0; i < clusteringParameters.clusterNum; i++) {
+                distMatrix.push([]);
+                for (let j = 0; j < subsequenceData.length; j++) {
+                    distMatrix[j].push(0);
+                    distMatrix[subsequences.length + i].push(0);
+                }
+                for (let j = 0; j < clusteringParameters.clusterNum; j++) {
+                    distMatrix[subsequences.length + i].push(0);
+                }
+            }
+            for (let i = 0; i < subsequenceData.length; i++) {
+                for (let j = 0; j < clusteringParameters.clusterNum; j++) {
+                    distMatrix[i][subsequences.length + j] = distsToClusters[i][j];
+                    distMatrix[subsequences.length + j][i] = distsToClusters[i][j];
+                }
+            }
+            for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
+                for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
+                    distMatrix[subsequences.length + i][subsequences.length + j] = distsBetweenClusters[i][j];
+                    distMatrix[subsequences.length + j][subsequences.length + i] = distsBetweenClusters[i][j];
+                }
+            }
             break;
         default:
             break;
     }
-    console.log(clusterCenters, medoidIdx)
     let dataCenter = computeDataCenter(subsequenceData, distanceParameters, variables.filter(ele => ele !== 'z'), subsequenceParameters.isometryLen);
     let labelsCluster = divideSSIntoClusters(labels, clusteringParameters.clusterNum);
     
     clusteringScores.pseudoF = pseudoF(clusteringScores.clusterRadiuses, clusterCenters, dataCenter, labelsCluster.map(x => x.length), distanceParameters, variables.filter(ele => ele !== 'z'));
+
+    let clustersPos = MDSClassical(distsBetweenClusters);
+    console.log(clustersPos);
+    console.log(distMatrix);
+    let dataPos = MDSClassical(distMatrix);
+    console.log(dataPos);
+
     return [subsequenceData, ranges, clusterCenters, labels, clusteringScores, filteringProcess];
 }
 
@@ -689,28 +758,38 @@ function overlappingDegree(data1, data2) {
 
 function distanceMatrix(data, distanceParameters, variables) {
     let distMatrix = [];
+    for (let i = 0; i < data.length; i++) {
+        distMatrix.push([]);
+        for (let j = 0; j < data.length; j++) {
+            distMatrix[i].push(0);
+        }
+    }
     // initialize distance matrix
     switch (distanceParameters.metric) {
         case 'DTWD':
             if (distanceParameters.window > 0) {
                 // DTWMD
                 for (let i = 0; i < data.length - 1; i++) {
-                    let distTmp = [];
+                    // let distTmp = [];
                     for (let j = i + 1; j < data.length; j++) {
                         let dist = DTWMD(data[i], data[j], variables, distanceParameters.window, distanceParameters.distFunc);
-                        distTmp.push(dist[dist.length - 1][dist[0].length - 1]);
+                        // distTmp.push(dist[dist.length - 1][dist[0].length - 1]);
+                        distMatrix[i][j] = dist[dist.length - 1][dist[0].length - 1];
+                        distMatrix[j][i] = dist[dist.length - 1][dist[0].length - 1];
                     }
-                    distMatrix.push(distTmp);
+                    // distMatrix.push(distTmp);
                 }
             } else {
                 // DTWSimpleMD
                 for (let i = 0; i < data.length - 1; i++) {
-                    let distTmp = [];
+                    // let distTmp = [];
                     for (let j = i + 1; j < data.length; j++) {
                         let dist = DTWSimpleMD(data[i], data[j], variables, distanceParameters.distFunc);
-                        distTmp.push(dist[dist.length - 1][dist[0].length - 1]);
+                        // distTmp.push(dist[dist.length - 1][dist[0].length - 1]);
+                        distMatrix[i][j] = dist[dist.length - 1][dist[0].length - 1];
+                        distMatrix[j][i] = dist[dist.length - 1][dist[0].length - 1];
                     }
-                    distMatrix.push(distTmp);
+                    // distMatrix.push(distTmp);
                 }
             }
             break;
@@ -718,30 +797,34 @@ function distanceMatrix(data, distanceParameters, variables) {
             if (distanceParameters.window > 0) {
                 // DTW
                 for (let i = 0; i < data.length - 1; i++) {
-                    let distTmp = [];
+                    // let distTmp = [];
                     for (let j = i + 1; j < data.length; j++) {
                         let distSum = 0;
                         let dists = DTW(data[i], data[j], variables, distanceParameters.window, disranceParameter.distFunc);
                         variables.forEach(key => {
                             distSum += dists[key][dists[key].length - 1][dists[key][0].length - 1];
                         });
-                        distTmp.push(distSum);
+                        // distTmp.push(distSum);
+                        distMatrix[i][j] = distSum;
+                        distMatrix[j][i] = distSum;
                     }
-                    distMatrix.push(distTmp);
+                    // distMatrix.push(distTmp);
                 }
             } else {
                 // DTWSimple
                 for (let i = 0; i < data.length - 1; i++) {
-                    let distTmp = [];
+                    // let distTmp = [];
                     for (let j = i + 1; j < data.length; j++) {
                         let distSum = 0;
                         let dists = DTWSimple(data[i], data[j], variables, distanceParameters.distFunc);
                         variables.forEach(key => {
                             distSum += dists[key][dists[key].length - 1][dists[key][0].length - 1];
                         });
-                        distTmp.push(distSum);
+                        // distTmp.push(distSum);
+                        distMatrix[i][j] = distSum;
+                        distMatrix[j][i] = distSum;
                     }
-                    distMatrix.push(distTmp);
+                    // distMatrix.push(distTmp);
                 }
             }
             break;
@@ -756,9 +839,11 @@ function distanceMatrix(data, distanceParameters, variables) {
                         variables.forEach(key => {
                             distTmp[key] = dists[key][dists[key].length - 1][dists[key][0].length - 1];
                         });
-                        distList.push(distTmp);
+                        // distList.push(distTmp);
+                        distMatrix[i][j] = distTmp;
+                        distMatrix[j][i] = distTmp;
                     }
-                    distMatrix.push(distList);
+                    // distMatrix.push(distList);
                 }
             } else {
                 // DTWSimple
@@ -770,10 +855,20 @@ function distanceMatrix(data, distanceParameters, variables) {
                         variables.forEach(key => {
                             distTmp[key] = dists[key][dists[key].length - 1][dists[key][0].length - 1];
                         });
-                        distList.push(distTmp);
+                        // distList.push(distTmp);
+                        distMatrix[i][j] = distTmp;
+                        distMatrix[j][i] = distTmp;
                     }
-                    distMatrix.push(distList);
+                    // distMatrix.push(distList);
                 }
+            }
+            // make diagonal element of the matrix object of 0s
+            let zerosTmp = {};
+            variables.forEach(key => {
+                zerosTmp[key] = 0;    
+            });
+            for (let i = 0; i < data.length; i++) {
+                distMatrix[i][i] = zerosTmp;
             }
             break;
         case 'Euclidean':
@@ -1044,9 +1139,9 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
                         let dist = 0;
                         variableList.forEach(key => {
                             if (clusters[i][j] !== medoids[k][key]) {
-                                let dataIdxMin = Math.min(clusters[i][j], medoids[k][key]),
-                                    dataIdxMax = Math.max(clusters[i][j], medoids[k][key]);
-                                dist += distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1][key];
+                                // let dataIdxMin = Math.min(clusters[i][j], medoids[k][key]),
+                                //     dataIdxMax = Math.max(clusters[i][j], medoids[k][key]);
+                                dist += distMatrix[clusters[i][j]][medoids[k][key]][key];//[dataIdxMin][dataIdxMax - dataIdxMin - 1][key];
                             }
                         });
                         if (dist < clusterNearDist) {
@@ -1059,20 +1154,20 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
                 for (let k = 0; k < clusters[i].length; k++) {
                     // compute cohesion of the focused data sample (data[clusters[i][j]])
                     if (clusters[i][j] !== clusters[i][k]) {
-                        let dataIdxMin = Math.min(clusters[i][j], clusters[i][k]),
-                            dataIdxMax = Math.max(clusters[i][j], clusters[i][k]);
+                        // let dataIdxMin = Math.min(clusters[i][j], clusters[i][k]),
+                        //     dataIdxMax = Math.max(clusters[i][j], clusters[i][k]);
                         variableList.forEach(key => {
-                            cohesionTmp += distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1][key];
+                            cohesionTmp += distMatrix[clusters[i][j]][clusters[i][k]][key];//distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1][key];
                         });
                     }
                 }
                 cohesionTmp /= (clusters[i].length - 1);
                 for (let k = 0; k < clusters[clusterNear].length; k++) {
                     // compute separation of the focused data sample (data[clusters[i][j]])
-                    let dataIdxMin = Math.min(clusters[i][j], clusters[clusterNear][k]),
-                        dataIdxMax = Math.max(clusters[i][j], clusters[clusterNear][k]);
+                    // let dataIdxMin = Math.min(clusters[i][j], clusters[clusterNear][k]),
+                    //     dataIdxMax = Math.max(clusters[i][j], clusters[clusterNear][k]);
                     variableList.forEach(key => {
-                        separationTmp += distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1][key];
+                        separationTmp += distMatrix[clusters[i][j]][clusters[clusterNear][k]][key];//distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1][key];
                     });
                 }
                 separationTmp /= clusters[clusterNear].length;
@@ -1107,9 +1202,9 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
                 if (i === j) continue;
                 let clustersDist = 0;
                 variableList.forEach(key => {
-                    let dataIdxMin = Math.min(medoids[i][key], medoids[j][key]),
-                        dataIdxMax = Math.max(medoids[i][key], medoids[j][key]);
-                    clustersDist += distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1][key];
+                    // let dataIdxMin = Math.min(medoids[i][key], medoids[j][key]),
+                    //     dataIdxMax = Math.max(medoids[i][key], medoids[j][key]);
+                    clustersDist += distMatrix[medoids[i][key]][medoids[j][key]][key];//distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1][key];
                 });
                 let Rij = (clusteringScores.clusterRadiuses[i] + clusteringScores.clusterRadiuses[j]) / clustersDist;
                 if (maxR < Rij) {
@@ -1181,11 +1276,12 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
         let errorSum = 0;
         for (let i = 0; i < labels.length; i++) {
             activeVariables.forEach(key => {
-                if (i < medoids[labels[i]][key]) {
-                    errorSum += distMatrix[i][medoids[labels[i]][key] - i - 1][key];
-                } else if (medoids[labels[i]][key] < i) {
-                    errorSum += distMatrix[medoids[labels[i]][key]][i - medoids[labels[i]][key] - 1][key];
-                }  
+                errorSum += distMatrix[i][medoids[labels[i]][key]][key];
+                // if (i < medoids[labels[i]][key]) {
+                //     errorSum += distMatrix[i][medoids[labels[i]][key] - i - 1][key];
+                // } else if (medoids[labels[i]][key] < i) {
+                //     errorSum += distMatrix[medoids[labels[i]][key]][i - medoids[labels[i]][key] - 1][key];
+                // }  
             });
         }
         return errorSum;
@@ -1205,13 +1301,16 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
             for (let j = 0; j < medoids.length; j++) {
                 let distTmp = 0;
                 activeVariables.forEach(key => {
-                    if (i < medoids[j][key]) {
-                        distTmp += distMatrix[i][medoids[j][key] - i - 1][key];
-                    } else if (medoids[j][key] < i) {
-                        distTmp += distMatrix[medoids[j][key]][i - medoids[j][key] - 1][key];
-                    } else {
-                        distTmp += 0;
+                    if (i !== medoids[j][key]) {
+                        distTmp += distMatrix[i][medoids[j][key]][key];
                     }
+                    // if (i < medoids[j][key]) {
+                    //     distTmp += distMatrix[i][medoids[j][key] - i - 1][key];
+                    // } else if (medoids[j][key] < i) {
+                    //     distTmp += distMatrix[medoids[j][key]][i - medoids[j][key] - 1][key];
+                    // } else {
+                    //     distTmp += 0;
+                    // }
                 });
                 if (distTmp < NNDist) {
                     NNMedoid = j;
@@ -1274,21 +1373,29 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
                     let overCounter = 0;
                     if (clusters[i][j] === clusters[i][k]) {
                         continue;
-                    } else if (clusters[i][j] < clusters[i][k]) {
+                    } else {
                         for (let key in minDistSum) {
-                            distSumTmp[key] += distMatrix[clusters[i][j]][clusters[i][k] - clusters[i][j] - 1][key];
-                            if (minDistSum[key] < distSumTmp[key]) {
-                                overCounter++;
-                            }
-                        }
-                    } else if (clusters[i][k] < clusters[i][j]) {
-                        for (let key in minDistSum) {
-                            distSumTmp[key] += distMatrix[clusters[i][k]][clusters[i][j] - clusters[i][k] - 1][key];
+                            distSumTmp[key] += distMatrix[clusters[i][j]][clusters[i][k]][key];
                             if (minDistSum[key] < distSumTmp[key]) {
                                 overCounter++;
                             }
                         }
                     }
+                    // else if (clusters[i][j] < clusters[i][k]) {
+                    //     for (let key in minDistSum) {
+                    //         distSumTmp[key] += distMatrix[clusters[i][j]][clusters[i][k]][key];//distMatrix[clusters[i][j]][clusters[i][k] - clusters[i][j] - 1][key];
+                    //         if (minDistSum[key] < distSumTmp[key]) {
+                    //             overCounter++;
+                    //         }
+                    //     }
+                    // } else if (clusters[i][k] < clusters[i][j]) {
+                    //     for (let key in minDistSum) {
+                    //         distSumTmp[key] += distMatrix[clusters[i][k]][clusters[i][j] - clusters[i][k] - 1][key];
+                    //         if (minDistSum[key] < distSumTmp[key]) {
+                    //             overCounter++;
+                    //         }
+                    //     }
+                    // }
                     if (overCounter === Object.keys(minDistSum)) {
                         break;
                     }
@@ -1432,9 +1539,9 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables) {
                 // find the second nearest cluster of data[clusters[i][j]]
                 for (let k = 0; k < medoids.length; k++) {
                     if (k !== i) {
-                        let dataIdxMin = Math.min(clusters[i][j], medoids[k]),
-                            dataIdxMax = Math.max(clusters[i][j], medoids[k]);
-                        let dist = distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1];
+                        // let dataIdxMin = Math.min(clusters[i][j], medoids[k]),
+                        //     dataIdxMax = Math.max(clusters[i][j], medoids[k]);
+                        let dist = distMatrix[clusters[i][j]][medoids[k]];//distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1];
                         if (dist < clusterNearDist) {
                             clusterNearDist = dist;
                             clusterNear = k;
@@ -1444,16 +1551,16 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables) {
 
                 for (let k = 0; k < clusters[i].length; k++) {
                     if (clusters[i][j] !== clusters[i][k]) {
-                        let dataIdxMin = Math.min(clusters[i][j], clusters[i][k]),
-                            dataIdxMax = Math.max(clusters[i][j], clusters[i][k]);
-                        cohesionTmp += distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1];
+                        // let dataIdxMin = Math.min(clusters[i][j], clusters[i][k]),
+                        //     dataIdxMax = Math.max(clusters[i][j], clusters[i][k]);
+                        cohesionTmp += distMatrix[clusters[i][j]][clusters[i][k]];//distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1];
                     }
                 }
                 cohesionTmp /= (clusters[i].length - 1);
                 for (let k = 0; k < clusters[clusterNear].length; k++) {
-                    let dataIdxMin = Math.min(clusters[i][j], clusters[clusterNear][k]),
-                        dataIdxMax = Math.max(clusters[i][j], clusters[clusterNear][k]);
-                    separationTmp += distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1];
+                    // let dataIdxMin = Math.min(clusters[i][j], clusters[clusterNear][k]),
+                    //     dataIdxMax = Math.max(clusters[i][j], clusters[clusterNear][k]);
+                    separationTmp += distMatrix[clusters[i][j]][clusters[clusterNear][k]];//distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1];
                 }
                 separationTmp /= clusters[clusterNear].length;
                 silhouetteSS[clusters[i][j]] = (separationTmp - cohesionTmp) / Math.max(cohesionTmp, separationTmp);
@@ -1469,9 +1576,9 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables) {
             let maxR = -Infinity;
             for (let j = i + 1; j < clusters.length; j++) {
                 if (i === j) continue;
-                let dataIdxMin = Math.min(medoids[i], medoids[j]),
-                    dataIdxMax = Math.max(medoids[i], medoids[j]);
-                let clustersDist = distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1];
+                // let dataIdxMin = Math.min(medoids[i], medoids[j]),
+                //     dataIdxMax = Math.max(medoids[i], medoids[j]);
+                let clustersDist = distMatrix[medoids[i]][medoids[j]];//distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1];
                 let Rij = (clusteringScores.clusterRadiuses[i] + clusteringScores.clusterRadiuses[j]) / clustersDist;
                 if (maxR < Rij) {
                     maxR = Rij;
@@ -1501,11 +1608,14 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables) {
         // compute errors between a medoid and SS
         let errorSum = 0;
         for (let i = 0; i < labels.length; i++) {
-            if (i < medoids[labels[i]]) {
-                errorSum += distMatrix[i][medoids[labels[i]] - i - 1];
-            } else if (medoids[labels[i]] < i) {
-                errorSum += distMatrix[medoids[labels[i]]][i - medoids[labels[i]] - 1];
+            if (i !== medoids[labels[i]]) {
+                errorSum += distMatrix[i][medoids[labels[i]]];
             }
+            // if (i < medoids[labels[i]]) {
+            //     errorSum += distMatrix[i][medoids[labels[i]] - i - 1];
+            // } else if (medoids[labels[i]] < i) {
+            //     errorSum += distMatrix[medoids[labels[i]]][i - medoids[labels[i]] - 1];
+            // }
         }
         return errorSum;
     }
@@ -1519,20 +1629,24 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables) {
                 continue;
             }
             let NNMedoid = 0,
-                NNDist = distMatrix[Math.min(i, NNMedoid)][Math.max(i, NNMedoid) - Math.min(i, NNMedoid) - 1];
+                NNDist = distMatrix[i][NNMedoid];//distMatrix[Math.min(i, NNMedoid)][Math.max(i, NNMedoid) - Math.min(i, NNMedoid) - 1];
             for (let j = 1; j < medoids.length; j++) {
                 // compare data[i] and medoid[j] (=data[medoids[j]])
-                if (i < medoids[j]) {
-                    if (distMatrix[i][medoids[j] - i - 1] < NNDist) {
-                        NNMedoid = j;
-                        NNDist = distMatrix[i][medoids[j] - i - 1];
-                    }
-                } else if (medoids[j] < i) {
-                    if (distMatrix[medoids[j]][i - medoids[j] - 1] < NNDist) {
-                        NNMedoid = j;
-                        NNDist = distMatrix[medoids[j]][i - medoids[j] - 1];
-                    }
+                if (distMatrix[i][medoids[j]] < NNDist) {
+                    NNMedoid = j;
+                    NNDist = distMatrix[i][medoids[j]];
                 }
+                // if (i < medoids[j]) {
+                //     if (distMatrix[i][medoids[j] - i - 1] < NNDist) {
+                //         NNMedoid = j;
+                //         NNDist = distMatrix[i][medoids[j] - i - 1];
+                //     }
+                // } else if (medoids[j] < i) {
+                //     if (distMatrix[medoids[j]][i - medoids[j] - 1] < NNDist) {
+                //         NNMedoid = j;
+                //         NNDist = distMatrix[medoids[j]][i - medoids[j] - 1];
+                //     }
+                // }
             }
             labels.push(NNMedoid);
         }
@@ -1558,11 +1672,15 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables) {
                 for (let k = 0; k < clusters[i].length; k++) {
                     if (clusters[i][j] === clusters[i][k]) {
                         continue;
-                    } else if (clusters[i][j] < clusters[i][k]) {
-                        distSumTmp += distMatrix[clusters[i][j]][clusters[i][k] - clusters[i][j] - 1];
-                    } else if (clusters[i][k] < clusters[i][j]) {
-                        distSumTmp += distMatrix[clusters[i][k]][clusters[i][j] - clusters[i][k] - 1];
+                    } else {
+                        distSumTmp += distMatrix[clusters[i][j]][clusters[i][k]];
                     }
+                    
+                    // else if (clusters[i][j] < clusters[i][k]) {
+                    //     distSumTmp += distMatrix[clusters[i][j]][clusters[i][k] - clusters[i][j] - 1];
+                    // } else if (clusters[i][k] < clusters[i][j]) {
+                    //     distSumTmp += distMatrix[clusters[i][k]][clusters[i][j] - clusters[i][k] - 1];
+                    // }
                     if (minDistSum < distSumTmp)
                         break;
                 }
@@ -1706,16 +1824,16 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
 
                 for (let k = 0; k < clusters[i].length; k++) {
                     if (clusters[i][j] !== clusters[i][k]) {
-                        let dataIdxMin = Math.min(clusters[i][j], clusters[i][k]),
-                            dataIdxMax = Math.max(clusters[i][j], clusters[i][k]);
-                        cohesionTmp += distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1];
+                        // let dataIdxMin = Math.min(clusters[i][j], clusters[i][k]),
+                        //     dataIdxMax = Math.max(clusters[i][j], clusters[i][k]);
+                        cohesionTmp += distMatrix[clusters[i][j]][clusters[i][k]];//distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1];
                     }
                 }
                 cohesionTmp /= (clusters[i].length - 1);
                 for (let k = 0; k < clusters[clusterNear].length; k++) {
-                    let dataIdxMin = Math.min(clusters[i][j], clusters[clusterNear][k]),
-                        dataIdxMax = Math.max(clusters[i][j], clusters[clusterNear][k]);
-                    separationTmp += distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1];
+                    // let dataIdxMin = Math.min(clusters[i][j], clusters[clusterNear][k]),
+                    //     dataIdxMax = Math.max(clusters[i][j], clusters[clusterNear][k]);
+                    separationTmp += distMatrix[clusters[i][j]][clusters[clusterNear][k]];//distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1];
                 }
                 separationTmp /= clusters[clusterNear].length;
                 silhouetteSS[clusters[i][j]] = (separationTmp - cohesionTmp) / Math.max(cohesionTmp, separationTmp);
@@ -2804,16 +2922,21 @@ const shuffle = ([...array]) => {
 function MDSClassical(distMatrix) {
     // https://www.hongfeili.com/files/paper100/paper4.pdf
     let distSquare = math.square(distMatrix);
-    let identity = math.identity(distMatrix.length);
-    let ones = math.ones(distMatrix.length, distMatrix.length);
+    let identity = math.identity(distSquare.length);
+    let ones = math.ones(distSquare.length, distSquare.length);
 
     // compute centering matrix
-    let centeringMatrix = math.subtract(identity, math.multiply(1/distMatrix.length, ones));
+    let centeringMatrix = math.subtract(identity, math.multiply(1/distSquare.length, ones));
     // double centering
     let B = math.multiply(-0.5, centeringMatrix, distSquare, centeringMatrix);
-    let eigen = math.eigs(B);
-    let eigenvalues = eigen.values._data;
-    let eigenvectors = eigen.vectors._data;
+    for (let i = 0; i < B._data.length; i++) {
+        for (let j = 0; j < B._data.length;j++) {
+            B._data[j][i] = B._data[i][j];
+        }
+    }
+    let eigen = math.eigs(B._data);
+    let eigenvalues = eigen.values;//._data;
+    let eigenvectors = eigen.vectors;//._data;
     let eigenvectorsTranpose = math.transpose(eigenvectors);
     let eigenVal1 = eigenvalues[eigenvalues.length - 1],
         eigenVal2 = eigenvalues[eigenvalues.length - 2];
