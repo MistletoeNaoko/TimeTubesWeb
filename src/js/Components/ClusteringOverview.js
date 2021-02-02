@@ -12,6 +12,7 @@ import * as THREE from 'three';
 import TextSprite from '@seregpie/three.text-sprite';
 import {formatValue} from '../lib/2DGraphLib';
 import {} from '../lib/TimeSeriesQuerying';
+import { cluster } from 'd3';
 
 export default class ClusteringOverview extends React.Component {
     constructor() {
@@ -33,6 +34,7 @@ export default class ClusteringOverview extends React.Component {
         this.clusterCenters = [];
         this.clusterColors = [];
         this.clusteringScores = {};
+        this.tubeCoords = [];
 
         this.queryMode = FeatureStore.getMode();
         this.clickedX;
@@ -85,6 +87,7 @@ export default class ClusteringOverview extends React.Component {
             this.clusteringScores = ClusteringStore.getClusteringScores();
             this.setRendererSize();
             this.computeSplines();
+            this.computeTubePositions();
             this.drawClusterCentersAsTubes();
             this.showClusteringScores();
             this.showClusteringParameters();
@@ -98,6 +101,7 @@ export default class ClusteringOverview extends React.Component {
             this.clusteringScores = ClusteringStore.getClusteringScores();
             this.setRendererSize();
             this.computeSplines();
+            this.computeTubePositions();
             this.drawClusterCentersAsTubes();
             this.showClusteringScores();
             this.showClusteringParameters();
@@ -108,6 +112,7 @@ export default class ClusteringOverview extends React.Component {
             this.clusteringScores = ClusteringStore.getClusteringScores();
             this.setRendererSize();
             this.computeSplines();
+            this.computeTubePositions();
             this.drawClusterCentersAsTubes();
             this.showClusteringScores();
             this.showClusteringParameters();
@@ -275,9 +280,8 @@ export default class ClusteringOverview extends React.Component {
             let rendererSize = $('#selectedClusterCenterTimeTubes').width() - 16 * 2;
             this.detailRenderer.setSize(rendererSize, rendererSize);
             this.detailRenderer.domElement.id = 'selectedClusterCenterTimeTubesRenderer';
-            let viewportSize = ClusteringStore.getViewportSize() * 0.7;
-            let posX = viewportSize * Math.cos(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * cluster);
-            let posY = viewportSize * Math.sin(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * cluster);
+            let posX = this.tubeCoords[cluster].x;
+            let posY = this.tubeCoords[cluster].y;
             this.cameraDetail.position.x = posX;
             this.cameraDetail.position.y = posY;
             this.cameraDetail.lookAt(posX, posY, 0);
@@ -824,6 +828,62 @@ export default class ClusteringOverview extends React.Component {
         this.drawLabels();
     }
 
+    computeTubePositions() {
+        this.tubeCoords = [];
+        let clustersCoord = ClusteringStore.getResultsCoordinates().clustersCoord;
+        if (clustersCoord) {
+            let xPosMinMax = [Infinity, -Infinity],
+                yPosMinMax = [Infinity, -Infinity];
+            let minDistBetweenClusters = Infinity;
+            for (let i = 0; i < clustersCoord.length; i++) {
+                if (clustersCoord[i][0] < xPosMinMax[0]) {
+                    xPosMinMax[0] = clustersCoord[i][0];
+                }
+                if (xPosMinMax[1] < clustersCoord[i][0]) {
+                    xPosMinMax[1] = clustersCoord[i][0];
+                }
+                if (clustersCoord[i][1] < yPosMinMax[0]) {
+                    yPosMinMax[0] = clustersCoord[i][1];
+                }
+                if (yPosMinMax[1] < clustersCoord[i][1]) {
+                    yPosMinMax[1] = clustersCoord[i][1];
+                }
+                for (let j = i + 1; j < clustersCoord.length; j++) {
+                    let dist = Math.sqrt(Math.pow(clustersCoord[i][0] - clustersCoord[j][0], 2) + Math.pow(clustersCoord[i][1] - clustersCoord[j][1], 2));
+                    if (dist < minDistBetweenClusters) {
+                        minDistBetweenClusters = dist;
+                    }
+                }
+            }
+            let width = $('#clusteringResultsOverview').width();
+            let height = $('#clusteringResultsOverview').height();
+            let aspect = width / height;
+            let yRange = Math.max(Math.abs(xPosMinMax[1] - xPosMinMax[0]) / aspect, Math.abs(yPosMinMax[1] - yPosMinMax[0]));
+            let xRange = yRange * aspect;
+            let viewportSize = ClusteringStore.getViewportSize() * 0.7;
+            let ratio = viewportSize * 2 / (height < width? yRange: xRange);
+            // let range = Math.max(Math.max(Math.abs(xPosMinMax[0]), Math.abs(xPosMinMax[1])), Math.max(Math.abs(yPosMinMax[0]), Math.abs(yPosMinMax[1])));
+            // let ratio = viewportSize / range;
+            if (minDistBetweenClusters * ratio > ClusteringStore.getGridSize()) {
+                // this.range = ratio;
+            } else {
+                let ratioTmp = ClusteringStore.getGridSize() / minDistBetweenClusters;
+                ratio = ratioTmp;
+            }
+
+            for (let i = 0; i < clustersCoord.length; i++) {
+                this.tubeCoords.push({x: clustersCoord[i][0] * ratio, y: clustersCoord[i][1] * ratio});
+            }
+        } else {
+            let viewportSize = ClusteringStore.getViewportSize() * 0.7;
+            for (let i = 0; i < this.clusterCenters.length; i++) {
+                let posX = viewportSize * Math.cos(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
+                let posY = viewportSize * Math.sin(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
+                this.tubeCoords.push({x: posX, y: posY});
+            }
+        }
+    }
+
     drawTubes() {
         // remove previous tubes
         for (let i = 0; i < this.tubes.length; i++) {
@@ -840,7 +900,6 @@ export default class ClusteringOverview extends React.Component {
         let dataLen = ClusteringStore.getSubsequenceParameters().isometryLen + 1;
         let divNum = this.division * dataLen;
         let del = Math.PI * 2 / (this.segment - 1);
-        let viewportSize = ClusteringStore.getViewportSize() * 0.7;
         for (let i = 0; i < this.splines.length; i++) {
             let tubeGeometry;
             let vertices = [],
@@ -849,8 +908,8 @@ export default class ClusteringOverview extends React.Component {
             let cen = this.splines[i].position.getSpacedPoints(divNum),
                 rad = this.splines[i].radius.getSpacedPoints(divNum),
                 col = this.splines[i].color.getSpacedPoints(divNum);
-            let posX = viewportSize * Math.cos(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
-            let posY = viewportSize * Math.sin(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
+            let posX = this.tubeCoords[i].x;
+            let posY = this.tubeCoords[i].y;
             if ('r_x' in variables || 'r_y' in variables) {
                 let opacityPoints = this.opacityCurve.getSpacedPoints(this.tubeNum);
                 let opacityList = [];
@@ -963,7 +1022,6 @@ export default class ClusteringOverview extends React.Component {
         this.axes = [];
 
         let axisSize = ClusteringStore.getGridSize() * 0.7;
-        let viewportSize = ClusteringStore.getViewportSize() * 0.7;
         for (let i = 0; i < this.clusterCenters.length; i++) {
             let axisGeometry = new THREE.BufferGeometry();
             let axisMaterial = new THREE.LineBasicMaterial({
@@ -989,11 +1047,9 @@ export default class ClusteringOverview extends React.Component {
                 new THREE.Float32BufferAttribute(axisPosisitons, 3)
             );
             this.axes.push(new THREE.LineSegments(axisGeometry, axisMaterial));
+            this.axes[this.axes.length - 1].translateX(this.tubeCoords[i].x);
+            this.axes[this.axes.length - 1].translateY(this.tubeCoords[i].y);
             this.axes[this.axes.length - 1].rotateY(Math.PI);
-            let posX = viewportSize * Math.cos(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
-            let posY = viewportSize * Math.sin(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
-            this.axes[this.axes.length - 1].translateX(posX);
-            this.axes[this.axes.length - 1].translateY(posY);
             this.scene.add(this.axes[this.axes.length - 1]);
         }
     }
@@ -1007,7 +1063,6 @@ export default class ClusteringOverview extends React.Component {
         this.labels = [];
 
         let axisSize = ClusteringStore.getGridSize() * 0.7;
-        let viewportSize = ClusteringStore.getViewportSize() * 0.7;
         for (let i = 0; i < this.clusterCenters.length; i++) {
             let label = new TextSprite({
                 alignment: 'center',
@@ -1018,8 +1073,8 @@ export default class ClusteringOverview extends React.Component {
             });
             label.name = 'Cluster_' + i;
             this.labels.push(label);
-            let posX = viewportSize * Math.cos(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
-            let posY = viewportSize * Math.sin(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i) + axisSize;
+            let posX = this.tubeCoords[i].x;
+            let posY = this.tubeCoords[i].y + axisSize;
             this.labels[this.labels.length - 1].position.set(posX, posY, -3);
             this.scene.add(this.labels[this.labels.length - 1]);
         }

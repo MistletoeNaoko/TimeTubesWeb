@@ -700,8 +700,8 @@ export default class ClusteringProcess extends React.Component {
             }
             let clusteringParameters = ClusteringStore.getClusteringParameters();
             let dataLen = ClusteringStore.getSubsequenceParameters().isometryLen;
-            let [clusterCenters, labels, clusteringScores] = reperformClustering(subsequences, clusteringParameters, dataLen);
-            ClusteringAction.updateClusteringResults(subsequences, clusterCenters, labels, clusteringScores, this.state.selectedSS, this.state.updatedSS);
+            let [clusterCenters, labels, clusteringScores, resultsCoordinates] = reperformClustering(subsequences, clusteringParameters, dataLen);
+            ClusteringAction.updateClusteringResults(subsequences, clusterCenters, labels, clusteringScores, this.state.selectedSS, this.state.updatedSS, resultsCoordinates);
         };
     }
 

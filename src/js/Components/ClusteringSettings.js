@@ -540,7 +540,7 @@ export default class clusteringSettings extends React.Component {
         if (this.state.filteringSS.indexOf('overlappingDegree') >= 0) {
             subsequenceParameters.overlappingTh = Number($('#overlappingDegreeThreshold').val());
         }
-        let [subsequences, ranges, clusterCenters, labels, clusteringScores, filteringProcess] = performClustering(datasets, clusteringParameters, subsequenceParameters);
+        let [subsequences, ranges, clusterCenters, labels, clusteringScores, filteringProcess, resultsCoordinates] = performClustering(datasets, clusteringParameters, subsequenceParameters);
         // let data = DataStore.getData(0),
         //     clusteringParameters = {
         //         method: 'kmedoids',
@@ -570,7 +570,8 @@ export default class clusteringSettings extends React.Component {
             clusteringParameters, 
             subsequenceParameters,
             clusteringScores,
-            filteringProcess
+            filteringProcess,
+            resultsCoordinates
         );
     }
 }

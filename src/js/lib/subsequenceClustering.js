@@ -265,7 +265,6 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                         distsBetweenClusters[j][i] = distMatrix[medoidIdx[j]][medoidIdx[i]];
                     }
                 }
-
             } else if (clusteringParameters.medoidDefinition === 'each') {
                 [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsEach(subsequenceData, clusteringParameters.clusterNum, distanceParameters, variables);
                 for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
@@ -331,12 +330,16 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
     clusteringScores.pseudoF = pseudoF(clusteringScores.clusterRadiuses, clusterCenters, dataCenter, labelsCluster.map(x => x.length), distanceParameters, variables.filter(ele => ele !== 'z'));
 
     let clustersPos = MDSClassical(distsBetweenClusters);
-    console.log(clustersPos);
-    console.log(distMatrix);
     let dataPos = MDSClassical(distMatrix);
-    console.log(dataPos);
+    // TODO:MDSの評価 
 
-    return [subsequenceData, ranges, clusterCenters, labels, clusteringScores, filteringProcess];
+    let resultsCoordinates = {
+        clustersCoord: clustersPos,
+        dataCoord: dataPos,
+        medoidIdx: medoidIdx
+    };
+
+    return [subsequenceData, ranges, clusterCenters, labels, clusteringScores, filteringProcess, resultsCoordinates];
 }
 
 export function reperformClustering(data, clusteringParameters, dataLen) {
@@ -353,14 +356,76 @@ export function reperformClustering(data, clusteringParameters, dataLen) {
     let clusterCenters, medoidIdx, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters;
     switch (clusteringParameters.method) {
         case 'kmedoids':
+            distsBetweenClusters = [];
+            for (let i = 0; i < clusteringParameters.clusterNum; i++) {
+                distsBetweenClusters.push([]);
+                for (let j = 0; j < clusteringParameters.clusterNum; j++) {
+                    distsBetweenClusters[i].push(0);
+                }
+            }
             if (clusteringParameters.medoidDefinition === 'unified') {
                 [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsUnified(data, clusteringParameters.clusterNum, distanceParameters, variablesZ);
+                for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
+                    for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
+                        distsBetweenClusters[i][j] = distMatrix[medoidIdx[i]][medoidIdx[j]];
+                        distsBetweenClusters[j][i] = distMatrix[medoidIdx[j]][medoidIdx[i]];
+                    }
+                }
             } else if (clusteringParameters.medoidDefinition === 'each') {
                 [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsEach(data, clusteringParameters.clusterNum, distanceParameters, variablesZ);
+                for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
+                    for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
+                        let distSum = 0;
+                        variables.forEach(key => {
+                            if (key !== 'z') {
+                                distSum += distMatrix[medoidIdx[i][key]][medoidIdx[j][key]][key];
+                            }
+                        });
+                        distsBetweenClusters[i][j] = distSum;
+                        distsBetweenClusters[j][i] = distSum;
+                    }
+                }
+                // make distMatrix (distances of each variable) unified distance matrix
+                for (let i = 0; i < distMatrix.length - 1; i++) {
+                    distMatrix[i][i] = 0;
+                    for (let j = i + 1; j < distMatrix[i].length; j++) {
+                        let distSum = 0;
+                        for (let key in distMatrix[i][j]) {
+                            distSum += distMatrix[i][j][key];
+                        }
+                        distMatrix[i][j] = distSum;
+                        distMatrix[j][i] = distSum;
+                    }
+                }
+                distMatrix[distMatrix.length - 1][distMatrix.length - 1] = 0;
             }
             break;
         case 'kmeans':
             [clusterCenters, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters] = kMeans(data, clusteringParameters.clusterNum, distanceParameters, variablesZ);
+            // merge distance matrix for each SS and distance matrix for clusters
+            // fill 0s to shortcoming parts of the distance matrix
+            for (let i = 0; i < clusteringParameters.clusterNum; i++) {
+                distMatrix.push([]);
+                for (let j = 0; j < subsequenceData.length; j++) {
+                    distMatrix[j].push(0);
+                    distMatrix[subsequences.length + i].push(0);
+                }
+                for (let j = 0; j < clusteringParameters.clusterNum; j++) {
+                    distMatrix[subsequences.length + i].push(0);
+                }
+            }
+            for (let i = 0; i < subsequenceData.length; i++) {
+                for (let j = 0; j < clusteringParameters.clusterNum; j++) {
+                    distMatrix[i][subsequences.length + j] = distsToClusters[i][j];
+                    distMatrix[subsequences.length + j][i] = distsToClusters[i][j];
+                }
+            }
+            for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
+                for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
+                    distMatrix[subsequences.length + i][subsequences.length + j] = distsBetweenClusters[i][j];
+                    distMatrix[subsequences.length + j][subsequences.length + i] = distsBetweenClusters[i][j];
+                }
+            }
             break;
         default:
             break;
@@ -369,7 +434,18 @@ export function reperformClustering(data, clusteringParameters, dataLen) {
     let dataCenter = computeDataCenter(data, distanceParameters, clusteringParameters.variables, dataLen);
     let labelsCluster = divideSSIntoClusters(labels, clusteringParameters.clusterNum);
     clusteringScores.pseudoF = pseudoF(clusteringScores.clusterRadiuses, clusterCenters, dataCenter, labelsCluster.map(x => x.length), distanceParameters, clusteringParameters.variables);
-    return [clusterCenters, labels, clusteringScores];
+
+    let clustersPos = MDSClassical(distsBetweenClusters);
+    let dataPos = MDSClassical(distMatrix);
+    // TODO:MDSの評価 
+
+    let resultsCoordinates = {
+        clustersCoord: clustersPos,
+        dataCoord: dataPos,
+        medoidIdx: medoidIdx
+    };
+
+    return [clusterCenters, labels, clusteringScores, resultsCoordinates];
 }
 
 function divideSSIntoClusters (labels, clusterNum) {

@@ -20,6 +20,7 @@ class ClusteringStore extends EventEmitter {
         this.originalResults = {};
         this.selectedSS = {};
         this.updatedSS = {};
+        this.resultsCoordinates = {}; // clustersCoord, dataCoord, medoidIdx
         this.selectedCluster = -1;
     }
 
@@ -35,7 +36,8 @@ class ClusteringStore extends EventEmitter {
                     action.clusteringParameters, 
                     action.subsequenceParameters,
                     action.clusteringScores,
-                    action.filteringProcess
+                    action.filteringProcess, 
+                    action.resultsCoordinates
                 );
                 break;
             case 'SHOW_CLUSTER_DETAILS':
@@ -45,7 +47,15 @@ class ClusteringStore extends EventEmitter {
                 this.showFilteringStep(action.selectedProcess);
                 break;
             case 'UPDATE_CLUSTERING_RESULTS':
-                this.updateClusteringResults(action.subsequences, action.clusterCenters, action.labels, action.clusteringScores, action.selectedSS, action.updatedSS);
+                this.updateClusteringResults(
+                    action.subsequences, 
+                    action.clusterCenters, 
+                    action.labels, 
+                    action.clusteringScores, 
+                    action.selectedSS, 
+                    action.updatedSS,
+                    action.resultsCoordinates
+                );
                 break;
             case 'RESET_CLUSTERING_RESULTS':
                 this.resetClusteringResults();
@@ -118,6 +128,10 @@ class ClusteringStore extends EventEmitter {
         return this.selectedCluster;
     }
 
+    getResultsCoordinates() {
+        return this.resultsCoordinates;
+    }
+
     showClusteringResults (
         datasets, 
         subsequences, 
@@ -127,7 +141,8 @@ class ClusteringStore extends EventEmitter {
         clusteringParameters, 
         subsequenceParameters, 
         clusteringScores, 
-        filteringProcess) {
+        filteringProcess, 
+        resultsCoordinates) {
         this.datasets = datasets;
         this.subsequences = subsequences;
         this.ranges = ranges;
@@ -150,7 +165,8 @@ class ClusteringStore extends EventEmitter {
             subsequences: subsequences,
             clusterCenters: clusterCenters,
             labels: labels,
-            clusteringScores: clusteringScores
+            clusteringScores: clusteringScores,
+            resultsCoordinates: resultsCoordinates
         };
         this.selectedSS = {};
         for (let i = 0; i < datasets.length; i++) {
@@ -163,6 +179,7 @@ class ClusteringStore extends EventEmitter {
             }   
         }
         this.selectedCluster = -1;
+        this.resultsCoordinates = resultsCoordinates;
         this.emit('showClusteringResults');
     }
 
@@ -175,21 +192,31 @@ class ClusteringStore extends EventEmitter {
         this.emit('showFilteringStep', selectedProcess);
     }
 
-    updateClusteringResults(subsequences, clusterCenters, labels, clusteringScores, selectedSS, updatedSS) {
+    updateClusteringResults(
+        subsequences, 
+        clusterCenters, 
+        labels, 
+        clusteringScores, 
+        selectedSS, 
+        updatedSS, 
+        resultsCoordinates) {
         this.subsequences = subsequences;
         this.clusterCenters = clusterCenters;
         this.labels = labels;
         this.clusteringScores = clusteringScores;
         this.selectedSS = selectedSS;
         this.updatedSS = updatedSS;
+        this.resultsCoordinates = resultsCoordinates;
         this.emit('updateClusteringResults');
     }
 
     resetClusteringResults() {
+        // reset the manual selection of SS
         this.subsequences = this.originalResults.subsequences;
         this.clusterCenters = this.originalResults.clusterCenters;
         this.labels = this.originalResults.labels;
         this.clusteringScores = this.originalResults.clusteringScores;
+        this.resultsCoordinates = this.originalResults.resultsCoordinates;
         this.updatedSS = [];
         this.emit('resetClusteringResults');
     }
