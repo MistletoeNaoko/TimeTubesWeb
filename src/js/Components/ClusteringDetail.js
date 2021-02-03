@@ -676,7 +676,7 @@ export default class ClusteringDetail extends React.Component {
             svg.append('g')
                 .attr('id', 'clusterAfterHistogramAxisY')
                 .attr('transform', 'translate(' + (histogramWidth + svgPadding.left) + ',0)')
-                .call(d3.axisLeft(yScale).ticks(maxCount))
+                .call(d3.axisLeft(yScale).ticks(maxCount <= 5? maxCount: Math.floor(maxCount / 3)))
                 .selectAll('text')
                 .attr('font-size', '0.5rem');
 
