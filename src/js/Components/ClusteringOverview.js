@@ -132,7 +132,7 @@ export default class ClusteringOverview extends React.Component {
                 ref={mount => {
                     this.mount = mount;
                 }}>
-                <div id='clusteringOverviewCarousel' className='carousel slide'  data-bs-ride="carousel">
+                <div id='clusteringOverviewCarousel' className='carousel slide'  data-ride="carousel">
                     <div className="carousel-inner">
                         <div id='clusteringOverviewTimeTubes' className="carousel-item active">
                             <div id='clusteringParameters'>
@@ -197,11 +197,11 @@ export default class ClusteringOverview extends React.Component {
                             aaaaaa
                         </div>
                     </div>
-                    <a className="carousel-control-prev" href="#clusteringOverviewCarousel" role="button" data-bs-slide="prev">
+                    <a className="carousel-control-prev" href="#clusteringOverviewCarousel" role="button" data-slide="prev">
                         <span className="carousel-control-prev-icon" aria-hidden="true"></span>
                         {/* <span className="visually-hidden">Previous</span> */}
                     </a>
-                    <a className="carousel-control-next" href="#clusteringOverviewCarousel" role="button" data-bs-slide="next">
+                    <a className="carousel-control-next" href="#clusteringOverviewCarousel" role="button" data-slide="next">
                         <span className="carousel-control-next-icon" aria-hidden="true"></span>
                         {/* <span className="visually-hidden">Next</span> */}
                     </a>
