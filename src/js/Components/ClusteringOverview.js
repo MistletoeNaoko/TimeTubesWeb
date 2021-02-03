@@ -8,6 +8,7 @@ import FeatureStore from '../Stores/FeatureStore';
 import BufferGeometryUtils from '../lib/BufferGeometryUtils';
 import OrbitControls from "three-orbitcontrols";
 import * as THREE from 'three';
+import * as d3 from 'd3';
 // import TextSprite from 'three.textsprite';
 import TextSprite from '@seregpie/three.text-sprite';
 import {formatValue} from '../lib/2DGraphLib';
@@ -93,6 +94,7 @@ export default class ClusteringOverview extends React.Component {
             this.showClusteringScores();
             this.showClusteringParameters();
             this.resetDetailView();
+            this.drawMDSScatterplots();
         });
         ClusteringStore.on('showClusterDetails', (cluster) => {
             this.setCameraDetail();
@@ -108,6 +110,7 @@ export default class ClusteringOverview extends React.Component {
             this.showClusteringScores();
             this.showClusteringParameters();
             this.resetDetailView();
+            this.drawMDSScatterplots();
         });
         ClusteringStore.on('resetClusteringResults', () => {
             this.clusterCenters = ClusteringStore.getClusterCenters();
@@ -119,9 +122,11 @@ export default class ClusteringOverview extends React.Component {
             this.showClusteringScores();
             this.showClusteringParameters();
             this.resetDetailView();
+            this.drawMDSScatterplots();
         });
         AppStore.on('resizeExtractionResultsArea', () => {
             this.setRendererSize();
+            this.setMDSScatterplotsSize();
         });
     }
 
@@ -132,7 +137,7 @@ export default class ClusteringOverview extends React.Component {
                 ref={mount => {
                     this.mount = mount;
                 }}>
-                <div id='clusteringOverviewCarousel' className='carousel slide'  data-ride="carousel">
+                <div id='clusteringOverviewCarousel' className='carousel slide'  data-ride="carousel" data-interval="false" data-pause="hover">
                     <div className="carousel-inner">
                         <div id='clusteringOverviewTimeTubes' className="carousel-item active">
                             <div id='clusteringParameters'>
@@ -193,8 +198,7 @@ export default class ClusteringOverview extends React.Component {
                                 </table>
                             </div>
                         </div>
-                        <div className="carousel-item">
-                            aaaaaa
+                        <div id='clusteringOverviewMDSScatterplots' className="carousel-item">
                         </div>
                     </div>
                     <a className="carousel-control-prev" href="#clusteringOverviewCarousel" role="button" data-slide="prev">
@@ -1106,6 +1110,122 @@ export default class ClusteringOverview extends React.Component {
             let posY = this.tubeCoords[i].y + axisSize;
             this.labels[this.labels.length - 1].position.set(posX, posY, -3);
             this.scene.add(this.labels[this.labels.length - 1]);
+        }
+    }
+
+    drawMDSScatterplots() {
+        $('#clusteringOverviewMDSScatterplotsSVG').remove();
+        if (this.clusterCenters.length > 0) {
+            let width = $('#clusteringResultsOverview').width();
+            let appHeaderHeight = $('#appHeader').outerHeight(true);
+            let timelineHeight = $('#clusteringTimeline').outerHeight(true);
+            let height = window.innerHeight - appHeaderHeight - timelineHeight;
+            let svgPadding = {left: 50, right: 30, top: 30, bottom: 50};
+            this.MDSSPSvg = d3.select('#clusteringOverviewMDSScatterplots')
+                .append('svg')
+                .attr('id', 'clusteringOverviewMDSScatterplotsSVG')
+                .attr('width', width)
+                .attr('height', height)
+                .style('background-color', 'white');
+
+            let clusteringMethod = ClusteringStore.getClusteringParameters().method;
+            let dataCoords = ClusteringStore.getResultsCoordinates().dataCoord;
+            if (clusteringMethod === 'kmeans') {
+                dataCoords = dataCoords.slice(0, dataCoords.length - this.clusterCenters.length);
+            }
+            let labels = ClusteringStore.getLabels();
+
+            let xMinMax = d3.extent(dataCoords, (d) => {
+                return d[0];
+            });
+            let yMinMax = d3.extent(dataCoords, (d) => {
+                return d[1];
+            });
+            if (width / height < (xMinMax[1] - xMinMax[0]) / (yMinMax[1] - yMinMax[0])) {
+                // fit to x axis
+                let yValueRange = (xMinMax[1] - xMinMax[0]) / width * height;
+                let yRatio = yValueRange / (yMinMax[1] - yMinMax[0]);
+                this.xScale = d3.scaleLinear()
+                    .domain(xMinMax)
+                    .range([svgPadding.left, width - svgPadding.right])
+                    .nice();
+                this.yScale = d3.scaleLinear()
+                    .domain([yMinMax[0] * yRatio, yMinMax[1] * yRatio])
+                    .range([height - svgPadding.bottom, svgPadding.top])
+                    .nice();
+            } else {
+                // fit to y axis
+                let xValueRange = (yMinMax[1] - yMinMax[0]) / height * width;
+                let xRatio = xValueRange / (xMinMax[1] - xMinMax[0]);
+                this.xScale = d3.scaleLinear()
+                    .domain([xMinMax[0] * xRatio, xMinMax[1] * xRatio])
+                    .range([svgPadding.left, width - svgPadding.right])
+                    .nice();
+                this.yScale = d3.scaleLinear()
+                    .domain(yMinMax)
+                    .range([height - svgPadding.bottom, svgPadding.top])
+                    .nice();
+            }
+            let xAxis = d3.axisBottom(this.xScale)
+                .tickSize(-height + svgPadding.top + svgPadding.bottom);
+            this.xLabel = this.MDSSPSvg.append('g')
+                .attr('class', 'x_axis')
+                .attr('transform', 'translate(0,' + (height - svgPadding.bottom) + ')')
+                .call(xAxis);
+            let yAxis = d3.axisLeft(this.yScale)
+                .tickSize(-width + svgPadding.left + svgPadding.right);
+            this.yLabel = this.MDSSPSvg.append('g')
+                .attr('class', 'y_axis')
+                .attr('transform', 'translate(' + svgPadding.left + ',0)')
+                .call(yAxis);
+            this.datapoints = this.MDSSPSvg.selectAll('circle.dataPointsMDS')
+                .data(dataCoords)
+                .enter()
+                .append('circle')
+                .attr('class', 'dataPointsMDS')
+                .attr('cx', function(d) {
+                    return this.xScale(d[0]);
+                }.bind(this))
+                .attr('cy', function(d) {
+                    return this.yScale(d[1]);
+                }.bind(this))
+                .attr('r', 3)
+                .attr('fill', function(d, i) {
+                    let color = this.clusterColors[(typeof(labels[i]) === 'object')? labels[i].cluster: labels[i]];
+                    return d3.hsl(color[0], color[1], color[2]);
+                }.bind(this));
+        }
+    }
+
+    setMDSScatterplotsSize() {
+        if ($('#clusteringOverviewMDSScatterplotsSVG').length) {
+            const width = $('#clusteringResultsOverview').width();
+            let appHeaderHeight = $('#appHeader').outerHeight(true);
+            let timelineHeight = $('#clusteringTimeline').outerHeight(true);
+            const height = window.innerHeight - appHeaderHeight - timelineHeight;
+            let svgPadding = {left: 50, right: 30, top: 30, bottom: 50};
+            this.MDSSPSvg
+                .attr('width', width)
+                .attr('height', height);
+            this.xScale
+                .range([svgPadding.left, width - svgPadding.right]);
+            this.yScale
+                .range([height - svgPadding.bottom, svgPadding.top]);
+            this.xLabel.call(
+                d3.axisBottom(this.xScale)
+                    .tickSize(-height + svgPadding.top + svgPadding.bottom)
+            );
+            this.yLabel.call(
+                d3.axisLeft(this.yScale)
+                .tickSize(-width + svgPadding.left + svgPadding.right)
+            );
+            this.datapoints
+                .attr('cx', function(d) {
+                    return this.xScale(d[0]);
+                }.bind(this))
+                .attr('cy', function(d) {
+                    return this.yScale(d[1]);
+                }.bind(this));
         }
     }
 }
