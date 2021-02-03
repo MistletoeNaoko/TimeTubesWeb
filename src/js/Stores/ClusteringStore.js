@@ -22,6 +22,7 @@ class ClusteringStore extends EventEmitter {
         this.updatedSS = {};
         this.resultsCoordinates = {}; // clustersCoord, dataCoord, medoidIdx
         this.selectedCluster = -1;
+        // this.clusterOrder = [];
     }
 
     handleActions(action) {
@@ -130,6 +131,10 @@ class ClusteringStore extends EventEmitter {
 
     getResultsCoordinates() {
         return this.resultsCoordinates;
+    }
+
+    getClusterOrder() {
+        return this.clusterOrder;
     }
 
     showClusteringResults (

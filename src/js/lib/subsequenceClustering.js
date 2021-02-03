@@ -302,22 +302,22 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                 distMatrix.push([]);
                 for (let j = 0; j < subsequenceData.length; j++) {
                     distMatrix[j].push(0);
-                    distMatrix[subsequences.length + i].push(0);
+                    distMatrix[subsequenceData.length + i].push(0);
                 }
                 for (let j = 0; j < clusteringParameters.clusterNum; j++) {
-                    distMatrix[subsequences.length + i].push(0);
+                    distMatrix[subsequenceData.length + i].push(0);
                 }
             }
             for (let i = 0; i < subsequenceData.length; i++) {
                 for (let j = 0; j < clusteringParameters.clusterNum; j++) {
-                    distMatrix[i][subsequences.length + j] = distsToClusters[i][j];
-                    distMatrix[subsequences.length + j][i] = distsToClusters[i][j];
+                    distMatrix[i][subsequenceData.length + j] = distsToClusters[i][j];
+                    distMatrix[subsequenceData.length + j][i] = distsToClusters[i][j];
                 }
             }
             for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
                 for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
-                    distMatrix[subsequences.length + i][subsequences.length + j] = distsBetweenClusters[i][j];
-                    distMatrix[subsequences.length + j][subsequences.length + i] = distsBetweenClusters[i][j];
+                    distMatrix[subsequenceData.length + i][subsequenceData.length + j] = distsBetweenClusters[i][j];
+                    distMatrix[subsequenceData.length + j][subsequenceData.length + i] = distsBetweenClusters[i][j];
                 }
             }
             break;
@@ -1167,6 +1167,38 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
     let clusters = divideSSIntoClusters();
 
     clusteringScores.clusterRadiuses = clusterRadius(clusters.map(x => x.length));
+    // order clusters in the ascending order of cluster radiuses
+    let radiusOrder = [];
+    for (let i = 0; i < clusteringScores.clusterRadiuses.length; i++) {
+        radiusOrder.push([clusteringScores.clusterRadiuses[i], i]);
+    }
+    radiusOrder.sort(function(left, right) {
+        return left[0] < right[0]? -1: 1;
+    });
+    clusteringScores.clusterRadiuses.sort(function(left, right) {
+        return left < right? -1: 1;
+    });
+    // store new order
+    let newOrder = [];
+    for (let i = 0; i < clusterNum; i++) {
+        newOrder.push(i);
+    }
+    for (let i = 0; i < radiusOrder.length; i++) {
+        newOrder[radiusOrder[i][1]] = i;
+    }
+    // sort medoids in the new order
+    let sortedMedoids = [], sortedMedoidData = [];
+    for (let i = 0; i < medoids.length; i++) {
+        let dataIdx = newOrder.indexOf(i);
+        sortedMedoids.push(medoids[dataIdx]);
+        sortedMedoidData.push(medoidData[dataIdx]);
+    }
+    for (let i = 0; i < labels.length; i++) {
+        labels[i] = newOrder[labels[i]];
+    }
+    medoids = sortedMedoids;
+    medoidData = sortedMedoidData;
+
     [clusteringScores.silhouette, clusteringScores.silhouetteSS] = silhouetteCoefficient();
     clusteringScores.davisBouldin = davisBouldinIndex();
     
@@ -1581,6 +1613,38 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables) {
     let clusters = divideSSIntoClusters();
 
     clusteringScores.clusterRadiuses = clusterRadius(clusters.map(x => x.length));
+    // order clusters in the ascending order of cluster radiuses
+    let radiusOrder = [];
+    for (let i = 0; i < clusteringScores.clusterRadiuses.length; i++) {
+        radiusOrder.push([clusteringScores.clusterRadiuses[i], i]);
+    }
+    radiusOrder.sort(function(left, right) {
+        return left[0] < right[0]? -1: 1;
+    });
+    clusteringScores.clusterRadiuses.sort(function(left, right) {
+        return left < right? -1: 1;
+    });
+    // store new order
+    let newOrder = [];
+    for (let i = 0; i < clusterNum; i++) {
+        newOrder.push(i);
+    }
+    for (let i = 0; i < radiusOrder.length; i++) {
+        newOrder[radiusOrder[i][1]] = i;
+    }
+    // sort medoids in the new order
+    let sortedMedoids = [], sortedMedoidData = [];
+    for (let i = 0; i < medoids.length; i++) {
+        let dataIdx = newOrder.indexOf(i);
+        sortedMedoids.push(medoids[dataIdx]);
+        sortedMedoidData.push(medoidData[dataIdx]);
+    }
+    for (let i = 0; i < labels.length; i++) {
+        labels[i] = newOrder[labels[i]];
+    }
+    medoids = sortedMedoids;
+    medoidData = sortedMedoidData;
+
     [clusteringScores.silhouette, clusteringScores.silhouetteSS] = silhouetteCoefficient();
     clusteringScores.davisBouldin = davisBouldinIndex();
     return [medoidData, medoids, labels, clusteringScores, distMatrix];
@@ -1835,6 +1899,40 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
     let distsBetweenClusters;
 
     clusteringScores.clusterRadiuses = clusterRadius(clusters.map(x => x.length));
+    // order clusters in the ascending order of cluster radiuses
+    let radiusOrder = [];
+    for (let i = 0; i < clusteringScores.clusterRadiuses.length; i++) {
+        radiusOrder.push([clusteringScores.clusterRadiuses[i], i]);
+    }
+    radiusOrder.sort(function(left, right) {
+        return left[0] < right[0]? -1: 1;
+    });
+    clusteringScores.clusterRadiuses.sort(function(left, right) {
+        return left < right? -1: 1;
+    });
+    // store new order
+    let newOrder = [];
+    for (let i = 0; i < clusterNum; i++) {
+        newOrder.push(i);
+    }
+    for (let i = 0; i < radiusOrder.length; i++) {
+        newOrder[radiusOrder[i][1]] = i;
+    }
+    // sort medoids in the new order
+    let sortedCentroids = [];
+    for (let i = 0; i < centroids.length; i++) {
+        let dataIdx = newOrder.indexOf(i);
+        sortedCentroids.push(centroids[dataIdx]);
+    }
+    for (let i = 0; i < labels.length; i++) {
+        labels[i].cluster = newOrder[labels[i].cluster];
+        let distsToClustersTmp = distsToClusters[i].slice(0, distsToClusters[i].length);
+        for (let j = 0; j < distsToClusters[i].length; j++) {
+            distsToClusters[i][j] = distsToClustersTmp[newOrder[j]];
+        }
+    }
+    centroids = sortedCentroids;
+
     [clusteringScores.silhouette, clusteringScores.silhouetteSS] = silhouetteCoefficient();
     [clusteringScores.davisBouldin, distsBetweenClusters] = davisBouldinIndex();
 
