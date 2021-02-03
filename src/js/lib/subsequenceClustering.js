@@ -1863,7 +1863,7 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
         let newCentroids = [], newLabels = [], distsToClusters;
         // step 3 and 4
         let loop = 0, maxIteration = 300;
-        while (loop < maxIteration && checkUpdates(labels, newLabels)) {
+        while (loop < maxIteration && checkUpdatesCentroids(centroids, newCentroids)) {
             if (newCentroids.length !== 0 && newLabels.length !== 0) {
                 centroids = newCentroids;
                 labels = newLabels;
@@ -1878,7 +1878,6 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
         }
         centroids = newCentroids;
         labels = newLabels;
-
         // if the total distances to clusters are smaller than the previous results
         let distSumTmp = 0;
         for (let i = 0; i < distsToClusters.length; i++) {
@@ -2758,12 +2757,38 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
     function checkUpdates(pLabels, nLabels) {
         let flag = false;
         if (pLabels.length === 0 || nLabels.length === 0) {
-            return true;
+            flag = true;
+        } else {
+            for (let i = 0; i < pLabels.length; i++) {
+                if (pLabels[i].cluster !== nLabels[i].cluster) {
+                    flag = true;
+                    break;
+                }
+            }
         }
-        for (let i = 0; i < pLabels.length; i++) {
-            if (pLabels[i].cluster !== nLabels[i].cluster) {
-                flag = true;
-                break;
+        return flag;
+    }
+    function checkUpdatesCentroids(pCentroids, nCentroids) {
+        let flag = false;
+        if (pCentroids.length === 0 || nCentroids.length === 0) {
+            flag = true;
+        } else {
+            for (let i = 0; i < pCentroids.length; i++) {
+                if (pCentroids[i].length !== nCentroids[i].length) {
+                    flag = true;
+                    return flag;
+                }
+                if (flag) break;
+                for (let j = 0; j < pCentroids[i].length; j++) {
+                    variableList.forEach(key => {
+                        let diff = nCentroids[i][j][key] - pCentroids[i][j][key];
+                        diff = Math.floor(diff * Math.pow(10, 7));
+                        if (diff !== 0) {
+                            flag = true;
+                        }
+                    });
+                }
+                if (flag) break;
             }
         }
         return flag;
