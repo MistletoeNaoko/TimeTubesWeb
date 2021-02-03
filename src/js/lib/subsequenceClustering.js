@@ -279,10 +279,39 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                         distsBetweenClusters[j][i] = distSum;
                     }
                 }
+                // add distances to medoids to distMatrix
+                // fill 0s to shortcoming parts of the distance matrix
+                for (let i = 0; i < clusteringParameters.clusterNum; i++) {
+                    distMatrix.push([]);
+                    for (let j = 0; j < subsequenceData.length; j++) {
+                        distMatrix[j].push(0);
+                        distMatrix[subsequenceData.length + i].push(0);
+                    }
+                    for (let j = 0; j < clusteringParameters.clusterNum; j++) {
+                        distMatrix[subsequenceData.length + i].push(0);
+                    }
+                }
+                for (let i = 0; i < clusteringParameters.clusterNum; i++) {
+                    for (let j = 0; j < subsequenceData.length; j++) {
+                        let distTmp = 0;
+                        for (let key in medoidIdx[i]) {
+                            distTmp += distMatrix[j][medoidIdx[i][key]][key];
+                        }
+                        distMatrix[j][subsequenceData.length + i] = distTmp;
+                        distMatrix[subsequenceData.length + i][j] = distTmp;
+                    }
+                }
+                // store distances bewteen clusters in distMatrix
+                for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
+                    for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
+                        distMatrix[subsequenceData.length + i][subsequenceData.length + j] = distsBetweenClusters[i][j];
+                        distMatrix[subsequenceData.length + j][subsequenceData.length + i] = distsBetweenClusters[i][j];
+                    }
+                }
                 // make distMatrix (distances of each variable) unified distance matrix
-                for (let i = 0; i < distMatrix.length - 1; i++) {
+                for (let i = 0; i < subsequenceData.length - 1; i++) {
                     distMatrix[i][i] = 0;
-                    for (let j = i + 1; j < distMatrix[i].length; j++) {
+                    for (let j = i + 1; j < subsequenceData.length; j++) {
                         let distSum = 0;
                         for (let key in distMatrix[i][j]) {
                             distSum += distMatrix[i][j][key];
@@ -291,7 +320,7 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                         distMatrix[j][i] = distSum;
                     }
                 }
-                distMatrix[distMatrix.length - 1][distMatrix.length - 1] = 0;
+                distMatrix[subsequenceData.length - 1][subsequenceData.length - 1] = 0;
             }
             break;
         case 'kmeans':
@@ -406,24 +435,24 @@ export function reperformClustering(data, clusteringParameters, dataLen) {
             // fill 0s to shortcoming parts of the distance matrix
             for (let i = 0; i < clusteringParameters.clusterNum; i++) {
                 distMatrix.push([]);
-                for (let j = 0; j < subsequenceData.length; j++) {
+                for (let j = 0; j < data.length; j++) {
                     distMatrix[j].push(0);
-                    distMatrix[subsequences.length + i].push(0);
+                    distMatrix[data.length + i].push(0);
                 }
                 for (let j = 0; j < clusteringParameters.clusterNum; j++) {
-                    distMatrix[subsequences.length + i].push(0);
+                    distMatrix[data.length + i].push(0);
                 }
             }
-            for (let i = 0; i < subsequenceData.length; i++) {
+            for (let i = 0; i < data.length; i++) {
                 for (let j = 0; j < clusteringParameters.clusterNum; j++) {
-                    distMatrix[i][subsequences.length + j] = distsToClusters[i][j];
-                    distMatrix[subsequences.length + j][i] = distsToClusters[i][j];
+                    distMatrix[i][data.length + j] = distsToClusters[i][j];
+                    distMatrix[data.length + j][i] = distsToClusters[i][j];
                 }
             }
             for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
                 for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
-                    distMatrix[subsequences.length + i][subsequences.length + j] = distsBetweenClusters[i][j];
-                    distMatrix[subsequences.length + j][subsequences.length + i] = distsBetweenClusters[i][j];
+                    distMatrix[data.length + i][data.length + j] = distsBetweenClusters[i][j];
+                    distMatrix[data.length + j][data.length + i] = distsBetweenClusters[i][j];
                 }
             }
             break;

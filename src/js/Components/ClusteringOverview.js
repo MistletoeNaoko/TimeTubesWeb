@@ -1128,9 +1128,10 @@ export default class ClusteringOverview extends React.Component {
                 .attr('height', height)
                 .style('background-color', 'white');
 
-            let clusteringMethod = ClusteringStore.getClusteringParameters().method;
-            let dataCoords = ClusteringStore.getResultsCoordinates().dataCoord;
-            if (clusteringMethod === 'kmeans') {
+            let clusteringParameters = ClusteringStore.getClusteringParameters();
+            let resultsCoords = ClusteringStore.getResultsCoordinates();
+            let dataCoords = resultsCoords.dataCoord;
+            if (clusteringParameters.method === 'kmeans' || (clusteringParameters.method === 'kmedoids' && clusteringParameters.medoidDefinition === 'each')) {
                 dataCoords = dataCoords.slice(0, dataCoords.length - this.clusterCenters.length);
             }
             let labels = ClusteringStore.getLabels();
@@ -1178,6 +1179,7 @@ export default class ClusteringOverview extends React.Component {
                 .attr('class', 'y_axis')
                 .attr('transform', 'translate(' + svgPadding.left + ',0)')
                 .call(yAxis);
+            // map each dataPoints on scatterplots
             this.datapoints = this.MDSSPSvg.selectAll('circle.dataPointsMDS')
                 .data(dataCoords)
                 .enter()
@@ -1194,6 +1196,16 @@ export default class ClusteringOverview extends React.Component {
                     let color = this.clusterColors[(typeof(labels[i]) === 'object')? labels[i].cluster: labels[i]];
                     return d3.hsl(color[0], color[1], color[2]);
                 }.bind(this));
+            // map cluster centers on scatterplots
+            if (clusteringParameters.method === 'kmedoids') {
+                if (clusteringParameters.medoidDefinition === 'unified') {
+
+                } else if (clusteringParameters.medoidDefinition === 'each') {
+
+                }
+            } else if (clusteringParameters.method === 'kmeans') {
+
+            }
         }
     }
 
