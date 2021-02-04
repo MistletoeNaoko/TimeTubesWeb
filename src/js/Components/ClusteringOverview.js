@@ -1244,12 +1244,21 @@ export default class ClusteringOverview extends React.Component {
             this.xLabel.call(
                 d3.axisBottom(this.xScale)
                     .tickSize(-height + svgPadding.top + svgPadding.bottom)
-            );
+            )
+            .attr('transform', 'translate(0,' + (height - svgPadding.bottom) + ')');
             this.yLabel.call(
                 d3.axisLeft(this.yScale)
                 .tickSize(-width + svgPadding.left + svgPadding.right)
-            );
+            )
+            .attr('transform', 'translate(' + svgPadding.left + ',0)');
             this.datapoints
+                .attr('cx', function(d) {
+                    return this.xScale(d[0]);
+                }.bind(this))
+                .attr('cy', function(d) {
+                    return this.yScale(d[1]);
+                }.bind(this));
+            this.clusterCenters
                 .attr('cx', function(d) {
                     return this.xScale(d[0]);
                 }.bind(this))
