@@ -1131,6 +1131,15 @@ export default class ClusteringOverview extends React.Component {
             let clusteringParameters = ClusteringStore.getClusteringParameters();
             let resultsCoords = ClusteringStore.getResultsCoordinates();
             let dataCoords = resultsCoords.dataCoord;
+            let clusterCenterCoords;
+            if (clusteringParameters.method === 'kmeans' || (clusteringParameters.method === 'kmedoids' && clusteringParameters.medoidDefinition === 'each')) {
+                clusterCenterCoords = dataCoords.slice(dataCoords.length - this.clusterCenters.length, dataCoords.length)
+            } else {
+                clusterCenterCoords = [];
+                for (let i = 0; i < resultsCoords.medoidIdx.length; i++) {
+                    clusterCenterCoords.push(dataCoords[resultsCoords.medoidIdx[i]]);
+                }
+            }
             if (clusteringParameters.method === 'kmeans' || (clusteringParameters.method === 'kmedoids' && clusteringParameters.medoidDefinition === 'each')) {
                 dataCoords = dataCoords.slice(0, dataCoords.length - this.clusterCenters.length);
             }
@@ -1197,15 +1206,24 @@ export default class ClusteringOverview extends React.Component {
                     return d3.hsl(color[0], color[1], color[2]);
                 }.bind(this));
             // map cluster centers on scatterplots
-            if (clusteringParameters.method === 'kmedoids') {
-                if (clusteringParameters.medoidDefinition === 'unified') {
-
-                } else if (clusteringParameters.medoidDefinition === 'each') {
-
-                }
-            } else if (clusteringParameters.method === 'kmeans') {
-
-            }
+            this.clusterCenters = this.MDSSPSvg.selectAll('circle.clusterCentersMDS')
+                .data(clusterCenterCoords)
+                .enter()
+                .append('circle')
+                .attr('class', 'clusterCentersMDS')
+                .attr('cx', function(d) {
+                    return this.xScale(d[0]);
+                }.bind(this))
+                .attr('cy', function(d) {
+                    return this.yScale(d[1]);
+                }.bind(this))
+                .attr('r', 5)
+                .attr('fill', 'white')
+                .attr('stroke', function(d, i) {
+                    let color = this.clusterColors[i];
+                    return d3.hsl(color[0], color[1], color[2]);
+                }.bind(this))
+                .attr('stroke-width', 2)
         }
     }
 
