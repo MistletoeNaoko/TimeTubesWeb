@@ -1247,6 +1247,29 @@ export default class ClusteringOverview extends React.Component {
                     return d3.hsl(color[0], color[1], color[2]);
                 }.bind(this))
                 .attr('stroke-width', 2)
+                .on('mouseover', this.onMouseOverClusterCentersMDS().bind(this))
+                .on('mouseout', this.onMouseOutClusterCentersMDS().bind(this))
+                .on('click', this.onClickClusterCentersMDS().bind(this));
+            this.clusterName = this.MDSSPSvg.selectAll('text.clusterNameLabelMDS')
+                .data(clusterCenterCoords)
+                .enter()
+                .append('text')
+                .attr('class', 'clusterNameLabelMDS')
+                .attr('x', function(d) {
+                    return this.xScale(d[0]);
+                }.bind(this))
+                .attr('y', function(d) {
+                    return this.yScale(d[1]) + 16;
+                }.bind(this))
+                .attr('fill', function(d, i) {
+                    let color = this.clusterColors[i];
+                    return d3.hsl(color[0], color[1], color[2]);
+                }.bind(this))
+                .attr('font-size', '0.8rem')
+                .attr('text-anchor', 'middle')
+                .text(function(d, i) {
+                    return 'Cluster ' + i;
+                });
         }
     }
 
@@ -1337,6 +1360,24 @@ export default class ClusteringOverview extends React.Component {
         }
     }
 
+    onMouseOverClusterCentersMDS() {
+        return function() {
+
+        };
+    }
+
+    onMouseOutClusterCentersMDS() {
+        return function() {
+
+        };
+    }
+
+    onClickClusterCentersMDS() {
+        return function() {
+
+        };
+    }
+
     setMDSScatterplotsSize() {
         if ($('#clusteringOverviewMDSScatterplotsSVG').length) {
             const width = $('#clusteringResultsOverview').width();
@@ -1373,6 +1414,13 @@ export default class ClusteringOverview extends React.Component {
                     return this.xScale(d[0]);
                 }.bind(this))
                 .attr('cy', function(d) {
+                    return this.yScale(d[1]);
+                }.bind(this));
+            this.clusterName
+                .attr('x', function(d) {
+                    return this.xScale(d[0]);
+                }.bind(this))
+                .attr('y', function(d) {
                     return this.yScale(d[1]);
                 }.bind(this));
         }
