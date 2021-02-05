@@ -1278,22 +1278,28 @@ export default class ClusteringOverview extends React.Component {
                 .attr('text-anchor', 'middle')
                 .text(function(d, i) {
                     return 'Cluster ' + i;
-                });
-            let SSCluster = [];
+                })
+                .moveToBack();
+            this.SSCluster = [];
+            let SSClusterCoords = [];
             for (let i = 0; i < this.clusterCenters.length; i++) {
-                SSCluster.push([]);
-                SSCluster[i].push([this.xScale(clusterCenterCoords[i][0]), this.yScale(clusterCenterCoords[i][1])]);
+                this.SSCluster.push([]);
+                SSClusterCoords.push([]);
+                this.SSCluster[i].push(clusterCenterCoords[i]);
+                SSClusterCoords[i].push([this.xScale(clusterCenterCoords[i][0]), this.yScale(clusterCenterCoords[i][1])]);
             }
             for (let i = 0; i < this.SSLabels.length; i++) {
                 if (typeof(this.SSLabels[i]) === 'object') {
-                    SSCluster[this.SSLabels[i].cluster].push([this.xScale(dataCoords[i][0]), this.yScale(dataCoords[i][1])]);
+                    this.SSCluster[this.SSLabels[i].cluster].push(dataCoords[i]);
+                    SSClusterCoords[this.SSLabels[i].cluster].push([this.xScale(dataCoords[i][0]), this.yScale(dataCoords[i][1])]);
                 } else {
-                    SSCluster[this.SSLabels[i]].push([this.xScale(dataCoords[i][0]), this.yScale(dataCoords[i][1])]);
+                    this.SSCluster[this.SSLabels[i]].push(dataCoords[i]);
+                    SSClusterCoords[this.SSLabels[i]].push([this.xScale(dataCoords[i][0]), this.yScale(dataCoords[i][1])]);
                 }
             }
             this.hulls = [];
             for (let i = 0; i < this.clusterCenters.length; i++) {
-                let hullData = d3.polygonHull(SSCluster[i]);
+                let hullData = d3.polygonHull(SSClusterCoords[i]);
                 this.hulls.push(
                     this.MDSSPSvg.append('path')
                     .attr('class', 'hull')
@@ -1483,8 +1489,20 @@ export default class ClusteringOverview extends React.Component {
                     return this.xScale(d[0]);
                 }.bind(this))
                 .attr('y', function(d) {
-                    return this.yScale(d[1]);
+                    return this.yScale(d[1]) + 16;
                 }.bind(this));
+            let SSClusterCoords = [];
+            for (let i = 0; i < this.SSCluster.length; i++) {
+                SSClusterCoords.push([]);
+                for (let j = 0; j < this.SSCluster[i].length; j++) {
+                    SSClusterCoords[i].push([this.xScale(this.SSCluster[i][j][0]), this.yScale(this.SSCluster[i][j][1])]);
+                }
+            }
+            for (let i = 0; i < this.hulls.length; i++) {
+                let hullData = d3.polygonHull(SSClusterCoords[i]);
+                this.hulls[i]
+                    .attr('d', hullData === null? null: 'M' + hullData.join('L') + 'Z');
+            }
         }
     }
 }
