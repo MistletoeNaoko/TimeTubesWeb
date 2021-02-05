@@ -20,6 +20,15 @@ d3.selection.prototype.moveToFront =
     function() {
         return this.each(function(){this.parentNode.appendChild(this);});
     };
+d3.selection.prototype.moveToBack = function() {  
+    return this.each(function() { 
+        var firstChild = this.parentNode.firstChild; 
+        if (firstChild) { 
+            this.parentNode.insertBefore(this, firstChild); 
+        } 
+    });
+};
+
 export default class ClusteringOverview extends React.Component {
     constructor() {
         super();
@@ -1200,7 +1209,7 @@ export default class ClusteringOverview extends React.Component {
                 .attr('transform', 'translate(' + svgPadding.left + ',0)')
                 .call(yAxis);
             // map each dataPoints on scatterplots
-            this.datapoints = this.MDSSPSvg.selectAll('circle.dataPointsMDS')
+            this.dataPlots = this.MDSSPSvg.selectAll('circle.dataPointsMDS')
                 .data(dataCoords)
                 .enter()
                 .append('circle')
@@ -1226,7 +1235,7 @@ export default class ClusteringOverview extends React.Component {
                 .on('mouseout', this.onMouseOutDataPointsMDS().bind(this))
                 .on('click', this.onClickDataPointsMDS().bind(this));
             // map cluster centers on scatterplots
-            this.clusterCenters = this.MDSSPSvg.selectAll('circle.clusterCentersMDS')
+            this.clusterCenterPlots = this.MDSSPSvg.selectAll('circle.clusterCentersMDS')
                 .data(clusterCenterCoords)
                 .enter()
                 .append('circle')
@@ -1250,7 +1259,7 @@ export default class ClusteringOverview extends React.Component {
                 .on('mouseover', this.onMouseOverClusterCentersMDS().bind(this))
                 .on('mouseout', this.onMouseOutClusterCentersMDS().bind(this))
                 .on('click', this.onClickClusterCentersMDS().bind(this));
-            this.clusterName = this.MDSSPSvg.selectAll('text.clusterNameLabelMDS')
+            this.clusterNameLabels = this.MDSSPSvg.selectAll('text.clusterNameLabelMDS')
                 .data(clusterCenterCoords)
                 .enter()
                 .append('text')
@@ -1270,6 +1279,35 @@ export default class ClusteringOverview extends React.Component {
                 .text(function(d, i) {
                     return 'Cluster ' + i;
                 });
+            let SSCluster = [];
+            for (let i = 0; i < this.clusterCenters.length; i++) {
+                SSCluster.push([]);
+                SSCluster[i].push([this.xScale(clusterCenterCoords[i][0]), this.yScale(clusterCenterCoords[i][1])]);
+            }
+            for (let i = 0; i < this.SSLabels.length; i++) {
+                if (typeof(this.SSLabels[i]) === 'object') {
+                    SSCluster[this.SSLabels[i].cluster].push([this.xScale(dataCoords[i][0]), this.yScale(dataCoords[i][1])]);
+                } else {
+                    SSCluster[this.SSLabels[i]].push([this.xScale(dataCoords[i][0]), this.yScale(dataCoords[i][1])]);
+                }
+            }
+            this.hulls = [];
+            for (let i = 0; i < this.clusterCenters.length; i++) {
+                let hullData = d3.polygonHull(SSCluster[i]);
+                this.hulls.push(
+                    this.MDSSPSvg.append('path')
+                    .attr('class', 'hull')
+                    .attr('id', 'hull_' + i)
+                    .attr('fill', function(d) {
+                        let color = this.clusterColors[i];
+                        return d3.hsl(color[0], 0.8, 0.8);
+                    }.bind(this))
+                    .style('opacity', 0.2)
+                    .attr('d', hullData === null? null: 'M' + hullData.join('L') + 'Z')
+                    .style('visibility', 'hidden')
+                    .moveToBack()
+                );
+            }
         }
     }
 
@@ -1362,13 +1400,21 @@ export default class ClusteringOverview extends React.Component {
 
     onMouseOverClusterCentersMDS() {
         return function() {
-
+            let targetId = d3.event.target.id;
+            if (targetId) {
+                let clusterId = Number(targetId.split('_')[1]);
+                this.hulls[clusterId].style('visibility', 'visible');
+            }
         };
     }
 
     onMouseOutClusterCentersMDS() {
         return function() {
-
+            let targetId = d3.event.target.id;
+            if (targetId) {
+                let clusterId = Number(targetId.split('_')[1]);
+                this.hulls[clusterId].style('visibility', 'hidden');
+            }
         };
     }
 
@@ -1402,21 +1448,21 @@ export default class ClusteringOverview extends React.Component {
                 .tickSize(-width + svgPadding.left + svgPadding.right)
             )
             .attr('transform', 'translate(' + svgPadding.left + ',0)');
-            this.datapoints
+            this.dataPlots
                 .attr('cx', function(d) {
                     return this.xScale(d[0]);
                 }.bind(this))
                 .attr('cy', function(d) {
                     return this.yScale(d[1]);
                 }.bind(this));
-            this.clusterCenters
+            this.clusterCenterPlots
                 .attr('cx', function(d) {
                     return this.xScale(d[0]);
                 }.bind(this))
                 .attr('cy', function(d) {
                     return this.yScale(d[1]);
                 }.bind(this));
-            this.clusterName
+            this.clusterNameLabels
                 .attr('x', function(d) {
                     return this.xScale(d[0]);
                 }.bind(this))
