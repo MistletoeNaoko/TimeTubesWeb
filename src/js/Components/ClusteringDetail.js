@@ -1,6 +1,7 @@
 import React from 'react';
 import * as d3 from 'd3';
 import {selectMenu} from '../Actions/AppAction';
+import * as domActions from '../lib/domActions';
 import {showTimeTubesOfTimeSlice} from '../Actions/TimeTubesAction';
 import * as ClusteringAction from '../Actions/ClusteringAction';
 import ClusteringStore from '../Stores/ClusteringStore';
@@ -951,54 +952,67 @@ export default class ClusteringDetail extends React.Component {
                 });
                 tooltip.css('display', 'block');
 
-                // highlight histogram
-                d3.select('#SSLengthBar_' + Math.floor(period[1] - period[0]))
-                    .attr('stroke', 'black')
-                    .attr('stroke-width', 1.5);
 
-                // highlight histogram for clusters before/after the selected cluster 
+                let beforeAfter = [undefined, undefined];
                 if (i - 1 >= 0) {
-                    if (typeof(this.labels[i - 1]) === 'object') {
-                        d3.select('#clusterBeforeHistogramRects_' + this.labels[i - 1].cluster)
-                            .attr('stroke', 'black')
-                            .attr('stroke-width', 1.5);
-                    } else {
-                        d3.select('#clusterBeforeHistogramRects_' + this.labels[i - 1])
-                            .attr('stroke', 'black')
-                            .attr('stroke-width', 1.5);
+                    if (this.subsequences[i - 1].id === this.subsequences[i].id) {
+                        beforeAfter[0] = typeof(this.labels[i - 1]) === 'object'? this.labels[i - 1].cluster: this.labels[i - 1];
                     }
                 }
                 if (i + 1 < this.labels.length) {
-                    if (typeof(this.labels[i + 1]) === 'object') {
-                        d3.select('#clusterAfterHistogramRects_' + this.labels[i + 1].cluster)
-                            .attr('stroke', 'black')
-                            .attr('stroke-width', 1.5);
-                    } else {
-                        d3.select('#clusterAfterHistogramRects_' + this.labels[i + 1])
-                            .attr('stroke', 'black')
-                            .attr('stroke-width', 1.5);
+                    if (this.subsequences[i].id === this.subsequences[i + 1].id) {
+                        beforeAfter[1] = typeof(this.labels[i + 1]) === 'object'? this.labels[i + 1].cluster: this.labels[i + 1];
                     }
                 }
+                domActions.highlightCorrespondingElemInClusteringResults(dataId, SSId, period, beforeAfter);
+                // // highlight histogram
+                // d3.select('#SSLengthBar_' + Math.floor(period[1] - period[0]))
+                //     .attr('stroke', 'black')
+                //     .attr('stroke-width', 1.5);
 
-                // highlight cluster center line chart
-                d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
-                    .attr('stroke', '#f26418');
+                // // highlight histogram for clusters before/after the selected cluster 
+                // if (i - 1 >= 0) {
+                //     if (typeof(this.labels[i - 1]) === 'object') {
+                //         d3.select('#clusterBeforeHistogramRects_' + this.labels[i - 1].cluster)
+                //             .attr('stroke', 'black')
+                //             .attr('stroke-width', 1.5);
+                //     } else {
+                //         d3.select('#clusterBeforeHistogramRects_' + this.labels[i - 1])
+                //             .attr('stroke', 'black')
+                //             .attr('stroke-width', 1.5);
+                //     }
+                // }
+                // if (i + 1 < this.labels.length) {
+                //     if (typeof(this.labels[i + 1]) === 'object') {
+                //         d3.select('#clusterAfterHistogramRects_' + this.labels[i + 1].cluster)
+                //             .attr('stroke', 'black')
+                //             .attr('stroke-width', 1.5);
+                //     } else {
+                //         d3.select('#clusterAfterHistogramRects_' + this.labels[i + 1])
+                //             .attr('stroke', 'black')
+                //             .attr('stroke-width', 1.5);
+                //     }
+                // }
 
-                // highlight a subsequence in the timeline
-                d3.select('#clusterLine_' + dataId + '_' + SSId)
-                    .attr('stroke', 'black')
-                    .attr('stroke-width', 1.5)
-                    .moveToFront();
+                // // highlight cluster center line chart
+                // d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
+                //     .attr('stroke', '#f26418');
 
-                // highlight sparklines in the filtering process panel
-                if ($('#subsequenceTr_' + dataId + '_' + SSId).length) {
-                    d3.select('#subsequenceTr_' + dataId + '_' + SSId)
-                        .classed('table-active', true);
-                }
-                if ($('#updatedSubsequenceTr_' + dataId + '_' + SSId).length) {
-                    d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
-                        .classed('table-active', true);
-                }
+                // // highlight a subsequence in the timeline
+                // d3.select('#clusterLine_' + dataId + '_' + SSId)
+                //     .attr('stroke', 'black')
+                //     .attr('stroke-width', 1.5)
+                //     .moveToFront();
+
+                // // highlight sparklines in the filtering process panel
+                // if ($('#subsequenceTr_' + dataId + '_' + SSId).length) {
+                //     d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                //         .classed('table-active', true);
+                // }
+                // if ($('#updatedSubsequenceTr_' + dataId + '_' + SSId).length) {
+                //     d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
+                //         .classed('table-active', true);
+                // }
             }
         };
     }
@@ -1013,33 +1027,34 @@ export default class ClusteringDetail extends React.Component {
                 // hide the tooltip
                 $('#tooltipClusteringResults').css('display', 'none');
                 
-                // remove stroke from histogram
-                d3.selectAll('.SSLengthBar')
-                    .attr('stroke-width', 0);
+                domActions.removeHighlightCorrespondingElemInClusteringResults(dataId, SSId);
+                // // remove stroke from histogram
+                // d3.selectAll('.SSLengthBar')
+                //     .attr('stroke-width', 0);
 
-                // remove stroke from histogram for clusters before/after the selected cluster
-                d3.selectAll('#clusterBeforeHistogramRects rect')
-                    .attr('stroke-width', 0);
-                d3.selectAll('#clusterAfterHistogramRects rect')
-                    .attr('stroke-width', 0);
+                // // remove stroke from histogram for clusters before/after the selected cluster
+                // d3.selectAll('#clusterBeforeHistogramRects rect')
+                //     .attr('stroke-width', 0);
+                // d3.selectAll('#clusterAfterHistogramRects rect')
+                //     .attr('stroke-width', 0);
 
-                // make a highlighted path in cluster center line chart lightgray
-                d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
-                    .attr('stroke', 'lightgray');
+                // // make a highlighted path in cluster center line chart lightgray
+                // d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
+                //     .attr('stroke', 'lightgray');
 
-                // remove highlight from the timeline
-                d3.select('#clusterLine_' + dataId + '_' + SSId)
-                    .attr('stroke-width', 0);
+                // // remove highlight from the timeline
+                // d3.select('#clusterLine_' + dataId + '_' + SSId)
+                //     .attr('stroke-width', 0);
 
-                // highlight sparklines in the filtering process panel
-                if ($('#subsequenceTr_' + dataId + '_' + SSId).length) {
-                    d3.select('#subsequenceTr_' + dataId + '_' + SSId)
-                        .classed('table-active', false);
-                }
-                if ($('#updatedSubsequenceTr_' + dataId + '_' + SSId).length) {
-                    d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
-                        .classed('table-active', false);
-                }
+                // // highlight sparklines in the filtering process panel
+                // if ($('#subsequenceTr_' + dataId + '_' + SSId).length) {
+                //     d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+                //         .classed('table-active', false);
+                // }
+                // if ($('#updatedSubsequenceTr_' + dataId + '_' + SSId).length) {
+                //     d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
+                //         .classed('table-active', false);
+                // }
             }
         };
     }

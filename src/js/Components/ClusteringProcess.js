@@ -1,5 +1,6 @@
 import React from 'react';
 import * as d3 from 'd3';
+import * as domActions from '../lib/domActions';
 import {reperformClustering} from '../lib/subsequenceClustering';
 import {selectMenu} from '../Actions/AppAction';
 import {showTimeTubesOfTimeSlice} from '../Actions/TimeTubesAction';
@@ -760,33 +761,27 @@ export default class ClusteringProcess extends React.Component {
                 });
                 tooltip.css('display', 'block');
 
-                // highlight sparklines in the filtering process panel
-                if ($('#updatedSubsequenceTr_' + dataId + '_' + SSId).length) {
-                    d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
-                        .classed('table-active', true);
+                let i = 0, SSInClustering = false;
+                for (i = 0; i < this.subsequences.length; i++) {
+                    if (this.subsequences[i].id === dataId && this.subsequences[i].idx === SSId) {
+                        SSInClustering = true;
+                        break;
+                    }
                 }
-
-                // highlight SS on the timeline
-                if ($('#clusterLine_' + dataId + '_' + SSId).length) {
-                    d3.select('#clusterLine_' + dataId + '_' + SSId)
-                        .attr('stroke', 'black')
-                        .attr('stroke-width', 1.5)
-                        .moveToFront();
+                let beforeAfter = [undefined, undefined];
+                if (SSInClustering) {
+                    if (i - 1 >= 0) {
+                        if (this.subsequences[i - 1].id === this.subsequences[i].id) {
+                            beforeAfter[0] = typeof(this.labels[i - 1]) === 'object'? this.labels[i - 1].cluster: this.labels[i - 1];
+                        }
+                    }
+                    if (i + 1 < this.labels.length) {
+                        if (this.subsequences[i].id === this.subsequences[i + 1].id) {
+                            beforeAfter[1] = typeof(this.labels[i + 1]) === 'object'? this.labels[i + 1].cluster: this.labels[i + 1];
+                        }
+                    }
                 }
-
-                // highlight the clustering detail panel if the currently focused cluster is the cluster of the selected SS
-                if ($('#subsequenceDetailTr_' + dataId + '_' + SSId).length > 0) {
-                    // highlight cluster center line chart
-                    d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
-                        .attr('stroke', '#f26418');
-                    // highlight histogram
-                    d3.select('#SSLengthBar_' + Math.floor(period[1] - period[0]))
-                        .attr('stroke', 'black')
-                        .attr('stroke-width', 1.5);
-                    // highlight sparkline
-                    d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
-                        .classed('table-active', true);
-                }
+                domActions.highlightCorrespondingElemInClusteringResults(dataId, SSId, period, beforeAfter);
             }
         };
     }
@@ -809,30 +804,7 @@ export default class ClusteringProcess extends React.Component {
                 // hide the tooltip
                 $('#tooltipClusteringResults').css('display', 'none');
 
-                // remove highlight sparklines in the filtering process panel
-                if ($('#updatedSubsequenceTr_' + dataId + '_' + SSId).length) {
-                    d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
-                        .classed('table-active', false);
-                }
-
-                // remove highlight from timeline
-                if ($('#clusterLine_' + dataId + '_' + SSId).length) {
-                    d3.select('#clusterLine_' + dataId + '_' + SSId)
-                        .attr('stroke-width', 0);
-                }
-
-                // remove highlights from clustering detail panel if the currently focued cluster coincides with the selected SS's cluster
-                if ($('#subsequenceDetailTr_' + dataId + '_' + SSId).length > 0) {
-                    // remove highlight from cluster center line chart
-                    d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
-                        .attr('stroke', 'lightgray');
-                    // remove highlight from histogram
-                    d3.selectAll('.SSLengthBar')
-                        .attr('stroke-width', 0);
-                    // remove highlight from sparkline
-                    d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
-                        .classed('table-active', false);
-                }
+                domActions.removeHighlightCorrespondingElemInClusteringResults(dataId, SSId);
             }
         };
     }
@@ -933,33 +905,27 @@ export default class ClusteringProcess extends React.Component {
                 });
                 tooltip.css('display', 'block');
 
-                // highlight sparklines in the filtering process panel
-                if ($('#subsequenceTr_' + dataId + '_' + SSId).length) {
-                    d3.select('#subsequenceTr_' + dataId + '_' + SSId)
-                        .classed('table-active', true);
+                let i = 0, SSInClustering = false;
+                for (i = 0; i < this.subsequences.length; i++) {
+                    if (this.subsequences[i].id === dataId && this.subsequences[i].idx === SSId) {
+                        SSInClustering = true;
+                        break;
+                    }
                 }
-
-                // highlight SS on the timeline
-                if ($('#clusterLine_' + dataId + '_' + SSId).length) {
-                    d3.select('#clusterLine_' + dataId + '_' + SSId)
-                        .attr('stroke', 'black')
-                        .attr('stroke-width', 1.5)
-                        .moveToFront();
+                let beforeAfter = [undefined, undefined];
+                if (SSInClustering) {
+                    if (i - 1 >= 0) {
+                        if (this.subsequences[i - 1].id === this.subsequences[i].id) {
+                            beforeAfter[0] = typeof(this.labels[i - 1]) === 'object'? this.labels[i - 1].cluster: this.labels[i - 1];
+                        }
+                    }
+                    if (i + 1 < this.labels.length) {
+                        if (this.subsequences[i].id === this.subsequences[i + 1].id) {
+                            beforeAfter[1] = typeof(this.labels[i + 1]) === 'object'? this.labels[i + 1].cluster: this.labels[i + 1];
+                        }
+                    }
                 }
-
-                // highlight the clustering detail panel if the currently focused cluster is the cluster of the selected SS
-                if ($('#subsequenceDetailTr_' + dataId + '_' + SSId).length > 0) {
-                    // highlight cluster center line chart
-                    d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
-                        .attr('stroke', '#f26418');
-                    // highlight histogram
-                    d3.select('#SSLengthBar_' + Math.floor(period[1] - period[0]))
-                        .attr('stroke', 'black')
-                        .attr('stroke-width', 1.5);
-                    // highlight sparkline
-                    d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
-                        .classed('table-active', true);
-                }
+                domActions.highlightCorrespondingElemInClusteringResults(dataId, SSId, period, beforeAfter);
             }
         };
     }
@@ -982,30 +948,8 @@ export default class ClusteringProcess extends React.Component {
                 // hide the tooltip
                 $('#tooltipClusteringResults').css('display', 'none');
 
-                // remove highlight sparklines in the filtering process panel
-                if ($('#subsequenceTr_' + dataId + '_' + SSId).length) {
-                    d3.select('#subsequenceTr_' + dataId + '_' + SSId)
-                        .classed('table-active', false);
-                }
 
-                // remove highlight from timeline
-                if ($('#clusterLine_' + dataId + '_' + SSId).length) {
-                    d3.select('#clusterLine_' + dataId + '_' + SSId)
-                        .attr('stroke-width', 0);
-                }
-
-                // remove highlights from clustering detail panel if the currently focued cluster coincides with the selected SS's cluster
-                if ($('#subsequenceDetailTr_' + dataId + '_' + SSId).length > 0) {
-                    // remove highlight from cluster center line chart
-                    d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
-                        .attr('stroke', 'lightgray');
-                    // remove highlight from histogram
-                    d3.selectAll('.SSLengthBar')
-                        .attr('stroke-width', 0);
-                    // remove highlight from sparkline
-                    d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
-                        .classed('table-active', false);
-                }
+                domActions.removeHighlightCorrespondingElemInClusteringResults(dataId, SSId);
             }
         };
     }

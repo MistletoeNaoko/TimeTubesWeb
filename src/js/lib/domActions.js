@@ -1,3 +1,9 @@
+import * as d3 from 'd3';
+
+d3.selection.prototype.moveToFront =
+    function() {
+        return this.each(function(){this.parentNode.appendChild(this);});
+    };
 export function toggleExtractionMenu(display) {
     let current = $('#extractionMainMenu').css('display');
     if (display === 'none' || current === 'block') {
@@ -102,4 +108,93 @@ export function displayLoading(parentId) {
 
 export function removeLoading() {
     $('#loading').remove();
+}
+
+export function highlightCorrespondingElemInClusteringResults(dataId, SSId, period, beforeAfter) {
+    // highlight SS on the timeline
+    d3.select('#clusterLine_' + dataId + '_' + SSId)
+    .attr('stroke', 'black')
+    .attr('stroke-width', 1.5)
+    .moveToFront();
+
+    // highlight the clustering detail panel if the currently focused cluster is the cluster of the selected SS
+    if ($('#subsequenceDetailTr_' + dataId + '_' + SSId).length > 0) {
+        // highlight cluster center line chart
+        d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
+            .attr('stroke', '#f26418');
+        // highlight histogram
+        d3.select('#SSLengthBar_' + Math.floor(period[1] - period[0]))
+            .attr('stroke', 'black')
+            .attr('stroke-width', 1.5);
+        // highlight sparkline
+        d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
+            .classed('table-active', true);
+        // highlight histogram for clusters before/after the selected cluster 
+        if (typeof(beforeAfter[0]) !== 'undefined') {
+            d3.select('#clusterBeforeHistogramRects_' + beforeAfter[0])
+                .attr('stroke', 'black')
+                .attr('stroke-width', 1.5);
+        }
+        if (typeof(beforeAfter[1]) !== 'undefined') {
+            d3.select('#clusterAfterHistogramRects_' + beforeAfter[1])
+                .attr('stroke', 'black')
+                .attr('stroke-width', 1.5);
+        }
+    }
+
+    // highlight sparklines in the filtering process panel
+    if ($('#subsequenceTr_' + dataId + '_' + SSId).length) {
+        d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+            .classed('table-active', true);
+    }
+    if ($('#updatedSubsequenceTr_' + dataId + '_' + SSId).length) {
+        d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
+            .classed('table-active', true);
+    }
+
+    // highlight data points on MDS scatterplot
+    d3.select('#dataPointsMDS_' + dataId + '_' + SSId)
+        .attr('r', 4)
+        .attr('stroke', 'black')
+        .attr('stroke-width', 1)
+        .moveToFront();
+}
+
+export function removeHighlightCorrespondingElemInClusteringResults(dataId, SSId) {
+    // remove highlight from timeline
+    d3.select('#clusterLine_' + dataId + '_' + SSId)
+    .attr('stroke-width', 0);
+
+    // remove highlights from clustering detail panel if the currently focued cluster coincides with the selected SS's cluster
+    if ($('#subsequenceDetailTr_' + dataId + '_' + SSId).length > 0) {
+        // remove highlight from cluster center line chart
+        d3.selectAll('.clusterMemberLineChart_' + dataId + '_' + SSId)
+            .attr('stroke', 'lightgray');
+        // remove highlight from histogram
+        d3.selectAll('.SSLengthBar')
+            .attr('stroke-width', 0);
+        // remove highlight from sparkline
+        d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
+            .classed('table-active', false);
+        // remove stroke from histogram for clusters before/after the selected cluster
+        d3.selectAll('#clusterBeforeHistogramRects rect')
+            .attr('stroke-width', 0);
+        d3.selectAll('#clusterAfterHistogramRects rect')
+            .attr('stroke-width', 0);
+    }
+
+    // remove highlight sparklines in the filtering process panel
+    if ($('#subsequenceTr_' + dataId + '_' + SSId).length) {
+        d3.select('#subsequenceTr_' + dataId + '_' + SSId)
+            .classed('table-active', false);
+    }
+    if ($('#updatedSubsequenceTr_' + dataId + '_' + SSId).length) {
+        d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
+            .classed('table-active', false);
+    }
+
+    // remove highlight of data points on MDS scatterplot
+    d3.select('#dataPointsMDS_' + dataId + '_' + SSId)
+    .attr('r', 3)
+    .attr('stroke-width', 0);
 }
