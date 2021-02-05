@@ -1404,6 +1404,14 @@ export default class ClusteringOverview extends React.Component {
             if (targetId) {
                 let clusterId = Number(targetId.split('_')[1]);
                 this.hulls[clusterId].style('visibility', 'visible');
+                d3.selectAll('circle.dataPointsMDS')
+                    .style('opacity', 0.3);
+                d3.selectAll('circle.clusterCentersMDS')
+                    .style('opacity', 0.3);
+                d3.selectAll('circle.dataPointsMDS_' + clusterId)
+                    .style('opacity', 1);
+                d3.select('#clusterCentersMDS_' + clusterId)
+                    .style('opacity', 1);
             }
         };
     }
@@ -1414,13 +1422,21 @@ export default class ClusteringOverview extends React.Component {
             if (targetId) {
                 let clusterId = Number(targetId.split('_')[1]);
                 this.hulls[clusterId].style('visibility', 'hidden');
+                d3.selectAll('circle.dataPointsMDS')
+                    .style('opacity', 1);
+                d3.selectAll('circle.clusterCentersMDS')
+                    .style('opacity', 1);
             }
         };
     }
 
     onClickClusterCentersMDS() {
         return function() {
-
+            if (d3.event.target) {
+                let targetId = d3.event.target.id;
+                let clusterNum = Number(targetId.split('_')[1]);
+                ClusteringAction.showClusterDetails(clusterNum);
+            }
         };
     }
 
