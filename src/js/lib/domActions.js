@@ -127,6 +127,8 @@ export function highlightCorrespondingElemInClusteringResults(dataId, SSId, peri
             .attr('stroke', 'black')
             .attr('stroke-width', 1.5);
         // highlight sparkline
+        d3.selectAll('tr.subsequenceDetailTr')
+            .classed('table-active', false);
         d3.select('#subsequenceDetailTr_' + dataId + '_' + SSId)
             .classed('table-active', true);
         // highlight histogram for clusters before/after the selected cluster 
@@ -144,10 +146,14 @@ export function highlightCorrespondingElemInClusteringResults(dataId, SSId, peri
 
     // highlight sparklines in the filtering process panel
     if ($('#subsequenceTr_' + dataId + '_' + SSId).length) {
+        d3.selectAll('tr.subsequenceTr')
+            .classed('table-active', false);
         d3.select('#subsequenceTr_' + dataId + '_' + SSId)
             .classed('table-active', true);
     }
     if ($('#updatedSubsequenceTr_' + dataId + '_' + SSId).length) {
+        d3.selectAll('tr.updatedSubsequenceTr')
+            .classed('table-active', false);
         d3.select('#updatedSubsequenceTr_' + dataId + '_' + SSId)
             .classed('table-active', true);
     }

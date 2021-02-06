@@ -442,6 +442,7 @@ export default class ClusteringProcess extends React.Component {
                 }
                 trItems.push(
                     <tr id={'subsequenceTr_' + dataId + '_' + SSId}
+                        className='subsequenceTr'
                         key={'subsequenceTr_' + dataId + '_' + SSId}
                         style={{width: tableWidth, height: cellHeight}}
                         onMouseOver={this.onMouseOverFilteringStepSSRow().bind(this)}
@@ -527,6 +528,7 @@ export default class ClusteringProcess extends React.Component {
                 }
                 trItems.push(
                     <tr id={'updatedSubsequenceTr_' + dataId + '_' + SSId}
+                        className='updatedSubsequenceTr'
                         key={'updatedSubsequenceTr_' + dataId + '_' + SSId}
                         style={{width: tableWidth, height: cellHeight}}
                         onMouseOver={this.onMouseOverUpdatedSSRow().bind(this)}
@@ -744,13 +746,14 @@ export default class ClusteringProcess extends React.Component {
                 }
 
                 // show detail information of the subsequence on a tooltip
-                let tooltip = $('#tooltipClusteringResults');
+                let tooltip = $('#tooltipClusteringResults'),
+                    tooltipTable = $('#tooltipClusteringResultsTable');
                 let fileName = DataStore.getFileName(dataId);
                 let period = [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z];
                 let dataPointNum = data.dataPoints.length;
                 let mouseX = d.clientX + 5;
                 let mouseY = window.innerHeight - d.clientY + 5;
-                tooltip.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                tooltipTable.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
                     '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
                     '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
                 tooltip.css({
@@ -888,13 +891,14 @@ export default class ClusteringProcess extends React.Component {
                 }
 
                 // show detail information of the subsequence on a tooltip
-                let tooltip = $('#tooltipClusteringResults');
+                let tooltip = $('#tooltipClusteringResults'),
+                    tooltipTable = $('#tooltipClusteringResultsTable');
                 let fileName = DataStore.getFileName(dataId);
                 let period = [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z];
                 let dataPointNum = data.dataPoints.length;
                 let mouseX = d.clientX + 5;
                 let mouseY = window.innerHeight - d.clientY + 5;
-                tooltip.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                tooltipTable.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
                     '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
                     '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
                 tooltip.css({

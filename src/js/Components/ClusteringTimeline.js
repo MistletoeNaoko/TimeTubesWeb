@@ -250,7 +250,8 @@ export default class ClusteringTimeline extends React.Component {
             // show tooltip
             let targetId = d3.event.target.id;
             if (targetId) {
-                let tooltip = $('#tooltipClusteringResults');
+                let tooltip = $('#tooltipClusteringResults'),
+                    tooltipTable = $('#tooltipClusteringResultsTable');
                 let targetEle = targetId.split('_');
                 let dataId = targetEle[1],
                     SSId = Number(targetEle[2]);
@@ -278,7 +279,7 @@ export default class ClusteringTimeline extends React.Component {
                     mouseX = d3.event.clientX - resultsPanelOffset.left + 5;
                     mouseY = d3.event.clientY + 5;//$(window).scrollTop() + d.clientY + 2;
                 }
-                tooltip.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                tooltipTable.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
                     '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
                     '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
                 tooltip.css({

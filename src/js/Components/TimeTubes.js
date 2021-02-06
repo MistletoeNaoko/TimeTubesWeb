@@ -6,6 +6,7 @@ import * as ScatterplotsAction from '../Actions/ScatterplotsAction';
 import * as DataAction from '../Actions/DataAction';
 import * as FeatureAction from '../Actions/FeatureAction';
 import * as dataLib from '../lib/dataLib';
+import AppStore from '../Stores/AppStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
@@ -39,6 +40,7 @@ export default class TimeTubes extends React.Component{
         this.rotationPeriod = null;
         this.wheelInterval = 1;
         this.colorEncodingOption = {hue: 'default', value: 'default'};
+        this.currentTubePos = undefined;
         // set plot color
         if (this.data.merge) {
             this.plotColor = [];
@@ -109,6 +111,7 @@ export default class TimeTubes extends React.Component{
         this.renderer.domElement.className = 'TimeTubes_viewport';
         this.canvas = this.renderer.domElement;
         this.initQBEView();
+        this.initClusteringResultsView();
 
         // assign a canvas with the name of 'TimeTubes_viewport_ + this.id' to div element
         this.mount.appendChild(this.renderer.domElement);
@@ -165,6 +168,14 @@ export default class TimeTubes extends React.Component{
         this.drawComment();
         this.drawPeriodMarker();
 
+        AppStore.on('selectMenu', (menu) => {
+            if (menu === 'visualization') {
+                this.tubeGroup.position.z = this.currentTubePos;
+                this.currentTubePos = undefined;
+            } else if (AppStore.getPreviousMenu() === 'visualization' && menu !== 'visualization') {
+                this.currentTubePos = this.tubeGroup.position.z;
+            }
+        });
         DataStore.on('updatePrivateComment', () => {
             this.updateComment();
         });
@@ -492,7 +503,14 @@ export default class TimeTubes extends React.Component{
             let subsequences = ClusteringStore.getSubsequences();
             let labels = ClusteringStore.getLabels();
             let colors = ClusteringStore.getClusterColors();
-            this.showClusteringResults(subsequences, labels, colors);
+            // TODO: もう少しまともな表示方法を検討！！
+            // this.showClusteringResults(subsequences, labels, colors);
+            this.setClusteringResultsView();
+        });
+        ClusteringStore.on('showTTViewOfSelectedSSClustering', (id, period) => {
+            if (id === this.id) {
+                this.showSelectedSSClusteringResultsView(period);
+            }
         });
     }
 
@@ -514,6 +532,7 @@ export default class TimeTubes extends React.Component{
     renderScene() {
         if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
         if (this.renderer) this.renderer.render(this.scene, this.camera);
+        if (this.ClusteringRenderer) this.ClusteringRenderer.render(this.scene, this.ClusteringCamera);
     }
 
     addControls() {
@@ -1806,5 +1825,46 @@ export default class TimeTubes extends React.Component{
         }
 
         this.clusteringGroup.rotateY(Math.PI);
+    }
+
+    initClusteringResultsView() {
+        let fov = 45, far = 2000;
+        let depth = Math.tan(fov / 2.0 * Math.PI / 180.0) * 2;
+        let aspect = 1;
+        let size_y = depth * (50);
+        let size_x = depth * (50) * aspect;
+        this.ClusteringCamera = new THREE.OrthographicCamera(
+            -size_x / 2, size_x / 2,
+            size_y / 2, -size_y / 2, 0.1,
+            far);//new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
+        this.ClusteringCamera.position.z = 50;
+        this.ClusteringCamera.lookAt(this.scene.position);
+        this.ClusteringRenderer = new THREE.WebGLRenderer();
+        this.ClusteringRenderer.setSize(150, 150);
+        this.ClusteringRenderer.setClearColor('#000000');
+        this.ClusteringRenderer.localClippingEnabled = true;
+        this.ClusteringRenderer.domElement.id = 'clusteringResultsSubsequence_' + this.id;
+        this.ClusteringRenderer.domElement.className = 'clusteringResultsSubsequence';
+        this.ClusteringRenderer.domElement.style.display = 'none';
+        this.ClusteringClippingPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+        // 各データに関してclusteringrendererが作られるから、選択されたデータ点に応じて表示非表示を切り替える
+    }
+
+    setClusteringResultsView() {
+        let dom = document.getElementById('tooltipClusteringResultsSubsequencesTTView');
+        if (dom) {
+            dom.appendChild(this.ClusteringRenderer.domElement);
+        }
+    }
+
+    showSelectedSSClusteringResultsView(period) {
+        Array.from(document.getElementsByClassName('clusteringResultsSubsequence')).forEach(ele => {
+            ele.style.display = 'none';
+        });
+        document.getElementById('clusteringResultsSubsequence_' + this.id).style.display = 'block';
+        this.ClusteringClippingPlane.constant = period[0] - this.data.spatial[0].z;
+        this.ClusteringRenderer.clippingPlanes = [this.ClusteringClippingPlane];
+        this.tubeGroup.position.z = period[0] - this.data.spatial[0].z;
+        if (this.ClusteringRenderer) this.ClusteringRenderer.render(this.scene, this.ClusteringCamera);
     }
 }

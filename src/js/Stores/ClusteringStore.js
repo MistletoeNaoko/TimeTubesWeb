@@ -64,6 +64,9 @@ class ClusteringStore extends EventEmitter {
             case 'UPDATE_SS_SELECTION':
                 this.updateSSSelection(action.selectedSS, action.updatedSS);
                 break;
+            case 'SHOW_TTVIEW_OF_SELECTED_SS_CLUSTERING':
+                this.emit('showTTViewOfSelectedSSClustering', action.id, action.period);
+                break;
             default:
                 break;
         }

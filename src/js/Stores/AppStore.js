@@ -4,7 +4,8 @@ import dispatcher from "../Dispatcher/dispatcher";
 class AppStore extends EventEmitter {
     constructor() {
         super();
-        this.menu = 'Visualization';
+        this.previousMenu = undefined;
+        this.menu = 'visualization';
     }
 
     handleActions(action) {
@@ -29,7 +30,12 @@ class AppStore extends EventEmitter {
         return this.menu;
     }
 
+    getPreviousMenu() {
+        return this.previousMenu;
+    }
+
     selectMenu(menu) {
+        this.previousMenu = this.menu;
         this.menu = menu;
         this.emit('selectMenu', menu);
     }

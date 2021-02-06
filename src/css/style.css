@@ -555,6 +555,10 @@ img.selectorIcon:active {
 .tooltipTableValues {
     text-align: right;
 }
+
+.clusteringResultsSubsequence {
+    margin: auto;
+}
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/

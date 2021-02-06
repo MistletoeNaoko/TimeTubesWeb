@@ -300,6 +300,7 @@ export default class ClusteringDetail extends React.Component {
                 }
                 trItems.push(
                     <tr id={'subsequenceDetailTr_' + dataId + '_' + SSId}
+                        className='subsequenceDetailTr'
                         key={'subsequenceDetailTr_' + dataId + '_' + SSId}
                         style={{width: tableWidth, height: cellHeight}}
                         onMouseOver={this.onMouseOverSubsequenceDetailTr().bind(this)}
@@ -921,7 +922,8 @@ export default class ClusteringDetail extends React.Component {
             // show detail information of the subsequence on the tooltip
             let targetId = d.target.id;
             if (targetId) {
-                let tooltip = $('#tooltipClusteringResults');
+                let tooltip = $('#tooltipClusteringResults'),
+                    tooltipTable = $('#tooltipClusteringResultsTable');
                 let targetEle = targetId.split('_');
                 let dataId = targetEle[1],
                     SSId = Number(targetEle[2]);
@@ -940,7 +942,7 @@ export default class ClusteringDetail extends React.Component {
                 let silhouette = this.clusteringScores.silhouetteSS[i];
                 let mouseX = window.innerWidth - d.clientX + 5;
                 let mouseY = window.innerHeight - d.clientY + 5;//$(window).scrollTop() + d.clientY + 2;
-                tooltip.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                tooltipTable.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
                     '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
                     '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr>' +
                     '<tr><td>Silhouette coefficient</td><td class="tooltipTableValues">' + formatValue(silhouette) + '</td></tr></tbody></table>');

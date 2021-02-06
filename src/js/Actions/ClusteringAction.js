@@ -48,3 +48,7 @@ export function resetClusteringResults() {
 export function updateSSSelection(selectedSS, updatedSS) {
     dispatcher.dispatch({type: 'UPDATE_SS_SELECTION', selectedSS, updatedSS});
 }
+
+export function showTTViewOfSelectedSSClusteringResults (id, period) {
+    dispatcher.dispatch({type: 'SHOW_TTVIEW_OF_SELECTED_SS_CLUSTERING', id, period});
+}
