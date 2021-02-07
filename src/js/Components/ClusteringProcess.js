@@ -785,6 +785,7 @@ export default class ClusteringProcess extends React.Component {
                     }
                 }
                 domActions.highlightCorrespondingElemInClusteringResults(dataId, SSId, period, beforeAfter);
+                ClusteringAction.showTTViewOfSelectedSSClusteringResults(Number(dataId), period);
             }
         };
     }
@@ -930,6 +931,7 @@ export default class ClusteringProcess extends React.Component {
                     }
                 }
                 domActions.highlightCorrespondingElemInClusteringResults(dataId, SSId, period, beforeAfter);
+                ClusteringAction.showTTViewOfSelectedSSClusteringResults(Number(dataId), period);
             }
         };
     }

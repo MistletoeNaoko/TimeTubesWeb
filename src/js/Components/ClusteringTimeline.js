@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import * as domActions from '../lib/domActions';
 import {resizeExtractionResultsArea, selectMenu} from '../Actions/AppAction';
 import {showTimeTubesOfTimeSlice} from '../Actions/TimeTubesAction';
-import {showClusterDetails} from '../Actions/ClusteringAction';
+import {showClusterDetails, showTTViewOfSelectedSSClusteringResults} from '../Actions/ClusteringAction';
 import DataStore from '../Stores/DataStore';
 import ClusteringStore from '../Stores/ClusteringStore';
 import AppStore from '../Stores/AppStore';
@@ -302,6 +302,7 @@ export default class ClusteringTimeline extends React.Component {
                     }
                 }
                 domActions.highlightCorrespondingElemInClusteringResults(dataId, SSId, period, beforeAfter);
+                showTTViewOfSelectedSSClusteringResults(Number(dataId), period);
             }
         };    
     }

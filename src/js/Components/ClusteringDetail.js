@@ -967,6 +967,7 @@ export default class ClusteringDetail extends React.Component {
                     }
                 }
                 domActions.highlightCorrespondingElemInClusteringResults(dataId, SSId, period, beforeAfter);
+                ClusteringAction.showTTViewOfSelectedSSClusteringResults(Number(dataId), period);
                 // // highlight histogram
                 // d3.select('#SSLengthBar_' + Math.floor(period[1] - period[0]))
                 //     .attr('stroke', 'black')

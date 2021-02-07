@@ -20,6 +20,7 @@ export default class TimeTubes extends React.Component{
         super();
         this.id = props.id;
         this.data = props.data;
+        this.menu = 'visualization';
         this.canvas;
         this.cameraProp = TimeTubesStore.getCameraProp(props.id);
         this.tubeNum = 16;
@@ -40,7 +41,11 @@ export default class TimeTubes extends React.Component{
         this.rotationPeriod = null;
         this.wheelInterval = 1;
         this.colorEncodingOption = {hue: 'default', value: 'default'};
-        this.currentTubePos = undefined;
+        this.currentTubeStatus = {
+            position: undefined,
+            grid: undefined,
+            plot: undefined
+        };
         // set plot color
         if (this.data.merge) {
             this.plotColor = [];
@@ -169,11 +174,35 @@ export default class TimeTubes extends React.Component{
         this.drawPeriodMarker();
 
         AppStore.on('selectMenu', (menu) => {
+            if (menu === 'feature') {
+                this.menu = FeatureStore.getMode();
+            } else {
+                this.menu = menu;
+            }
             if (menu === 'visualization') {
-                this.tubeGroup.position.z = this.currentTubePos;
-                this.currentTubePos = undefined;
+                this.tubeGroup.position.z = this.currentTubeStatus.position;
+                this.grid.visible = this.currentTubeStatus.grid;
+                this.plot.visible = this.currentTubeStatus.plot;
+                if (this.currentTubeStatus.far) {
+                    this.clippingPlane2.constant = this.currentTubeStatus.far;
+                    this.renderer.clippingPlanes = [this.clippingPlane2];
+                } else {
+                    this.renderer.clippingPlanes = [];
+                }
+                this.currentTubeStatus = {
+                    position: undefined,
+                    grid: undefined,
+                    plot: undefined,
+                    far: undefined
+                };
+                this.renderer.localClippingEnabled = $('#checkboxClip').prop('checked');
             } else if (AppStore.getPreviousMenu() === 'visualization' && menu !== 'visualization') {
-                this.currentTubePos = this.tubeGroup.position.z;
+                this.currentTubeStatus = {
+                    position: this.tubeGroup.position.z,
+                    grid: this.grid.visible,
+                    plot: this.plot.visible,
+                    far: (this.renderer.clippingPlanes.length > 0)? this.renderer.clippingPlanes[0].constant: undefined
+                };
             }
         });
         DataStore.on('updatePrivateComment', () => {
@@ -238,6 +267,7 @@ export default class TimeTubes extends React.Component{
         TimeTubesStore.on('clipTube', (id, state) => {
             if (id === this.id) {
                 this.renderer.localClippingEnabled = state;
+                console.log(this.renderer);
             }
         });
         TimeTubesStore.on('switchShade', (id, state) => {
@@ -431,6 +461,8 @@ export default class TimeTubes extends React.Component{
         });
         FeatureStore.on('switchQueryMode', (mode) => {
             let sourceId = FeatureStore.getSource();
+            this.mode = mode;
+            this.menu = mode;
             if (mode === 'QBE' && sourceId !== 'default') {
                 this.visualQuery = (Number(sourceId) === this.id);
                 this.setQBEView();
@@ -505,10 +537,12 @@ export default class TimeTubes extends React.Component{
             let colors = ClusteringStore.getClusterColors();
             // TODO: もう少しまともな表示方法を検討！！
             // this.showClusteringResults(subsequences, labels, colors);
-            this.setClusteringResultsView();
+            // this.setClusteringResultsView();
         });
         ClusteringStore.on('showTTViewOfSelectedSSClustering', (id, period) => {
             if (id === this.id) {
+                // this.grid.visible = false;
+                // this.plot.visible = false;
                 this.showSelectedSSClusteringResultsView(period);
             }
         });
@@ -530,9 +564,59 @@ export default class TimeTubes extends React.Component{
     }
 
     renderScene() {
-        if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
-        if (this.renderer) this.renderer.render(this.scene, this.camera);
-        if (this.ClusteringRenderer) this.ClusteringRenderer.render(this.scene, this.ClusteringCamera);
+        // if (this.menu === 'feature' && this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
+        // if (this.menu === 'feature' && this.ClusteringRenderer) this.ClusteringRenderer.render(this.scene, this.ClusteringCamera);
+        // if (this.menu === 'visualization' && this.renderer) this.renderer.render(this.scene, this.camera);
+                this.renderMainRenderer();
+        if (this.menu === 'Clustering') {
+            this.renderClusteringRenderer();
+        } else if (this.menu === 'QBE') {
+            // TODO: 一つのシーンに一つのレンダラだけにする！！！！
+            this.renderQBERenderer();
+        }
+        // switch(this.menu) {
+        //     case 'visualization':
+        //         this.renderMainRenderer();
+        //         break;
+        //     case 'QBE':
+        //         // this.renderQBERenderer();
+        //         break;
+        //     case 'Clustering':
+        //         this.renderClusteringRenderer();
+        //         break;
+        //     default:
+        //         break;
+        // }
+    }
+
+    renderMainRenderer() {
+        this.renderer.render(this.scene, this.camera);
+    }
+
+    renderQBERenderer() {
+        this.QBERenderer.render(this.scene, this.QBECamera);
+    }
+
+    renderClusteringRenderer() {
+        let dom = document.getElementById('tooltipClusteringResultsSubsequencesTTView');
+        if (dom) {
+            let width = this.renderer.domElement.width,
+                height = this.renderer.domElement.height;
+            let vFOV = this.camera.fov * Math.PI / 180;
+            let depth = this.camera.depth;
+            if (depth < this.camera.position.z) depth -= this.camera.position.z
+            else depth += this.camera.position.z;
+            let viewHeight = 2 * Math.tan(vFOV / 2) * Math.abs(depth);
+            let actualGridSize = TimeTubesStore.getGridSize() * 2 * height / viewHeight;
+            let clipAreaSize = Math.min(actualGridSize * 1.2, height);
+            let context = dom.getContext('2d');
+            this.renderer.render(this.scene, this.ClusteringCamera);
+            context.drawImage(
+                this.renderer.domElement, 
+                0, 0,
+                clipAreaSize * this.camera.aspect, 
+                clipAreaSize, 0, 0, 150 * 2, 150);
+        }
     }
 
     addControls() {
@@ -1678,7 +1762,7 @@ export default class TimeTubes extends React.Component{
         this.QBERenderer = new THREE.WebGLRenderer();
         this.QBERenderer.setSize(500, 500);
         this.QBERenderer.setClearColor("#000000");
-        this.QBERenderer.localClippingEnabled = true;
+        this.QBERenderer.localClippingEnabled = false;
         this.QBERenderer.domElement.id = 'QBE_viewport_' + this.id;
         this.QBERenderer.domElement.className = 'TimeTubes_viewport';
         // this.QBERenderer.render(this.scene, this.QBECamera);
@@ -1696,6 +1780,7 @@ export default class TimeTubes extends React.Component{
                 sourcePadding = Number($('#QBESource').css('padding').replace('px', '')) * 2;
             }
             let QBESourceWidth = $('#QBESource').outerWidth(true) - (sourcePadding >= 0? sourcePadding: 0);
+            this.QBERenderer.localClippingEnabled = true;
             this.QBERenderer.setSize(QBESourceWidth, QBESourceWidth);
             if (dom != null) {
                 dom.style.display = 'block';
@@ -1839,32 +1924,39 @@ export default class TimeTubes extends React.Component{
             far);//new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
         this.ClusteringCamera.position.z = 50;
         this.ClusteringCamera.lookAt(this.scene.position);
-        this.ClusteringRenderer = new THREE.WebGLRenderer();
-        this.ClusteringRenderer.setSize(150, 150);
-        this.ClusteringRenderer.setClearColor('#000000');
-        this.ClusteringRenderer.localClippingEnabled = true;
-        this.ClusteringRenderer.domElement.id = 'clusteringResultsSubsequence_' + this.id;
-        this.ClusteringRenderer.domElement.className = 'clusteringResultsSubsequence';
-        this.ClusteringRenderer.domElement.style.display = 'none';
-        this.ClusteringClippingPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+        // this.ClusteringRenderer = new THREE.WebGLRenderer();
+        // this.ClusteringRenderer.setSize(150, 150);
+        // this.ClusteringRenderer.setClearColor('#000000');
+        // this.ClusteringRenderer.localClippingEnabled = false;
+        // this.ClusteringRenderer.domElement.id = 'clusteringResultsSubsequence_' + this.id;
+        // this.ClusteringRenderer.domElement.className = 'clusteringResultsSubsequence';
+        // this.ClusteringRenderer.domElement.style.display = 'none';
+        // this.ClusteringClippingPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
         // 各データに関してclusteringrendererが作られるから、選択されたデータ点に応じて表示非表示を切り替える
     }
 
     setClusteringResultsView() {
-        let dom = document.getElementById('tooltipClusteringResultsSubsequencesTTView');
-        if (dom) {
-            dom.appendChild(this.ClusteringRenderer.domElement);
-        }
+        // let dom = document.getElementById('tooltipClusteringResultsSubsequencesTTView');
+        // if (dom) {
+        //     // dom.appendChild(this.renderer.domElement);
+        //     let context = dom.getContext('2d');
+        //     context.drawImage(this.renderer.domElement, 0, 0, 200, 200);
+        // }
     }
 
     showSelectedSSClusteringResultsView(period) {
-        Array.from(document.getElementsByClassName('clusteringResultsSubsequence')).forEach(ele => {
-            ele.style.display = 'none';
-        });
-        document.getElementById('clusteringResultsSubsequence_' + this.id).style.display = 'block';
-        this.ClusteringClippingPlane.constant = period[0] - this.data.spatial[0].z;
-        this.ClusteringRenderer.clippingPlanes = [this.ClusteringClippingPlane];
+        // Array.from(document.getElementsByClassName('clusteringResultsSubsequence')).forEach(ele => {
+        //     ele.style.display = 'none';
+        // });
+        // document.getElementById('clusteringResultsSubsequence_' + this.id).style.display = 'block';
+        // this.ClusteringClippingPlane.constant = period[1] - period[0];// - this.data.spatial[0].z;
+        // this.ClusteringRenderer.localClippingEnabled = true;
+        // this.ClusteringRenderer.clippingPlanes = [this.ClusteringClippingPlane];
+//         var vFOV = THREE.MathUtils.degToRad( this.camera.fov ); // convert vertical fov to radians
+
+        this.clippingPlane2.constant = period[1] - period[0];
+        this.renderer.clippingPlanes = [this.clippingPlane2];
         this.tubeGroup.position.z = period[0] - this.data.spatial[0].z;
-        if (this.ClusteringRenderer) this.ClusteringRenderer.render(this.scene, this.ClusteringCamera);
+        // if (this.ClusteringRenderer) this.ClusteringRenderer.render(this.scene, this.ClusteringCamera);
     }
 }

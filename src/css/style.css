@@ -556,9 +556,6 @@ img.selectorIcon:active {
     text-align: right;
 }
 
-.clusteringResultsSubsequence {
-    margin: auto;
-}
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
@@ -862,4 +859,8 @@ img.selectorIcon:active {
     border: 1px solid;
     border-color: gray;
     padding: 0px 5px;
+}
+
+#tooltipClusteringResultsSubsequencesTTView {
+    margin: auto;
 }
