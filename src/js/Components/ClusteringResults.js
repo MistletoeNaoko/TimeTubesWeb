@@ -35,7 +35,8 @@ export default class ClusteringResults extends React.Component {
                     id='tooltipClusteringResults'
                     style={{display: 'none'}}>
                     <canvas id='tooltipClusteringResultsSubsequencesTTView'
-                        style={{width: 150, height: 150}}></canvas>
+                        width='150' height='150'
+                        style={{width: '150px', height: '150px'}}></canvas>
                     <div id='tooltipClusteringResultsTable'></div>
                     </div>
             </div>

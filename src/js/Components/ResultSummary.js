@@ -46,10 +46,8 @@ export default class ResultSummary extends React.Component {
         this.thumbnail.onload = function() {
             ctx.drawImage(
                 this.thumbnail,
-                px, py,
-                size, size,
-                0, 0,
-                300, 150);// why 300? the width of canvas seems to be 300px
+                px, py, size, size,
+                0, 0, canvas.width, canvas.height);
         }.bind(this);
 
         document.getElementById('resultSummary_' + this.rank).addEventListener('mousedown', this.onMouseDownOnResultSummary.bind(this), false);
@@ -125,6 +123,8 @@ export default class ResultSummary extends React.Component {
         return (
             <canvas
                 id={'resultSummaryCanvas_' + this.rank}
+                width='150'
+                height='150'
                 className='resultSummaryCanvas'>
             </canvas>
         );
@@ -209,10 +209,8 @@ export default class ResultSummary extends React.Component {
         // TODO: the size of the image is converted into 300 * 150
         ctx.drawImage(
             this.thumbnail,
-            px, py,
-            square, square,
-            0, 0,
-            300, 150
+            px, py, square, square,
+            0, 0, canvas.width, canvas.height
         );
         $('#extractionDetailLC').height(size);
     }

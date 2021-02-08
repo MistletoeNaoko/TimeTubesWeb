@@ -14,6 +14,7 @@ import ClusteringStore from '../Stores/ClusteringStore';
 import BufferGeometryUtils from '../lib/BufferGeometryUtils';
 import OrbitControls from "three-orbitcontrols";
 import TextSprite from 'three.textsprite';
+import { dotPow } from 'mathjs';
 
 export default class TimeTubes extends React.Component{
     constructor(props) {
@@ -72,7 +73,6 @@ export default class TimeTubes extends React.Component{
             TimeTubesStore.setPlotColorbyIdx(this.id, (TimeTubesStore.getInitColorIdx() + this.id) % TimeTubesStore.getPresetNum());
             this.plotColor = TimeTubesStore.getPlotColor(this.id);
         }
-        console.log(props.width, props.height)
         this.state = {
             width: props.width,
             height: props.height,
@@ -82,7 +82,6 @@ export default class TimeTubes extends React.Component{
     render() {
         // let width = ($(window).width() - $('#Controllers').width() - $('.right').width()) / DataStore.getDataNum()// * 0.95;
         // let height = Math.max($('#Controllers').height(), 500);
-        console.log(this.props.width, this.props.height);
         this.updateSize(this.props.width, this.props.height);
         return (
             <div style={{position: 'relative', float: 'left'}}>
@@ -110,7 +109,6 @@ export default class TimeTubes extends React.Component{
         this.scene = new THREE.Scene();
 
         this.setCameras(width, height);
-        console.log(width, height)
         this.renderer = new THREE.WebGLRenderer({preserveDrawingBuffer: true}); //{ antialias: true }
         this.renderer.setClearColor(new THREE.Color(Number(TimeTubesStore.getBackgroundColor())));
         this.renderer.setSize(width, height);
@@ -221,7 +219,6 @@ export default class TimeTubes extends React.Component{
                 this.updateCamera();
                 // if (this.cameraProp.xpos === 0 && this.cameraProp.ypos === 0 && this.cameraProp.zpos === 50) {
                     
-                // console.log('reset camera',this.cameraProp);
                 // this.resetCamera();
                 // }
                 // this.resetCamera();
@@ -270,7 +267,6 @@ export default class TimeTubes extends React.Component{
         TimeTubesStore.on('clipTube', (id, state) => {
             if (id === this.id) {
                 this.renderer.localClippingEnabled = state;
-                console.log(this.renderer);
             }
         });
         TimeTubesStore.on('switchShade', (id, state) => {
@@ -600,30 +596,19 @@ export default class TimeTubes extends React.Component{
     }
 
     renderQBERenderer() {
-        this.QBERenderer.render(this.scene, this.QBECamera);
-        // let dom = document.getElementById('QBESourceTTCanvas');
-        // if  (dom) {
-        //     let width = this.renderer.domElement.width,
-        //         height = this.renderer.domElement.height;
-        //     // let vFOV = this.camera.fov * Math.PI / 180;
-        //     // let depth = this.camera.depth;
-        //     // if (depth < this.camera.position.z) depth -= this.camera.position.z
-        //     // else depth += this.camera.position.z;
-        //     // let viewHeight = 2 * Math.tan(vFOV / 2) * Math.abs(depth);
-        //     // let actualGridSize = TimeTubesStore.getGridSize() * 2 * height / viewHeight;
-        //     // let clipAreaSize = Math.min(actualGridSize * 1.2, height);
-        //     let context = dom.getContext('2d');
-        //     this.renderer.render(this.scene, this.QBECamera);
-        //     context.drawImage(
-        //         this.renderer.domElement,
-        //         0, 0, width, height,
-        //         0, 0, dom.width, dom.height);
-        //         // width / 2 - clipAreaSize / 2, height / 2 - clipAreaSize / 2, clipAreaSize * this.camera.aspect, clipAreaSize,
-        //         // 0, 0, dom.width * 2, dom.height)
-
-        //         // 4*clipAreaSize * this.camera.aspect, 
-        //         // 4*clipAreaSize, 0, 0, 470 * 2, 470);
-        // }
+        // https://teratail.com/questions/67020 canvasの解像度はcanvasのwidth, height依存（CSSじゃなくてattributeの方）
+        // this.QBERenderer.render(this.scene, this.QBECamera);
+        let dom = document.getElementById('QBESourceTTCanvas');
+        if  (dom) {
+            let width = this.renderer.domElement.width,
+                height = this.renderer.domElement.height;
+            let context = dom.getContext('2d');
+            this.renderer.render(this.scene, this.QBECamera);
+            context.drawImage(
+                this.renderer.domElement, 
+                0, 0, width, height,
+                0, 0, dom.width, dom.height);
+        }
     }
 
     renderClusteringRenderer() {
@@ -840,8 +825,8 @@ export default class TimeTubes extends React.Component{
                         let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
                         let lastJD = (Math.floor(lastIdx / this.segment) + 1) * (1 / this.division) + minJD;
                         FeatureAction.updateSelectedPeriod([firstJD, lastJD]);
-                        this.renderer.render(this.scene, this.camera);
-                        if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
+                        // this.renderer.render(this.scene, this.camera);
+                        // if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
                     }
                 }
             }
@@ -924,8 +909,8 @@ export default class TimeTubes extends React.Component{
                         for (let i = firstIdx; i <= lastIdx; i++) {
                             this.tube.geometry.attributes.selected.array[arraySize * (this.tubeNum - 1) + i] = 1;
                         }
-                        this.renderer.render(this.scene, this.camera);
-                        if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
+                        // this.renderer.render(this.scene, this.camera);
+                        // if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
 
                         if (firstIdx >= lastIdx) {
                             FeatureAction.updateSelectedPeriod([-1, -1]);
@@ -957,8 +942,14 @@ export default class TimeTubes extends React.Component{
     getIntersectedIndex(event) {
         let face;
         let raymouse = new THREE.Vector2();
-        raymouse.x = (event.offsetX / this.QBERenderer.domElement.clientWidth) * 2 - 1;
-        raymouse.y = -(event.offsetY / this.QBERenderer.domElement.clientHeight) * 2 + 1;
+        let QBECanvas = document.getElementById('QBESourceTTCanvas');
+        let clientRect = QBECanvas.getBoundingClientRect();
+        let canvasPageX = window.pageXOffset + clientRect.left,
+            canvasPageY = window.pageYOffset + clientRect.top;
+        let offsetX = event.pageX - canvasPageX,
+            offsetY = event.pageY - canvasPageY;
+        raymouse.x = (offsetX / Number(QBECanvas.style.width.slice(0, -2))) * 2 - 1;// this.QBERenderer.domElement.clientWidth) * 2 - 1;
+        raymouse.y = -(offsetY / Number(QBECanvas.style.height.slice(0, -2))) * 2 + 1;//-(event.offsetY / this.QBERenderer.domElement.clientHeight) * 2 + 1;
         this.raycaster.setFromCamera(raymouse, this.QBECamera);
         let intersects = this.raycaster.intersectObject(this.tube);
         if (intersects.length > 0) {
@@ -973,8 +964,8 @@ export default class TimeTubes extends React.Component{
         for (let i = 0; i < this.tube.geometry.attributes.selected.array.length; i++) {
             this.tube.geometry.attributes.selected.array[i] = 0;
         }
-        this.renderer.render(this.scene, this.camera);
-        if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
+        // this.renderer.render(this.scene, this.camera);
+        // if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
         // FeatureAction.updateSelectedInterval([0, 0]);
     }
 
@@ -1003,8 +994,8 @@ export default class TimeTubes extends React.Component{
         let firstJD = Math.floor(firstIdx / this.segment) * (1 / this.division) + minJD;
         let lastJD = (Math.floor(lastIdx / this.segment) + 1) * (1 / this.division) + minJD;
         FeatureAction.updateSelectedPeriod([firstJD, lastJD]);
-        this.renderer.render(this.scene, this.camera);
-        if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
+        // this.renderer.render(this.scene, this.camera);
+        // if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
     }
 
     paintSelectedPeriod() {
@@ -1019,8 +1010,8 @@ export default class TimeTubes extends React.Component{
         for (let i = firstIdx; i < lastIdx; i++) {
             this.tube.geometry.attributes.selected.array[arraySize * (this.tubeNum - 1) + i] = 1;
         }
-        this.renderer.render(this.scene, this.camera);
-        if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
+        // this.renderer.render(this.scene, this.camera);
+        // if (this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
     }
 
     // change the color of the currently focused plot
@@ -1791,16 +1782,16 @@ export default class TimeTubes extends React.Component{
         this.QBECamera = new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
         this.QBECamera.position.z = 50;
         this.QBERenderer = new THREE.WebGLRenderer();
-        this.QBERenderer.setSize(500, 500);
-        this.QBERenderer.setClearColor("#000000");
-        this.QBERenderer.localClippingEnabled = false;
-        this.QBERenderer.domElement.id = 'QBE_viewport_' + this.id;
-        this.QBERenderer.domElement.className = 'TimeTubes_viewport';
+        // this.QBERenderer.setSize(500, 500);
+        // this.QBERenderer.setClearColor("#000000");
+        // this.QBERenderer.localClippingEnabled = false;
+        // this.QBERenderer.domElement.id = 'QBE_viewport_' + this.id;
+        // this.QBERenderer.domElement.className = 'TimeTubes_viewport';
         // this.QBERenderer.render(this.scene, this.QBECamera);
     }
 
     setQBEView() {
-        let dom = document.getElementById('QBE_viewport_' + this.id);
+        let dom = document.getElementById('QBESourceTTCanvas');//'QBE_viewport_' + this.id);
         if (this.visualQuery) {
             this.QBECamera.lookAt(this.scene.position);
             this.QBECamera.far = this.camera.far;
@@ -1810,25 +1801,25 @@ export default class TimeTubes extends React.Component{
             } else if (Number($('#QBESource').css('padding'))) {
                 sourcePadding = Number($('#QBESource').css('padding').replace('px', '')) * 2;
             }
-            let QBESourceWidth = $('#QBESource').outerWidth(true) - (sourcePadding >= 0? sourcePadding: 0);
-            this.QBERenderer.localClippingEnabled = true;
-            this.QBERenderer.setSize(QBESourceWidth, QBESourceWidth);
+            // let QBESourceWidth = $('#QBESource').outerWidth(true) - (sourcePadding >= 0? sourcePadding: 0);
+            // this.QBERenderer.localClippingEnabled = true;
+            // this.QBERenderer.setSize(QBESourceWidth, QBESourceWidth);
             if (dom != null) {
                 dom.style.display = 'block';
-            } else {
-                let canvas = document.getElementById('QBESourceTT');
+            // } else {
+                // let canvas = document.getElementById('QBESourceTT');
                 let onMouseWheel = this.onMouseWheel();
                 let onMouseDown = this.onMouseDown();
                 let onMouseMove = this.onMouseMove();
                 let onMouseUp = this.onMouseUp();
                 let onMouseClick = this.onMouseClick();
-                canvas.appendChild(this.QBERenderer.domElement);
-                canvas.addEventListener('wheel', onMouseWheel.bind(this), false);
-                canvas.addEventListener('mousedown', onMouseDown.bind(this), false);
-                canvas.addEventListener('mousemove', onMouseMove.bind(this), false);
-                canvas.addEventListener('mouseup', onMouseUp.bind(this), false);
-                canvas.addEventListener('click', onMouseClick.bind(this), false);
-                this.QBEControls = new OrbitControls(this.QBECamera, this.QBERenderer.domElement);
+                // canvas.appendChild(this.QBERenderer.domElement);
+                dom.addEventListener('wheel', onMouseWheel.bind(this), false);
+                dom.addEventListener('mousedown', onMouseDown.bind(this), false);
+                dom.addEventListener('mousemove', onMouseMove.bind(this), false);
+                dom.addEventListener('mouseup', onMouseUp.bind(this), false);
+                dom.addEventListener('click', onMouseClick.bind(this), false);
+                this.QBEControls = new OrbitControls(this.QBECamera, this.renderer.domElement);
                 this.QBEControls.position0.set(0, 0, 50);
                 this.QBEControls.screenSpacePanning = false;
                 this.QBEControls.enableZoom = false;
@@ -1838,8 +1829,6 @@ export default class TimeTubes extends React.Component{
                 dom.style.display = 'none';
             }
         }
-        // this.renderScene();
-        // this.start();
     }
 
     updateColorEncodingOptionHue() {
