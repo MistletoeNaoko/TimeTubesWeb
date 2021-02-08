@@ -862,5 +862,6 @@ img.selectorIcon:active {
 }
 
 #tooltipClusteringResultsSubsequencesTTView {
-    margin: auto;
+    margin: 0 50%;
+    transform: translate(-50%, 0);
 }

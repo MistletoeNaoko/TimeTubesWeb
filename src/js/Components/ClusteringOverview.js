@@ -1,5 +1,7 @@
 import * as ClusteringAction from '../Actions/ClusteringAction';
 import * as FeatureAction from '../Actions/FeatureAction';
+import {selectMenu} from '../Actions/AppAction';
+import {showTimeTubesOfTimeSlice} from '../Actions/TimeTubesAction';
 import * as domActions from '../lib/domActions';
 import React from 'react';
 import DataStore from '../Stores/DataStore';
@@ -1233,7 +1235,8 @@ export default class ClusteringOverview extends React.Component {
                 }.bind(this))
                 .on('mouseover', this.onMouseOverDataPointsMDS().bind(this))
                 .on('mouseout', this.onMouseOutDataPointsMDS().bind(this))
-                .on('click', this.onClickDataPointsMDS().bind(this));
+                .on('click', this.onClickDataPointsMDS().bind(this))
+                .on('dblclick', this.onDoubleClickDataPointsMDS().bind(this));
             // map cluster centers on scatterplots
             this.clusterCenterPlots = this.MDSSPSvg.selectAll('circle.clusterCentersMDS')
                 .data(clusterCenterCoords)
@@ -1326,6 +1329,27 @@ export default class ClusteringOverview extends React.Component {
                 ClusteringAction.showClusterDetails(clusterNum);
             }
         }
+    }
+
+    onDoubleClickDataPointsMDS() {
+        return  function() {
+            let targetId = d3.event.target.id;
+            if (targetId) {
+                let targetEle = targetId.split('_');
+                let dataId = targetEle[1],
+                    SSId = Number(targetEle[2]);
+                let data;
+                for (let i = 0; i < this.subsequences.length; i++) {
+                    if (this.subsequences[i].id === dataId && this.subsequences[i].idx === SSId) {
+                        data = this.subsequences[i];
+                        break;
+                    }
+                }
+                $('#tooltipClusteringResults').css('display', 'none');
+                selectMenu('visualization');
+                showTimeTubesOfTimeSlice(Number(dataId), [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
+            }
+        };
     }
 
     onMouseOverDataPointsMDS() {
