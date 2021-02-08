@@ -41,6 +41,7 @@ export default class TimeTubes extends React.Component{
         this.rotationPeriod = null;
         this.wheelInterval = 1;
         this.colorEncodingOption = {hue: 'default', value: 'default'};
+        this.renderClusteringResultView = false;
         this.currentTubeStatus = {
             position: undefined,
             grid: undefined,
@@ -71,6 +72,7 @@ export default class TimeTubes extends React.Component{
             TimeTubesStore.setPlotColorbyIdx(this.id, (TimeTubesStore.getInitColorIdx() + this.id) % TimeTubesStore.getPresetNum());
             this.plotColor = TimeTubesStore.getPlotColor(this.id);
         }
+        console.log(props.width, props.height)
         this.state = {
             width: props.width,
             height: props.height,
@@ -80,6 +82,7 @@ export default class TimeTubes extends React.Component{
     render() {
         // let width = ($(window).width() - $('#Controllers').width() - $('.right').width()) / DataStore.getDataNum()// * 0.95;
         // let height = Math.max($('#Controllers').height(), 500);
+        console.log(this.props.width, this.props.height);
         this.updateSize(this.props.width, this.props.height);
         return (
             <div style={{position: 'relative', float: 'left'}}>
@@ -107,7 +110,7 @@ export default class TimeTubes extends React.Component{
         this.scene = new THREE.Scene();
 
         this.setCameras(width, height);
-
+        console.log(width, height)
         this.renderer = new THREE.WebGLRenderer({preserveDrawingBuffer: true}); //{ antialias: true }
         this.renderer.setClearColor(new THREE.Color(Number(TimeTubesStore.getBackgroundColor())));
         this.renderer.setSize(width, height);
@@ -543,7 +546,10 @@ export default class TimeTubes extends React.Component{
             if (id === this.id) {
                 // this.grid.visible = false;
                 // this.plot.visible = false;
+                this.renderClusteringResultView = true;
                 this.showSelectedSSClusteringResultsView(period);
+            } else {
+                this.renderClusteringResultView = false;
             }
         });
     }
@@ -568,7 +574,7 @@ export default class TimeTubes extends React.Component{
         // if (this.menu === 'feature' && this.ClusteringRenderer) this.ClusteringRenderer.render(this.scene, this.ClusteringCamera);
         // if (this.menu === 'visualization' && this.renderer) this.renderer.render(this.scene, this.camera);
                 this.renderMainRenderer();
-        if (this.menu === 'Clustering') {
+        if (this.menu === 'Clustering' && this.renderClusteringResultView) {
             this.renderClusteringRenderer();
         } else if (this.menu === 'QBE') {
             // TODO: 一つのシーンに一つのレンダラだけにする！！！！
@@ -595,6 +601,29 @@ export default class TimeTubes extends React.Component{
 
     renderQBERenderer() {
         this.QBERenderer.render(this.scene, this.QBECamera);
+        // let dom = document.getElementById('QBESourceTTCanvas');
+        // if  (dom) {
+        //     let width = this.renderer.domElement.width,
+        //         height = this.renderer.domElement.height;
+        //     // let vFOV = this.camera.fov * Math.PI / 180;
+        //     // let depth = this.camera.depth;
+        //     // if (depth < this.camera.position.z) depth -= this.camera.position.z
+        //     // else depth += this.camera.position.z;
+        //     // let viewHeight = 2 * Math.tan(vFOV / 2) * Math.abs(depth);
+        //     // let actualGridSize = TimeTubesStore.getGridSize() * 2 * height / viewHeight;
+        //     // let clipAreaSize = Math.min(actualGridSize * 1.2, height);
+        //     let context = dom.getContext('2d');
+        //     this.renderer.render(this.scene, this.QBECamera);
+        //     context.drawImage(
+        //         this.renderer.domElement,
+        //         0, 0, width, height,
+        //         0, 0, dom.width, dom.height);
+        //         // width / 2 - clipAreaSize / 2, height / 2 - clipAreaSize / 2, clipAreaSize * this.camera.aspect, clipAreaSize,
+        //         // 0, 0, dom.width * 2, dom.height)
+
+        //         // 4*clipAreaSize * this.camera.aspect, 
+        //         // 4*clipAreaSize, 0, 0, 470 * 2, 470);
+        // }
     }
 
     renderClusteringRenderer() {
@@ -602,20 +631,22 @@ export default class TimeTubes extends React.Component{
         if (dom) {
             let width = this.renderer.domElement.width,
                 height = this.renderer.domElement.height;
-            let vFOV = this.camera.fov * Math.PI / 180;
-            let depth = this.camera.depth;
-            if (depth < this.camera.position.z) depth -= this.camera.position.z
-            else depth += this.camera.position.z;
-            let viewHeight = 2 * Math.tan(vFOV / 2) * Math.abs(depth);
-            let actualGridSize = TimeTubesStore.getGridSize() * 2 * height / viewHeight;
-            let clipAreaSize = Math.min(actualGridSize * 1.2, height);
+            // let vFOV = this.camera.fov * Math.PI / 180;
+            // let depth = this.camera.depth;
+            // if (depth < this.camera.position.z) depth -= this.camera.position.z
+            // else depth += this.camera.position.z;
+            // let viewHeight = 2 * Math.tan(vFOV / 2) * Math.abs(depth);
+            // let actualGridSize = TimeTubesStore.getGridSize() * 2 * height / viewHeight;
+            // let clipAreaSize = Math.min(actualGridSize * 1.2, height);
             let context = dom.getContext('2d');
             this.renderer.render(this.scene, this.ClusteringCamera);
             context.drawImage(
                 this.renderer.domElement, 
-                0, 0,
-                clipAreaSize * this.camera.aspect, 
-                clipAreaSize, 0, 0, 150 * 2, 150);
+                0, 0, width, height,
+                0, 0, dom.width, dom.height);
+                // 0, 0,
+                // clipAreaSize * this.camera.aspect, 
+                // clipAreaSize, 0, 0, 150 * 2, 150);
         }
     }
 

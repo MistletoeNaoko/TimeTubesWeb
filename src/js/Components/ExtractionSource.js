@@ -89,6 +89,8 @@ export default class ExtractionSource extends React.Component {
                     {this.QBESelector()}
                     <div id='QBESourceTT' className='featureElem'>
                         {this.selectorOptionsTT()}
+                        {/* <canvas id='QBESourceTTCanvas'
+                            style={{width: size, height: size}}></canvas> */}
                     </div>
                     <div id='QBESourceSP' className='featureElem'>
                         {this.selectorOptionsSP()}
