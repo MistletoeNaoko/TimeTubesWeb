@@ -172,7 +172,10 @@ export default class ClusteringDetail extends React.Component {
     clusterFeatureTable() {
         let table;
         if (this.state.cluster >= 0) {
-            let width = $('#clusteringDetail').width() - this.paddingCard * 2;//this.mount.clientWidth - this.paddingCard * 2;
+            let parentEle = $('#clusteringDetail');
+            let paddingLeft = Number(parentEle.css('padding-left').slice(0, -2)),
+                paddingRight = Number(parentEle.css('padding-right').slice(0, -2));
+            let width = parentEle.width() - paddingLeft - paddingRight - this.paddingCard * 2;//this.mount.clientWidth - this.paddingCard * 2;
             let aveDataPointNum = 0, avePeriod = 0, aveDataValues = {};
             this.variables.forEach(key => {
                 aveDataValues[key] = 0;
@@ -251,7 +254,10 @@ export default class ClusteringDetail extends React.Component {
     subsequencesOverview() {
         if (this.state.cluster >= 0) {
             let paddingCell = 3, checkCellWidth = 30;
-            let tableWidth = $('#clusteringDetail').width() - this.areaPadding.left - this.areaPadding.right;//this.mount.clientWidth - this.areaPadding.left - this.areaPadding.right;
+            let parentEle = $('#clusteringDetail');
+            let paddingLeft = Number(parentEle.css('padding-left').slice(0, -2)),
+                paddingRight = Number(parentEle.css('padding-right').slice(0, -2));
+            let tableWidth = parentEle.width() - paddingLeft - paddingRight - this.paddingCard * 2;
             let tableHeight = tableWidth;//(this.mount.clientHeight - $('#filteringProcessSummary').height()) / 2
             let cellWidth = (tableWidth - checkCellWidth) / this.variables.length,
                 cellHeight = 30;
@@ -400,8 +406,10 @@ export default class ClusteringDetail extends React.Component {
     drawClusterCenterLineCharts() {
         $('#clusterCenterLineChartsSVG').remove();
         if (this.state.cluster >= 0) { 
-            let clientWidth = $('#clusteringDetail').width() - this.paddingCard * 2;
-            // let clientWidth = this.mount.clientWidth - this.paddingCard * 2;
+            let parentEle = $('#clusteringDetail');
+            let paddingLeft = Number(parentEle.css('padding-left').slice(0, -2)),
+                paddingRight = Number(parentEle.css('padding-right').slice(0, -2));
+            let clientWidth = parentEle.width() - paddingLeft - paddingRight - this.paddingCard * 2;
             let lineChartWidth = clientWidth / 2,
                 lineChartHeight = clientWidth / 2 * 0.6;
 
@@ -492,8 +500,10 @@ export default class ClusteringDetail extends React.Component {
         $('#subsequenceLengthHistogramSVG').remove();
 
         if (this.state.cluster >= 0) { 
-            let clientWidth = $('#clusteringDetail').width() - this.paddingCard * 2;
-            // let clientWidth = this.mount.clientWidth - this.paddingCard * 2;
+            let parentEle = $('#clusteringDetail');
+            let paddingLeft = Number(parentEle.css('padding-left').slice(0, -2)),
+                paddingRight = Number(parentEle.css('padding-right').slice(0, -2));
+            let clientWidth = parentEle.width() - paddingLeft - paddingRight - this.paddingCard * 2;
             let height = clientWidth * 0.35;
             let svgPadding = {left: 30, right: 10, top: 15, bottom: 20};
             
@@ -645,7 +655,10 @@ export default class ClusteringDetail extends React.Component {
             }
             let maxCount = d3.max([d3.max(clusterBefore), d3.max(clusterAfter)]);
 
-            let clientWidth = $('#clusteringDetail').width() - this.paddingCard * 2;
+            let parentEle = $('#clusteringDetail');
+            let paddingLeft = Number(parentEle.css('padding-left').slice(0, -2)),
+                paddingRight = Number(parentEle.css('padding-right').slice(0, -2));
+            let clientWidth = parentEle.width() - paddingLeft - paddingRight - this.paddingCard * 2;
             let histogramWidth = clientWidth / 2,
                 histogramHeight = clientWidth / 2 * 0.6;
             let svgPadding = {left: 20, right: 10, top: 15, bottom: 20};
@@ -755,9 +768,10 @@ export default class ClusteringDetail extends React.Component {
 
         if (this.state.cluster >= 0) {
             let paddingCell = 3, paddingSVG = 1, checkCellWidth = 30;
-            // let clientWidth = $('#clusteringDetail').width() - this.paddingCard * 2;
-
-            let tableWidth = $('#clusteringDetail').width() - this.areaPadding.left - this.areaPadding.right;
+            let parentEle = $('#clusteringDetail');
+            let paddingLeft = Number(parentEle.css('padding-left').slice(0, -2)),
+                paddingRight = Number(parentEle.css('padding-right').slice(0, -2));
+            let tableWidth = parentEle.width() - paddingLeft - paddingRight - this.paddingCard * 2;
             let cellWidth = (tableWidth - checkCellWidth) / this.variables.length,
                 cellHeight = 30;
             let svgWidth = cellWidth - paddingCell * 2,
