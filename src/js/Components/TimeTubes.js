@@ -566,29 +566,12 @@ export default class TimeTubes extends React.Component{
     }
 
     renderScene() {
-        // if (this.menu === 'feature' && this.QBERenderer) this.QBERenderer.render(this.scene, this.QBECamera);
-        // if (this.menu === 'feature' && this.ClusteringRenderer) this.ClusteringRenderer.render(this.scene, this.ClusteringCamera);
-        // if (this.menu === 'visualization' && this.renderer) this.renderer.render(this.scene, this.camera);
-                this.renderMainRenderer();
+        this.renderMainRenderer();
         if (this.menu === 'Clustering' && this.renderClusteringResultView) {
             this.renderClusteringRenderer();
         } else if (this.menu === 'QBE') {
-            // TODO: 一つのシーンに一つのレンダラだけにする！！！！
             this.renderQBERenderer();
         }
-        // switch(this.menu) {
-        //     case 'visualization':
-        //         this.renderMainRenderer();
-        //         break;
-        //     case 'QBE':
-        //         // this.renderQBERenderer();
-        //         break;
-        //     case 'Clustering':
-        //         this.renderClusteringRenderer();
-        //         break;
-        //     default:
-        //         break;
-        // }
     }
 
     renderMainRenderer() {
@@ -597,7 +580,6 @@ export default class TimeTubes extends React.Component{
 
     renderQBERenderer() {
         // https://teratail.com/questions/67020 canvasの解像度はcanvasのwidth, height依存（CSSじゃなくてattributeの方）
-        // this.QBERenderer.render(this.scene, this.QBECamera);
         let dom = document.getElementById('QBESourceTTCanvas');
         if  (dom) {
             let width = this.renderer.domElement.width,
@@ -616,22 +598,12 @@ export default class TimeTubes extends React.Component{
         if (dom) {
             let width = this.renderer.domElement.width,
                 height = this.renderer.domElement.height;
-            // let vFOV = this.camera.fov * Math.PI / 180;
-            // let depth = this.camera.depth;
-            // if (depth < this.camera.position.z) depth -= this.camera.position.z
-            // else depth += this.camera.position.z;
-            // let viewHeight = 2 * Math.tan(vFOV / 2) * Math.abs(depth);
-            // let actualGridSize = TimeTubesStore.getGridSize() * 2 * height / viewHeight;
-            // let clipAreaSize = Math.min(actualGridSize * 1.2, height);
             let context = dom.getContext('2d');
             this.renderer.render(this.scene, this.ClusteringCamera);
             context.drawImage(
                 this.renderer.domElement, 
                 0, 0, width, height,
                 0, 0, dom.width, dom.height);
-                // 0, 0,
-                // clipAreaSize * this.camera.aspect, 
-                // clipAreaSize, 0, 0, 150 * 2, 150);
         }
     }
 
