@@ -781,7 +781,11 @@ img.selectorIcon:active {
     padding: 0.3rem;
 }
 
-#clusteringOverview {
+/* #clusteringOverview {
+    position: relative;
+} */
+
+#clusteringOverviewTimeTubes {
     position: relative;
 }
 
@@ -862,6 +866,11 @@ img.selectorIcon:active {
 }
 
 #tooltipClusteringResultsSubsequencesTTView {
+    margin: 0 50%;
+    transform: translate(-50%, 0);
+}
+
+#selectedClusterCenterTimeTubesCanvas {
     margin: 0 50%;
     transform: translate(-50%, 0);
 }

@@ -53,6 +53,7 @@ export default class ClusteringOverview extends React.Component {
         this.clusteringScores = {};
         this.tubeCoords = [];
         this.gridSize = undefined;
+        this.selectedCluster = undefined;
 
         this.queryMode = FeatureStore.getMode();
         this.clickedX;
@@ -72,15 +73,15 @@ export default class ClusteringOverview extends React.Component {
         this.renderer.setSize(width, height);
         this.renderer.localClippingEnabled = true;
         this.renderer.domElement.id = 'clusteringResultsViewport';
-        this.canvas = this.renderer.domElement;
+        this.canvas = document.getElementById('clusteringOverviewTimeTubesCanvas');//this.renderer.domElement;
 
         // this.mount.appendChild(this.renderer.domElement);
-        document.getElementById('clusteringOverviewTimeTubes').appendChild(this.renderer.domElement);
+        // document.getElementById('clusteringOverviewTimeTubes').appendChild(this.renderer.domElement);
 
         this.renderScene();
         this.start();
 
-        this.initDetailView();
+        // this.initDetailView();
 
         let directionalLight = new THREE.DirectionalLight(0xffffff, 0.7);
         directionalLight.position.set(-20, 40, 60);
@@ -106,6 +107,7 @@ export default class ClusteringOverview extends React.Component {
             this.SSLabels = ClusteringStore.getLabels();
             this.clusterColors = ClusteringStore.getClusterColors();
             this.clusteringScores = ClusteringStore.getClusteringScores();
+            this.selectedCluster = undefined;
             this.setRendererSize();
             this.computeSplines();
             this.computeTubePositions();
@@ -116,6 +118,7 @@ export default class ClusteringOverview extends React.Component {
             this.drawMDSScatterplots();
         });
         ClusteringStore.on('showClusterDetails', (cluster) => {
+            this.selectedCluster = cluster;
             this.setCameraDetail();
             this.setDetailView(cluster);
         });
@@ -124,6 +127,7 @@ export default class ClusteringOverview extends React.Component {
             this.subsequences = ClusteringStore.getSubsequences();
             this.SSLabels = ClusteringStore.getLabels();
             this.clusteringScores = ClusteringStore.getClusteringScores();
+            this.selectedCluster = undefined;
             this.setRendererSize();
             this.computeSplines();
             this.computeTubePositions();
@@ -138,6 +142,7 @@ export default class ClusteringOverview extends React.Component {
             this.subsequences = ClusteringStore.getSubsequences();
             this.SSLabels = ClusteringStore.getLabels();
             this.clusteringScores = ClusteringStore.getClusteringScores();
+            this.selectedCluster = undefined;
             this.setRendererSize();
             this.computeSplines();
             this.computeTubePositions();
@@ -154,6 +159,10 @@ export default class ClusteringOverview extends React.Component {
     }
 
     render() {
+        let width = $('#clusteringResultsOverview').width();
+        let appHeaderHeight = $('#appHeader').outerHeight(true);
+        let timelineHeight = $('#clusteringTimeline').outerHeight(true);
+        let height = window.innerHeight - appHeaderHeight - timelineHeight;
         return (
             <div id='clusteringOverview' 
                 className='clusteringPanel'
@@ -162,7 +171,12 @@ export default class ClusteringOverview extends React.Component {
                 }}>
                 <div id='clusteringOverviewCarousel' className='carousel slide'  data-ride="carousel" data-interval="false" data-pause="hover">
                     <div className="carousel-inner">
-                        <div id='clusteringOverviewTimeTubes' className="carousel-item active">
+                        <div id='clusteringOverviewTimeTubes' 
+                            className="carousel-item active"
+                            style={{height: height + 'px'}}>
+                            <canvas id='clusteringOverviewTimeTubesCanvas'
+                                width='2000' height='2000'
+                                style={{width: width + 'px', height: height + 'px', position: 'absolute'}}></canvas>
                             <div id='clusteringParameters'>
                                 <table id='clusteringParametersTable'>
                                     <tbody>
@@ -281,8 +295,40 @@ export default class ClusteringOverview extends React.Component {
     }
 
     renderScene() {
-        if (this.renderer) this.renderer.render(this.scene, this.camera);
-        if (this.detailRenderer) this.detailRenderer.render(this.scene, this.cameraDetail);
+        // if (this.renderer) this.renderer.render(this.scene, this.camera);
+        this.renderClusteringOverviewRenderer();
+        if (typeof(this.selectedCluster) !== 'undefined') this.renderClusteringDetailRenderer();
+        // if (this.detailRenderer) this.detailRenderer.render(this.scene, this.cameraDetail);
+    }
+
+    renderClusteringOverviewRenderer() {
+        let dom = document.getElementById('clusteringOverviewTimeTubesCanvas');
+        if (dom) {
+            let width = this.renderer.domElement.width,
+                height = this.renderer.domElement.height;
+            let context = dom.getContext('2d');
+            this.renderer.render(this.scene, this.camera);
+            context.drawImage(
+                this.renderer.domElement,
+                0, 0, width, height,
+                0, 0, dom.width, dom.height
+            );
+        }
+    }
+
+    renderClusteringDetailRenderer() {
+        let dom = document.getElementById('selectedClusterCenterTimeTubesCanvas');
+        if (dom) {
+            let width = this.renderer.domElement.width,
+                height = this.renderer.domElement.height;
+            let context = dom.getContext('2d');
+            this.renderer.render(this.scene, this.cameraDetail);
+            context.drawImage(
+                this.renderer.domElement,
+                0, 0, width, height,
+                0, 0, dom.width, dom.height
+            );
+        }
     }
     
     setRendererSize() {
@@ -290,6 +336,9 @@ export default class ClusteringOverview extends React.Component {
         let appHeaderHeight = $('#appHeader').outerHeight(true);
         let timelineHeight = $('#clusteringTimeline').outerHeight(true);//40 * ClusteringStore.getDatasets().length + 16 + 2;
         const height = window.innerHeight - appHeaderHeight - timelineHeight;
+        let canvas = document.getElementById('clusteringOverviewTimeTubesCanvas');
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
         this.renderer.setSize(width, height);
         let aspect = width / height, 
             fov = 45,
@@ -302,39 +351,39 @@ export default class ClusteringOverview extends React.Component {
         // this.camera.top = size_y / 2;
         // this.camera.bottom = -size_y / 2;
         // this.camera.lookAt(this.scene.position);
-        this.cameraSet.orthographic = new THREE.OrthographicCamera(
+        this.camera = new THREE.OrthographicCamera(
             -size_x / 2, size_x / 2,
             size_y / 2, -size_y / 2, 0.1,
             far);
-        this.camera = this.cameraSet.orthographic;
         this.camera.position.z = this.cameraPosZ;
         this.camera.lookAt(this.scene.position);
         this.renderer.render(this.scene, this.camera);
         this.addControls();
     }
 
-    initDetailView() {
-        this.detailRenderer = new THREE.WebGLRenderer();
-        this.detailRenderer.setSize(300, 300);
-        this.detailRenderer.setClearColor('#000000');
-        this.detailRenderer.domElement.id = 'selectedClusterCenterTimeTubes';
-    }
+    // initDetailView() {
+    //     this.detailRenderer = new THREE.WebGLRenderer();
+    //     this.detailRenderer.setSize(300, 300);
+    //     this.detailRenderer.setClearColor('#000000');
+    //     this.detailRenderer.domElement.id = 'selectedClusterCenterTimeTubes';
+    // }
 
     setDetailView(cluster) {
         if (typeof(cluster) !== 'undefined' && $('#selectedClusterCenterTimeTubes').length) {
-            $('#selectedClusterCenterTimeTubesRenderer').remove();
             let rendererSize = $('#selectedClusterCenterTimeTubes').width() - 16 * 2;
-            this.detailRenderer.setSize(rendererSize, rendererSize);
-            this.detailRenderer.domElement.id = 'selectedClusterCenterTimeTubesRenderer';
+            $('#selectedClusterCenterTimeTubesCanvas').width(rendererSize);
+            $('#selectedClusterCenterTimeTubesCanvas').height(rendererSize);
+            // this.detailRenderer.setSize(rendererSize, rendererSize);
+            // this.detailRenderer.domElement.id = 'selectedClusterCenterTimeTubesRenderer';
             let posX = this.tubeCoords[cluster].x;
             let posY = this.tubeCoords[cluster].y;
             this.cameraDetail.position.x = posX;
             this.cameraDetail.position.y = posY;
             this.cameraDetail.lookAt(posX, posY, 0);
-            let canvas = document.getElementById('selectedClusterCenterTimeTubes');
-            canvas.appendChild(this.detailRenderer.domElement);
+            // let canvas = document.getElementById('selectedClusterCenterTimeTubes');
+            // canvas.appendChild(this.detailRenderer.domElement);
 
-            document.getElementById('selectedClusterCenterTimeTubesRenderer')
+            document.getElementById('selectedClusterCenterTimeTubesCanvas')
                 .addEventListener('mousedown', this.onMouseDownClusterCenterTimeTubesRenderer().bind(this), false);
         }
     }
@@ -542,7 +591,7 @@ export default class ClusteringOverview extends React.Component {
     resetDetailView() {
         if ($('#selectedClusterCenterTimeTubes').length) {
             let rendererSize = $('#selectedClusterCenterTimeTubes').width() - 16 * 2;
-            this.detailRenderer.setSize(rendererSize, rendererSize);
+            // this.detailRenderer.setSize(rendererSize, rendererSize);
             this.cameraDetail.position.x = 0;
             this.cameraDetail.position.y = 0;
             this.cameraDetail.lookAt(0, 0, 0);
@@ -550,7 +599,7 @@ export default class ClusteringOverview extends React.Component {
     }
 
     addControls() {
-        this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+        this.controls = new OrbitControls(this.camera, document.getElementById('clusteringOverviewTimeTubesCanvas'));
         this.controls.position0.set(0, 0, 50);
         this.controls.screenSpacePanning = false;
         this.controls.enableZoom = false;
@@ -570,8 +619,14 @@ export default class ClusteringOverview extends React.Component {
     getIntersectedIndex(event) {
         let name;
         let raymouse = new THREE.Vector2();
-        raymouse.x = (event.offsetX / this.renderer.domElement.clientWidth) * 2 - 1;
-        raymouse.y = -(event.offsetY / this.renderer.domElement.clientHeight) * 2 + 1;
+        let canvas = document.getElementById('clusteringOverviewTimeTubesCanvas');
+        let clientRect = canvas.getBoundingClientRect();
+        let canvasPageX = window.pageXOffset + clientRect.left,
+            canvasPageY = window.pageYOffset + clientRect.top;
+        let offsetX = event.pageX - canvasPageX,
+            offsetY = event.pageY - canvasPageY;
+        raymouse.x = (offsetX / Number(canvas.style.width.slice(0, -2))) * 2 - 1;
+        raymouse.y = -(offsetY / Number(canvas.style.height.slice(0, -2))) * 2 + 1;
         this.raycaster.setFromCamera(raymouse, this.camera);
         for (let i = 0; i < this.labels.length; i++) {
             let intersects = this.raycaster.intersectObject(this.labels[i]);

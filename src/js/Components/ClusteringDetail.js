@@ -84,6 +84,7 @@ export default class ClusteringDetail extends React.Component {
             this.variables = this.variables.filter(ele => ele !== 'z');
             this.createVariableLabels();
             this.extractSubsequencesInCluster(cluster);
+            $('#selectedClusterCenterName').text('Cluster ' + cluster)
             this.setState({
                 cluster: cluster
             });
@@ -135,6 +136,11 @@ export default class ClusteringDetail extends React.Component {
         return (
             <div id='selectedClusterCenterTimeTubes'
                 className='resultAreaElem'>
+                    <h5 id='selectedClusterCenterName'
+                        style={{textAlign: 'center'}}></h5>
+                <canvas id='selectedClusterCenterTimeTubesCanvas'
+                    width='500'
+                    height='500'></canvas>
             </div>
         );
     }
