@@ -31,6 +31,7 @@ export default class ClusteringDetail extends React.Component {
         this.clusteringScores;
         this.subsequenceParameters;
         this.variables;
+        this.selectedTrIdx = -1;
         this.state = {
             cluster: -1
         };
@@ -317,7 +318,7 @@ export default class ClusteringDetail extends React.Component {
                         style={{width: tableWidth, height: cellHeight}}
                         onMouseOver={this.onMouseOverSubsequenceDetailTr().bind(this)}
                         onMouseOut={this.onMouseOutSubsequenceDetailTr().bind(this)}
-                        // onMouseDown={this.onMouseDownSubsequenceDetailTr().bind(this)}
+                        onMouseDown={this.onMouseDownSubsequenceDetailTr().bind(this)}
                         onDoubleClick={this.onDoubleClickSubsequenceDetailTr().bind(this)}>
                         {tdItems}
                     </tr>);
@@ -960,17 +961,17 @@ export default class ClusteringDetail extends React.Component {
                 let period = [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z];
                 let dataPointNum = data.dataPoints.length;
                 let silhouette = this.clusteringScores.silhouetteSS[i];
-                let mouseX = window.innerWidth - d.clientX + 5;
-                let mouseY = window.innerHeight - d.clientY + 5;//$(window).scrollTop() + d.clientY + 2;
                 tooltipTable.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
                     '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
                     '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr>' +
                     '<tr><td>Silhouette coefficient</td><td class="tooltipTableValues">' + formatValue(silhouette) + '</td></tr></tbody></table>');
+                let mouseX = document.body.clientWidth - d.clientX + 5;
+                let mouseY = d.clientY- tooltip.height() -  5;
                 tooltip.css({
                     right: mouseX + 'px',
-                    bottom: mouseY + 'px',
+                    bottom: 'unset',
                     left: 'unset',
-                    top: 'unset'
+                    top: mouseY + 'px'
                 });
                 tooltip.css('display', 'block');
 
@@ -1088,11 +1089,15 @@ export default class ClusteringDetail extends React.Component {
             if (this.queryMode === 'QBE' || this.queryMode === 'QBS') {
                 let targetIdElem = d.target.id.split('_');
                 let elem = document.getElementById('subsequenceDetailTr_' + targetIdElem[1] + '_' + targetIdElem[2]);
-                elem.classList.add('drag');
-                this.clickedX = elem.offsetLeft;//d.pageX// - elem.offsetLeft;
-                this.clickedY = elem.offsetTop;//d.pageY// - elem.offsetTop;
-                document.body.addEventListener('mousemove', this.onMouseMoveSubsequenceDetailTr().bind(this), false);
-                elem.addEventListener('mouseup', this.onMouseUpSubsequenceDetailTr().bind(this), false);
+                if (elem){
+                    elem.classList.add('drag');
+                    this.clickedX = elem.offsetLeft;//d.pageX// - elem.offsetLeft;
+                    this.clickedY = elem.offsetTop;//d.pageY// - elem.offsetTop;
+                    this.selectedTrId = elem.id;
+                    this.selectedTrIdx = elem.rowIndex;
+                    document.body.addEventListener('mousemove', this.onMouseMoveSubsequenceDetailTr().bind(this), false);
+                    document.body.addEventListener('mouseup', this.onMouseUpSubsequenceDetailTr().bind(this), false);
+                }
             }
         };
     }
@@ -1103,9 +1108,8 @@ export default class ClusteringDetail extends React.Component {
             if (drag) {
                 drag.style.position = 'absolute';
                 d.preventDefault();
-
                 drag.style.top = d.pageY - this.clickedY + 'px';
-                drag.style.left = d.pageX - this.clickedX + 'px';
+                drag.style.left = d.pageX - this.clickedX - drag.clientWidth / 2 - $('#extractionMenu').width() + 'px';
 
                 switch(this.queryMode) {
                     case 'QBE':
@@ -1149,7 +1153,7 @@ export default class ClusteringDetail extends React.Component {
 
             let drag = document.getElementsByClassName('drag')[0];
             if (drag) {
-                drag.removeEventListener('mouseup', this.onMouseUpSubsequenceDetailTr.bind(this), false);
+                document.body.removeEventListener('mouseup', this.onMouseUpSubsequenceDetailTr.bind(this), false);
                 drag.classList.remove('drag');
                 drag.style.position = 'static';
             }
@@ -1197,11 +1201,24 @@ export default class ClusteringDetail extends React.Component {
                     }
                     break;
             }
-            this.moveToOriginalPos();
+            this.moveToOriginalPos(this.selectedTrId);
         };
     }
 
-    moveToOriginalPos() {
+    moveToOriginalPos(trId) {
+        let previousRowId = document.getElementById('subsequencesOverviewTable').rows[this.selectedTrIdx - 1].id;
+        if (previousRowId) {
+            $('#' + previousRowId).after($('#' + this.selectedTrId));
+        } else {
+            let nextRowId = document.getElementById('subsequencesOverviewTable').rows[this.selectedTrIdx + 1].id;
+            $('#' + nextRowId).before($('#' + this.selectedTrId));
+        }
+        // if (previousRow) {
+        //     previousRow.insertAfter(document.getElementById(trId));
+        // } else {
+        //     let nextResult = document.getElementById('subsequencesOverviewTable').rows[this.selectedTrIdx + 1];
+        //     nextResult.insertBefore(document.getElementById(trId));
+        // }
         // let nextResult = $('#resultSummaryHolder_' + (this.rank + 1));
         // if (nextResult) {
         //     nextResult.before($('#resultSummaryHolder_' + this.rank));

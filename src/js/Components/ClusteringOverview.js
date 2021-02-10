@@ -1446,7 +1446,7 @@ export default class ClusteringOverview extends React.Component {
                 } else {
                     // header is invisible
                     mouseX = d3.event.clientX - resultsPanelOffset.left + 5;
-                    if (d3.event.clientY < $('#clusteringResults').height() / 2) {
+                    if (d3.event.clientY < $('#clusteringOverviewMDSScatterplots').height() / 2) {
                         mouseY = d3.event.clientY + 5;
                     } else {
                         let tooltipHeight = tooltip.height() === 0? 230: tooltip.height();
