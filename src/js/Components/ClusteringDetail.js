@@ -81,6 +81,7 @@ export default class ClusteringDetail extends React.Component {
             this.datasetsIdx = ClusteringStore.getDatasets();
             this.clusteringScores = ClusteringStore.getClusteringScores();
             this.subsequenceParameters = ClusteringStore.getSubsequenceParameters();
+            this.clearCanvas();
             this.setState({
                 cluster: -1
             });
@@ -101,6 +102,7 @@ export default class ClusteringDetail extends React.Component {
             this.subsequences = ClusteringStore.getSubsequences();
             this.clusteringScores = ClusteringStore.getClusteringScores();
             this.extractSubsequencesInCluster(-1);
+            this.clearCanvas();
             this.setState({
                 cluster: -1
             });
@@ -111,6 +113,7 @@ export default class ClusteringDetail extends React.Component {
             this.subsequences = ClusteringStore.getSubsequences();
             this.clusteringScores = ClusteringStore.getClusteringScores();
             this.extractSubsequencesInCluster(-1);
+            this.clearCanvas();
             this.setState({
                 cluster: -1
             });
@@ -173,6 +176,12 @@ export default class ClusteringDetail extends React.Component {
                 className='resultAreaElem'>
             </div>
         );
+    }
+
+    clearCanvas() {
+        let canvas = document.getElementById('selectedClusterCenterTimeTubesCanvas');
+        let context = canvas.getContext('2d');
+        context.clearRect(0, 0, canvas.width, canvas.height);
     }
 
     clusterFeatureTable() {

@@ -92,7 +92,7 @@ export default class ClusteringProcess extends React.Component {
             this.updataUpdatedSSSparklineTableFlag = true;
             this.setState({
                 selectedProcess: selectedProcess
-            })
+            });
         });
         ClusteringStore.on('updateSSSelection', () => {
             this.updataUpdatedSSSparklineTableFlag = true;
@@ -292,8 +292,8 @@ export default class ClusteringProcess extends React.Component {
         }
         for (let i = 0; i < this.steps.length; i++) {
             let SSnum = 0;
-            for (let key in this.filteringProcess[this.steps[i]]) {
-                SSnum += this.filteringProcess[this.steps[i]][key].length;
+            for (let dataId in this.filteringProcess[this.steps[i]]) {
+                SSnum += this.filteringProcess[this.steps[i]][dataId].length;
             }
             let filteredSSNumLabel = svg.append('g')
                 .attr('class', 'filteredSSLabelGroup');
@@ -302,6 +302,7 @@ export default class ClusteringProcess extends React.Component {
                 // .on('click', onClickFilteredSSNumber);
             filteredSSNumLabel
                 .append('rect')
+                .attr('id', 'filteredSSNumRect_' + this.steps[i])
                 .attr('x', svgWidth / 2 - labelWidth / 2)
                 .attr('y', deltaY * (i + 1) - labelHeight / 2 + this.margin.top)
                 .attr('width', labelWidth)
@@ -310,6 +311,7 @@ export default class ClusteringProcess extends React.Component {
                 .attr('class', 'filteredSSRect');
             filteredSSNumLabel
                 .append('text')
+                .attr('id', 'filteredSSNumLabel_' + this.steps[i])
                 .attr('x', svgWidth / 2)
                 .attr('y', deltaY * (i + 1) + 6 + this.margin.top) // 6 is an adjustment value for aligning text vertically
                 .text(SSnum)
@@ -697,6 +699,7 @@ export default class ClusteringProcess extends React.Component {
         return function() {
             let subsequences = [];
             for (let dataId in this.state.selectedSS) {
+                this.state.selectedSS[dataId].sort((a, b) => a - b);
                 for (let i = 0; i < this.state.selectedSS[dataId].length; i++) {
                     subsequences.push(this.filteringProcess.subsequences[dataId][this.state.selectedSS[dataId][i]]);
                 }
@@ -704,12 +707,45 @@ export default class ClusteringProcess extends React.Component {
             let clusteringParameters = ClusteringStore.getClusteringParameters();
             let dataLen = ClusteringStore.getSubsequenceParameters().isometryLen;
             let [clusterCenters, labels, clusteringScores, resultsCoordinates] = reperformClustering(subsequences, clusteringParameters, dataLen);
+            let addedNum = 0,
+                removedNum = 0;
+            for (let dataId in this.state.updatedSS) {
+                for (let i = 0; i < this.state.updatedSS[dataId].length; i++) {
+                    if (this.state.updatedSS[dataId][i].status === 'add') addedNum++;
+                    if (this.state.updatedSS[dataId][i].status === 'remove') removedNum++;
+                }
+            }
+            let SSnum = 0;
+            for (let dataId in this.filteringProcess[this.steps[this.steps.length - 1]]) {
+                SSnum += this.filteringProcess[this.steps[this.steps.length - 1]][dataId].length;
+            }
+            let SSnumLabel = SSnum;
+            if (addedNum > 0) {
+                SSnumLabel += ' <tspan style="fill:#80b139">+' + addedNum + '</tspan>';
+            }
+            if (removedNum > 0) {
+                SSnumLabel += ' <tspan style="fill:#d9534f">-' + removedNum + '</tspan>';
+            }
+            let label = d3.select('#filteredSSNumLabel_' + this.steps[this.steps.length - 1]);
+            label
+                .html(SSnumLabel);
+            let rectWidth = label.node().getBBox().width;
+            let svgWidth = $('#clusteringProcess').width() - this.areaPadding.left - this.areaPadding.right;
+            d3.select('#filteredSSNumRect_' + this.steps[this.steps.length - 1])
+                .attr('x', svgWidth / 2 - rectWidth / 2)
+                .attr('width', rectWidth);
             ClusteringAction.updateClusteringResults(subsequences, clusterCenters, labels, clusteringScores, this.state.selectedSS, this.state.updatedSS, resultsCoordinates);
         };
     }
 
     onClickClearButton() {
         return function() {
+            this.setState({
+                selectedSS: {},
+                updatedSS: {}, 
+                selectedProcess: ''
+            });
+            this.filteringSummary();
             ClusteringAction.resetClusteringResults();
         };
     }
@@ -751,7 +787,7 @@ export default class ClusteringProcess extends React.Component {
                 let fileName = DataStore.getFileName(dataId);
                 let period = [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z];
                 let dataPointNum = data.dataPoints.length;
-                let mouseX = d.clientX + 5;
+                let mouseX = d.clientX + 15;
                 let mouseY = window.innerHeight - d.clientY + 5;
                 tooltipTable.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
                     '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
@@ -897,7 +933,7 @@ export default class ClusteringProcess extends React.Component {
                 let fileName = DataStore.getFileName(dataId);
                 let period = [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z];
                 let dataPointNum = data.dataPoints.length;
-                let mouseX = d.clientX + 5;
+                let mouseX = d.clientX + 15;
                 let mouseY = window.innerHeight - d.clientY + 5;
                 tooltipTable.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
                     '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +

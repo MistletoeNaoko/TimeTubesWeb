@@ -396,7 +396,7 @@ export function reperformClustering(data, clusteringParameters, dataLen) {
                 for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
                     for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
                         let distSum = 0;
-                        variables.forEach(key => {
+                        clusteringParameters.variables.forEach(key => {
                             if (key !== 'z') {
                                 distSum += distMatrix[medoidIdx[i][key]][medoidIdx[j][key]][key];
                             }
