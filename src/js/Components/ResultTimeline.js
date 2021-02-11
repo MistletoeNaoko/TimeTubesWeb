@@ -66,10 +66,12 @@ export default class ResultTimeline extends React.Component {
             this.resizeTimeLine();
         });
         AppStore.on('resizeExtractionResultsArea', () => {
-            this.setState({
-                width: $('#resultTimelineArea_' + this.state.id).width()
-            });
-            this.resizeTimeLine();
+            if ($('#extractionResults').length) {
+                this.setState({
+                    width: $('#resultTimelineArea_' + this.state.id).width()
+                });
+                this.resizeTimeLine();
+            }
         });
         FeatureStore.on('recoverQuery', (query) => {
             if (FeatureStore.getMode() === 'QBE' && this.state.results.length > 0) {

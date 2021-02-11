@@ -31,7 +31,7 @@ export default class DistanceHistogram extends React.Component {
         this.initHistogram();
 
         AppStore.on('resizeExtractionResultsArea', () => {
-            if (this.results.length > 0) {
+            if ($('#extractionResults').length && this.results.length > 0) {
                 this.updateHistogram();
             }
         });

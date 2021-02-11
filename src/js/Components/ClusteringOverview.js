@@ -153,8 +153,10 @@ export default class ClusteringOverview extends React.Component {
             this.drawMDSScatterplots();
         });
         AppStore.on('resizeExtractionResultsArea', () => {
-            this.setRendererSize();
-            this.setMDSScatterplotsSize();
+            if ($('#clusteringResults').length) {
+                this.setRendererSize();
+                this.setMDSScatterplotsSize();
+            }
         });
     }
 

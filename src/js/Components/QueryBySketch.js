@@ -143,7 +143,7 @@ export default class QueryBySketch extends React.Component{
                 let lists = this.extractMinMaxList(lookup, targets);
                 this.queryData = {
                     id: id,
-                    period: period,
+                    period: [Math.ceil(period[0]), Math.floor(period[1])],
                     targetData: DataStore.getDataArray(id, 1)
                 };
                 this.setState({

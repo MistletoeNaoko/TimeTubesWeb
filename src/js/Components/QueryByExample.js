@@ -25,6 +25,21 @@ export default class QueryByExample extends React.Component {
                 }
             }
         });
+        FeatureStore.on('updateSource', () => {
+            if (this.state.source !== FeatureStore.getSource()) {
+                let source = FeatureStore.getSource();
+                let sourceList = document.getElementById('sourceList');
+                for (let i = 0; i < sourceList.options.length; i++) {
+                    if (Number(sourceList.options[i].value) === Number(source)) {
+                        sourceList.selectedIndex = i;
+                        break;
+                    }
+                }
+                this.setState({
+                    source: source
+                });
+            }
+        });
     }
 
     extractionSource() {

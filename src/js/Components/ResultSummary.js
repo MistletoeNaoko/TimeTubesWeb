@@ -34,6 +34,8 @@ export default class ResultSummary extends React.Component {
         //         }
         //     }
         // }
+        this.onMouseMoveOnResultSummaryFnc = this.onMouseMoveOnResultSummary.bind(this);
+        this.onMouseUpFromResultSummaryFnc = this.onMouseUpFromResultSummary.bind(this);
     }
 
     componentDidMount() {
@@ -223,10 +225,10 @@ export default class ResultSummary extends React.Component {
         this.clickedX = event.pageX - child.offsetLeft;
         this.clickedY = event.pageY - child.offsetTop;
     
-        document.body.addEventListener('mousemove', this.onMouseMoveOnResultSummary.bind(this), false);
+        document.body.addEventListener('mousemove', this.onMouseMoveOnResultSummaryFnc, false);
         // TODO: To avoid unexpected behaviors related to fact-guided querying, the following code is temporally commented out.
         // document.body.addEventListener('mouseleave', this.onMouseUpFromResultSummary.bind(this), false);
-        elem.addEventListener('mouseup', this.onMouseUpFromResultSummary.bind(this), false);
+        elem.addEventListener('mouseup', this.onMouseUpFromResultSummaryFnc, false);
     }
     
     onMouseMoveOnResultSummary(event) {
@@ -279,11 +281,11 @@ export default class ResultSummary extends React.Component {
     }
     
     onMouseUpFromResultSummary(event) {
-        document.body.removeEventListener('mousemove', this.onMouseMoveOnResultSummary.bind(this), false);
+        document.body.removeEventListener('mousemove', this.onMouseMoveOnResultSummaryFnc, false);
 
         let drag = document.getElementsByClassName('drag')[0];
         if (drag) {
-            drag.removeEventListener('mouseup', this.onMouseUpFromResultSummary.bind(this), false);
+            drag.removeEventListener('mouseup', this.onMouseUpFromResultSummaryFnc, false);
             drag.classList.remove('drag');
             drag.style.position = 'static';
         }

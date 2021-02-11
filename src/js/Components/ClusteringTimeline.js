@@ -64,7 +64,9 @@ export default class ClusteringTimeline extends React.Component {
             this.drawTimelines();
         });
         AppStore.on('resizeExtractionResultsArea', () => {
-            this.resizeTimelines();
+            if ($('#clusteringResults').length) {
+                this.resizeTimelines();
+            }
         });
     }
 

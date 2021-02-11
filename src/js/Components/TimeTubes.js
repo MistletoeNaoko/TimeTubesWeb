@@ -14,7 +14,6 @@ import ClusteringStore from '../Stores/ClusteringStore';
 import BufferGeometryUtils from '../lib/BufferGeometryUtils';
 import OrbitControls from "three-orbitcontrols";
 import TextSprite from 'three.textsprite';
-import { dotPow } from 'mathjs';
 
 export default class TimeTubes extends React.Component{
     constructor(props) {
@@ -459,8 +458,8 @@ export default class TimeTubes extends React.Component{
             }
         });
         FeatureStore.on('switchQueryMode', (mode) => {
+            this.renderClusteringResultView = false;
             let sourceId = FeatureStore.getSource();
-            this.mode = mode;
             this.menu = mode;
             if (mode === 'QBE' && sourceId !== 'default') {
                 this.visualQuery = (Number(sourceId) === this.id);
@@ -472,9 +471,10 @@ export default class TimeTubes extends React.Component{
             }
         });
         FeatureStore.on('updateSource', () => {
-            let mode = FeatureStore.getMode();
+            this.renderClusteringResultView = false;
+            this.menu = FeatureStore.getMode();
             let sourceId = FeatureStore.getSource();
-            if (mode === 'QBE' && sourceId !== 'default') {
+            if (this.menu === 'QBE' && sourceId !== 'default') {
                 this.visualQuery = (Number(sourceId) === this.id);
                 this.setQBEView();
                 // this.updateControls();
@@ -494,30 +494,42 @@ export default class TimeTubes extends React.Component{
             this.selector = FeatureStore.getSelector();
         });
         FeatureStore.on('selectTimeInterval', (id, value) => {
-            let mode = FeatureStore.getMode();
-            if (mode === 'QBE' && Number(id) === this.id) {
+            this.menu = FeatureStore.getMode();
+            if (this.menu === 'QBE' && Number(id) === this.id) {
                 // this.selectTimeInterval(Number(value));
                 this.paintSelectedPeriod();
             }
         });
         FeatureStore.on('updateSelectedPeriod', () => {
             let sourceId = FeatureStore.getSource();
-            let mode = FeatureStore.getMode();
-            if (mode === 'QBE' && Number(sourceId) === this.id) {
+            this.menu = FeatureStore.getMode();
+            if (this.menu === 'QBE' && Number(sourceId) === this.id) {
                 // paint the selected period red
                 this.paintSelectedPeriod();
             }
         });
         FeatureStore.on('convertResultIntoQuery', (id, period, activeVar) => {
-            if (FeatureStore.getMode() === 'QBE' && id === this.id) {
+            this.renderClusteringResultView = false;
+            this.menu = FeatureStore.getMode();
+            if (this.menu === 'QBE' && Number(id) === this.id) {
                 this.visualQuery = (Number(id) === this.id);
                 this.setQBEView();
                 // this.updateControls();
                 this.resetSelection();
                 this.paintSelectedPeriod();
+                this.searchTime(period[0]);
+                this.grid.visible = this.currentTubeStatus.grid;
+                this.plot.visible = this.currentTubeStatus.plot;
+                if (this.currentTubeStatus.far) {
+                    this.clippingPlane2.constant = this.currentTubeStatus.far;
+                    this.renderer.clippingPlanes = [this.clippingPlane2];
+                } else {
+                    this.renderer.clippingPlanes = [];
+                }
             }
         });
         FeatureStore.on('recoverQuery', (query) => {
+            this.renderClusteringResultView = false;
             if (FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id) {
                 this.visualQuery = true;
                 setTimeout(function() {
@@ -567,9 +579,10 @@ export default class TimeTubes extends React.Component{
 
     renderScene() {
         this.renderMainRenderer();
-        if (this.menu === 'Clustering' && this.renderClusteringResultView) {
+        if (this.renderClusteringResultView) {//(this.menu === 'Clustering' && this.renderClusteringResultView) {
             this.renderClusteringRenderer();
-        } else if (this.menu === 'QBE') {
+        }
+        if (this.menu === 'QBE') {
             this.renderQBERenderer();
         }
     }

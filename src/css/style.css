@@ -556,6 +556,10 @@ img.selectorIcon:active {
     text-align: right;
 }
 
+.subsequenceDetailTr {
+    background-color: #fff;
+}
+
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/

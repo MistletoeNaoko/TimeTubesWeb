@@ -1,8 +1,9 @@
 import React from 'react';
 import * as d3 from 'd3';
-import {selectMenu} from '../Actions/AppAction';
+import {selectMenu, resizeExtractionResultsArea, showExtractionSourcePanel} from '../Actions/AppAction';
 import * as domActions from '../lib/domActions';
 import {showTimeTubesOfTimeSlice} from '../Actions/TimeTubesAction';
+import {convertResultIntoQuery, updateSource} from '../Actions/FeatureAction';
 import * as ClusteringAction from '../Actions/ClusteringAction';
 import ClusteringStore from '../Stores/ClusteringStore';
 import DataStore from '../Stores/DataStore';
@@ -32,6 +33,8 @@ export default class ClusteringDetail extends React.Component {
         this.subsequenceParameters;
         this.variables;
         this.selectedTrIdx = -1;
+        this.onMouseMoveSubsequenceDetailTrFnc = this.onMouseMoveSubsequenceDetailTr().bind(this);
+        this.onMouseUpSubsequenceDetailTrFnc = this.onMouseUpSubsequenceDetailTr().bind(this);
         this.state = {
             cluster: -1
         };
@@ -67,6 +70,8 @@ export default class ClusteringDetail extends React.Component {
     }
 
     componentDidMount() {
+        $('#selectedClusterCenterTimeTubesCanvas').css('width', $('#clusteringDetail').width());
+        $('#selectedClusterCenterTimeTubesCanvas').css('height', $('#clusteringDetail').width());
         ClusteringStore.on('showClusteringResults', () => {
             this.clusterCenters = ClusteringStore.getClusterCenters();
             this.clusterColors = ClusteringStore.getClusterColors();
@@ -1095,8 +1100,8 @@ export default class ClusteringDetail extends React.Component {
                     this.clickedY = elem.offsetTop;//d.pageY// - elem.offsetTop;
                     this.selectedTrId = elem.id;
                     this.selectedTrIdx = elem.rowIndex;
-                    document.body.addEventListener('mousemove', this.onMouseMoveSubsequenceDetailTr().bind(this), false);
-                    document.body.addEventListener('mouseup', this.onMouseUpSubsequenceDetailTr().bind(this), false);
+                    document.body.addEventListener('mousemove', this.onMouseMoveSubsequenceDetailTrFnc, false);
+                    document.body.addEventListener('mouseup', this.onMouseUpSubsequenceDetailTrFnc, false);
                 }
             }
         };
@@ -1149,13 +1154,25 @@ export default class ClusteringDetail extends React.Component {
 
     onMouseUpSubsequenceDetailTr() {
         return function(d) {
-            document.body.removeEventListener('mousemove', this.onMouseMoveSubsequenceDetailTr().bind(this), false);
+            document.body.removeEventListener('mousemove', this.onMouseMoveSubsequenceDetailTrFnc, false);
+            document.body.removeEventListener('mouseup', this.onMouseUpSubsequenceDetailTrFnc, false);
 
             let drag = document.getElementsByClassName('drag')[0];
             if (drag) {
-                document.body.removeEventListener('mouseup', this.onMouseUpSubsequenceDetailTr.bind(this), false);
                 drag.classList.remove('drag');
                 drag.style.position = 'static';
+            }
+
+            let targetEle = this.selectedTrId.split('_');
+            let dataId = targetEle[1];
+            let SSId = Number(targetEle[2]);
+            let period = [0, 0];
+            for (let i = 0; i < this.SSCluster.length; i++) {
+                if (this.SSCluster[i].id === dataId && this.SSCluster[i].idx === SSId) {
+                    period[0] = this.SSCluster[i].dataPoints[0].z;
+                    period[1] = this.SSCluster[i].dataPoints[this.SSCluster[i].dataPoints.length - 1].z;
+                    break;
+                }
             }
 
             switch(this.queryMode) {
@@ -1169,17 +1186,20 @@ export default class ClusteringDetail extends React.Component {
                         if ((selectedTimeSlicePos.left <= d.pageX && d.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
                         && (selectedTimeSlicePos.top <= d.pageY && d.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
                             // convert the result into a new query
-                            // if ($('#QBESourceMain').css('display') === 'none') {
-                            //     domActions.toggleSourcePanel();
-                            //     resizeExtractionResultsArea();
-                            // }
-                            // FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
-                            // if ($('#resultDetailArea').css('display') === 'block') {
-                            //     domActions.toggleExtractionDetailPanel();
-                            // }
-                            // if (FeatureStore.getSource() !== this.result.id) {
-                            //     FeatureAction.updateSource(this.result.id);
-                            // }
+                            if ($('#QBESourceMain').css('display') === 'none') {
+                                domActions.toggleSourcePanel();
+                                resizeExtractionResultsArea();
+                            }
+                            convertResultIntoQuery(Number(dataId), period, this.variables);
+                            if (FeatureStore.getSource() !== dataId) {
+                                let promise = Promise.resolve();
+                                promise
+                                    .then(function() {
+                                        showExtractionSourcePanel(dataId);
+                                    }).then(function() {
+                                        updateSource(dataId);
+                                    });
+                            }
                         }
                     }
                     break;
@@ -1193,19 +1213,18 @@ export default class ClusteringDetail extends React.Component {
                         if ((sketchPadPos.left <= d.pageX && d.pageX <= sketchPadPos.left + sketchPadWidth)
                         && (sketchPadPos.top <= d.pageY && d.pageY <= sketchPadPos.top + sketchPadHeight)) {
                             // convert the result into a new query
-                            // FeatureAction.convertResultIntoQuery(this.result.id, [this.result.start, this.result.start + this.result.period], this.ignored);
-                            // if ($('#resultDetailArea').css('display') === 'block') {
-                            //     domActions.toggleExtractionDetailPanel();
-                            // }
+                            convertResultIntoQuery(Number(dataId), period, this.variables);
                         }
                     }
                     break;
             }
-            this.moveToOriginalPos(this.selectedTrId);
+            this.moveToOriginalPos();
+            this.selectedTrId = undefined;
+            this.selectedTrIdx = undefined;
         };
     }
 
-    moveToOriginalPos(trId) {
+    moveToOriginalPos() {
         let previousRowId = document.getElementById('subsequencesOverviewTable').rows[this.selectedTrIdx - 1].id;
         if (previousRowId) {
             $('#' + previousRowId).after($('#' + this.selectedTrId));
