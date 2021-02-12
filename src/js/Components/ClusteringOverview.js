@@ -168,6 +168,7 @@ export default class ClusteringOverview extends React.Component {
         return (
             <div id='clusteringOverview' 
                 className='clusteringPanel'
+                style={{height: window.innerHeight - $('#appHeader').outerHeight(true)}}
                 ref={mount => {
                     this.mount = mount;
                 }}>

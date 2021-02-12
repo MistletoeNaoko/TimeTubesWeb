@@ -21,7 +21,8 @@ export default class ClusteringResults extends React.Component {
     render() {
         return (
             <div id='clusteringResults' 
-                className='clusteringPanel'>
+                className='clusteringPanel'
+                style={{height: window.innerHeight - $('#appHeader').outerHeight(true)}}>
                 <ClusteringProcess/>
                 <div id='clusteringResultsOverview'>
                     <ClusteringTimeline/>
