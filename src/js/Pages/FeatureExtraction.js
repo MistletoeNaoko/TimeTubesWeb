@@ -18,6 +18,8 @@ export default class FeatureExtraction extends React.Component{
     }
     
     componentDidMount() {
+        let height = window.innerHeight - $('#appHeader').outerHeight(true);
+        $('#mainFeatureArea').height(height);
         FeatureStore.on('switchQueryMode', (mode) => {
             setTimeout(() =>
                 this.setState({

@@ -18,6 +18,9 @@ export default class ExtractionSource extends React.Component {
     }
     
     componentDidMount() {
+        let height = window.innerHeight - $('#appHeader').outerHeight(true);
+        $('#QBESource').height(height);
+
         DataStore.on('upload', () => {
             this.setState({
                 data: DataStore.getAllData()
@@ -83,7 +86,7 @@ export default class ExtractionSource extends React.Component {
         return (
             <div
                 id='QBESource'
-                className='controllersElem featureColumn'
+                className='controllersElem'
                 style={{float: 'left', width: '30%', position: 'relative'}}>
                 <div id='QBESourceMain' style={{display: 'block'}}>
                     {this.QBESelector()}

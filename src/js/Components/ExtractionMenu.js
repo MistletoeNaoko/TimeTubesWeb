@@ -18,6 +18,9 @@ export default class ExtractionMenu extends React.Component {
     }
 
     componentDidMount() {
+        let tabHeight = window.innerHeight - $('#appHeader').outerHeight(true) - $('#targetDatasetsList').outerHeight(true) - $('#extractionMenuNavTabs').outerHeight(true);
+        $('#extractionMenuTabs').height(tabHeight);
+
         FeatureStore.on('switchQueryMode', (mode) => {
            this.setState({
                queryMode: mode
@@ -58,6 +61,11 @@ export default class ExtractionMenu extends React.Component {
                 targets[i].checked = true;
             }
         });
+    }
+
+    componentDidUpdate() {
+        let tabHeight = window.innerHeight - $('#appHeader').outerHeight(true) - $('#targetDatasetsList').outerHeight(true) - $('#extractionMenuNavTabs').outerHeight(true);
+        $('#extractionMenuTabs').height(tabHeight);
     }
 
     selectTabAE() {
@@ -113,7 +121,7 @@ export default class ExtractionMenu extends React.Component {
                             {targetList}
                         </form>
                     </div>
-                    <ul className="nav nav-tabs">
+                    <ul className="nav nav-tabs" id='extractionMenuNavTabs'>
                         <li className="nav-item">
                             <a className="nav-link active" data-toggle="tab" href="#automaticExtraction" onClick={this.selectTabAE}>Automatic Extraction</a>
                         </li>

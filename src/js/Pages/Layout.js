@@ -44,7 +44,7 @@ export default class Layout extends React.Component {
                 $('body').css('overflow-y', 'hidden');
                 break;
             case 'feature':
-                $('body').css('overflow-y', 'scroll');
+                $('body').css('overflow-y', 'hidden');
                 break;
             case 'comment':
                 $('body').css('overflow-y', 'scroll');

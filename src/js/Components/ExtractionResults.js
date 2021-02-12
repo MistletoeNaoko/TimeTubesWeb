@@ -37,6 +37,8 @@ export default class ExtractionResults extends React.Component {
 
     componentDidMount() {
         $('#topKResults').val(20);
+        let height = window.innerHeight - $('#appHeader').outerHeight(true);
+        $('#extractionResults').height(height);
 
         FeatureStore.on('setExtractionResults', () => {
             this.setState({

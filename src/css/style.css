@@ -643,6 +643,7 @@ img.selectorIcon:active {
     width: 70%;
     background-color: #F8F5F0;
     position: relative;
+    overflow-y: scroll;
 }
 
 #clusteringResults {
@@ -877,4 +878,12 @@ img.selectorIcon:active {
 #selectedClusterCenterTimeTubesCanvas {
     margin: 0 50%;
     transform: translate(-50%, 0);
+}
+
+#extractionMenuTabs {
+    overflow-y: scroll;
+}
+
+#QBESource {
+    overflow-y: scroll;
 }

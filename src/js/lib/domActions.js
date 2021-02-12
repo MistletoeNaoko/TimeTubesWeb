@@ -34,20 +34,36 @@ export function toggleExtractionMenu(display) {
     }
 }
 
-export function toggleSourcePanel() {
+export function toggleSourcePanel(flag=undefined) {
     let current = $('#QBESourceMain').css('display');
-    if (current === 'block') {
-        $('#QBESourceMain').css('display', 'none');//toggle();
-        $('#QBESource').css('width', '0%');
-        $('#QBESource').css('padding', '0px');
-        $('#extractionResults').css('width', '70%');
-        $('#collapseSourcePanel').text('Open');
-    } else if (current === 'none') {
-        $('#QBESourceMain').css('display', 'block');
-        $('#QBESource').css('width', '30%');
-        $('#QBESource').css('padding', '15px');
-        $('#extractionResults').css('width', '40%');
-        $('#collapseSourcePanel').text('Close');
+    if (typeof(flag) !== 'undefined') {
+        if (flag) {
+            $('#QBESourceMain').css('display', 'block');
+            $('#QBESource').css('width', '30%');
+            $('#QBESource').css('padding', '15px');
+            $('#extractionResults').css('width', '40%');
+            $('#collapseSourcePanel').text('Close');
+        } else {
+            $('#QBESourceMain').css('display', 'none');//toggle();
+            $('#QBESource').css('width', '0%');
+            $('#QBESource').css('padding', '0px');
+            $('#extractionResults').css('width', '70%');
+            $('#collapseSourcePanel').text('Open');
+        }
+    } else {
+        if (current === 'block') {
+            $('#QBESourceMain').css('display', 'none');//toggle();
+            $('#QBESource').css('width', '0%');
+            $('#QBESource').css('padding', '0px');
+            $('#extractionResults').css('width', '70%');
+            $('#collapseSourcePanel').text('Open');
+        } else if (current === 'none' || $('#QBESourceMain').length <= 0) {
+            $('#QBESourceMain').css('display', 'block');
+            $('#QBESource').css('width', '30%');
+            $('#QBESource').css('padding', '15px');
+            $('#extractionResults').css('width', '40%');
+            $('#collapseSourcePanel').text('Close');
+        }
     }
 }
 

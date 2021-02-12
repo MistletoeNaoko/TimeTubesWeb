@@ -1195,16 +1195,14 @@ export default class ClusteringDetail extends React.Component {
                         if ((selectedTimeSlicePos.left <= d.pageX && d.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
                         && (selectedTimeSlicePos.top <= d.pageY && d.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
                             // convert the result into a new query
-                            if ($('#QBESourceMain').css('display') === 'none') {
-                                domActions.toggleSourcePanel();
-                                resizeExtractionResultsArea();
-                            }
                             convertResultIntoQuery(Number(dataId), period, this.variables);
                             if (FeatureStore.getSource() !== dataId) {
                                 let promise = Promise.resolve();
                                 promise
                                     .then(function() {
                                         showExtractionSourcePanel(dataId);
+                                        domActions.toggleSourcePanel(true);
+                                        resizeExtractionResultsArea();
                                     }).then(function() {
                                         updateSource(dataId);
                                     });

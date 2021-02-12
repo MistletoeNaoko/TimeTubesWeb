@@ -309,7 +309,7 @@ export default class ResultSummary extends React.Component {
                         if ((selectedTimeSlicePos.left <= event.pageX && event.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
                         && (selectedTimeSlicePos.top <= event.pageY && event.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
                             // convert the result into a new query
-                            if ($('#QBESourceMain').css('display') === 'none') {
+                            if ($('#QBESourceMain').length <= 0 ||$('#QBESourceMain').css('display') === 'none') {
                                 domActions.toggleSourcePanel();
                                 resizeExtractionResultsArea();
                             }
