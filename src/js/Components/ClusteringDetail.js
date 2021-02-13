@@ -1100,7 +1100,7 @@ export default class ClusteringDetail extends React.Component {
     onMouseDownSubsequenceDetailTr() {
         return function(d) {
             this.queryMode = FeatureStore.getMode();
-            if (this.queryMode === 'QBE' || this.queryMode === 'QBS') {
+            if (this.queryMode === 'QBE' || this.queryMode === 'QBS' || ($('#subsequenceComparisonNavLink').length > 0 && $('#subsequenceComparisonNavLink').hasClass('active'))) {
                 let targetIdElem = d.target.id.split('_');
                 let elem = document.getElementById('subsequenceDetailTr_' + targetIdElem[1] + '_' + targetIdElem[2]);
                 if (elem){
@@ -1125,37 +1125,53 @@ export default class ClusteringDetail extends React.Component {
                 drag.style.top = d.pageY - this.clickedY + 'px';
                 drag.style.left = d.pageX - this.clickedX - drag.clientWidth / 2 - $('#extractionMenu').width() + 'px';
 
-                switch(this.queryMode) {
-                    case 'QBE':
-                        let selectedTimeSlice = $('#selectedTimeSliceView');
-                        let selectedTimeSlicePos = selectedTimeSlice.offset(),
-                            selectedTimeSliceWidth = selectedTimeSlice.width(),
-                            selectedTimeSliceHeight = selectedTimeSlice.height();
-                        
-                        if ((selectedTimeSlicePos.left <= d.pageX && d.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
-                        && (selectedTimeSlicePos.top <= d.pageY && d.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
-                            let overlayPanel = $('#selectedTimeSliceView > .overlayHidingPanel');
-                            overlayPanel.css('display', 'block');
-                            overlayPanel.css('width', Math.min(selectedTimeSliceWidth, selectedTimeSliceHeight));
-                            overlayPanel.css('height', Math.min(selectedTimeSliceWidth, selectedTimeSliceHeight));
-                        }
-                        break;
-                    case 'QBS':
-                        let sketchPad = $('#QBSSketchPad');
-                        let sketchPadPos = sketchPad.offset(),
-                            sketchPadWidth = sketchPad.width(),
-                            sketchPadHeight = sketchPad.innerHeight();
+                if ($('#subsequenceComparisonNavLink').length > 0 && $('#subsequenceComparisonNavLink').hasClass('active')) {
+                    let subsequenceComparisonPanel = $('#subsequenceComparisonTab');
+                    let subsequenceComparisonPanelPos = subsequenceComparisonPanel.offset(),
+                        subsequenceComparisonPanelWidth = subsequenceComparisonPanel.width()
+                        - Number($('#clusteringSubsequenceComparison').css('padding-left').replace('px', ''))
+                        - Number($('#clusteringSubsequenceComparison').css('padding-right').replace('px', '')),
+                        subsequenceComparisonPanelHeight = subsequenceComparisonPanel.height();
+                    if ((subsequenceComparisonPanelPos.left <= d.pageX && d.pageX <= subsequenceComparisonPanelPos.left + subsequenceComparisonPanelWidth)
+                    && (subsequenceComparisonPanelPos.top <= d.pageY && d.pageY <= subsequenceComparisonPanelPos.top + subsequenceComparisonPanelHeight)) {
+                        let overlayPanel = $('#clusteringSubsequenceComparison > .overlayHidingPanel');
+                        overlayPanel.css('display', 'block');
+                        overlayPanel.css('width', subsequenceComparisonPanelWidth);
+                        overlayPanel.css('height', subsequenceComparisonPanelHeight);
+                    }
+                } else {
+                    switch(this.queryMode) {
+                        case 'QBE':
+                            let selectedTimeSlice = $('#selectedTimeSliceView');
+                            let selectedTimeSlicePos = selectedTimeSlice.offset(),
+                                selectedTimeSliceWidth = selectedTimeSlice.width(),
+                                selectedTimeSliceHeight = selectedTimeSlice.height();
+                            
+                            if ((selectedTimeSlicePos.left <= d.pageX && d.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
+                            && (selectedTimeSlicePos.top <= d.pageY && d.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
+                                let overlayPanel = $('#selectedTimeSliceView > .overlayHidingPanel');
+                                overlayPanel.css('display', 'block');
+                                overlayPanel.css('width', Math.min(selectedTimeSliceWidth, selectedTimeSliceHeight));
+                                overlayPanel.css('height', Math.min(selectedTimeSliceWidth, selectedTimeSliceHeight));
+                            }
+                            break;
+                        case 'QBS':
+                            let sketchPad = $('#QBSSketchPad');
+                            let sketchPadPos = sketchPad.offset(),
+                                sketchPadWidth = sketchPad.width(),
+                                sketchPadHeight = sketchPad.innerHeight();
 
-                        if ((sketchPadPos.left <= d.pageX && d.pageX <= sketchPadPos.left + sketchPadWidth)
-                        && (sketchPadPos.top <= d.pageY && d.pageY <= sketchPadPos.top + sketchPadHeight)) {
-                            let overlayPanel = $('#QBSCanvasArea > .overlayHidingPanel');
-                            overlayPanel.css('display', 'block');
-                            overlayPanel.css('width', Math.min(sketchPadWidth, sketchPadHeight));
-                            overlayPanel.css('height', Math.min(sketchPadWidth, sketchPadHeight));
-                        }
-                        break;
-                    default:
-                        break;
+                            if ((sketchPadPos.left <= d.pageX && d.pageX <= sketchPadPos.left + sketchPadWidth)
+                            && (sketchPadPos.top <= d.pageY && d.pageY <= sketchPadPos.top + sketchPadHeight)) {
+                                let overlayPanel = $('#QBSCanvasArea > .overlayHidingPanel');
+                                overlayPanel.css('display', 'block');
+                                overlayPanel.css('width', Math.min(sketchPadWidth, sketchPadHeight));
+                                overlayPanel.css('height', Math.min(sketchPadWidth, sketchPadHeight));
+                            }
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
         };
@@ -1184,46 +1200,62 @@ export default class ClusteringDetail extends React.Component {
                 }
             }
 
-            switch(this.queryMode) {
-                case 'QBE':
-                    $('#selectedTimeSliceView > .overlayHidingPanel').css('display', 'none');
-                    let selectedTimeSlice = $('#selectedTimeSliceView');
-                    let selectedTimeSlicePos = selectedTimeSlice.offset(),
-                        selectedTimeSliceWidth = selectedTimeSlice.width(),
-                        selectedTimeSliceHeight = selectedTimeSlice.height();
-                    if (selectedTimeSlicePos) {
-                        if ((selectedTimeSlicePos.left <= d.pageX && d.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
-                        && (selectedTimeSlicePos.top <= d.pageY && d.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
-                            // convert the result into a new query
-                            convertResultIntoQuery(Number(dataId), period, this.variables);
-                            if (FeatureStore.getSource() !== dataId) {
-                                let promise = Promise.resolve();
-                                promise
-                                    .then(function() {
-                                        showExtractionSourcePanel(dataId);
-                                        domActions.toggleSourcePanel(true);
-                                        resizeExtractionResultsArea();
-                                    }).then(function() {
-                                        updateSource(dataId);
-                                    });
+            if ($('#subsequenceComparisonNavLink').length > 0 && $('#subsequenceComparisonNavLink').hasClass('active')) {
+                let overlayPanel = $('#clusteringSubsequenceComparison > .overlayHidingPanel');
+                overlayPanel.css('display', 'none');
+                let subsequenceComparisonPanel = $('#subsequenceComparisonTab');
+                let subsequenceComparisonPanelPos = subsequenceComparisonPanel.offset(),
+                    subsequenceComparisonPanelWidth = subsequenceComparisonPanel.width()
+                    - Number($('#clusteringSubsequenceComparison').css('padding-left').replace('px', ''))
+                    - Number($('#clusteringSubsequenceComparison').css('padding-right').replace('px', '')),
+                    subsequenceComparisonPanelHeight = subsequenceComparisonPanel.height();
+                if ((subsequenceComparisonPanelPos.left <= d.pageX && d.pageX <= subsequenceComparisonPanelPos.left + subsequenceComparisonPanelWidth)
+                && (subsequenceComparisonPanelPos.top <= d.pageY && d.pageY <= subsequenceComparisonPanelPos.top + subsequenceComparisonPanelHeight)) {
+                    // create new canvas on clustering comparison panel
+                    ClusteringAction.showSelectedSubsequenceInComparisonPanel(Number(dataId), period, SSId);
+                }
+            } else {
+                switch(this.queryMode) {
+                    case 'QBE':
+                        $('#selectedTimeSliceView > .overlayHidingPanel').css('display', 'none');
+                        let selectedTimeSlice = $('#selectedTimeSliceView');
+                        let selectedTimeSlicePos = selectedTimeSlice.offset(),
+                            selectedTimeSliceWidth = selectedTimeSlice.width(),
+                            selectedTimeSliceHeight = selectedTimeSlice.height();
+                        if (selectedTimeSlicePos) {
+                            if ((selectedTimeSlicePos.left <= d.pageX && d.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
+                            && (selectedTimeSlicePos.top <= d.pageY && d.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
+                                // convert the result into a new query
+                                convertResultIntoQuery(Number(dataId), period, this.variables);
+                                if (FeatureStore.getSource() !== dataId) {
+                                    let promise = Promise.resolve();
+                                    promise
+                                        .then(function() {
+                                            showExtractionSourcePanel(dataId);
+                                            domActions.toggleSourcePanel(true);
+                                            resizeExtractionResultsArea();
+                                        }).then(function() {
+                                            updateSource(dataId);
+                                        });
+                                }
                             }
                         }
-                    }
-                    break;
-                case 'QBS':
-                    $('#QBSCanvasArea > .overlayHidingPanel').css('display', 'none');
-                    let sketchPad = $('#QBSSketchPad');
-                    let sketchPadPos = sketchPad.offset(),
-                        sketchPadWidth = sketchPad.width(),
-                        sketchPadHeight = sketchPad.innerHeight();
-                    if (sketchPadPos) {
-                        if ((sketchPadPos.left <= d.pageX && d.pageX <= sketchPadPos.left + sketchPadWidth)
-                        && (sketchPadPos.top <= d.pageY && d.pageY <= sketchPadPos.top + sketchPadHeight)) {
-                            // convert the result into a new query
-                            convertResultIntoQuery(Number(dataId), period, this.variables);
+                        break;
+                    case 'QBS':
+                        $('#QBSCanvasArea > .overlayHidingPanel').css('display', 'none');
+                        let sketchPad = $('#QBSSketchPad');
+                        let sketchPadPos = sketchPad.offset(),
+                            sketchPadWidth = sketchPad.width(),
+                            sketchPadHeight = sketchPad.innerHeight();
+                        if (sketchPadPos) {
+                            if ((sketchPadPos.left <= d.pageX && d.pageX <= sketchPadPos.left + sketchPadWidth)
+                            && (sketchPadPos.top <= d.pageY && d.pageY <= sketchPadPos.top + sketchPadHeight)) {
+                                // convert the result into a new query
+                                convertResultIntoQuery(Number(dataId), period, this.variables);
+                            }
                         }
-                    }
-                    break;
+                        break;
+                }
             }
             this.moveToOriginalPos();
             this.selectedTrId = undefined;

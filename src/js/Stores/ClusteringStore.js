@@ -67,6 +67,9 @@ class ClusteringStore extends EventEmitter {
             case 'SHOW_TTVIEW_OF_SELECTED_SS_CLUSTERING':
                 this.emit('showTTViewOfSelectedSSClustering', action.id, action.period);
                 break;
+            case 'SHOW_SELECTED_SUBSEQUENCE_IN_COMPARISON_PANEL':
+                this.showSelectedSubsequenceInComparisonPanel(action.id, action.period, action.SSId);
+                break;
             default:
                 break;
         }
@@ -233,6 +236,10 @@ class ClusteringStore extends EventEmitter {
         this.selectedSS = selectedSS;
         this.updatedSS = updatedSS;
         this.emit('updateSSSelection');
+    }
+
+    showSelectedSubsequenceInComparisonPanel(id, period, SSId) {
+        this.emit('showSelectedSubsequenceInComparisonPanel', id, period, SSId);
     }
 }
 

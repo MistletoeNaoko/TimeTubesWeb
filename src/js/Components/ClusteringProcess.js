@@ -131,7 +131,7 @@ export default class ClusteringProcess extends React.Component {
         return (
             <div id="clusteringProcess"
                 className='clusteringPanel'
-                style={{height: window.innerHeight - $('#appHeader').outerHeight(true)}}
+                style={{height: window.innerHeight - $('#appHeader').outerHeight(true) - $('#clusteringResultsLeftColumnNavTabs').outerHeight(true)}}
                 ref={mount => {
                     this.mount = mount;
                 }}>

@@ -52,3 +52,7 @@ export function updateSSSelection(selectedSS, updatedSS) {
 export function showTTViewOfSelectedSSClusteringResults (id, period) {
     dispatcher.dispatch({type: 'SHOW_TTVIEW_OF_SELECTED_SS_CLUSTERING', id, period});
 }
+
+export function showSelectedSubsequenceInComparisonPanel(id, period, SSId) {
+    dispatcher.dispatch({type: 'SHOW_SELECTED_SUBSEQUENCE_IN_COMPARISON_PANEL', id, period, SSId});
+}

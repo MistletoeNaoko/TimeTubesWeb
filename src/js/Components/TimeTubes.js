@@ -47,6 +47,7 @@ export default class TimeTubes extends React.Component{
             grid: undefined,
             plot: undefined
         };
+        this.subsequencesInComparisonPanel = [];
         // set plot color
         if (this.data.merge) {
             this.plotColor = [];
@@ -457,6 +458,9 @@ export default class TimeTubes extends React.Component{
                 this.updateColorEncodingOptionValue();
             }
         });
+        FeatureStore.on('setExtractionResults', () => {
+            this.subsequencesInComparisonPanel = [];
+        });
         FeatureStore.on('switchQueryMode', (mode) => {
             this.renderClusteringResultView = false;
             let sourceId = FeatureStore.getSource();
@@ -472,6 +476,7 @@ export default class TimeTubes extends React.Component{
         });
         FeatureStore.on('updateSource', () => {
             this.renderClusteringResultView = false;
+            this.subsequencesInComparisonPanel = [];
             this.menu = FeatureStore.getMode();
             let sourceId = FeatureStore.getSource();
             if (this.menu === 'QBE' && sourceId !== 'default') {
@@ -510,6 +515,7 @@ export default class TimeTubes extends React.Component{
         });
         FeatureStore.on('convertResultIntoQuery', (id, period, activeVar) => {
             this.renderClusteringResultView = false;
+            this.subsequencesInComparisonPanel = [];
             this.menu = FeatureStore.getMode();
             if (this.menu === 'QBE' && Number(id) === this.id) {
                 this.visualQuery = (Number(id) === this.id);
@@ -530,6 +536,7 @@ export default class TimeTubes extends React.Component{
         });
         FeatureStore.on('recoverQuery', (query) => {
             this.renderClusteringResultView = false;
+            this.subsequencesInComparisonPanel = [];
             if (FeatureStore.getMode() === 'QBE' && Number(FeatureStore.getSource()) === this.id) {
                 this.visualQuery = true;
                 setTimeout(function() {
@@ -546,6 +553,8 @@ export default class TimeTubes extends React.Component{
             let subsequences = ClusteringStore.getSubsequences();
             let labels = ClusteringStore.getLabels();
             let colors = ClusteringStore.getClusterColors();
+            this.renderClusteringResultView = false;
+            this.subsequencesInComparisonPanel = [];
             // TODO: もう少しまともな表示方法を検討！！
             // this.showClusteringResults(subsequences, labels, colors);
             // this.setClusteringResultsView();
@@ -558,6 +567,12 @@ export default class TimeTubes extends React.Component{
                 this.showSelectedSSClusteringResultsView(period);
             } else {
                 this.renderClusteringResultView = false;
+            }
+        });
+        ClusteringStore.on('showSelectedSubsequenceInComparisonPanel', (id, period, SSId) => {
+            if (id === this.id) {
+                this.renderClusteringResultView = false;
+                this.showSelectedSSInComparisonPanel(period, SSId);
             }
         });
     }
@@ -585,6 +600,10 @@ export default class TimeTubes extends React.Component{
         if (this.menu === 'QBE') {
             this.renderQBERenderer();
         }
+        if (!this.renderClusteringResultView && this.subsequencesInComparisonPanel.length > 0) {
+            // マウスオーバーによる選択部分のTimeTubes表示とcomparison viewの操作が同時に行われることはないから
+            this.renderSSComparisonPanel();
+        }
     }
 
     renderMainRenderer() {
@@ -603,6 +622,27 @@ export default class TimeTubes extends React.Component{
                 this.renderer.domElement, 
                 0, 0, width, height,
                 0, 0, dom.width, dom.height);
+        }
+    }
+
+    renderSSComparisonPanel() {
+        for (let i = 0; i < this.subsequencesInComparisonPanel.length; i++) {
+            // this.subsequencesInComparisonPanel[i].render();
+            this.clippingPlane2.constant = this.subsequencesInComparisonPanel[i].period[1] - this.subsequencesInComparisonPanel[i].period[0];
+            this.renderer.clippingPlanes = [this.clippingPlane2];
+            this.tubeGroup.position.z = this.subsequencesInComparisonPanel[i].period[0] - this.data.spatial[0].z;
+            let canvas = document.getElementById("subsequenceComparisonCanvas_" + this.subsequencesInComparisonPanel[i].SSId);
+            if (canvas) {
+                let width = this.renderer.domElement.width,
+                    height = this.renderer.domElement.height;
+                let context = canvas.getContext('2d');
+                this.renderer.render(this.scene, this.subsequencesInComparisonPanel[i].camera);
+                context.drawImage(
+                    this.renderer.domElement,
+                    0, 0, width, height,
+                    0, 0, canvas.width, canvas.height
+                );
+            }
         }
     }
 
@@ -1963,5 +2003,23 @@ export default class TimeTubes extends React.Component{
         this.renderer.clippingPlanes = [this.clippingPlane2];
         this.tubeGroup.position.z = period[0] - this.data.spatial[0].z;
         // if (this.ClusteringRenderer) this.ClusteringRenderer.render(this.scene, this.ClusteringCamera);
+    }
+
+    showSelectedSSInComparisonPanel(period, SSId) {
+        let view = {};
+        let fov = 45, far = 2000;
+        let depth = Math.tan(fov / 2.0 * Math.PI / 180.0) * 2;
+        let aspect = 1;
+        let size_y = depth * (50);
+        let size_x = depth * (50) * aspect;
+        let camera = new THREE.OrthographicCamera(
+            -size_x / 2, size_x / 2,
+            size_y / 2, -size_y / 2, 0.1,
+            far
+        );
+        view.period = period;
+        view.SSId = SSId;
+        view.camera = camera;
+        this.subsequencesInComparisonPanel.push(view);
     }
 }

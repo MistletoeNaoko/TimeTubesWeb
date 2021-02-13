@@ -13,8 +13,8 @@ export function toggleExtractionMenu(display) {
             $('#extractionResults').css('width', '100%');
         } else if ($('#clusteringResults').length > 0) {
             $('#clusteringResults').css('width', '100%');
-            $('#clusteringProcess').css('display', 'block');
-            $('#clusteringProcess').css('width', '20%');
+            $('#clusteringResultsLeftColumnTabContent').css('display', 'block');
+            // $('#clusteringResultsLeftColumnTabContent').css('width', '20%');
             $('#clusteringResultsOverview').css('width', '60%');
             $('#clusteringDetail').css('width', '20%');
         }
@@ -26,7 +26,7 @@ export function toggleExtractionMenu(display) {
             $('#extractionResults').css('width', '70%');
         } else if ($('#clusteringResults').length > 0) {
             $('#clusteringResults').css('width', '70%');
-            $('#clusteringProcess').css('display', 'none');
+            $('#clusteringResultsLeftColumnTabContent').css('display', 'none');
             $('#clusteringResultsOverview').css('width', '70%');
             $('#clusteringDetail').css('width', '30%');
         }

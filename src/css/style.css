@@ -560,6 +560,58 @@ img.selectorIcon:active {
     background-color: #fff;
 }
 
+.cardHeaderSubsequenceComparison {
+    padding: 0.25rem 0.75rem;
+}
+
+.cardBodySubsequenceComparison {
+    padding: 0.25rem;
+}
+
+.humberger {
+    position: relative;
+    height: 16px;
+    width: 16px;
+    display: inline-block;
+    box-sizing: border-box;
+    margin-top: 4.5px;
+}
+
+.humberger div {
+    position: absolute;
+    left: 0;
+    height: 2px;
+    width: 16px;
+    background-color: #dfd7ca;
+    border-radius: 2px;
+    display: inline-block;
+    box-sizing: border-box;
+}
+
+.humberger div:nth-of-type(1) {
+    top: 0;
+}
+
+.humberger div:nth-of-type(2) {
+    top: 7px;
+}
+
+.humberger div:nth-of-type(3) {
+    bottom: 0;
+}
+
+.subsequenceComparisonViewFileName {
+    margin: 0 0.5rem;
+}
+
+.subsequenceComparisonViewPeriod {
+    margin: 0 0.5rem;
+}
+
+.subsequenceComparisonCanvas {
+    margin: 0 50%;
+    transform: translateX(-50%);
+}
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
@@ -744,8 +796,17 @@ img.selectorIcon:active {
     clear: both;
 }
 
-#clusteringProcess {
+#clusteringResultsLeftColumn {
     width: 20%;
+}
+
+#clusteringProcess {
+    /* width: 20%; */
+    padding: 0px 10px;
+    overflow: auto;
+}
+
+#clusteringSubsequenceComparison {
     padding: 0px 10px;
     overflow: auto;
 }
