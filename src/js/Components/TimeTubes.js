@@ -572,7 +572,9 @@ export default class TimeTubes extends React.Component{
         ClusteringStore.on('showSelectedSubsequenceInComparisonPanel', (id, period, SSId) => {
             if (id === this.id) {
                 this.renderClusteringResultView = false;
-                this.showSelectedSSInComparisonPanel(period, SSId);
+                setTimeout(function() {
+                    this.showSelectedSSInComparisonPanel(period, SSId);
+                }.bind(this), 0);
             }
         });
     }
@@ -637,6 +639,7 @@ export default class TimeTubes extends React.Component{
                     height = this.renderer.domElement.height;
                 let context = canvas.getContext('2d');
                 this.renderer.render(this.scene, this.subsequencesInComparisonPanel[i].camera);
+                this.subsequencesInComparisonPanel[i].controls.update();
                 context.drawImage(
                     this.renderer.domElement,
                     0, 0, width, height,
@@ -2017,9 +2020,15 @@ export default class TimeTubes extends React.Component{
             size_y / 2, -size_y / 2, 0.1,
             far
         );
+        camera.position.z = 50;
+        camera.lookAt(this.scene.position);
         view.period = period;
         view.SSId = SSId;
         view.camera = camera;
+        view.controls = new OrbitControls(camera, document.getElementById("subsequenceComparisonCanvas_" + SSId));
+        view.controls.position0.set(0, 0, 50);
+        view.controls.screenSpacePanning = false;
+        view.controls.enableZoom = false;
         this.subsequencesInComparisonPanel.push(view);
     }
 }
