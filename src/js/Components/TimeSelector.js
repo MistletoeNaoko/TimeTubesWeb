@@ -5,7 +5,12 @@ import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import * as ScatterplotsAction from '../Actions/ScatterplotsAction';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import ScatterplotsStore from '../Stores/ScatterplotsStore';
+import ClusteringStore from '../Stores/ClusteringStore';
 
+d3.selection.prototype.moveToFront =
+    function() {
+        return this.each(function(){this.parentNode.appendChild(this);});
+    };
 export default class TimeSelector extends React.Component {
     constructor(props) {
         super();
@@ -14,6 +19,7 @@ export default class TimeSelector extends React.Component {
         this.divID = props.divID;
         this.data = DataStore.getData(this.id);
         this.selectedRange = [this.data.data.meta.min.z, this.data.data.meta.max.z];
+        this.SSRects = undefined;
         this.state = {
             width: props.width,
             height: 100
@@ -55,6 +61,24 @@ export default class TimeSelector extends React.Component {
                 this.selectedRange = range;
             }
         });
+        ClusteringStore.on('showClusteringResults', () => {
+            let subsequences = ClusteringStore.getSubsequences();
+            let labels = ClusteringStore.getLabels();
+            let colors = ClusteringStore.getClusterColors();
+            this.showClusteringResults(subsequences, labels, colors);
+        });
+        ClusteringStore.on('updateClusteringResults', () => {
+            let subsequences = ClusteringStore.getSubsequences();
+            let labels = ClusteringStore.getLabels();
+            let colors = ClusteringStore.getClusterColors();
+            this.showClusteringResults(subsequences, labels, colors);
+        });
+        ClusteringStore.on('resetClusteringResults', () => {
+            let subsequences = ClusteringStore.getSubsequences();
+            let labels = ClusteringStore.getLabels();
+            let colors = ClusteringStore.getClusterColors();
+            this.showClusteringResults(subsequences, labels, colors);
+        });
     }
 
     initializeElements() {
@@ -81,7 +105,10 @@ export default class TimeSelector extends React.Component {
         this.timeSelectorGraph = this.timeSelector
             .append('path')
             .datum(this.data.data.splines.value.points)
-            .attr('class', 'area')
+            // .attr('class', 'area')
+            .attr('fill', 'none')
+            .attr('stroke', 'black')
+            .attr('stroke-width', 2)
             .attr('clip-path', 'url(#clipTimeSelector_' + this.id + ')');
         this.timeSelectorXAxis = this.timeSelector
             .append('g')
@@ -258,6 +285,61 @@ export default class TimeSelector extends React.Component {
 
         line.attr('x1', pos)
             .attr('x2', pos);
+        if (this.SSRects) {
+            this.SSRects
+                .each(function(d, i) {
+                    let ele = d3.select(this);
+                    if (d[0].z < zpos && zpos < d[d.length - 1].z) {
+                        ele.attr('opacity', 1);
+                    } else {
+                        ele.attr('opacity', 0.3);
+                    }
+                });
+            this.timeSelectorGraph
+                .moveToFront();
+        }
+    }
+
+    showClusteringResults(subsequences, labels, colors) {
+        let height = this.state.height - this.margin.top - this.margin.bottom;
+        let rectHeight = height / colors.length;
+        let SSData = [], labelsData = [];
+        for (let i = 0; i < subsequences.length; i++) {
+            if (Number(subsequences[i].id) === this.id) {
+                SSData.push(subsequences[i]);
+                labelsData.push(labels[i]);
+            }
+        }
+
+        let SSRectGroup = this.svg
+            .append('g')
+            .attr('class', 'SSRectGroup')
+            .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')')
+            .attr('clip-path', 'url(#clipTimeSelector_' + this.id + ')');
+        this.SSRects = SSRectGroup
+            .selectAll('rect.SSRect')
+            .data(SSData)
+            .enter()
+            .append('rect')
+            .attr('class', 'SSRect')
+            .attr('x', function(d) {
+                return this.xScale(d[0].z);
+            }.bind(this))
+            .attr('width', function(d) {
+                return this.xScale(d[d.length - 1].z) - this.xScale(d[0].z);
+            }.bind(this))
+            .attr('y', function(d, i) {
+                let cluster = (typeof(labelsData[i]) === 'object')? labelsData[i].cluster: labelsData[i];
+                return rectHeight * cluster;
+            })
+            .attr('height', rectHeight)
+            .attr('fill', function(d, i) {
+                let color = colors[(typeof(labelsData[i]) === 'object')? labelsData[i].cluster: labelsData[i]];
+                return d3.hsl(color[0], color[1], color[2]);
+            })
+            .attr('opacity', 0.3);
+        this.timeSelectorGraph
+            .moveToFront();
     }
 
     render() {

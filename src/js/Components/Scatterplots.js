@@ -149,7 +149,7 @@ export default class Scatterplots extends React.Component{
                 let subsequences = ClusteringStore.getSubsequences();
                 let labels = ClusteringStore.getLabels();
                 let colors = ClusteringStore.getClusterColors();
-                this.showClusteringResults(subsequences, labels, colors);
+                // this.showClusteringResults(subsequences, labels, colors);
             }
         });
     }
