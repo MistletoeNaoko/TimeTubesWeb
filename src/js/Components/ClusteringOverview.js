@@ -100,7 +100,20 @@ export default class ClusteringOverview extends React.Component {
         // this.scene.add(this.cube);
         // var axis = new THREE.AxisHelper(1000);
         // this.scene.add(axis);
-
+        AppStore.on('selectMenu', (menu) => {
+            if (menu === 'feature') {
+                if ($('#clusteringResults').length) {
+                    this.setRendererSize();
+                    this.setMDSScatterplotsSize();
+                }
+            }
+        });
+        AppStore.on('resizeExtractionResultsArea', () => {
+            if ($('#clusteringResults').length) {
+                this.setRendererSize();
+                this.setMDSScatterplotsSize();
+            }
+        });
         ClusteringStore.on('showClusteringResults', () => {
             this.clusterCenters = ClusteringStore.getClusterCenters();
             this.subsequences = ClusteringStore.getSubsequences();
@@ -151,12 +164,6 @@ export default class ClusteringOverview extends React.Component {
             this.showClusteringParameters();
             this.resetDetailView();
             this.drawMDSScatterplots();
-        });
-        AppStore.on('resizeExtractionResultsArea', () => {
-            if ($('#clusteringResults').length) {
-                this.setRendererSize();
-                this.setMDSScatterplotsSize();
-            }
         });
     }
 

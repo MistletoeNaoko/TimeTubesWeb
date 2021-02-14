@@ -175,6 +175,7 @@ export default class TimeTubes extends React.Component{
         this.drawPeriodMarker();
 
         AppStore.on('selectMenu', (menu) => {
+            this.renderClusteringResultView = false;
             if (menu === 'feature') {
                 this.menu = FeatureStore.getMode();
             } else {
@@ -561,8 +562,8 @@ export default class TimeTubes extends React.Component{
         });
         ClusteringStore.on('showTTViewOfSelectedSSClustering', (id, period) => {
             if (id === this.id) {
-                // this.grid.visible = false;
-                // this.plot.visible = false;
+                this.grid.visible = false;
+                this.plot.visible = false;
                 this.renderClusteringResultView = true;
                 this.showSelectedSSClusteringResultsView(period);
             } else {
@@ -571,6 +572,8 @@ export default class TimeTubes extends React.Component{
         });
         ClusteringStore.on('showSelectedSubsequenceInComparisonPanel', (id, period, SSId) => {
             if (id === this.id) {
+                this.grid.visible = false;
+                this.plot.visible = false;
                 this.renderClusteringResultView = false;
                 setTimeout(function() {
                     this.showSelectedSSInComparisonPanel(period, SSId);
@@ -602,7 +605,7 @@ export default class TimeTubes extends React.Component{
         if (this.menu === 'QBE') {
             this.renderQBERenderer();
         }
-        if (!this.renderClusteringResultView && this.subsequencesInComparisonPanel.length > 0) {
+        if (this.menu !== 'visualization' && !this.renderClusteringResultView && this.subsequencesInComparisonPanel.length > 0) {
             // マウスオーバーによる選択部分のTimeTubes表示とcomparison viewの操作が同時に行われることはないから
             this.renderSSComparisonPanel();
         }
