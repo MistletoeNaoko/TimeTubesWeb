@@ -868,14 +868,28 @@ img.selectorIcon:active {
     padding: 0px 5px;
 }
 
-#clusteringScores {
+#clusteringOverviewRightTables {
     position: absolute;
     color: #fff;
     right: 0px;
     margin: 0.5rem;
 }
 
+#clusteringScores {
+    margin: auto;
+}
+
+#clusterRadiusesTable {
+    margin: auto;
+}
+
 #clusteringScoresTable tr, #clusteringScoresTable td {
+    border: 1px solid;
+    border-color: #fff;
+    padding: 0px 5px;
+}
+
+#clusterRadiusesTable tr, #clusterRadiusesTable td {
     border: 1px solid;
     border-color: #fff;
     padding: 0px 5px;
@@ -947,4 +961,12 @@ img.selectorIcon:active {
 
 #QBESource {
     overflow-y: scroll;
+}
+
+#carouselControlPrevClusteringOverview {
+    height: 50px;
+}
+
+#carouselControlNextClusteringOverview {
+    height: 50px;
 }

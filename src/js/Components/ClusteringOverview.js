@@ -58,6 +58,9 @@ export default class ClusteringOverview extends React.Component {
         this.queryMode = FeatureStore.getMode();
         this.clickedX;
         this.clickedY;
+        this.state = {
+            clusteringScores: {}
+        };
     }
 
     componentDidMount() {
@@ -119,16 +122,17 @@ export default class ClusteringOverview extends React.Component {
             this.subsequences = ClusteringStore.getSubsequences();
             this.SSLabels = ClusteringStore.getLabels();
             this.clusterColors = ClusteringStore.getClusterColors();
-            this.clusteringScores = ClusteringStore.getClusteringScores();
             this.selectedCluster = undefined;
             this.setRendererSize();
             this.computeSplines();
             this.computeTubePositions();
             this.drawClusterCentersAsTubes();
-            this.showClusteringScores();
             this.showClusteringParameters();
             this.resetDetailView();
             this.drawMDSScatterplots();
+            this.setState({
+                clusteringScores: ClusteringStore.getClusteringScores()
+            });
         });
         ClusteringStore.on('showClusterDetails', (cluster) => {
             this.selectedCluster = cluster;
@@ -139,31 +143,33 @@ export default class ClusteringOverview extends React.Component {
             this.clusterCenters = ClusteringStore.getClusterCenters();
             this.subsequences = ClusteringStore.getSubsequences();
             this.SSLabels = ClusteringStore.getLabels();
-            this.clusteringScores = ClusteringStore.getClusteringScores();
             this.selectedCluster = undefined;
             this.setRendererSize();
             this.computeSplines();
             this.computeTubePositions();
             this.drawClusterCentersAsTubes();
-            this.showClusteringScores();
             this.showClusteringParameters();
             this.resetDetailView();
             this.drawMDSScatterplots();
+            this.setState({
+                clusteringScores: ClusteringStore.getClusteringScores()
+            });
         });
         ClusteringStore.on('resetClusteringResults', () => {
             this.clusterCenters = ClusteringStore.getClusterCenters();
             this.subsequences = ClusteringStore.getSubsequences();
             this.SSLabels = ClusteringStore.getLabels();
-            this.clusteringScores = ClusteringStore.getClusteringScores();
             this.selectedCluster = undefined;
             this.setRendererSize();
             this.computeSplines();
             this.computeTubePositions();
             this.drawClusterCentersAsTubes();
-            this.showClusteringScores();
             this.showClusteringParameters();
             this.resetDetailView();
             this.drawMDSScatterplots();
+            this.setState({
+                clusteringScores: ClusteringStore.getClusteringScores()
+            });
         });
     }
 
@@ -172,6 +178,21 @@ export default class ClusteringOverview extends React.Component {
         let appHeaderHeight = $('#appHeader').outerHeight(true);
         let timelineHeight = $('#clusteringTimeline').outerHeight(true);
         let height = window.innerHeight - appHeaderHeight - timelineHeight;
+        let clusterRadRows = [];
+        if (this.state.clusteringScores.clusterRadiuses) {
+            for (let i = 0; i < this.state.clusteringScores.clusterRadiuses.length; i++) {
+                clusterRadRows.push(
+                    <tr key={i}>
+                        <td>
+                            Cluster {i}
+                        </td>
+                        <td>
+                            {formatValue(this.state.clusteringScores.clusterRadiuses[i])}
+                        </td>
+                    </tr>
+                );
+            }
+        }
         return (
             <div id='clusteringOverview' 
                 className='clusteringPanel'
@@ -188,83 +209,111 @@ export default class ClusteringOverview extends React.Component {
                                 width='2000' height='2000'
                                 style={{width: width + 'px', height: height + 'px', position: 'absolute'}}></canvas>
                             <div id='clusteringParameters'>
-                                <table id='clusteringParametersTable'>
-                                    <tbody>
-                                        <tr key='clusteringMethod'>
-                                            <td>Method</td>
-                                            <td id='clusteringTableMethod'
-                                                className='parametersValues'></td>
-                                        </tr>
-                                        <tr key='clusterNumber'>
-                                            <td>Cluster number</td>
-                                            <td id='clusteringTableClusterNumber'
-                                                className='parametersValues'></td>
-                                        </tr>
-                                        <tr key='clusteringVariables'>
-                                            <td>Variables</td>
-                                            <td id='clusteringTableVariables'
-                                                className='parametersValues'></td>
-                                        </tr>
-                                        <tr key='distanceMetric'>
-                                            <td>Distance metric</td>
-                                            <td id='clusteringTableDistanceMetric'
-                                                className='parametersValues'></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Subsequence period</td>
-                                            <td id='subsequenceTablePeriod'
-                                                className='parametersValues'></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Normalization</td>
-                                            <td id='subsequenceTableNormalization'
-                                                className='parametersValues'></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                <details>
+                                    <summary>Clustering parameters</summary>
+                                    <table id='clusteringParametersTable'>
+                                        <tbody>
+                                            <tr key='clusteringMethod'>
+                                                <td>Method</td>
+                                                <td id='clusteringTableMethod'
+                                                    className='parametersValues'></td>
+                                            </tr>
+                                            <tr key='clusterNumber'>
+                                                <td>Cluster number</td>
+                                                <td id='clusteringTableClusterNumber'
+                                                    className='parametersValues'></td>
+                                            </tr>
+                                            <tr key='clusteringVariables'>
+                                                <td>Variables</td>
+                                                <td id='clusteringTableVariables'
+                                                    className='parametersValues'></td>
+                                            </tr>
+                                            <tr key='distanceMetric'>
+                                                <td>Distance metric</td>
+                                                <td id='clusteringTableDistanceMetric'
+                                                    className='parametersValues'></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Subsequence period</td>
+                                                <td id='subsequenceTablePeriod'
+                                                    className='parametersValues'></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Normalization</td>
+                                                <td id='subsequenceTableNormalization'
+                                                    className='parametersValues'></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </details>
                             </div>
-                            <div id='clusteringScores'>
-                                <table id='clusteringScoresTable'>
-                                    <tbody>
-                                        <tr>
-                                            <td>Pseudo F</td>
-                                            <td id='pseudoFValue'
-                                                className='clusteringScoresValues'></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Silhouette coefficient</td>
-                                            <td id='silhouetteValue'
-                                                className='clusteringScoresValues'></td>
-                                        </tr>
-                                        <tr>
-                                            <td>Davis Bouldin index</td>
-                                            <td id='davisBouldinValue'
-                                                className='clusteringScoresValues'></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                            <div id='clusteringOverviewRightTables'>
+                                <div id='clusteringScores'>
+                                    <details>
+                                        <summary>Performance evaluation</summary>
+                                        <table id='clusteringScoresTable'>
+                                            <tbody>
+                                                <tr>
+                                                    <td>Pseudo F</td>
+                                                    <td id='pseudoFValue'
+                                                        className='clusteringScoresValues'>
+                                                        {typeof(this.state.clusteringScores.pseudoF) !== 'undefined'? formatValue(this.state.clusteringScores.pseudoF): ''}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Silhouette coefficient</td>
+                                                    <td id='silhouetteValue'
+                                                        className='clusteringScoresValues'>
+                                                        {typeof(this.state.clusteringScores.silhouette) !== 'undefined'? formatValue(this.state.clusteringScores.silhouette): ''}
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>Davis Bouldin index</td>
+                                                    <td id='davisBouldinValue'
+                                                        className='clusteringScoresValues'>
+                                                        {typeof(this.state.clusteringScores.davisBouldin) !== 'undefined'? formatValue(this.state.clusteringScores.davisBouldin): ''}
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </details>
+                                </div>
+                                <div id='clusterRadiuses'>
+                                    <details>
+                                        <summary>Cluster radiuses</summary>
+                                        <table id='clusterRadiusesTable'>
+                                            <tbody>
+                                                {clusterRadRows}
+                                            </tbody>
+                                        </table>
+                                    </details>
+                                </div>
                             </div>
                         </div>
                         <div id='clusteringOverviewMDSScatterplots' className="carousel-item">
                         </div>
                     </div>
-                    <a className="carousel-control-prev" href="#clusteringOverviewCarousel" role="button" data-slide="prev">
+                    <a className="carousel-control-prev" 
+                        id='carouselControlPrevClusteringOverview'
+                        href="#clusteringOverviewCarousel" 
+                        role="button" 
+                        data-slide="prev"
+                        style={{top: height / 2 - 50 / 2}}>
                         <span className="carousel-control-prev-icon" aria-hidden="true"></span>
                         {/* <span className="visually-hidden">Previous</span> */}
                     </a>
-                    <a className="carousel-control-next" href="#clusteringOverviewCarousel" role="button" data-slide="next">
+                    <a className="carousel-control-next" 
+                        id='carouselControlNextClusteringOverview'
+                        href="#clusteringOverviewCarousel" 
+                        role="button" 
+                        data-slide="next"
+                        style={{top: height / 2 - 50 / 2}}>
                         <span className="carousel-control-next-icon" aria-hidden="true"></span>
                         {/* <span className="visually-hidden">Next</span> */}
                     </a>
                 </div>
             </div>
         );
-    }
-
-    showClusteringScores() {
-        $('#pseudoFValue').text(formatValue(this.clusteringScores.pseudoF));
-        $('#silhouetteValue').text(formatValue(this.clusteringScores.silhouette));
-        $('#davisBouldinValue').text(formatValue(this.clusteringScores.davisBouldin));
     }
 
     showClusteringParameters() {
