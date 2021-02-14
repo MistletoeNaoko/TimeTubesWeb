@@ -1,7 +1,7 @@
 import React from "react";
-import Sortable from 'sortablejs';
+import Sortable from "sortablejs";
 import ClusteringSubsequenceView from "../Components/ClusteringSubsequenceView";
-import ClusteringStore from '../Stores/ClusteringStore';
+import ClusteringStore from "../Stores/ClusteringStore";
 
 export default class ClusteringSubsequenceComparison extends React.Component {
 	constructor(props) {
@@ -19,8 +19,8 @@ export default class ClusteringSubsequenceComparison extends React.Component {
 					key={i}
 					idx={i}
 					dataId={this.state.selectedSubsequences[i].id}
-                    period={this.state.selectedSubsequences[i].period}
-                    SSId={this.state.selectedSubsequences[i].SSId}
+					period={this.state.selectedSubsequences[i].period}
+					SSId={this.state.selectedSubsequences[i].SSId}
 				/>
 			);
 		}
@@ -42,20 +42,36 @@ export default class ClusteringSubsequenceComparison extends React.Component {
 	}
 
 	componentDidMount() {
-        let ele = document.getElementById('clusteringSubsequenceComparison');
-        let sortable = Sortable.create(ele, {
-            handle: '.hamburger',
-            animation: 150
-        });
+		let ele = document.getElementById("clusteringSubsequenceComparison");
+		let sortable = Sortable.create(ele, {
+			handle: ".hamburger",
+			animation: 150,
+		});
 		ClusteringStore.on(
 			"showSelectedSubsequenceInComparisonPanel",
 			(id, period, SSId) => {
 				let subsequences = this.state.selectedSubsequences;
 				subsequences.push({
 					id: id,
-                    period: period,
-                    SSId: SSId
+					period: period,
+					SSId: SSId,
 				});
+				this.setState({
+					selectedSubsequences: subsequences,
+				});
+			}
+		);
+		ClusteringStore.on(
+			"removeSelectedSubsequenceFromComparisonPanel",
+			(SSId) => {
+				let i = 0;
+				let subsequences = this.state.selectedSubsequences;
+				for (i = 0; i < subsequences.length; i++) {
+					if (subsequences[i].SSId === SSId) {
+						break;
+					}
+				}
+				subsequences.splice(i, 1);
 				this.setState({
 					selectedSubsequences: subsequences,
 				});

@@ -70,6 +70,9 @@ class ClusteringStore extends EventEmitter {
             case 'SHOW_SELECTED_SUBSEQUENCE_IN_COMPARISON_PANEL':
                 this.showSelectedSubsequenceInComparisonPanel(action.id, action.period, action.SSId);
                 break;
+            case 'REMOVE_SELECTED_SUBSEQUENCE_FROM_COMPARISON_PANEL':
+                this.emit('removeSelectedSubsequenceFromComparisonPanel', action.SSId);
+                break;
             default:
                 break;
         }

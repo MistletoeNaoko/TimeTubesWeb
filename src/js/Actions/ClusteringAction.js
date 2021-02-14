@@ -56,3 +56,7 @@ export function showTTViewOfSelectedSSClusteringResults (id, period) {
 export function showSelectedSubsequenceInComparisonPanel(id, period, SSId) {
     dispatcher.dispatch({type: 'SHOW_SELECTED_SUBSEQUENCE_IN_COMPARISON_PANEL', id, period, SSId});
 }
+
+export function removeSelectedSubsequenceFromComparisonPanel(SSId) {
+    dispatcher.dispatch({type: 'REMOVE_SELECTED_SUBSEQUENCE_FROM_COMPARISON_PANEL', SSId});
+}

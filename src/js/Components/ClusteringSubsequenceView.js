@@ -1,10 +1,12 @@
 import React from "react";
-import DataStore from '../Stores/DataStore';
+import DataStore from "../Stores/DataStore";
+import { removeSelectedSubsequenceFromComparisonPanel } from "../Actions/ClusteringAction";
 
 export default class ClusteringSubsequenceView extends React.Component {
 	constructor(props) {
 		super();
 		this.cardPadding = 4;
+		this.SSId = props.SSId;
 	}
 
 	render() {
@@ -24,24 +26,27 @@ export default class ClusteringSubsequenceView extends React.Component {
 		return (
 			<div className="card border-light mb-1" style={{ maxWidth: "20rem" }}>
 				<div className="card-header cardHeaderSubsequenceComparison">
-					<div className="hamburger"
-                        onMouseDown={this.onMouseDownSubsequenceView().bind(this)}>
+					<div
+						className="hamburger"
+						onMouseDown={this.onMouseDownSubsequenceView().bind(this)}
+					>
 						<div></div>
 						<div></div>
 						<div></div>
 					</div>
-                    <span className='subsequenceComparisonViewFileName'>
-					    {DataStore.getFileName(this.props.dataId)}
-                    </span>
-                    <span className='subsequenceComparisonViewPeriod'>
-                        {this.props.period[0]}&ndash;{this.props.period[1]}
-                    </span>
+					<span className="subsequenceComparisonViewFileName">
+						{DataStore.getFileName(this.props.dataId)}
+					</span>
+					<span className="subsequenceComparisonViewPeriod">
+						{this.props.period[0]}&ndash;{this.props.period[1]}
+					</span>
 					<button
 						type="button"
 						className="ml-2 mb-1 close"
 						// data-dismiss="toast"
-                        aria-label="Close"
-                        onClick={this.onClickCloseSubsequenceView().bind(this)}
+						id={"closeSubsequenceFromComparisonPanel_" + this.props.SSId}
+						aria-label="Close"
+						onClick={this.onClickCloseSubsequenceView().bind(this)}
 					>
 						<span aria-hidden="true">&times;</span>
 					</button>
@@ -57,21 +62,15 @@ export default class ClusteringSubsequenceView extends React.Component {
 				</div>
 			</div>
 		);
-    }
-    
-    onClickCloseSubsequenceView() {
-        return (
-            function(d) {
+	}
 
-            }
-        );
-    }
+	onClickCloseSubsequenceView() {
+		return function (d) {
+			removeSelectedSubsequenceFromComparisonPanel(this.SSId);
+		};
+	}
 
-    onMouseDownSubsequenceView() {
-        return (
-            function(d) {
-
-            }
-        );
-    }
+	onMouseDownSubsequenceView() {
+		return function (d) {};
+	}
 }
