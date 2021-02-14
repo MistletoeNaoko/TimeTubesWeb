@@ -24,7 +24,7 @@ export default class ClusteringSubsequenceView extends React.Component {
 		return (
 			<div className="card border-light mb-1" style={{ maxWidth: "20rem" }}>
 				<div className="card-header cardHeaderSubsequenceComparison">
-					<div className="humberger"
+					<div className="hamburger"
                         onMouseDown={this.onMouseDownSubsequenceView().bind(this)}>
 						<div></div>
 						<div></div>

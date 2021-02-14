@@ -1,4 +1,5 @@
 import React from "react";
+import Sortable from 'sortablejs';
 import ClusteringSubsequenceView from "../Components/ClusteringSubsequenceView";
 import ClusteringStore from '../Stores/ClusteringStore';
 
@@ -41,6 +42,11 @@ export default class ClusteringSubsequenceComparison extends React.Component {
 	}
 
 	componentDidMount() {
+        let ele = document.getElementById('clusteringSubsequenceComparison');
+        let sortable = Sortable.create(ele, {
+            handle: '.hamburger',
+            animation: 150
+        });
 		ClusteringStore.on(
 			"showSelectedSubsequenceInComparisonPanel",
 			(id, period, SSId) => {

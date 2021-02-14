@@ -568,7 +568,7 @@ img.selectorIcon:active {
     padding: 0.25rem;
 }
 
-.humberger {
+.hamburger {
     position: relative;
     height: 16px;
     width: 16px;
@@ -577,7 +577,7 @@ img.selectorIcon:active {
     margin-top: 4.5px;
 }
 
-.humberger div {
+.hamburger div {
     position: absolute;
     left: 0;
     height: 2px;
@@ -588,15 +588,15 @@ img.selectorIcon:active {
     box-sizing: border-box;
 }
 
-.humberger div:nth-of-type(1) {
+.hamburger div:nth-of-type(1) {
     top: 0;
 }
 
-.humberger div:nth-of-type(2) {
+.hamburger div:nth-of-type(2) {
     top: 7px;
 }
 
-.humberger div:nth-of-type(3) {
+.hamburger div:nth-of-type(3) {
     bottom: 0;
 }
 
