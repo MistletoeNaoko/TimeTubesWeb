@@ -289,7 +289,7 @@ export default class TimeSelector extends React.Component {
             this.SSRects
                 .each(function(d, i) {
                     let ele = d3.select(this);
-                    if (d[0].z < zpos && zpos < d[d.length - 1].z) {
+                    if (d[0].z <= zpos && zpos <= d[d.length - 1].z) {
                         ele.attr('opacity', 1);
                     } else {
                         ele.attr('opacity', 0.3);

@@ -548,18 +548,6 @@ export default class TimeTubes extends React.Component{
                 }.bind(this), 0);
             }
         });
-        ClusteringStore.on('showClusteringResults', () => {
-            // show subsequences in TimeTubes view
-            // 必要なのはsubsequencesとlabelsとcolors
-            let subsequences = ClusteringStore.getSubsequences();
-            let labels = ClusteringStore.getLabels();
-            let colors = ClusteringStore.getClusterColors();
-            this.renderClusteringResultView = false;
-            this.subsequencesInComparisonPanel = [];
-            // TODO: もう少しまともな表示方法を検討！！
-            // this.showClusteringResults(subsequences, labels, colors);
-            // this.setClusteringResultsView();
-        });
         ClusteringStore.on('showTTViewOfSelectedSSClustering', (id, period) => {
             if (id === this.id) {
                 this.grid.visible = false;
@@ -1924,45 +1912,6 @@ export default class TimeTubes extends React.Component{
         this.renderer.render(this.scene, this.camera);
     }
 
-    showClusteringResults (subsequences, labels, colors) {
-        if (this.clusteringGroup) {
-            for (let i = 0; i < this.clusteringGroup.children.length; i++) {
-                let geometry = this.clusteringGroup.children[i].geometry,
-                    material = this.clusteringGroup.children[i].material;
-                this.scene.remove(this.clusteringGroup.children[i]);
-                geometry.dispose();
-                material.dispose();
-            }
-        }
-        this.clusteringGroup = new THREE.Group();
-        this.scene.add(this.clusteringGroup);
-        let cubeSize = TimeTubesStore.getGridSize() * 2;
-        cubeSize = Math.sqrt(cubeSize * cubeSize / 2);
-        let materials = [];
-        for (let i = 0; i < colors.length; i++) {
-            materials.push(new THREE.MeshBasicMaterial({
-                color: new THREE.Color('hsl(' + colors[i][0] + ',' + (colors[i][1] * 100) + '%,' + (colors[i][2] * 100) + '%)'),
-                transparent: true,
-                opacity: 0.3,
-                clippingPlanes: [this.clippingPlane]
-            }));
-        }
-        for (let i = 0; i < subsequences.length; i++) {
-            if (Number(subsequences[i].id) === this.id) {
-                let cubeDepth = subsequences[i][subsequences[i].length - 1].z - subsequences[i][0].z;
-                let cubeSSGeometry = new THREE.CylinderBufferGeometry(cubeSize, cubeSize, cubeDepth, 4);
-                let cluster = (typeof(labels[i]) === 'object'? labels[i].cluster: labels[i]);
-                let cubeSSMesh = new THREE.Mesh(cubeSSGeometry, materials[cluster]);
-                cubeSSMesh.rotateZ(Math.PI / 4);
-                cubeSSMesh.rotateX(Math.PI / 2);
-                cubeSSMesh.position.z = subsequences[i][0].z - this.data.meta.min.z + cubeDepth / 2;
-                this.clusteringGroup.add(cubeSSMesh);
-            }
-        }
-
-        this.clusteringGroup.rotateY(Math.PI);
-    }
-
     initClusteringResultsView() {
         let fov = 45, far = 2000;
         let depth = Math.tan(fov / 2.0 * Math.PI / 180.0) * 2;
@@ -1972,43 +1921,15 @@ export default class TimeTubes extends React.Component{
         this.ClusteringCamera = new THREE.OrthographicCamera(
             -size_x / 2, size_x / 2,
             size_y / 2, -size_y / 2, 0.1,
-            far);//new THREE.PerspectiveCamera(45, 1, 0.1, 2000);
+            far);
         this.ClusteringCamera.position.z = 50;
         this.ClusteringCamera.lookAt(this.scene.position);
-        // this.ClusteringRenderer = new THREE.WebGLRenderer();
-        // this.ClusteringRenderer.setSize(150, 150);
-        // this.ClusteringRenderer.setClearColor('#000000');
-        // this.ClusteringRenderer.localClippingEnabled = false;
-        // this.ClusteringRenderer.domElement.id = 'clusteringResultsSubsequence_' + this.id;
-        // this.ClusteringRenderer.domElement.className = 'clusteringResultsSubsequence';
-        // this.ClusteringRenderer.domElement.style.display = 'none';
-        // this.ClusteringClippingPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-        // 各データに関してclusteringrendererが作られるから、選択されたデータ点に応じて表示非表示を切り替える
-    }
-
-    setClusteringResultsView() {
-        // let dom = document.getElementById('tooltipClusteringResultsSubsequencesTTView');
-        // if (dom) {
-        //     // dom.appendChild(this.renderer.domElement);
-        //     let context = dom.getContext('2d');
-        //     context.drawImage(this.renderer.domElement, 0, 0, 200, 200);
-        // }
     }
 
     showSelectedSSClusteringResultsView(period) {
-        // Array.from(document.getElementsByClassName('clusteringResultsSubsequence')).forEach(ele => {
-        //     ele.style.display = 'none';
-        // });
-        // document.getElementById('clusteringResultsSubsequence_' + this.id).style.display = 'block';
-        // this.ClusteringClippingPlane.constant = period[1] - period[0];// - this.data.spatial[0].z;
-        // this.ClusteringRenderer.localClippingEnabled = true;
-        // this.ClusteringRenderer.clippingPlanes = [this.ClusteringClippingPlane];
-//         var vFOV = THREE.MathUtils.degToRad( this.camera.fov ); // convert vertical fov to radians
-
         this.clippingPlane2.constant = period[1] - period[0];
         this.renderer.clippingPlanes = [this.clippingPlane2];
         this.tubeGroup.position.z = period[0] - this.data.spatial[0].z;
-        // if (this.ClusteringRenderer) this.ClusteringRenderer.render(this.scene, this.ClusteringCamera);
     }
 
     showSelectedSSInComparisonPanel(period, SSId) {

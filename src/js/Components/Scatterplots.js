@@ -6,7 +6,6 @@ import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import DataStore from '../Stores/DataStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import ScatterplotsStore from '../Stores/ScatterplotsStore';
-import ClusteringStore from '../Stores/ClusteringStore';
 
 d3.selection.prototype.moveToFront =
     function() {
@@ -141,15 +140,6 @@ export default class Scatterplots extends React.Component{
                 this.timeRange = range;
                 this.computeRange(this.state.xItem, this.state.yItem);
                 this.updateScatterplots(this.state.xItem, this.state.yItem);
-            }
-        });
-        ClusteringStore.on('showClusteringResults', () => {
-            // subsequences, labels, colorsが必要
-            if (this.state.xItem === 'z' || this.state.yItem === 'z') {
-                let subsequences = ClusteringStore.getSubsequences();
-                let labels = ClusteringStore.getLabels();
-                let colors = ClusteringStore.getClusterColors();
-                // this.showClusteringResults(subsequences, labels, colors);
             }
         });
     }
@@ -893,45 +883,6 @@ export default class Scatterplots extends React.Component{
         this.sp.transition()
             .duration(500)
             .call(this.zoom.transform, d3.zoomIdentity);
-    }
-
-    showClusteringResults(subsequences, labels, colors) {
-        // remove all previous rects in scatterplots
-
-        let SSData = [], labelsData = [];
-        for (let i = 0; i < subsequences.length; i++) {
-            if (Number(subsequences[i].id) === this.id) {
-                SSData.push(subsequences[i]);
-                labelsData.push(labels[i]);
-            }
-        }
-        // subsequences.filter(function(d) {
-        //     return Number(d.id) === this.id;
-        // }.bind(this));
-        let SSRectGroup = this.sp
-            .append('g')
-            .attr('class', 'SSRectGroup')
-            .attr('transform', 'translate(' + this.margin.left + ',' + this.margin.top + ')')
-            .attr('clip-path', 'url(#clipScatterplots_' + this.SPID + ')');
-        this.SSRects = SSRectGroup
-            .selectAll('rect.SSRect')
-            .data(SSData)
-            .enter()
-            .append('rect')
-            .attr('class', 'SSRect')
-            .attr('x', function(d) {
-                return this.xScale(d[0].z);
-            }.bind(this))
-            .attr('width', function(d) {
-                return this.xScale(d[d.length - 1].z) - this.xScale(d[0].z);
-            }.bind(this))
-            .attr('height', this.yScale.range()[0])
-            .attr('fill', function(d, i) {
-                let color = colors[(typeof(labelsData[i]) === 'object')? labelsData[i].cluster: labelsData[i]];
-                return d3.hsl(color[0], color[1], color[2]);
-            })
-            .attr('opacity', 0.3);
-        this.point_g.moveToFront();
     }
 
     render() {

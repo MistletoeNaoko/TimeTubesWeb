@@ -5,6 +5,8 @@ import { SketchPicker } from 'react-color';
 import * as TimeTubesAction from '../Actions/TimeTubesAction';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import DataStore from '../Stores/DataStore';
+import ClusteringStore from '../Stores/ClusteringStore';
+import { indexOf } from 'lodash';
 
 export default class Details extends React.Component{
     constructor() {
@@ -818,7 +820,36 @@ export default class Details extends React.Component{
             }
             detailTable.push(<tr key={key + '_' + this.id} className='detailTableRow'><td className='detailTableData detailTableVari'>{this.lookup[key]}</td><td className='detailTableData'>{val}</td></tr>);
         }
-        let viewportWidth = 500; //TODO: get interactively!
+        let clusterLabels = [];
+        let clusteringSubsequences = ClusteringStore.getSubsequences();
+        if (clusteringSubsequences.length) {
+            let labels = ClusteringStore.getLabels();
+            let clusterColors = ClusteringStore.getClusterColors();
+            let belongingClusters = [];
+            for (let i = 0; i < clusteringSubsequences.length; i++) {
+                if (Number(clusteringSubsequences[i].id) === this.id) {
+                    if (clusteringSubsequences[i][0].z <= cur.z && cur.z <= clusteringSubsequences[i][clusteringSubsequences[i].length - 1].z) {
+                        let cluster = typeof(labels[i]) === 'object'? labels[i].cluster: labels[i];
+                        if (belongingClusters.indexOf(cluster) < 0) {
+                            belongingClusters.push(cluster);
+                        }
+                    }
+                }
+            }
+            belongingClusters.sort((a, b) => a - b);
+            for (let i = 0; i < belongingClusters.length; i++) {
+                let color = clusterColors[belongingClusters[i]];
+                clusterLabels.push(
+                    <span 
+                        className='clusterLabelOnView'
+                        key={belongingClusters[i]} 
+                        style={{color: d3.hsl(color[0], color[1], color[2])}}>
+                        Cluster {belongingClusters[i]}
+                    </span>
+                );
+            }
+        }
+        // let viewportWidth = 500; //TODO: get interactively!
         // Z index
         // 10 ~ : check box for files
         // 20 ~ : zoom
@@ -1050,6 +1081,11 @@ export default class Details extends React.Component{
                             type="button"
                             id={"searchTimeBtn_" + this.id}
                             onClick={this.searchTime.bind(this)} >Search</button>
+                </div>
+                <div id={'clusterInfoArea_' + this.id}
+                    className='controllersOnView'
+                    style={{position: 'absolute', color: 'white', textAnchor: 'middle', bottom: '0px', left: '50%', transform: 'translateX(-50%)'}}>
+                    {clusterLabels}
                 </div>
                 <div id='detailValueArea'
                      className='controllersOnView'

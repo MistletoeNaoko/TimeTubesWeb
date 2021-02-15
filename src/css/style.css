@@ -612,6 +612,10 @@ img.selectorIcon:active {
     margin: 0 50%;
     transform: translateX(-50%);
 }
+
+.clusterLabelOnView {
+    margin: 0 0.5rem;
+}
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
