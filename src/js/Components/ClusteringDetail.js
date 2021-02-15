@@ -34,7 +34,6 @@ export default class ClusteringDetail extends React.Component {
         this.variables;
         this.selectedTrIdx = -1;
         this.SSCluster;
-        this.SSSilhouette;
         this.onMouseMoveSubsequenceDetailTrFnc = this.onMouseMoveSubsequenceDetailTr().bind(this);
         this.onMouseUpSubsequenceDetailTrFnc = this.onMouseUpSubsequenceDetailTr().bind(this);
         this.state = {
@@ -355,7 +354,7 @@ export default class ClusteringDetail extends React.Component {
                     <div
                         id='switchSparklineOrder' 
                         className="form-group form-inline">
-                        <span className='switchSparklineOrderLabel'>Time stamp</span>
+                        <span className='switchSparklineOrderLabel'>Silhouette</span>
                         <div className="custom-control custom-switch">
                             <input 
                                 type="checkbox" 
@@ -365,7 +364,7 @@ export default class ClusteringDetail extends React.Component {
                                 onChange={this.switchSparklineOrder.bind(this)}/>
                             <label className="custom-control-label" htmlFor="switchSparklineSort"></label>
                         </div>
-                        <span className='switchSparklineOrderLabel'>Silhouette</span>
+                        <span className='switchSparklineOrderLabel'>Time stamp</span>
                     </div>
                     <table id='subsequencesOverviewTable'
                         className='table table-hover sparkTable'
@@ -394,7 +393,6 @@ export default class ClusteringDetail extends React.Component {
 
     extractSubsequencesInCluster(cluster) {
         this.SSCluster = [];
-        this.SSSilhouette = [];
         // this.SSRanges = [];
         this.yMinMax = {};
         if (cluster >= 0) {
