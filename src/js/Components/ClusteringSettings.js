@@ -273,6 +273,7 @@ export default class clusteringSettings extends React.Component {
                         <div className="custom-control custom-radio">
                             <input type="radio" id="EuclideanClustering" name="distanceMetricClustering" value='Euclidean'
                                 checked={(this.state.distanceMetric === 'Euclidean')? true: false}
+                                disabled={true}
                                 className="custom-control-input" readOnly/>
                             <label className="custom-control-label" htmlFor="EuclideanClustering">
                                 Euclidean
