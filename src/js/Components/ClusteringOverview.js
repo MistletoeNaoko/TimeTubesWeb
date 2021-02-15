@@ -50,11 +50,10 @@ export default class ClusteringOverview extends React.Component {
         this.raycaster = new THREE.Raycaster();
         this.clusterCenters = [];
         this.clusterColors = [];
-        this.clusteringScores = {};
         this.tubeCoords = [];
         this.gridSize = undefined;
         this.selectedCluster = undefined;
-
+        this.clusterRadiuses = undefined;
         this.queryMode = FeatureStore.getMode();
         this.clickedX;
         this.clickedY;
@@ -123,15 +122,17 @@ export default class ClusteringOverview extends React.Component {
             this.SSLabels = ClusteringStore.getLabels();
             this.clusterColors = ClusteringStore.getClusterColors();
             this.selectedCluster = undefined;
+            let clusteringScores = ClusteringStore.getClusteringScores();
             this.setRendererSize();
             this.computeSplines();
             this.computeTubePositions();
             this.drawClusterCentersAsTubes();
+            this.drawClusterRadiusesAsRings(clusteringScores.clusterRadiuses);
             this.showClusteringParameters();
             this.resetDetailView();
             this.drawMDSScatterplots();
             this.setState({
-                clusteringScores: ClusteringStore.getClusteringScores()
+                clusteringScores: clusteringScores
             });
         });
         ClusteringStore.on('showClusterDetails', (cluster) => {
@@ -144,6 +145,7 @@ export default class ClusteringOverview extends React.Component {
             this.subsequences = ClusteringStore.getSubsequences();
             this.SSLabels = ClusteringStore.getLabels();
             this.selectedCluster = undefined;
+            let clusteringScores = ClusteringStore.getClusteringScores();
             this.setRendererSize();
             this.computeSplines();
             this.computeTubePositions();
@@ -152,7 +154,7 @@ export default class ClusteringOverview extends React.Component {
             this.resetDetailView();
             this.drawMDSScatterplots();
             this.setState({
-                clusteringScores: ClusteringStore.getClusteringScores()
+                clusteringScores: clusteringScores
             });
         });
         ClusteringStore.on('resetClusteringResults', () => {
@@ -160,6 +162,7 @@ export default class ClusteringOverview extends React.Component {
             this.subsequences = ClusteringStore.getSubsequences();
             this.SSLabels = ClusteringStore.getLabels();
             this.selectedCluster = undefined;
+            let clusteringScores = ClusteringStore.getClusteringScores();
             this.setRendererSize();
             this.computeSplines();
             this.computeTubePositions();
@@ -168,7 +171,7 @@ export default class ClusteringOverview extends React.Component {
             this.resetDetailView();
             this.drawMDSScatterplots();
             this.setState({
-                clusteringScores: ClusteringStore.getClusteringScores()
+                clusteringScores: clusteringScores
             });
         });
     }
@@ -986,6 +989,51 @@ export default class ClusteringOverview extends React.Component {
         }
         this.drawAxes();
         this.drawLabels();
+    }
+
+    drawClusterRadiusesAsRings(clusterRadiuses) {
+        if (this.clusterRadiuses) {
+            let geometry = this.clusterRadiuses.geometry,
+                material = this.clusterRadiuses.material;
+            this.scene.remove(this.clusterRadiuses);
+            this.clusterRadiuses = undefined;
+            geometry.dispose();
+            material.dispose();
+        }
+        this.clusterRadiuses = undefined;
+
+        // min cluster radius === this.gridSize
+        let ratio = this.gridSize * 0.7 / clusterRadiuses[0];
+        let segment = 32;
+        let circleIndices = Array(segment * 2 * clusterRadiuses.length),
+            circlePositions = [],
+            del = Math.PI * 2 / segment;
+        for (let i = 0; i < clusterRadiuses.length; i++) {
+            let currentIdx = segment * 2 * i;
+            circleIndices[currentIdx] = i * segment;
+            circleIndices[currentIdx + segment * 2 - 1] = i * segment;
+            for (let j = 0; j < segment; j++) {
+                circlePositions.push(this.tubeCoords[i].x + clusterRadiuses[i] * ratio * Math.cos(del * j));
+                circlePositions.push(this.tubeCoords[i].y + clusterRadiuses[i] * ratio * Math.sin(del * j));
+                circlePositions.push(0);
+
+                if (j !== 0) {
+                    circleIndices[currentIdx + 2 * (j - 1) + 1] = i * segment + j;
+                    circleIndices[currentIdx + 2 * (j - 1) + 2] = i * segment + j;
+                }
+            }
+        }
+        let circleGeometry = new THREE.BufferGeometry();
+        circleGeometry.setIndex(circleIndices);
+        circleGeometry.setAttribute('position', new THREE.Float32BufferAttribute(circlePositions, 3));
+        let circleMaterial = new THREE.LineBasicMaterial({
+            color: 0xffffff,
+            linewidth: 1,
+            // vertexColors: THREE.VertexColors,
+            // clippingPlanes: [this.clippingPlane]
+        });
+        this.clusterRadiuses = new THREE.LineSegments(circleGeometry, circleMaterial);
+        this.scene.add(this.clusterRadiuses);
     }
 
     computeTubePositions() {
