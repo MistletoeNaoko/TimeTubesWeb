@@ -616,6 +616,11 @@ img.selectorIcon:active {
 .clusterLabelOnView {
     margin: 0 0.5rem;
 }
+
+.switchSparklineOrderLabel {
+    font-size: 0.8rem;
+    margin: 0 0.3rem;
+}
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
@@ -973,4 +978,8 @@ img.selectorIcon:active {
 
 #carouselControlNextClusteringOverview {
     height: 50px;
+}
+
+#switchSparklineOrder {
+    float: right;
 }

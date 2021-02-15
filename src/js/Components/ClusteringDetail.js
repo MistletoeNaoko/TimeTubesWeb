@@ -33,10 +33,13 @@ export default class ClusteringDetail extends React.Component {
         this.subsequenceParameters;
         this.variables;
         this.selectedTrIdx = -1;
+        this.SSCluster;
+        this.SSSilhouette;
         this.onMouseMoveSubsequenceDetailTrFnc = this.onMouseMoveSubsequenceDetailTr().bind(this);
         this.onMouseUpSubsequenceDetailTrFnc = this.onMouseUpSubsequenceDetailTr().bind(this);
         this.state = {
-            cluster: -1
+            cluster: -1,
+            sparklineOrder: 'timestamp'
         };
     }
 
@@ -303,6 +306,15 @@ export default class ClusteringDetail extends React.Component {
                     </tr>
                 </thead>
             );
+            if (this.state.sparklineOrder === 'timestamp') {
+                this.SSCluster.sort((a, b) => {
+                    return a.idx < b.idx? -1: 1;
+                });
+            } else if (this.state.sparklineOrder === 'Silhouette') {
+                this.SSCluster.sort((a, b) => {
+                    return a.Silhouette < b.Silhouette? -1: 1;
+                });
+            }
             let trItems = [];
             for (let i = 0; i < this.SSCluster.length; i++) {
                 let tdItems = [];
@@ -340,6 +352,21 @@ export default class ClusteringDetail extends React.Component {
             return (
                 <div id='subsequencesOverview'
                     className='resultAreaElem'>
+                    <div
+                        id='switchSparklineOrder' 
+                        className="form-group form-inline">
+                        <span className='switchSparklineOrderLabel'>Time stamp</span>
+                        <div className="custom-control custom-switch">
+                            <input 
+                                type="checkbox" 
+                                className="custom-control-input" 
+                                id="switchSparklineSort"
+                                checked={this.state.sparklineOrder === 'timestamp'? true: false}
+                                onChange={this.switchSparklineOrder.bind(this)}/>
+                            <label className="custom-control-label" htmlFor="switchSparklineSort"></label>
+                        </div>
+                        <span className='switchSparklineOrderLabel'>Silhouette</span>
+                    </div>
                     <table id='subsequencesOverviewTable'
                         className='table table-hover sparkTable'
                         style={{width: tableWidth}}>
@@ -353,8 +380,21 @@ export default class ClusteringDetail extends React.Component {
         }
     }
 
+    switchSparklineOrder() {
+        if (this.state.sparklineOrder === 'timestamp') {
+            this.setState({
+                sparklineOrder: 'Silhouette'
+            });
+        } else if (this.state.sparklineOrder === 'Silhouette') {
+            this.setState({
+                sparklineOrder: 'timestamp'
+            });
+        }
+    }
+
     extractSubsequencesInCluster(cluster) {
         this.SSCluster = [];
+        this.SSSilhouette = [];
         // this.SSRanges = [];
         this.yMinMax = {};
         if (cluster >= 0) {
@@ -364,8 +404,12 @@ export default class ClusteringDetail extends React.Component {
             for (let i = 0; i < this.labels.length; i++) {
                 if (typeof(this.labels[i]) === 'object') {
                     if (this.labels[i].cluster === cluster) {
-                        this.SSCluster.push(this.subsequences[i]);
-                        // this.SSRanges.push(this.ranges[i]);
+                        let SS = this.subsequences[i].slice(0, this.subsequences[i].length);
+                        SS.id = this.subsequences[i].id;
+                        SS.idx = this.subsequences[i].idx;
+                        SS.dataPoints = this.subsequences[i].dataPoints;
+                        SS.Silhouette = this.clusteringScores.silhouetteSS[i];
+                        this.SSCluster.push(SS);
 
                         for (let j = 0; j < this.subsequences[i].length; j++) {
                             this.variables.forEach(function(d) {
@@ -380,8 +424,12 @@ export default class ClusteringDetail extends React.Component {
                     }
                 } else {
                     if (this.labels[i] === cluster) {
-                        this.SSCluster.push(this.subsequences[i]);
-                        // this.SSRanges.push(this.ranges[i]);
+                        let SS = this.subsequences[i].slice(0, this.subsequences[i].length);
+                        SS.id = this.subsequences[i].id;
+                        SS.idx = this.subsequences[i].idx;
+                        SS.dataPoints = this.subsequences[i].dataPoints;
+                        SS.Silhouette = this.clusteringScores.silhouetteSS[i];
+                        this.SSCluster.push(SS);
                         
                         for (let j = 0; j < this.subsequences[i].length; j++) {
                             this.variables.forEach(function(d) {
