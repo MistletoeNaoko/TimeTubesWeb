@@ -6,6 +6,7 @@ import * as ScatterplotsAction from '../Actions/ScatterplotsAction';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import ScatterplotsStore from '../Stores/ScatterplotsStore';
 import ClusteringStore from '../Stores/ClusteringStore';
+import FeatureStore from '../Stores/FeatureStore';
 
 d3.selection.prototype.moveToFront =
     function() {
@@ -60,6 +61,21 @@ export default class TimeSelector extends React.Component {
             if (id === this.id) {
                 this.selectedRange = range;
             }
+        });
+        FeatureStore.on('setExtractionResults', () => {
+            this.clearClusteringResults();
+        });
+        FeatureStore.on('clearResults', () => {
+            this.clearClusteringResults();
+        });
+        FeatureStore.on('convertResultIntoQuery', (id, period, activeVar) => {
+            this.clearClusteringResults();
+        });
+        FeatureStore.on('clearResults', () => {
+            this.clearClusteringResults();
+        });
+        FeatureStore.on('recoverQuery', (query) => {
+            this.clearClusteringResults();
         });
         ClusteringStore.on('showClusteringResults', () => {
             let subsequences = ClusteringStore.getSubsequences();
@@ -340,6 +356,13 @@ export default class TimeSelector extends React.Component {
             .attr('opacity', 0.3);
         this.timeSelectorGraph
             .moveToFront();
+    }
+    
+    clearClusteringResults () {
+        if (this.SSRects) {
+            this.SSRects.remove();
+        }
+        this.SSRects = undefined;
     }
 
     render() {

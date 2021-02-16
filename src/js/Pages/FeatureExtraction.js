@@ -45,6 +45,14 @@ export default class FeatureExtraction extends React.Component{
             }
             this.showResultsPanel(mode);
         });
+        FeatureStore.on('setExtractionResults', () => {
+            $('#extractionResults').css({
+                width: (100 - 30) + '%'
+            });
+            this.setState({
+                resultsPanel: 'featureExtraction'
+            });
+        });
         FeatureStore.on('recoverQuery', (query) => {
             let mode = FeatureStore.getMode();
             this.setState({

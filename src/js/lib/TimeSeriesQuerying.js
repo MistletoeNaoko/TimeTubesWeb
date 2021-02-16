@@ -1765,7 +1765,7 @@ export function showExtractionResults() {
     // result stores {id, start, period, dtw distance, path} (not sorted)
     // close the source panel
     if ($('#QBESourceMain').css('display') !== 'none') {
-        domActions.toggleSourcePanel();
+        domActions.toggleSourcePanel(false);
     }
     // get the options for showing results
     // order of the results
