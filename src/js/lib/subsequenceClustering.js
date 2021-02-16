@@ -2172,6 +2172,7 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables, maxTri
 }
 
 function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
+    console.log('kmeans');
     // step 1: randomly assign SS to k clusters
     // step 2: compute barycenters (centroids) of the clusters
     // step 3: re-assign SS to the nearest cluster
@@ -2181,7 +2182,6 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
     let distMatrix = distanceMatrix(data, distanceParameters, variableList);
     let dataLen = data[0].length;
     let clusteringScores = {};
-
     let centroids = [], labels = [], distsToClusters;// = assignSSToCentroids(centroids);
     let bestDist = Infinity, bestCentroids, bestLabels, bestDistsToClusters;
     for (let i = 0; i < maxTrial; i++) {
@@ -2197,7 +2197,7 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
         let newCentroids = [], newLabels = [], distsToClusters;
         // step 3 and 4
         let loop = 0, maxIteration = 300;
-        while (loop < maxIteration && checkUpdatesCentroids(centroids, newCentroids)) {
+        while (loop < maxIteration && checkUpdates(labels, newLabels)) {//(checkUpdatesCentroids(centroids, newCentroids) && loop < maxIteration) {
             if (newCentroids.length !== 0 && newLabels.length !== 0) {
                 centroids = newCentroids;
                 labels = newLabels;
@@ -2209,6 +2209,13 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
                 newCentroids = newCentroidsTmp;
             }
             loop++;
+        }
+        // cluster members are no more updated, so update centroids only
+        loop = 0;
+        while (loop < maxIteration && checkUpdatesCentroids(centroids, newCentroids)) {
+            centroids = newCentroids;
+            labels = newLabels;
+            [newCentroids, newLabels, distsToClusters] = performDBA(labels, dataLen);
         }
         centroids = newCentroids;
         labels = newLabels;
@@ -3100,6 +3107,153 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
         }
         return newCentroids;
     }
+    function performDBA(labels, dataLen) {
+        // decide new barycenters
+        // divide SS into clusters according to labels
+        let clusters = []; // store indexes of data samples belonging to each cluster
+        for (let i = 0; i < clusterNum; i++) {
+            clusters.push([]);
+        }
+        for (let i = 0; i < labels.length; i++) {
+            clusters[labels[i].cluster].push(i);
+        }
+        
+        let newCentroids = [], 
+            distsToClusters = [];
+        switch(distanceParameters.metric) {
+            case 'Euclidean':
+                break;
+            case 'DTWD':
+                // Step 1: decide new barycenters
+                // compute new centroids according to SS in the cluster and the path between the current centroid and SS
+                for (let i = 0; i < clusters.length; i++) {
+                    // create a new arrray for storing new centroid
+                    let centroidTmp = [],
+                        dataCount = [];
+                    // new centroid will be a barycenter of data values of data samples in the cluster
+                    for (let j = 0; j < dataLen; j++) {
+                        let dataTmp = {};
+                        variableList.forEach(key => {
+                            dataTmp[key] = 0;
+                        });
+                        centroidTmp.push(dataTmp);
+                        dataCount.push(0);
+                    }
+
+                    // add data values of data in the cluster to get barycenter
+                    for (let j = 0; j < clusters[i].length; j++) {
+                        // focus on a data[clusters[i][j]] (data[clusters[i][j]] has 31 data points)
+                        // check the path between the current centroid and data[clusters[i][j]] (labels[clusters[i][j]].path)
+                        for (let k = 0; k < labels[clusters[i][j]].path.length; k++) {
+                            variableList.forEach(key => {
+                                centroidTmp[labels[clusters[i][j]].path[k][0]][key] += data[clusters[i][j]][labels[clusters[i][j]].path[k][1]][key];
+                            });
+                            dataCount[labels[clusters[i][j]].path[k][0]]++;
+                        }
+                    }
+                    // compute barycenters of each variables
+                    for (let j = 0; j < centroidTmp.length; j++) {
+                        variableList.forEach(key => {
+                            centroidTmp[j][key] /= dataCount[j];
+                        });
+                    }
+                    newCentroids.push(centroidTmp);
+                }
+
+                // step 2: decide the path between new barycenters and subsequences
+                for (let i = 0; i < data.length; i++) {
+                    distsToClusters.push([]);
+                    for (let j = 0; j < newCentroids.length; j++) {
+                        let distTmp = 0;
+                        if (distanceParameters.window > 0) {
+                            // DTWMD
+                            distTmp = DTWMD(newCentroids[j], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
+                            distsToClusters[i].push(distTmp[distTmp.length - 1][distTmp[0].length - 1]);
+                        } else {
+                            // DTWSimpleMD
+                            distTmp = DTWSimpleMD(newCentroids[j], data[i], variableList, distanceParameters.distFunc);
+                            distsToClusters[i].push(distTmp[distTmp.length - 1][distTmp[0].length - 1]);
+                        }
+                        if (labels[i].cluster === j) {
+                            labels[i].path = OptimalWarpingPath(distTmp);
+                        }
+                    }
+                }
+                break;
+            case 'DTWI':
+                // Step 1: decide new barycenters
+                // compute new centroids according to SS in the cluster amd the path between the current centroid and SS
+                for (let i = 0; i < clusters.length; i++) {
+                    // create a new array for storing new centroid
+                    let centroidTmp = [],
+                        dataCount = [];
+                    // new centroid will be a barycenter of data values of data samples in the cluster
+                    for (let j = 0; j < dataLen; j++) {
+                        let dataTmp = {},
+                            countTmp = {};
+                        variableList.forEach(key => {
+                            dataTmp[key] = 0;
+                            countTmp[key] = 0;
+                        });
+                        centroidTmp.push(dataTmp);
+                        dataCount.push(countTmp);
+                    }
+
+                    // add data values of data in the cluster to get barycenter
+                    for (let j = 0; j < clusters[i].length; j++) {
+                        // focus on a data[clusters[i][j]] (data[clusters[i][j]] has 31 data points)
+                        // check the path between the current centroid and data[clusters[i][j]] (labels[clusters[i][j]].path)labels[clusters[i][j]].path
+                        variableList.forEach(key => {
+                            for (let k = 0; k < labels[clusters[i][j]].path[key].length; k++) {
+                                centroidTmp[labels[clusters[i][j]].path[key][k][0]][key] += data[clusters[i][j]][labels[clusters[i][j]].path[key][k][1]][key];
+                                dataCount[labels[clusters[i][j]].path[key][k][0]][key]++;
+                            }
+                        });
+                    }
+                    // compute barycenters of each variables
+                    for (let j = 0; j < centroidTmp.length; j++) {
+                        variableList.forEach(key => {
+                            if (centroidTmp[j][key] == 0) {
+                            }
+                            centroidTmp[j][key] /= dataCount[j][key];
+                        });
+                    }
+                    newCentroids.push(centroidTmp);
+                }
+
+                // step 2: decide the path between new barycenters and subsequences
+                for (let i = 0; i < data.length; i++) {
+                    distsToClusters.push([]);
+                    for (let j = 0; j < newCentroids.length; j++) {
+                        let distTmp = 0;
+                        if (distanceParameters.window > 0) {
+                            // DTW
+                            distTmp = DTW(newCentroids[j], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
+                            let distSum = 0;
+                            variableList.forEach(key => {
+                                distSum += distTmp[key][distTmp[key].length - 1][distTmp[key][0].length - 1];
+                            });
+                            distsToClusters[i].push(distSum);
+                        } else {
+                            // DTWSimple
+                            distTmp = DTWSimple(newCentroids[j], data[i], variableList, distanceParameters.distFunc);
+                            let distSum = 0;
+                            variableList.forEach(key => {
+                                distSum += distTmp[key][distTmp[key].length - 1][distTmp[key][0].length - 1];
+                            });
+                            distsToClusters[i].push(distSum);
+                        }
+                        if (labels[i].cluster === j) {
+                            labels[i].path = OptimalWarpingPath(distTmp);
+                        }
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+        return [newCentroids, labels, distsToClusters];
+    }
     function checkUpdates(pLabels, nLabels) {
         let flag = false;
         if (pLabels.length === 0 || nLabels.length === 0) {
@@ -3146,9 +3300,9 @@ function DTWSimple(s, t, variables, distFunc) {
     variables.forEach(key => {
         let dist = [];
         for (let i = 0; i <= s.length; i++) {
-            dist[i] = [];
+            dist.push([]);
             for (let j = 0; j <= t.length; j++) {
-                dist[i][j] = Infinity;
+                dist[i].push(Infinity);
             }
         }
         dist[0][0] = 0;
