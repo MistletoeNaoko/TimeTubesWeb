@@ -4,7 +4,6 @@ import * as ClusteringAction from '../Actions/ClusteringAction';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 import {toggleExtractionMenu} from '../lib/domActions';
-import { each } from 'lodash';
 
 export default class clusteringSettings extends React.Component {
     constructor(props) {
@@ -26,6 +25,7 @@ export default class clusteringSettings extends React.Component {
         $('#targetLengthMaxClustering').val(30);
         $('#resolutionOfTimeNormalizedSS').val(30);
         $('#overlappingDegreeThreshold').val(70);
+        $('#maxTrialNum').val(10);
         $('#clusterNumber').val(6);
         FeatureStore.on('switchQueryMode', (mode) => {
             this.setState({
@@ -43,7 +43,6 @@ export default class clusteringSettings extends React.Component {
         return (
             <div id='clusteringSetting' className='controllersElem featureArea'>
                 {this.subsequenceSetting()}
-                {this.variableSelector()}
                 {this.clusteringMethodsSetting()}
                 <button className="btn btn-primary btn-sm"
                     type="button"
@@ -173,6 +172,7 @@ export default class clusteringSettings extends React.Component {
                     </div>
                 </div>
                 {overlappingDegree}
+                {this.variableSelector()}
             </div>
         );
     }
@@ -239,9 +239,13 @@ export default class clusteringSettings extends React.Component {
             }
         }
         let selectorCode = (
-            <div className='featureElem'>
-                <h6>Variables to be consideded</h6>
-                {items}
+            <div className='row matchingOption'>
+                <div className='col-5'>
+                    Variables to be consideded
+                </div>
+                <div className='col'>
+                    {items}
+                </div>
             </div>
         );
         return selectorCode;
@@ -395,6 +399,7 @@ export default class clusteringSettings extends React.Component {
                                     <div className="custom-control custom-radio">
                                         <input type="radio" id="EuclideanClustering" name="distanceMetricClustering" value='Euclidean'
                                             checked={(this.state.distanceMetric === 'Euclidean')? true: false}
+                                            disabled={true}
                                             className="custom-control-input" readOnly/>
                                         <label className="custom-control-label" htmlFor="EuclideanClustering">
                                             Euclidean
@@ -458,6 +463,19 @@ export default class clusteringSettings extends React.Component {
                     </div>
                 </div>
                 {clusteringOptions}
+                <div className="row matchingOption">
+                    <div className='col-5'>
+                        Max trial
+                    </div>
+                    <div className='col'>
+                        <input className="form-control form-control-sm"
+                            type="text"
+                            placeholder="threshold"
+                            id="maxTrialNum"
+                            style={{width: '40%', marginRight: '0.5rem'}}
+                            required={true}/>
+                    </div>
+                </div>
             </div>
         );
         return clusteringCode;
@@ -517,7 +535,8 @@ export default class clusteringSettings extends React.Component {
                     medoidDefinition: this.state.medoidDefinition,
                     distanceMetric: this.state.distanceMetric,
                     window: 0,
-                    variables: variables
+                    variables: variables,
+                    maxTrial: Number($('#maxTrialNum').val())
                 };
                 break;
             case 'kmeans':
@@ -527,7 +546,8 @@ export default class clusteringSettings extends React.Component {
                     distanceMetric: this.state.distanceMetric,
                     window: 0,
                     clusterCenter: $('input[name=clusterCenter]:checked').val(),
-                    variables: variables
+                    variables: variables,
+                    maxTrial: Number($('#maxTrialNum').val())
                 };
                 break;
             default:

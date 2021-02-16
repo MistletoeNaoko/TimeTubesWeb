@@ -30,6 +30,8 @@ export default class FeatureExtraction extends React.Component{
                 $('#extractionResults').css({
                     width: (100 - 30) + '%'
                 });
+                let height = window.innerHeight - $('#appHeader').outerHeight(true);
+                $('#extractionResults').height(height);
             } else if (mode === 'Clustering') {
                 $('#clusteringResults').css({
                     width: (100 - 30) + '%'
@@ -38,6 +40,8 @@ export default class FeatureExtraction extends React.Component{
                 $('#extractionResults').css({
                     width: (100 - 30) + '%'
                 });
+                let height = window.innerHeight - $('#appHeader').outerHeight(true);
+                $('#extractionResults').height(height);
             }
             this.showResultsPanel(mode);
         });

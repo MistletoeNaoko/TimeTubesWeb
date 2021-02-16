@@ -151,6 +151,7 @@ export default class ClusteringOverview extends React.Component {
             this.computeSplines();
             this.computeTubePositions();
             this.drawClusterCentersAsTubes();
+            this.drawClusterRadiusesAsRings(clusteringScores.clusterRadiuses);
             this.showClusteringParameters();
             this.resetDetailView();
             this.drawMDSScatterplots();
@@ -168,6 +169,7 @@ export default class ClusteringOverview extends React.Component {
             this.computeSplines();
             this.computeTubePositions();
             this.drawClusterCentersAsTubes();
+            this.drawClusterRadiusesAsRings(clusteringScores.clusterRadiuses);
             this.showClusteringParameters();
             this.resetDetailView();
             this.drawMDSScatterplots();
@@ -473,7 +475,7 @@ export default class ClusteringOverview extends React.Component {
                 d.preventDefault();
 
                 drag.style.top = d.pageY - this.clickedY + 'px';
-                drag.style.left = d.pageX - this.clickedX + 'px';
+                drag.style.left = d.pageX - this.clickedX - drag.clientWidth / 2 - $('#extractionMenu').width() + 'px';
 
                 switch(this.queryMode) {
                     case 'QBE':

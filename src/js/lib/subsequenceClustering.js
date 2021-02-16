@@ -255,7 +255,13 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                 }
             }
             if (clusteringParameters.medoidDefinition === 'unified') {
-                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsUnified(subsequenceData, clusteringParameters.clusterNum, distanceParameters, variables);
+                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsUnified(
+                    subsequenceData, 
+                    clusteringParameters.clusterNum, 
+                    distanceParameters, 
+                    variables,
+                    clusteringParameters.maxTrial
+                );
                 for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
                     for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
                         distsBetweenClusters[i][j] = distMatrix[medoidIdx[i]][medoidIdx[j]];
@@ -263,7 +269,13 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                     }
                 }
             } else if (clusteringParameters.medoidDefinition === 'each') {
-                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsEach(subsequenceData, clusteringParameters.clusterNum, distanceParameters, variables);
+                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsEach(
+                    subsequenceData, 
+                    clusteringParameters.clusterNum, 
+                    distanceParameters, 
+                    variables,
+                    clusteringParameters.maxTrial
+                );
                 for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
                     for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
                         let distSum = 0;
@@ -318,7 +330,13 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
             }
             break;
         case 'kmeans':
-            [clusterCenters, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters] = kMeans(subsequenceData, clusteringParameters.clusterNum, distanceParameters, variables);
+            [clusterCenters, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters] = kMeans(
+                subsequenceData, 
+                clusteringParameters.clusterNum, 
+                distanceParameters, 
+                variables,
+                clusteringParameters.maxTrial
+            );
             // merge distance matrix for each SS and distance matrix for clusters
             // fill 0s to shortcoming parts of the distance matrix
             for (let i = 0; i < subsequenceData.length; i++) {
@@ -384,7 +402,13 @@ export function reperformClustering(data, clusteringParameters, dataLen) {
                 }
             }
             if (clusteringParameters.medoidDefinition === 'unified') {
-                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsUnified(data, clusteringParameters.clusterNum, distanceParameters, variablesZ);
+                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsUnified(
+                    data, 
+                    clusteringParameters.clusterNum, 
+                    distanceParameters, 
+                    variablesZ,
+                    clusteringParameters.maxTrial
+                );
                 for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
                     for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
                         distsBetweenClusters[i][j] = distMatrix[medoidIdx[i]][medoidIdx[j]];
@@ -392,7 +416,13 @@ export function reperformClustering(data, clusteringParameters, dataLen) {
                     }
                 }
             } else if (clusteringParameters.medoidDefinition === 'each') {
-                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsEach(data, clusteringParameters.clusterNum, distanceParameters, variablesZ);
+                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsEach(
+                    data, 
+                    clusteringParameters.clusterNum, 
+                    distanceParameters, 
+                    variablesZ,
+                    clusteringParameters.maxTrial
+                );
                 for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
                     for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
                         let distSum = 0;
@@ -447,7 +477,13 @@ export function reperformClustering(data, clusteringParameters, dataLen) {
             }
             break;
         case 'kmeans':
-            [clusterCenters, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters] = kMeans(data, clusteringParameters.clusterNum, distanceParameters, variablesZ);
+            [clusterCenters, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters] = kMeans(
+                data, 
+                clusteringParameters.clusterNum, 
+                distanceParameters, 
+                variablesZ,
+                clusteringParameters.maxTrial
+            );
             // merge distance matrix for each SS and distance matrix for clusters
             // fill 0s to shortcoming parts of the distance matrix
             for (let i = 0; i < clusteringParameters.clusterNum; i++) {
@@ -1384,7 +1420,7 @@ function computeDataCenter(data, distanceParameters, variables, dataLen) {
     }
 }
 
-function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
+function kMedoidsEach(data, clusterNum, distanceParameters, variables, maxTrial) {
     // step 1: compute distance matrix between SS
     // step 2: pick up k medoids from all SS
     // step 3: assign other SS to medoids
@@ -1397,7 +1433,7 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
     let distMatrix = distanceMatrix(data, distanceParameters, variableList);
     // step 2
     // find the inital medoids which make the errors inside the clusters minimum
-    let initSearch = 5, maxTrial = 10;
+    let initSearch = 5;
     let medoids = [], labels = [];
     let clusteringScores = {};
     let bestMedoids, bestLabels, bestDist = Infinity, bestDists;
@@ -1848,7 +1884,7 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables) {
 }
 
 
-function kMedoidsUnified(data, clusterNum, distanceParameters, variables) {
+function kMedoidsUnified(data, clusterNum, distanceParameters, variables, maxTrial) {
     // step 1: compute distance matrix between SS
     // step 2: pick up k medoids from all SS
     // step 3: assign other SS to medoids
@@ -1861,7 +1897,7 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables) {
     let distMatrix = distanceMatrix(data, distanceParameters, variableList);
     // step 2
     // find the inital medoids which make the errors inside the clusters minimum
-    let initSearch = 5, maxTrial = 10;
+    let initSearch = 5;
     let score = Infinity, medoids, labels;
     let clusteringScores = {};
     let bestMedoids, bestLabels, bestDist = Infinity, bestDists;
@@ -2135,7 +2171,7 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables) {
     }
 }
 
-function kMeans(data, clusterNum, distanceParameters, variables) {
+function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
     // step 1: randomly assign SS to k clusters
     // step 2: compute barycenters (centroids) of the clusters
     // step 3: re-assign SS to the nearest cluster
@@ -2146,7 +2182,6 @@ function kMeans(data, clusterNum, distanceParameters, variables) {
     let dataLen = data[0].length;
     let clusteringScores = {};
 
-    let maxTrial = 10;
     let centroids = [], labels = [], distsToClusters;// = assignSSToCentroids(centroids);
     let bestDist = Infinity, bestCentroids, bestLabels, bestDistsToClusters;
     for (let i = 0; i < maxTrial; i++) {
