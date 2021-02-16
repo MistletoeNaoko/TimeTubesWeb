@@ -42,6 +42,7 @@ export default class ClusteringOverview extends React.Component {
         this.segment = 16;
         this.division = 5;
         this.cameraPosZ = 50;
+        this.minGridSize = 3;
         this.tubeGroups = [];
         this.splines = [];
         this.opacityCurve = TimeTubesStore.getOpacityCurve('Default');
@@ -1070,18 +1071,191 @@ export default class ClusteringOverview extends React.Component {
             let yRange = Math.max(Math.abs(xPosMinMax[1] - xPosMinMax[0]) / aspect, Math.abs(yPosMinMax[1] - yPosMinMax[0]));
             let xRange = yRange * aspect;
             let viewportSize = ClusteringStore.getViewportSize() * 0.8;
+            let xAreaSize = (width > height)? ClusteringStore.getViewportSize() * 0.9 * aspect: viewportSize,
+                yAreaSize = (width < height)? ClusteringStore.getViewportSize() * 0.9 / aspect: viewportSize;
             let ratio = viewportSize * 2 / (height < width? yRange: xRange);
             if (minDistBetweenClusters * ratio < ClusteringStore.getGridSize() * 2) {
                 this.gridSize = minDistBetweenClusters * ratio / 2;
-                this.range = this.gridSize * this.range / ClusteringStore.getGridSize();
             }
+            // if the grid size is too small, rearrange the position of cluster centers a bit by force layout
+            if (this.gridSize < this.minGridSize) {
+                this.gridSize = this.minGridSize;
+                let xShift = (xPosMinMax[1] - (xPosMinMax[1] - xPosMinMax[0]) / 2) * -1 * ratio,
+                    yShift = (yPosMinMax[1] - (yPosMinMax[1] - yPosMinMax[0]) / 2) * -1 * ratio;
+                for (let i = 0; i < clustersCoord.length; i++) {
+                    this.tubeCoords.push({x: xShift + clustersCoord[i][0] * ratio, y: yShift + clustersCoord[i][1] * ratio});
+                }
 
-            let xShift = (xPosMinMax[1] - (xPosMinMax[1] - xPosMinMax[0]) / 2) * -1 * ratio,
-                yShift = (yPosMinMax[1] - (yPosMinMax[1] - yPosMinMax[0]) / 2) * -1 * ratio;
-            for (let i = 0; i < clustersCoord.length; i++) {
-                this.tubeCoords.push({x: xShift + clustersCoord[i][0] * ratio, y: yShift + clustersCoord[i][1] * ratio});
+                let distBetweenClusters = []
+                for (let i = 0; i < clustersCoord.length; i++) {
+                    distBetweenClusters.push([]);
+                    for (let j = 0; j < clustersCoord.length; j++) {
+                        distBetweenClusters[i].push(0);
+                    }
+                }
+                for (let i = 0; i < this.tubeCoords.length; i++) {
+                    for (let j = i + 1; j < this.tubeCoords.length; j++) {
+                        let dist = Math.sqrt(
+                            Math.pow(
+                                this.tubeCoords[i].x - this.tubeCoords[j].x, 2) + 
+                            Math.pow(
+                                this.tubeCoords[i].y - this.tubeCoords[j].y, 2)
+                        );
+                        distBetweenClusters[i][j] = dist;
+                        distBetweenClusters[j][i] = dist;
+                        if (dist < minDistBetweenClusters) {
+                            minDistBetweenClusters = dist;
+                        }
+                    }
+                }
+                let overlappingFlag = true, loop = 0;
+                let overlappingGroups = [];
+                while (overlappingFlag && loop < 10) {
+                    // step 1: find groups of overlapping plots
+                    let i = 0;
+                    while(i < distBetweenClusters.length - 1) {
+                        overlappingGroups = [];
+                        findOverlappingPoints(i);
+                        if (overlappingGroups.length > 0) {
+                            overlappingGroups.push(i);
+                            overlappingGroups = Array.from(new Set(overlappingGroups));
+                            let overlappingTubeCoords = [];
+                            for (let j = 0; j < overlappingGroups.length; j++) {
+                                let coordsTmp = Object.assign({}, this.tubeCoords[overlappingGroups[j]]);
+                                coordsTmp.idx = overlappingGroups[j];
+                                overlappingTubeCoords.push(coordsTmp);
+                            }
+                            // step 2: compute barycenter of the overlapping group
+                            let barycenter = {x: 0, y: 0};
+                            if (overlappingGroups.length >= 3) {
+                                // compute barycenter step by step
+                                overlappingTubeCoords.sort((a, b) => {
+                                    return a.x < b.x? -1: 1;
+                                });
+                                let coords = overlappingTubeCoords;
+                                while (coords.length !== 1) {
+                                    let coordsTmp = [];
+                                    for (let j = 1; j < coords.length - 1; j++) {
+                                        coordsTmp.push(
+                                            computeBarycenter(
+                                                coords[0], 
+                                                coords[j], 
+                                                coords[j + 1]
+                                            )
+                                        );
+                                    }
+                                    coords = coordsTmp;
+                                }
+                                barycenter = coords;
+                            } else {
+                                for (let j = 0; j < overlappingTubeCoords.length; j++) {
+                                    barycenter.x += overlappingTubeCoords[j].x;
+                                    barycenter.y += overlappingTubeCoords[j].y;
+                                }
+                                barycenter.x /= overlappingTubeCoords.length;
+                                barycenter.y /= overlappingTubeCoords.length;
+                            }
+                            // step 3: find the maximum overlapping pair
+                            let minBetweenDist = Infinity,
+                                maxOverlappingPair = [-1, -1];
+                            for (let j = 0; j < overlappingGroups.length - 1; j++) {
+                                for (let k = j + 1; k < overlappingGroups.length; k++) {
+                                    if (distBetweenClusters[j][k] < minBetweenDist) {
+                                        minBetweenDist = distBetweenClusters[j][k];
+                                        maxOverlappingPair = [j, k];
+                                    }
+                                }
+                            }
+                            // step 4: compute shift size of each plot
+                            let magRate = 2 * this.minGridSize / minDistBetweenClusters;
+                            
+                            // step 5: update this.tubeCoords
+                            let xOver = 0, yOver = 0;
+                            for (let j = 0; j < overlappingGroups.length; j++) {
+                                this.tubeCoords[overlappingGroups[j]].x *= magRate;
+                                this.tubeCoords[overlappingGroups[j]].y *= magRate;
+                                if (Math.abs(this.tubeCoords[overlappingGroups[j]].x) > xAreaSize) {
+                                    if (this.tubeCoords[overlappingGroups[j]].x >= 0) {
+                                        let xOverTmp = this.tubeCoords[overlappingGroups[j]].x - xAreaSize;
+                                        if (xOver < xOverTmp) 
+                                            xOver = xOverTmp;
+                                    } else {
+                                        let xOverTmp = this.tubeCoords[overlappingGroups[j]].x + xAreaSize;
+                                        if (xOverTmp < xOver) 
+                                            xOver = xOverTmp;
+                                    }
+                                }
+                                if (Math.abs(this.tubeCoords[overlappingGroups[j]].y) > yAreaSize) {
+                                    if (this.tubeCoords[overlappingGroups[j]].y >= 0) {
+                                        let yOverTmp = this.tubeCoords[overlappingGroups[j]].y - yAreaSize;
+                                        if (yOver < yOverTmp) 
+                                            yOver = yOverTmp;
+                                    } else {
+                                        let yOverTmp = this.tubeCoords[overlappingGroups[j]].y + yAreaSize;
+                                        if (yOverTmp < yOver) 
+                                            yOver = yOverTmp;
+                                    }
+                                }
+                            }
+                            // step 6: shift the coordinates if needed
+                            if (xOver !== 0 || yOver !== 0) {
+                                for (let j = 0; j < overlappingGroups.length; j++) {
+                                    if (xOver !== 0) this.tubeCoords[overlappingGroups[j]].x -= xOver;
+                                    if (yOver !== 0) this.tubeCoords[overlappingGroups[j]].y -= yOver;
+                                }
+                            }
+
+                            // step 7: update distBetweenClusters
+                            for (let j = 0; j < this.tubeCoords.length; j++) {
+                                for (let k = j + 1; k < this.tubeCoords.length; k++) {
+                                    let dist = Math.sqrt(
+                                        Math.pow(
+                                            this.tubeCoords[j].x - this.tubeCoords[k].x, 2) + 
+                                        Math.pow(
+                                            this.tubeCoords[j].y - this.tubeCoords[k].y, 2)
+                                    );
+                                    distBetweenClusters[j][k] = dist;
+                                    distBetweenClusters[k][j] = dist;
+                                    if (dist < minDistBetweenClusters) {
+                                        minDistBetweenClusters = dist;
+                                    }
+                                }
+                            }
+                            // step 8: check whether there are overlapping plots
+                            if (this.minGridSize < minDistBetweenClusters) {
+                                overlappingFlag = false;
+                                break;
+                            }
+                        }
+                        i++;
+                    }
+                    if (i >= distBetweenClusters.length - 1 && overlappingGroups.length === 0) {
+                        overlappingFlag = false;
+                    }
+                    loop++;
+                }
+                this.range = this.gridSize * this.range / ClusteringStore.getGridSize();
+                function findOverlappingPoints(pivot) {
+                    for (let j = pivot + 1; j < distBetweenClusters[pivot].length; j++) {
+                        if (distBetweenClusters[pivot][j] < 6) {
+                            overlappingGroups.push(j);
+                            findOverlappingPoints(j);
+                        }
+                    }
+                }
+                function computeBarycenter(a, b, c) {
+                    return {x: (a.x + b.x + c.x) / 3, y: (a.y + b.y + c.y) / 3};
+                }
+            } else {
+                this.range = this.gridSize * this.range / ClusteringStore.getGridSize();
+                let xShift = (xPosMinMax[1] - (xPosMinMax[1] - xPosMinMax[0]) / 2) * -1 * ratio,
+                    yShift = (yPosMinMax[1] - (yPosMinMax[1] - yPosMinMax[0]) / 2) * -1 * ratio;
+                for (let i = 0; i < clustersCoord.length; i++) {
+                    this.tubeCoords.push({x: xShift + clustersCoord[i][0] * ratio, y: yShift + clustersCoord[i][1] * ratio});
+                }
             }
         } else {
+            this.gridSize = ClusteringStore.getGridSize();
             let viewportSize = ClusteringStore.getViewportSize() * 0.7;
             for (let i = 0; i < this.clusterCenters.length; i++) {
                 let posX = viewportSize * Math.cos(Math.PI * 0.5 - 2 * Math.PI / this.clusterCenters.length * i);
