@@ -311,7 +311,7 @@ export default class ClusteringDetail extends React.Component {
                 });
             } else if (this.state.sparklineOrder === 'Silhouette') {
                 this.SSCluster.sort((a, b) => {
-                    return a.Silhouette < b.Silhouette? -1: 1;
+                    return a.Silhouette > b.Silhouette? -1: 1;
                 });
             }
             let trItems = [];
@@ -1026,12 +1026,12 @@ export default class ClusteringDetail extends React.Component {
                     '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr>' +
                     '<tr><td>Silhouette coefficient</td><td class="tooltipTableValues">' + formatValue(silhouette) + '</td></tr></tbody></table>');
                 let mouseX = document.body.clientWidth - d.clientX + 5;
-                let mouseY = d.clientY- tooltip.height() -  5;
+                let mouseY = document.body.clientHeight - d.clientY + 5; //d.clientY - tooltip.height() - 5;
                 tooltip.css({
                     right: mouseX + 'px',
-                    bottom: 'unset',
+                    bottom: mouseY + 'px',
                     left: 'unset',
-                    top: mouseY + 'px'
+                    top: 'unset'//mouseY + 'px'
                 });
                 tooltip.css('display', 'block');
 
