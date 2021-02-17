@@ -255,7 +255,7 @@ export default class ClusteringTimeline extends React.Component {
                 let tooltip = $('#tooltipClusteringResults'),
                     tooltipTable = $('#tooltipClusteringResultsTable');
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 let data;
                 let i = 0;
@@ -315,7 +315,7 @@ export default class ClusteringTimeline extends React.Component {
             let targetId = d3.event.target.id;
             if (targetId) {
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 // hide the tooltip
                 $('#tooltipClusteringResults').css('display', 'none');
@@ -342,7 +342,7 @@ export default class ClusteringTimeline extends React.Component {
             let targetId = d3.event.target.id;
             if (targetId) {
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 let data;
                 for (let i = 0; i < this.subsequences.length; i++) {
@@ -353,7 +353,7 @@ export default class ClusteringTimeline extends React.Component {
                 }
                 $('#tooltipClusteringResults').css('display', 'none');
                 selectMenu('visualization');
-                showTimeTubesOfTimeSlice(Number(dataId), [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
+                showTimeTubesOfTimeSlice(dataId, [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
             }
         } 
     }

@@ -963,7 +963,7 @@ export default class ClusteringDetail extends React.Component {
             let targetId = d.target.id;
             if (targetId) {
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
 
                 let selectedSS = ClusteringStore.getSelectedSS(),
@@ -1006,7 +1006,7 @@ export default class ClusteringDetail extends React.Component {
                 let tooltip = $('#tooltipClusteringResults'),
                     tooltipTable = $('#tooltipClusteringResultsTable');
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 let data;
                 let i = 0;
@@ -1048,7 +1048,7 @@ export default class ClusteringDetail extends React.Component {
                     }
                 }
                 domActions.highlightCorrespondingElemInClusteringResults(dataId, SSId, period, beforeAfter);
-                ClusteringAction.showTTViewOfSelectedSSClusteringResults(Number(dataId), period);
+                ClusteringAction.showTTViewOfSelectedSSClusteringResults(dataId, period);
                 // // highlight histogram
                 // d3.select('#SSLengthBar_' + Math.floor(period[1] - period[0]))
                 //     .attr('stroke', 'black')
@@ -1106,7 +1106,7 @@ export default class ClusteringDetail extends React.Component {
             let targetId = d.target.id;
             if (targetId) {
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 // hide the tooltip
                 $('#tooltipClusteringResults').css('display', 'none');
@@ -1170,8 +1170,8 @@ export default class ClusteringDetail extends React.Component {
                 d.preventDefault();
                 drag.style.top = d.pageY - this.clickedY + 'px';
                 drag.style.left = d.pageX - this.clickedX - drag.clientWidth / 2 - $('#extractionMenu').width() + 'px';
-
-                if ($('#subsequenceComparisonNavLink').length > 0 && $('#subsequenceComparisonNavLink').hasClass('active')) {
+                let comparisonPanel = $('#subsequenceComparisonNavLink');
+                if ($('#clusteringResultsLeftColumn').css('display') === 'block' && comparisonPanel.length > 0 && comparisonPanel.hasClass('active')) {
                     let subsequenceComparisonPanel = $('#subsequenceComparisonTab');
                     let subsequenceComparisonPanelPos = subsequenceComparisonPanel.offset(),
                         subsequenceComparisonPanelWidth = subsequenceComparisonPanel.width()
@@ -1192,7 +1192,6 @@ export default class ClusteringDetail extends React.Component {
                             let selectedTimeSlicePos = selectedTimeSlice.offset(),
                                 selectedTimeSliceWidth = selectedTimeSlice.width(),
                                 selectedTimeSliceHeight = selectedTimeSlice.height();
-                            
                             if ((selectedTimeSlicePos.left <= d.pageX && d.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
                             && (selectedTimeSlicePos.top <= d.pageY && d.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
                                 let overlayPanel = $('#selectedTimeSliceView > .overlayHidingPanel');
@@ -1235,7 +1234,7 @@ export default class ClusteringDetail extends React.Component {
             }
 
             let targetEle = this.selectedTrId.split('_');
-            let dataId = targetEle[1];
+            let dataId = Number(targetEle[1]);
             let SSId = Number(targetEle[2]);
             let period = [0, 0];
             for (let i = 0; i < this.SSCluster.length; i++) {
@@ -1246,7 +1245,8 @@ export default class ClusteringDetail extends React.Component {
                 }
             }
 
-            if ($('#subsequenceComparisonNavLink').length > 0 && $('#subsequenceComparisonNavLink').hasClass('active')) {
+            let comparisonPanel = $('#subsequenceComparisonNavLink');
+            if ($('#clusteringResultsLeftColumn').css('display') === 'block' && comparisonPanel.length > 0 && comparisonPanel.hasClass('active')) {
                 let overlayPanel = $('#clusteringSubsequenceComparison > .overlayHidingPanel');
                 overlayPanel.css('display', 'none');
                 let subsequenceComparisonPanel = $('#subsequenceComparisonTab');
@@ -1258,7 +1258,7 @@ export default class ClusteringDetail extends React.Component {
                 if ((subsequenceComparisonPanelPos.left <= d.pageX && d.pageX <= subsequenceComparisonPanelPos.left + subsequenceComparisonPanelWidth)
                 && (subsequenceComparisonPanelPos.top <= d.pageY && d.pageY <= subsequenceComparisonPanelPos.top + subsequenceComparisonPanelHeight)) {
                     // create new canvas on clustering comparison panel
-                    ClusteringAction.showSelectedSubsequenceInComparisonPanel(Number(dataId), period, SSId);
+                    ClusteringAction.showSelectedSubsequenceInComparisonPanel(dataId, period, SSId);
                 }
             } else {
                 switch(this.queryMode) {
@@ -1272,7 +1272,7 @@ export default class ClusteringDetail extends React.Component {
                             if ((selectedTimeSlicePos.left <= d.pageX && d.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
                             && (selectedTimeSlicePos.top <= d.pageY && d.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
                                 // convert the result into a new query
-                                convertResultIntoQuery(Number(dataId), period, this.variables);
+                                convertResultIntoQuery(dataId, period, this.variables);
                                 if (FeatureStore.getSource() !== dataId) {
                                     let promise = Promise.resolve();
                                     promise
@@ -1297,7 +1297,7 @@ export default class ClusteringDetail extends React.Component {
                             if ((sketchPadPos.left <= d.pageX && d.pageX <= sketchPadPos.left + sketchPadWidth)
                             && (sketchPadPos.top <= d.pageY && d.pageY <= sketchPadPos.top + sketchPadHeight)) {
                                 // convert the result into a new query
-                                convertResultIntoQuery(Number(dataId), period, this.variables);
+                                convertResultIntoQuery(dataId, period, this.variables);
                             }
                         }
                         break;
@@ -1338,7 +1338,7 @@ export default class ClusteringDetail extends React.Component {
             let targetId = d.target.id;
             if (targetId) {
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 let data;
                 for (let i = 0; i < this.subsequences.length; i++) {
@@ -1349,7 +1349,7 @@ export default class ClusteringDetail extends React.Component {
                 }
                 $('#tooltipClusteringResults').css('display', 'none');
                 selectMenu('visualization');
-                showTimeTubesOfTimeSlice(Number(dataId), [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
+                showTimeTubesOfTimeSlice(dataId, [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
             }
         };
     }

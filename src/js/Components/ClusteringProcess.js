@@ -560,7 +560,7 @@ export default class ClusteringProcess extends React.Component {
             let targetId = d.target.id;
             if (targetId) {
                 let targetIdEle = targetId.split('_');
-                let dataId = targetIdEle[1],
+                let dataId = Number(targetIdEle[1]),
                     SSId = Number(targetIdEle[2]);
 
                 let currentState = $('#' + d.target.id).prop('checked');
@@ -629,7 +629,7 @@ export default class ClusteringProcess extends React.Component {
             let targetId = d.target.id;
             if (targetId) {
                 let targetIdEle = targetId.split('_');
-                let dataId = targetIdEle[1],
+                let dataId = Number(targetIdEle[1]),
                     SSId = Number(targetIdEle[2]);
 
                 let currentState = $('#' + d.target.id).prop('checked');
@@ -755,7 +755,7 @@ export default class ClusteringProcess extends React.Component {
             let targetId = d.target.id;
             if (targetId) {
                 let targetIdEle = targetId.split('_');
-                let dataId = targetIdEle[1],
+                let dataId = Number(targetIdEle[1]),
                     SSId = Number(targetIdEle[2]);
                 let xMinMax = this.xScale.domain();
                 // show data points on sparklines
@@ -821,7 +821,7 @@ export default class ClusteringProcess extends React.Component {
                     }
                 }
                 domActions.highlightCorrespondingElemInClusteringResults(dataId, SSId, period, beforeAfter);
-                ClusteringAction.showTTViewOfSelectedSSClusteringResults(Number(dataId), period);
+                ClusteringAction.showTTViewOfSelectedSSClusteringResults(dataId, period);
             }
         };
     }
@@ -832,8 +832,8 @@ export default class ClusteringProcess extends React.Component {
             let targetId = d.target.id;
             if (targetId) {
                 let targetIdEle = targetId.split('_');
-                let dataId = targetIdEle[1],
-                    SSId = targetIdEle[2];
+                let dataId = Number(targetIdEle[1]),
+                    SSId = Number(targetIdEle[2]);
                 for (let i = 0; i < this.variables.length; i++) {
                     let svg = d3.select('#subsequenceSVG_' + dataId + '_' + SSId + '_' + this.variables[i]);
                     svg.select('g')
@@ -855,8 +855,8 @@ export default class ClusteringProcess extends React.Component {
             let targetId = d.target.id;
             if (targetId) {
                 let targetIdEle = targetId.split('_');
-                let dataId = targetIdEle[1],
-                    SSId = targetIdEle[2];
+                let dataId = Number(targetIdEle[1]),
+                    SSId = Number(targetIdEle[2]);
                 // show cluster detail when clicking on tr/svg (do not show when clicking on checkboxes)
                 if (targetId.indexOf('selectSSFilteringProcess_') < 0) {
                     let targetClasses = document.getElementById('subsequenceTr_' + dataId + '_' + SSId).classList;
@@ -880,7 +880,7 @@ export default class ClusteringProcess extends React.Component {
             let targetId = d.target.id;
             if (targetId) {
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 let data;
                 for (let i = 0; i < this.filteringProcess.subsequences[dataId].length; i++) {
@@ -891,7 +891,7 @@ export default class ClusteringProcess extends React.Component {
                 }
                 $('#tooltipClusteringResults').css('display', 'none');
                 selectMenu('visualization');
-                showTimeTubesOfTimeSlice(Number(dataId), [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
+                showTimeTubesOfTimeSlice(dataId, [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
             }
         };
     }
@@ -901,7 +901,7 @@ export default class ClusteringProcess extends React.Component {
             let targetId = d.target.id;
             if (targetId) {
                 let targetIdEle = targetId.split('_');
-                let dataId = targetIdEle[1],
+                let dataId = Number(targetIdEle[1]),
                     SSId = Number(targetIdEle[2]);
                 let xMinMax = this.xScale.domain();
                 // show data points on sparklines
@@ -967,7 +967,7 @@ export default class ClusteringProcess extends React.Component {
                     }
                 }
                 domActions.highlightCorrespondingElemInClusteringResults(dataId, SSId, period, beforeAfter);
-                ClusteringAction.showTTViewOfSelectedSSClusteringResults(Number(dataId), period);
+                ClusteringAction.showTTViewOfSelectedSSClusteringResults(dataId, period);
             }
         };
     }
@@ -978,8 +978,8 @@ export default class ClusteringProcess extends React.Component {
             let targetId = d.target.id;
             if (targetId) {
                 let targetIdEle = targetId.split('_');
-                let dataId = targetIdEle[1],
-                    SSId = targetIdEle[2];
+                let dataId = Number(targetIdEle[1]),
+                    SSId = Number(targetIdEle[2]);
                 for (let i = 0; i < this.variables.length; i++) {
                     let svg = d3.select('#updatedSubsequenceSVG_' + dataId + '_' + SSId + '_' + this.variables[i]);
                     svg.select('g')
@@ -1002,8 +1002,8 @@ export default class ClusteringProcess extends React.Component {
             let targetId = d.target.id;
             if (targetId) {
                 let targetIdEle = targetId.split('_');
-                let dataId = targetIdEle[1],
-                    SSId = targetIdEle[2];
+                let dataId = Number(targetIdEle[1]),
+                    SSId = Number(targetIdEle[2]);
                 
                 // show cluster detail when clicking on tr/svg (do not show when clicking on checkboxes)
                 if (targetId.indexOf('selectUpdatedSSFilteringProcess_') < 0) {
@@ -1028,7 +1028,7 @@ export default class ClusteringProcess extends React.Component {
             let targetId = d.target.id;
             if (targetId) {
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 let data;
                 for (let i = 0; i < this.filteringProcess.subsequences[dataId].length; i++) {
@@ -1039,7 +1039,7 @@ export default class ClusteringProcess extends React.Component {
                 }
                 $('#tooltipClusteringResults').css('display', 'none');
                 selectMenu('visualization');
-                showTimeTubesOfTimeSlice(Number(dataId), [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
+                showTimeTubesOfTimeSlice(dataId, [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
             }
         };
     }
@@ -1099,7 +1099,7 @@ export default class ClusteringProcess extends React.Component {
                             ? this.filteringStepColors[selectedStepIdx - 1]: this.filteringStepColors[selectedStepIdx]
                         );
                         for (let k = 0; k < this.subsequences.length; k++) {
-                            if (this.subsequences[k].id === dataId && this.subsequences[k].idx === SSId) {
+                            if (this.subsequences[k].id === Number(dataId) && this.subsequences[k].idx === SSId) {
                                 strokeColor = (typeof(this.labels[k]) === 'object')? 
                                     d3.hsl(this.clusterColors[this.labels[k].cluster][0],
                                         this.clusterColors[this.labels[k].cluster][1],
@@ -1203,7 +1203,7 @@ export default class ClusteringProcess extends React.Component {
                             strokeColor = this.filteringStepColors[this.steps.length - 1];
                         }
                         for (let k = 0; k < this.subsequences.length; k++) {
-                            if (this.subsequences[k].id === dataId && this.subsequences[k].idx === SSId) {
+                            if (this.subsequences[k].id === Number(dataId) && this.subsequences[k].idx === SSId) {
                                 strokeColor = (typeof(this.labels[k]) === 'object')? 
                                     d3.hsl(this.clusterColors[this.labels[k].cluster][0],
                                         this.clusterColors[this.labels[k].cluster][1],

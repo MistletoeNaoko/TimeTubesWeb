@@ -876,7 +876,7 @@ export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = t
                     changeDegreesTmp.push(anomalyDegree(SSDataPoints, meta[dataIdx].min, meta[dataIdx].max));
 
                     SStmp.dataPoints = SSDataPoints;
-                    SStmp.id = dataIdx;
+                    SStmp.id = Number(dataIdx);
                     SStmp.idx = i;
                     isometricSSTmp.push(SStmp);
                 }
@@ -936,7 +936,7 @@ export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = t
                         dataPoints.push(dataPointTmp);
                     }
                     SStmp.dataPoints = dataPoints;
-                    SStmp.id = dataIdx;
+                    SStmp.id = Number(dataIdx);
                     SStmp.idx = i;
                     isometricSSTmp.push(SStmp);
                 }

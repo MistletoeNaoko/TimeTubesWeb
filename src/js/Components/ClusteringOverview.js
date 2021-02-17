@@ -1591,7 +1591,7 @@ export default class ClusteringOverview extends React.Component {
                 .attr('id', function(d, i) {
                     return 'clusterCentersMDS_' + i;
                 })
-                .attr('fill', 'white')
+                .attr('fill', 'none')
                 .attr('stroke', function(d, i) {
                     let color = this.clusterColors[i];
                     return d3.hsl(color[0], color[1], color[2]);
@@ -1674,7 +1674,7 @@ export default class ClusteringOverview extends React.Component {
             let targetId = d3.event.target.id;
             if (targetId) {
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 let data;
                 for (let i = 0; i < this.subsequences.length; i++) {
@@ -1685,7 +1685,7 @@ export default class ClusteringOverview extends React.Component {
                 }
                 $('#tooltipClusteringResults').css('display', 'none');
                 selectMenu('visualization');
-                showTimeTubesOfTimeSlice(Number(dataId), [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
+                showTimeTubesOfTimeSlice(dataId, [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
             }
         };
     }
@@ -1697,7 +1697,7 @@ export default class ClusteringOverview extends React.Component {
                 let tooltip = $('#tooltipClusteringResults'),
                     tooltipTable = $('#tooltipClusteringResultsTable');
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 let data;
                 let i = 0;
@@ -1769,7 +1769,7 @@ export default class ClusteringOverview extends React.Component {
             let targetId = d3.event.target.id;
             if (targetId) {
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 // hide the tooltip
                 $('#tooltipClusteringResults').css('display', 'none');
