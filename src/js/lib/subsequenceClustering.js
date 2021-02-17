@@ -2172,8 +2172,7 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables, maxTri
 }
 
 function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
-    console.log('kmeans');
-    // step 1: randomly assign SS to k clusters
+// step 1: randomly assign SS to k clusters
     // step 2: compute barycenters (centroids) of the clusters
     // step 3: re-assign SS to the nearest cluster
     // step 4: repeat steps 2 and 3 if there are any changes the nodes in the cluster
@@ -2189,14 +2188,14 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
         // initialize centroids
         centroids = initCentroids();
         let centroidsTmp;
-        [labels, distsToClusters, centroidsTmp] = assignSSToCentroids(centroids);
+        [labels, centroidsTmp] = assignSSToCentroids(centroids);
         if (centroidsTmp.length > 0) {
             centroids = centroidsTmp;
         }
 
         let newCentroids = [], newLabels = [], distsToClusters;
         // step 3 and 4
-        let loop = 0, maxIteration = 300;
+        let loop = 0, maxIteration = 100;
         while (loop < maxIteration && checkUpdates(labels, newLabels)) {//(checkUpdatesCentroids(centroids, newCentroids) && loop < maxIteration) {
             if (newCentroids.length !== 0 && newLabels.length !== 0) {
                 centroids = newCentroids;
@@ -2204,7 +2203,7 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
             }
             newCentroids = updateCentroids(labels, dataLen);
             let newCentroidsTmp;
-            [newLabels, distsToClusters, newCentroidsTmp] = assignSSToCentroids(newCentroids);
+            [newLabels, newCentroidsTmp] = assignSSToCentroids(newCentroids);
             if (newCentroidsTmp.length > 0) {
                 newCentroids = newCentroidsTmp;
             }
@@ -2215,10 +2214,12 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
         while (loop < maxIteration && checkUpdatesCentroids(centroids, newCentroids)) {
             centroids = newCentroids;
             labels = newLabels;
-            [newCentroids, newLabels, distsToClusters] = performDBA(labels, dataLen);
+            [newCentroids, newLabels] = performDBA(labels, dataLen);
+            loop++;
         }
         centroids = newCentroids;
         labels = newLabels;
+        distsToClusters = computeDistsToClusters(centroids);
         // if the total distances to clusters are smaller than the previous results
         let distSumTmp = 0;
         for (let i = 0; i < distsToClusters.length; i++) {
@@ -2966,6 +2967,8 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
                 }
             }
         }
+        // if a subsequence is assigned to a empty cluster,
+        // reassign subsequences to new centroids
         if (singletons.length > 0) {
             centroidsTmp = currentCentroids.slice(0, currentCentroids.length);
             for (let i = 0; i < singletons.length; i++) {
@@ -3010,7 +3013,7 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
         // for (let i = 0; i < labels.length; i++) {
         //     distSum[labels[i].cluster] += dists[i];
         // }
-        return [labels, distsToClusters, centroidsTmp];
+        return [labels, centroidsTmp];
     }
     function updateCentroids(labels, dataLen) {
         // divide SS into clusters according to labels
@@ -3118,8 +3121,7 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
             clusters[labels[i].cluster].push(i);
         }
         
-        let newCentroids = [], 
-            distsToClusters = [];
+        let newCentroids = [];
         switch(distanceParameters.metric) {
             case 'Euclidean':
                 break;
@@ -3162,22 +3164,13 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
 
                 // step 2: decide the path between new barycenters and subsequences
                 for (let i = 0; i < data.length; i++) {
-                    distsToClusters.push([]);
-                    for (let j = 0; j < newCentroids.length; j++) {
-                        let distTmp = 0;
-                        if (distanceParameters.window > 0) {
-                            // DTWMD
-                            distTmp = DTWMD(newCentroids[j], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
-                            distsToClusters[i].push(distTmp[distTmp.length - 1][distTmp[0].length - 1]);
-                        } else {
-                            // DTWSimpleMD
-                            distTmp = DTWSimpleMD(newCentroids[j], data[i], variableList, distanceParameters.distFunc);
-                            distsToClusters[i].push(distTmp[distTmp.length - 1][distTmp[0].length - 1]);
-                        }
-                        if (labels[i].cluster === j) {
-                            labels[i].path = OptimalWarpingPath(distTmp);
-                        }
+                    let distTmp = 0;
+                    if (distanceParameters.window > 0) {
+                        distTmp = DTWMD(newCentroids[labels[i].cluster], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
+                    } else {
+                        distTmp = DTWSimpleMD(newCentroids[labels[i].cluster], data[i], variableList, distanceParameters.distFunc);
                     }
+                    labels[i].path = OptimalWarpingPath(distTmp);
                 }
                 break;
             case 'DTWI':
@@ -3223,36 +3216,66 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
 
                 // step 2: decide the path between new barycenters and subsequences
                 for (let i = 0; i < data.length; i++) {
-                    distsToClusters.push([]);
-                    for (let j = 0; j < newCentroids.length; j++) {
-                        let distTmp = 0;
-                        if (distanceParameters.window > 0) {
-                            // DTW
-                            distTmp = DTW(newCentroids[j], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
-                            let distSum = 0;
-                            variableList.forEach(key => {
-                                distSum += distTmp[key][distTmp[key].length - 1][distTmp[key][0].length - 1];
-                            });
-                            distsToClusters[i].push(distSum);
-                        } else {
-                            // DTWSimple
-                            distTmp = DTWSimple(newCentroids[j], data[i], variableList, distanceParameters.distFunc);
-                            let distSum = 0;
-                            variableList.forEach(key => {
-                                distSum += distTmp[key][distTmp[key].length - 1][distTmp[key][0].length - 1];
-                            });
-                            distsToClusters[i].push(distSum);
-                        }
-                        if (labels[i].cluster === j) {
-                            labels[i].path = OptimalWarpingPath(distTmp);
-                        }
+                    let distTmp = 0;
+                    if (distanceParameters.window > 0) {
+                        distTmp = DTW(newCentroids[labels[i].cluster], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
+                    } else {
+                        distTmp = DTWSimple(newCentroids[labels[i].cluster], data[i], variableList, distanceParameters.distFunc);
                     }
+                    labels[i].path = OptimalWarpingPath(distTmp);
                 }
                 break;
             default:
                 break;
         }
-        return [newCentroids, labels, distsToClusters];
+        return [newCentroids, labels];
+    }
+    function computeDistsToClusters(centroids) {
+        let newDistsToClusters = []
+        for (let i = 0; i < data.length; i++) {
+            newDistsToClusters.push([]);
+            for (let j = 0; j < centroids.length; j++) {
+                let distTmp = 0;
+                switch(distanceParameters.metric) {
+                    case 'Euclidean':
+                        break;
+                    case 'DTWD':
+                        distTmp = 0;
+                        if (distanceParameters.window > 0) {
+                            // DTWMD
+                            distTmp = DTWMD(centroids[j], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
+                            newDistsToClusters[i].push(distTmp[distTmp.length - 1][distTmp[0].length - 1]);
+                        } else {
+                            // DTWSimpleMD
+                            distTmp = DTWSimpleMD(centroids[j], data[i], variableList, distanceParameters.distFunc);
+                            newDistsToClusters[i].push(distTmp[distTmp.length - 1][distTmp[0].length - 1]);
+                        }
+                        break;
+                    case 'DTWI':
+                        if (distanceParameters.window > 0) {
+                            // DTW
+                            distTmp = DTW(centroids[j], data[i], variableList, distanceParameters.window, distanceParameters.distFunc);
+                            let distSum = 0;
+                            variableList.forEach(key => {
+                                distSum += distTmp[key][distTmp[key].length - 1][distTmp[key][0].length - 1];
+                            });
+                            newDistsToClusters[i].push(distSum);
+                        } else {
+                            // DTWSimple
+                            distTmp = DTWSimple(centroids[j], data[i], variableList, distanceParameters.distFunc);
+                            let distSum = 0;
+                            variableList.forEach(key => {
+                                distSum += distTmp[key][distTmp[key].length - 1][distTmp[key][0].length - 1];
+                            });
+                            newDistsToClusters[i].push(distSum);
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        return newDistsToClusters;
     }
     function checkUpdates(pLabels, nLabels) {
         let flag = false;
@@ -3650,6 +3673,3 @@ function MDSClassical(distMatrix) {
     let pos = math.multiply(eigenvectorsM, sqrtDiagEigenvalues);
     return pos;
 }
-
-// MDSClassical([[0,4,3], [4,0,5], [3,5,0]]);
-// MDSClassical([[0,93,82,133],[93,0,52,60],[82,52,0,111],[133,60,111,0]])
