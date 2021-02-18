@@ -213,7 +213,7 @@ export default class clusteringSettings extends React.Component {
             for (let key in variables) {
                 let label = '';
                 // TODO: PAPDを考慮したクラスタリングもできるように！！
-                if (key !== 'z' && key !== 'PA' && key !== 'PD') {
+                if (key !== 'z') {// && key !== 'PA' && key !== 'PD') {
                     if (variables[key].length > 1) {
                         label = variables[key].join(',');
                     } else {
@@ -526,73 +526,80 @@ export default class clusteringSettings extends React.Component {
                 variables.push(variableList[i].value);
             }
         }
-        let clusteringParameters;
-        switch (this.state.clusteringMethod) {
-            case 'kmedoids':
-                clusteringParameters = {
-                    method: 'kmedoids',
-                    clusterNum: Number($('#clusterNumber').val()),
-                    medoidDefinition: this.state.medoidDefinition,
-                    distanceMetric: this.state.distanceMetric,
-                    window: 0,
-                    variables: variables,
-                    maxTrial: Number($('#maxTrialNum').val())
-                };
-                break;
-            case 'kmeans':
-                clusteringParameters = {
-                    method: 'kmeans',
-                    clusterNum: Number($('#clusterNumber').val()),
-                    distanceMetric: this.state.distanceMetric,
-                    window: 0,
-                    clusterCenter: $('input[name=clusterCenter]:checked').val(),
-                    variables: variables,
-                    maxTrial: Number($('#maxTrialNum').val())
-                };
-                break;
-            default:
-                break;
+        if ((variables.indexOf('x') >= 0 && variables.indexOf('y') < 0 && variables.indexOf('PA') >= 0 && variables.indexOf('PD') < 0)
+            || (variables.indexOf('x') >= 0 && variables.indexOf('y') < 0 && variables.indexOf('PA') < 0 && variables.indexOf('PD') >= 0)
+            || (variables.indexOf('x') < 0 && variables.indexOf('y') >= 0 && variables.indexOf('PA') >= 0 && variables.indexOf('PD') < 0)
+            || (variables.indexOf('x') < 0 && variables.indexOf('y') >= 0 && variables.indexOf('PA') < 0 && variables.indexOf('PD') >= 0)) {
+                alert('Tentatively, the combinations of q and PA, q and PD, u and PA, and u and PD are not allowed. If you are interested in the variations on the Stokes plane, please select PA and PD or q and u.');
+        } else {
+            let clusteringParameters;
+            switch (this.state.clusteringMethod) {
+                case 'kmedoids':
+                    clusteringParameters = {
+                        method: 'kmedoids',
+                        clusterNum: Number($('#clusterNumber').val()),
+                        medoidDefinition: this.state.medoidDefinition,
+                        distanceMetric: this.state.distanceMetric,
+                        window: 0,
+                        variables: variables,
+                        maxTrial: Number($('#maxTrialNum').val())
+                    };
+                    break;
+                case 'kmeans':
+                    clusteringParameters = {
+                        method: 'kmeans',
+                        clusterNum: Number($('#clusterNumber').val()),
+                        distanceMetric: this.state.distanceMetric,
+                        window: 0,
+                        clusterCenter: $('input[name=clusterCenter]:checked').val(),
+                        variables: variables,
+                        maxTrial: Number($('#maxTrialNum').val())
+                    };
+                    break;
+                default:
+                    break;
+            }
+            let subsequenceParameters = {};
+            subsequenceParameters.filtering = this.state.filteringSS;
+            subsequenceParameters.SSperiod = [Number($('#targetLengthMinClustering').val()), Number($('#targetLengthMaxClustering').val())];
+            subsequenceParameters.isometryLen = Number($('#resolutionOfTimeNormalizedSS').val());
+            subsequenceParameters.normalize = this.state.normalize;
+            if (this.state.filteringSS.indexOf('overlappingDegree') >= 0) {
+                subsequenceParameters.overlappingTh = Number($('#overlappingDegreeThreshold').val());
+            }
+            let [subsequences, ranges, clusterCenters, labels, clusteringScores, filteringProcess, resultsCoordinates] = performClustering(datasets, clusteringParameters, subsequenceParameters);
+            // let data = DataStore.getData(0),
+            //     clusteringParameters = {
+            //         method: 'kmedoids',
+            //         clusterNum: 6,
+            //         distanceMetric: 'DTWD',
+            //         window: 0,
+            //     },
+            //     SSperiod = [20, 30],
+            //     isometryLen = 30,
+            //     overlappingTh = 70,
+            //     variables = ['x', 'y', 'V', 'H'];
+            // // perform clustering
+            // let [subsequences, clusterCenters, labels] = performClustering(data, clusteringParameters, SSperiod, isometryLen, overlappingTh, variables);
+            // // show clustering results
+            let datasetIds = [];
+            for (let i = 0; i < datasets.length; i++) {
+                datasetIds.push(datasets[i].id);
+            }
+            toggleExtractionMenu('none');
+            $('#clusteringResults').css('width', '100%');
+            ClusteringAction.showClusteringResults(
+                datasetIds, 
+                subsequences, 
+                ranges,
+                clusterCenters, 
+                labels, 
+                clusteringParameters, 
+                subsequenceParameters,
+                clusteringScores,
+                filteringProcess,
+                resultsCoordinates
+            );
         }
-        let subsequenceParameters = {};
-        subsequenceParameters.filtering = this.state.filteringSS;
-        subsequenceParameters.SSperiod = [Number($('#targetLengthMinClustering').val()), Number($('#targetLengthMaxClustering').val())];
-        subsequenceParameters.isometryLen = Number($('#resolutionOfTimeNormalizedSS').val());
-        subsequenceParameters.normalize = this.state.normalize;
-        if (this.state.filteringSS.indexOf('overlappingDegree') >= 0) {
-            subsequenceParameters.overlappingTh = Number($('#overlappingDegreeThreshold').val());
-        }
-        let [subsequences, ranges, clusterCenters, labels, clusteringScores, filteringProcess, resultsCoordinates] = performClustering(datasets, clusteringParameters, subsequenceParameters);
-        // let data = DataStore.getData(0),
-        //     clusteringParameters = {
-        //         method: 'kmedoids',
-        //         clusterNum: 6,
-        //         distanceMetric: 'DTWD',
-        //         window: 0,
-        //     },
-        //     SSperiod = [20, 30],
-        //     isometryLen = 30,
-        //     overlappingTh = 70,
-        //     variables = ['x', 'y', 'V', 'H'];
-        // // perform clustering
-        // let [subsequences, clusterCenters, labels] = performClustering(data, clusteringParameters, SSperiod, isometryLen, overlappingTh, variables);
-        // // show clustering results
-        let datasetIds = [];
-        for (let i = 0; i < datasets.length; i++) {
-            datasetIds.push(datasets[i].id);
-        }
-        toggleExtractionMenu('none');
-        $('#clusteringResults').css('width', '100%');
-        ClusteringAction.showClusteringResults(
-            datasetIds, 
-            subsequences, 
-            ranges,
-            clusterCenters, 
-            labels, 
-            clusteringParameters, 
-            subsequenceParameters,
-            clusteringScores,
-            filteringProcess,
-            resultsCoordinates
-        );
     }
 }

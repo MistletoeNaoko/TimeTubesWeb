@@ -802,13 +802,14 @@ export default class ClusteringOverview extends React.Component {
                 let position = [], radius = [], color = [];
                 for (let j = 0; j < this.clusterCenters[i].length; j++) {
                     let curdata = this.clusterCenters[i][j];
-                    let PARad = curdata.PA * Math.PI / 180;//curdata.PA * Math.PI / 180;
-                    // if (90 < curdata.PA) {
-                    //     PARad = (curdata.PA - 180) * Math.PI / 180;
-                    // }
+                    let PARad = curdata.PA;
+                    if (0.5 * Math.PI < PARad && PARad <= Math.PI) {
+                        PARad -= Math.PI;
+                    }
+                    PARad *= 2;
                     let currentValues = {
-                        x: curdata.PD * Math.cos(2 * PARad),
-                        y: curdata.PD * Math.sin(2 * PARad),
+                        x: curdata.PD * Math.cos(PARad),
+                        y: curdata.PD * Math.sin(PARad),
                         r_x: 'r_x' in curdata? curdata.r_x: 0.5,
                         r_y: 'r_y' in curdata? curdata.r_y: 0.5,
                         H: 'H' in curdata? curdata.H: 0.5, 
@@ -831,80 +832,64 @@ export default class ClusteringOverview extends React.Component {
                 this.splines.push(spline);
             }
         } else if ((variables.indexOf('x') >= 0 || variables.indexOf('y') >= 0) && (variables.indexOf('PA') >= 0 || variables.indexOf('PD') >= 0)) {
-            for (let i = 0; i < this.clusterCenters.length; i++) {
-                let position = [], radius = [], color = [];
-                for (let j = 0; j < this.clusterCenters[i].length; j++) {
-                    let curdata = this.clusterCenters[i][j];
-                    let xCur, yCur;
-                    if (variables.indexOf('PA') >= 0) {
-                        let PDCur;
-                        if (variables.indexOf('x') >= 0) {
-                            // PDCur = Math.abs(curdata.x / Math.cos(2 * curdata.PA));
-                            xCur = curdata.x;
-                            // if (curdata.PA >= 0) {
-                            //     yCur = Math.sqrt(Math.pow(PDCur, 2) - Math.pow(curdata.x, 2));
-                            // } else if (curdata.PA <= 0) {
-                            //     yCur = -1 * Math.sqrt(Math.pow(PDCur, 2) - Math.pow(curdata.x, 2));
-                            // }
-                            // yCur = PDCur * Math.sin(2 * curdata.PA);
-                            // let xy = Math.tan(2 * curdata.PA * Math.PI / 180);
-                            // yCur = xy * curdata.x;
-                            // yCur = Math.sqrt(Math.pow(curdata.x / Math.cos(2 * curdata.PA * Math.PI / 180), 2) - Math.pow(curdata.x, 2));
-                            // if (curdata.PA < 0)
-                            //     yCur = -1 * yCur;
-                            let PARad = curdata.PA * Math.PI / 180;
-                            if (90 < curdata.PA) {
-                                PARad = (curdata.PA - 180) * Math.PI / 180;
-                            }
-                            // yCur = Math.sin(2 * PARad * Math.PI / 180) * (curdata.x / Math.cos(2 * PARad * Math.PI / 180));
-                            let xy = Math.tan(2 * PARad);
-                            yCur = xy * curdata.x;
-                            // if (curdata.PA >= 0) {
-                            //     yCur = Math.sin(2 * curdata.PA * Math.PI / 180) * (x / Math.cos(2 * curdata.PA * Math.PI / 180));
-                            // } else if (curdata.PA <= 0) {
-
-                            // }
-                        } else if (variables.indexOf('y') >= 0) {
-                            PDCur = curdata.y / Math.sin(2 * curdata.PA);
-                            xCur = PDCur * Math.cos(2 * curdata.PA);
-                            yCur = curdata.y;
-                        }
-                    } else if (variables.indexOf('PD') >= 0) {
-                        let PACur;
-                        if (variables.indexOf('x') >= 0) {
-                            PACur = Math.acos(curdata.x / curdata.PD) / 2;
-                            xCur = curdata.x;
-                            yCur = curdata.PD * Math.sin(2 * PACur);
-                        } else if (variables.indexOf('y') >= 0) {
-                            PACur = Math.asin(curdata.y / curdata.PD) / 2;
-                            xCur = curdata.PD * Math.cos(2 * PACur);
-                            yCur = curdata.y;
-                        }
-                    }
-                    let currentValues = {
-                        x: xCur,
-                        y: yCur,
-                        r_x: 'r_x' in curdata? curdata.r_x: 0.5,
-                        r_y: 'r_y' in curdata? curdata.r_y: 0.5,
-                        H: 'H' in curdata? curdata.H: 0.5, 
-                        V: 'V' in curdata? curdata.V: 0.5
-                    };
-                    position.push(new THREE.Vector3(currentValues.x, currentValues.y, j));
-                    radius.push(new THREE.Vector3(currentValues.r_x, currentValues.r_y, j));
-                    color.push(new THREE.Vector3(currentValues.H, currentValues.V, j));
-                    for (let key in this.minmax) {
-                        if (currentValues[key] < this.minmax[key][0])
-                            this.minmax[key][0] = currentValues[key];
-                        if (this.minmax[key][1] < currentValues[key])
-                            this.minmax[key][1] = currentValues[key];
-                    }
-                }
-                let spline = {};
-                spline.position = new THREE.CatmullRomCurve3(position, false, 'catmullrom');
-                spline.radius = new THREE.CatmullRomCurve3(radius, false, 'catmullrom');
-                spline.color = new THREE.CatmullRomCurve3(color, false, 'catmullrom');
-                this.splines.push(spline);
-            }
+            // TODO: tentatively prohibit these variable selection
+            // for (let i = 0; i < this.clusterCenters.length; i++) {
+            //     let position = [], radius = [], color = [];
+            //     for (let j = 0; j < this.clusterCenters[i].length; j++) {
+            //         let curdata = this.clusterCenters[i][j];
+            //         let xCur, yCur;
+            //         if (variables.indexOf('PA') >= 0) {
+            //             let PDCur;
+            //             if (variables.indexOf('x') >= 0) {
+            //                 xCur = curdata.x;
+            //                 let PARad = curdata.PA;
+            //                 if (0.5 * Math.PI < PARad && PARad <= Math.PI) {
+            //                     PARad -= Math.PI;
+            //                 }
+            //                 PARad *= 2;
+            //                 PDCur = curdata.x / Math.cos(PARad);
+            //                 yCur = PDCur * Math.sin(PARad);
+            //             } else if (variables.indexOf('y') >= 0) {
+            //                 PDCur = curdata.y / Math.sin(2 * curdata.PA);
+            //                 xCur = PDCur * Math.cos(2 * curdata.PA);
+            //                 yCur = curdata.y;
+            //             }
+            //         } else if (variables.indexOf('PD') >= 0) {
+            //             let PACur;
+            //             if (variables.indexOf('x') >= 0) {
+            //                 PACur = Math.acos(curdata.x / curdata.PD) / 2;
+            //                 xCur = curdata.x;
+            //                 yCur = curdata.PD * Math.sin(2 * PACur);
+            //             } else if (variables.indexOf('y') >= 0) {
+            //                 PACur = Math.asin(curdata.y / curdata.PD) / 2;
+            //                 xCur = curdata.PD * Math.cos(2 * PACur);
+            //                 yCur = curdata.y;
+            //             }
+            //         }
+            //         let currentValues = {
+            //             x: xCur,
+            //             y: yCur,
+            //             r_x: 'r_x' in curdata? curdata.r_x: 0.5,
+            //             r_y: 'r_y' in curdata? curdata.r_y: 0.5,
+            //             H: 'H' in curdata? curdata.H: 0.5, 
+            //             V: 'V' in curdata? curdata.V: 0.5
+            //         };
+            //         position.push(new THREE.Vector3(currentValues.x, currentValues.y, j));
+            //         radius.push(new THREE.Vector3(currentValues.r_x, currentValues.r_y, j));
+            //         color.push(new THREE.Vector3(currentValues.H, currentValues.V, j));
+            //         for (let key in this.minmax) {
+            //             if (currentValues[key] < this.minmax[key][0])
+            //                 this.minmax[key][0] = currentValues[key];
+            //             if (this.minmax[key][1] < currentValues[key])
+            //                 this.minmax[key][1] = currentValues[key];
+            //         }
+            //     }
+            //     let spline = {};
+            //     spline.position = new THREE.CatmullRomCurve3(position, false, 'catmullrom');
+            //     spline.radius = new THREE.CatmullRomCurve3(radius, false, 'catmullrom');
+            //     spline.color = new THREE.CatmullRomCurve3(color, false, 'catmullrom');
+            //     this.splines.push(spline);
+            // }
         } else if (variables.indexOf('x') >= 0 || variables.indexOf('y') >= 0) {
             for (let i = 0; i < this.clusterCenters.length; i++) {
                 let position = [], radius = [], color = [];
@@ -945,7 +930,7 @@ export default class ClusteringOverview extends React.Component {
                         xCur = PDTmp * Math.cos(2 * curdata.PA);
                         yCur = PDTmp * Math.sin(2 * curdata.PA);
                     } else if (variables.indexOf('PD') >= 0) {
-                        let PATmp = 0.5 * Math.PI / 180;
+                        let PATmp = 0.5 * Math.PI;
                         xCur = curdata.PD * Math.cos(PATmp);
                         yCur = curdata.PD * Math.sin(PATmp);
                     }
