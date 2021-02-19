@@ -991,24 +991,36 @@ export default class ClusteringOverview extends React.Component {
         this.clusterRadiuses = undefined;
 
         // min cluster radius === this.gridSize
-        let ratio = this.gridSize * 0.7 / clusterRadiuses[0];
+        let minClusterRad = 0;
+        for (let i = 0; i < clusterRadiuses.length; i++) {
+            if (clusterRadiuses[i] > 0) {
+                minClusterRad = clusterRadiuses[i];
+                break;
+            }
+        }
+        let ratio = this.gridSize * 0.7 / minClusterRad;
         let segment = 32;
-        let circleIndices = Array(segment * 2 * clusterRadiuses.length),
+        
+        let circleIndices = Array(segment * 2 * clusterRadiuses.filter(d => d !== 0).length),
             circlePositions = [],
             del = Math.PI * 2 / segment;
+        let radiusRingsCount = 0;
         for (let i = 0; i < clusterRadiuses.length; i++) {
-            let currentIdx = segment * 2 * i;
-            circleIndices[currentIdx] = i * segment;
-            circleIndices[currentIdx + segment * 2 - 1] = i * segment;
-            for (let j = 0; j < segment; j++) {
-                circlePositions.push(this.tubeCoords[i].x + clusterRadiuses[i] * ratio * Math.cos(del * j));
-                circlePositions.push(this.tubeCoords[i].y + clusterRadiuses[i] * ratio * Math.sin(del * j));
-                circlePositions.push(0);
+            if (clusterRadiuses[i] > 0) {
+                let currentIdx = segment * 2 * radiusRingsCount;
+                circleIndices[currentIdx] = radiusRingsCount * segment;
+                circleIndices[currentIdx + segment * 2 - 1] = radiusRingsCount * segment;
+                for (let j = 0; j < segment; j++) {
+                    circlePositions.push(this.tubeCoords[i].x + clusterRadiuses[i] * ratio * Math.cos(del * j));
+                    circlePositions.push(this.tubeCoords[i].y + clusterRadiuses[i] * ratio * Math.sin(del * j));
+                    circlePositions.push(0);
 
-                if (j !== 0) {
-                    circleIndices[currentIdx + 2 * (j - 1) + 1] = i * segment + j;
-                    circleIndices[currentIdx + 2 * (j - 1) + 2] = i * segment + j;
+                    if (j !== 0) {
+                        circleIndices[currentIdx + 2 * (j - 1) + 1] = radiusRingsCount * segment + j;
+                        circleIndices[currentIdx + 2 * (j - 1) + 2] = radiusRingsCount * segment + j;
+                    }
                 }
+                radiusRingsCount++;
             }
         }
         let circleGeometry = new THREE.BufferGeometry();

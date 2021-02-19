@@ -108,7 +108,7 @@ export function importDemoData(fileName, data) {
     blazarData.sort(function (a, b) {
         return (a['JD'] < b['JD']) ? -1 : 1;
     });
-    let [spatialData, lookup] = extractData(blazarData);
+    let [spatialData, lookup, polarPhotoSplit] = extractData(blazarData);
     let metaData = computeStats(spatialVar, spatialData);
     let splines = computeSplines(spatialData);
     let rankings = rankHueValue(splines.spline.hue.points, splines.spline.value.points);
@@ -121,7 +121,8 @@ export function importDemoData(fileName, data) {
             splines: splines.spline,
             lookup: lookup,
             hueValRanks: rankings,
-            merge: false
+            merge: false,
+            polarPhotoSplit: polarPhotoSplit
         }
     });
 }
@@ -164,7 +165,7 @@ export function loadFile(file, headerNum) {
                 blazarData.sort(function (a, b) {
                     return (a['JD'] < b['JD']) ? -1 : 1;
                 });
-                let [spatialData, lookup] = extractData(blazarData);
+                let [spatialData, lookup, polarPhotoSplit] = extractData(blazarData);
                 let metaData = computeStats(spatialVar, spatialData);
                 let splines = computeSplines(spatialData);
                 let rankings = rankHueValue(splines.spline.hue.points, splines.spline.value.points);
@@ -177,7 +178,8 @@ export function loadFile(file, headerNum) {
                         splines: splines.spline,
                         lookup: lookup,
                         hueValRanks: rankings,
-                        merge: false
+                        merge: false,
+                        polarPhotoSplit: polarPhotoSplit
                     }
                 });
             }
@@ -186,7 +188,7 @@ export function loadFile(file, headerNum) {
 }
 
 function extractData(data) {
-    let result = [], lookup = {};
+    let result = [], lookup = {}, polarPhotoSplit = false;
     for (let i = 0; i < data.length; i++) {
         result[i] = {};
         let polar = 'Q/I' in data[i] || '< q >' in data[i];
@@ -212,6 +214,7 @@ function extractData(data) {
                 }
             }
         } else if (polar) {
+            polarPhotoSplit = true;
             for (let key in dataHeaders['AUPolar']) {
                 if (key == 'z') {
                     result[i][key] = data[i][dataHeaders['AUPolar'][key]] - 2450000;
@@ -241,6 +244,7 @@ function extractData(data) {
                 }
             }
         } else if (photo) {
+            polarPhotoSplit = true;
             for (let key in dataHeaders['AUPhoto']) {
                 if (key == 'z') {
                     result[i][key] = data[i][dataHeaders['AUPhoto'][key]] - 2450000;
@@ -278,7 +282,7 @@ function extractData(data) {
         //     result[i][key] = tmp;
         // }
     }
-    return [result, lookup];
+    return [result, lookup, polarPhotoSplit];
 }
 
 function computeStats(lookup, data) {

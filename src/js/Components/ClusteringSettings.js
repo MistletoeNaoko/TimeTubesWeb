@@ -515,10 +515,6 @@ export default class clusteringSettings extends React.Component {
     }
 
     clickRunButton() {
-        let datasets = [];
-        for (let i = 0; i < this.state.targetList.length; i++) {
-            datasets.push(DataStore.getData(this.state.targetList[i]));
-        }
         let variables = [];
         let variableList = document.getElementsByName('clusteringVariables');
         for (let i = 0; i < variableList.length; i++) {
@@ -532,6 +528,10 @@ export default class clusteringSettings extends React.Component {
             || (variables.indexOf('x') < 0 && variables.indexOf('y') >= 0 && variables.indexOf('PA') < 0 && variables.indexOf('PD') >= 0)) {
                 alert('Tentatively, the combinations of q and PA, q and PD, u and PA, and u and PD are not allowed. If you are interested in the variations on the Stokes plane, please select PA and PD or q and u.');
         } else {
+            let datasets = [];
+            for (let i = 0; i < this.state.targetList.length; i++) {
+                datasets.push(DataStore.getData(this.state.targetList[i]));
+            }
             let clusteringParameters;
             switch (this.state.clusteringMethod) {
                 case 'kmedoids':

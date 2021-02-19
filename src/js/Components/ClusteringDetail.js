@@ -908,7 +908,11 @@ export default class ClusteringDetail extends React.Component {
                         }.bind(this));
                     sparklineGroup 
                         .selectAll('circle')
-                        .data(this.SSCluster[i].dataPoints)
+                        .data(this.SSCluster[i].dataPoints.filter(
+                            function(d) {
+                                return this.variables[j] in d;
+                            }.bind(this)
+                        ))
                         .enter()
                         .append('circle')
                         .attr('cx', function(d) {
