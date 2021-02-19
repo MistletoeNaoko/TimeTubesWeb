@@ -615,6 +615,7 @@ export default class ClusteringDetail extends React.Component {
 
             if (this.datasetsIdx.length === 1) {
                 let rectColor = TimeTubesStore.getPlotColor(this.datasetsIdx[0]);
+                if (typeof(rectColor) === 'undefined') rectColor = 'gray';
                 svg.selectAll('rect')
                     .data(bins)
                     .enter()
@@ -875,7 +876,8 @@ export default class ClusteringDetail extends React.Component {
             
             let dataColors = {};
             for (let i = 0; i < this.datasetsIdx.length; i++) {
-                dataColors[this.datasetsIdx[i]] = TimeTubesStore.getPlotColor(this.datasetsIdx[i]);
+                let color = TimeTubesStore.getPlotColor(this.datasetsIdx[i]);
+                dataColors[this.datasetsIdx[i]] = typeof(color) !== 'undefined'? color: 'gray';
             }
             // update the height of the table accroding to the number of cluster members
             for (let i = 0; i < this.variables.length; i++) {

@@ -54,7 +54,7 @@ export function mergeData(ids) {
                     btmp -= 2450000;
                 return (atmp < btmp) ? -1 : 1;
             })
-            let [spatialData, lookup] = extractData(mergedData);
+            let [spatialData, lookup, polarPhotoSplit] = extractData(mergedData);
             let metaData = computeStats(spatialVar, spatialData);
             let splines = computeSplines(spatialData);
             let rankings = rankHueValue(splines.spline.hue.points, splines.spline.value.points);
@@ -65,6 +65,7 @@ export function mergeData(ids) {
                 lookup: lookup, 
                 meta: metaData, 
                 hueValRanks: rankings, 
+                polarPhotoSplit: polarPhotoSplit,
                 splines: splines
             };
         })
@@ -77,7 +78,8 @@ export function mergeData(ids) {
                     meta: value.meta,
                     splines: value.splines.spline,
                     lookup: value.lookup,
-                    hueValRanks: value.rankings, 
+                    hueValRanks: value.hueValRanks, 
+                    polarPhotoSplit: value.polarPhotoSplit,
                     merge: true
                 }
             });
@@ -370,7 +372,6 @@ function rankHueValue(hue, value) {
         // convert hue and values into the values more than 0
         let nHue = -1 * Math.floor(Math.log10(hueData[0].value)),
             nValue = -1 * Math.floor(Math.log10(valueData[0].value));
-
         // add rank to the object array
         if (hueData.length === valueData.length) {
             for (let i = 0; i < hueData.length; i++) {
@@ -440,7 +441,7 @@ function rankHueValue(hue, value) {
         } else {
             for (let i = 0; i < rankHue.length; i++) {
                 projectedTmp = histogramEqualizer(rankHue, i, diagHue);
-                projectedValue.push(new THREE.Vector3(rankHue[i].value, projectedTmp, rankHue[i].timeStamp));
+                projectedHue.push(new THREE.Vector3(rankHue[i].value, projectedTmp, rankHue[i].timeStamp));
             }
             for (let i = 0; i < rankValue.length; i++) {
                 projectedTmp = histogramEqualizer(rankValue, i, diagValue);
@@ -450,8 +451,11 @@ function rankHueValue(hue, value) {
         let projectedMinMaxHue = {min: histogramEqualizer(rankHue, minmaxHue.min, diagHue), max: histogramEqualizer(rankHue, minmaxHue.max, diagHue)},
             projectedMinMaxValue = {min: histogramEqualizer(rankValue, minmaxValue.min, diagValue), max: histogramEqualizer(rankValue, minmaxValue.max, diagValue)};
 
-        return {hue: new THREE.CatmullRomCurve3(projectedHue, false, 'catmullrom'), value: new THREE.CatmullRomCurve3(projectedValue, false, 'catmullrom'), 
-                minmaxHue: projectedMinMaxHue, minmaxValue: projectedMinMaxValue};
+        return {
+            hue: new THREE.CatmullRomCurve3(projectedHue, false, 'catmullrom'), 
+            value: new THREE.CatmullRomCurve3(projectedValue, false, 'catmullrom'), 
+            minmaxHue: projectedMinMaxHue, minmaxValue: projectedMinMaxValue
+        };
     } else if (hue.length === 0) {
         let valueData = value.map((d, idx) => {
             return {index: idx, value: d.y, timeStamp: d.z};

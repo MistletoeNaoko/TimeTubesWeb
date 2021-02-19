@@ -71,7 +71,6 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                 polarPhotoSplit
             );
         filteringProcess['subsequences'] = isometricData;
-        
         // pick up a SS with the highest changeDegrees from SS which has the same starting data point
         if (subsequenceParameters.filtering.indexOf('sameStartingPoint') >= 0) {
             filteringProcess['sameStartingPoint'] = {};
@@ -1117,169 +1116,115 @@ export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = t
                                 dataTmp = {};
                                 if (data[dataIdx][k].z === timestampTmp) {
                                     dataTmp = Object.assign({}, data[dataIdx][k]);
-                                    if (variables.indexOf('V') >= 0 && ('x' in data[dataIdx][k] || 'y' in data[dataIdx][k])) {
-                                        // compute interpolated values of photometric observations
-                                        let photoBefore = [], photoAfter = [];
-                                        let l = 1;
-                                        while ((0 <= k - l && photoBefore.length < 2) 
-                                            || (k + l < data[dataIdx].length && photoAfter.length < 2)) {
-                                            if (photoBefore.length < 2 && 0 <= k - l && 'V' in data[dataIdx][k - l]) {
-                                                photoBefore.unshift(data[dataIdx][k - l]);
-                                            }
-                                            if (photoAfter.length < 2 && k + l < data[dataIdx].length && 'V' in data[dataIdx][k + l]) {
-                                                photoAfter.push(data[dataIdx][k + l]);
-                                            }
-                                            l++;
-                                        }
-                                        // if there are not enough data samples before currently focued data points
-                                        if (photoBefore.length === 0) {
-                                            let interpData1 = objectSub(photoAfter[0], objectSub(photoAfter[1], photoAfter[0]));
-                                            let interpData0 = objectSub(interpData1, objectSub(photoAfter[0], interpData1));
-                                            photoBefore.push(interpData0, interpData1);
-                                        } else if (photoBefore.length === 1) {
-                                            let interpData = objectSub(photoBefore[0], objectSub(photoAfter[0], photoBefore[0]));
-                                            photoBefore.unshift(interpData);
-                                        }
+                                    let lackingVar = variables.filter((key) => 
+                                        !(key in dataTmp)
+                                    );
 
-                                        // if there are not enough data samples after currently focued data points
-                                        if (photoAfter.length === 0) {
-                                            let interpData0 = objectSum(photoBefore[1], objectSub(photoBefore[1], photoBefore[0]));
-                                            let interpData1 = objectSum(interpData0, objectSub(interpData0, photoBefore[1]));
-                                            photoAfter.push(interpData0, interpData1);
-                                        } else if (photoAfter.length === 1) {
-                                            let interpData = objectSum(photoAfter[0], objectSub(photoAfter[0], photoBefore[1]));
-                                            photoAfter.push(interpData);
-                                        }
-                                        let zpos = (timestampTmp - photoBefore[1].z) / (photoAfter[0].z - photoBefore[1].z);
-                                        let dataPhotoTmp = catmullromPointMd(zpos, photoBefore[0], photoBefore[1], photoAfter[0], photoAfter[1]);
-                                        variables.forEach(key => {
-                                            if (key in dataPhotoTmp) {
-                                                dataTmp[key] = dataPhotoTmp[key];
-                                            }
-                                        });
-                                        dataTmp.z = timestampTmp;
-                                    } else if ((variables.indexOf('x') >= 0 || variables.indexOf('y') >= 0) && 'V' in data[dataIdx][k]) {
-                                        // compute interpolated values of polarimetric observations
-                                        let polarBefore = [], polarAfter = [];
-                                        let l = 1;
-                                        while ((0 <= k - l && polarBefore.length < 2) 
-                                            || (k + l < data[dataIdx].length && polarAfter.length < 2)) {
-                                            if (polarBefore.length < 2 && 0 <= k - l && ('x' in data[dataIdx][k - l] || 'y' in data[dataIdx][k - l])) {
-                                                polarBefore.unshift(data[dataIdx][k - l]);
-                                            }
-                                            if (polarAfter.length < 2 && k + l < data[dataIdx].length && 'x' in data[dataIdx][k + l]) {
-                                                polarAfter.push(data[dataIdx][k + l]);
-                                            }
-                                            l++;
-                                        }
-                                        // if there are not enough data samples before currently focued data points
-                                        if (polarBefore.length === 0) {
-                                            let interpData1 = objectSub(polarAfter[0], objectSub(polarAfter[1], polarAfter[0]));
-                                            let interpData0 = objectSub(interpData1, objectSub(polarAfter[0], interpData1));
-                                            polarBefore.push(interpData0, interpData1);
-                                        } else if (polarBefore.length === 1) {
-                                            let interpData = objectSub(polarBefore[0], objectSub(polarAfter[0], polarBefore[0]));
-                                            polarBefore.unshift(interpData);
-                                        }
-                                        
-                                        // if there are not enough data samples after currently focued data points
-                                        if (polarAfter.length === 0) {
-                                            let interpData0 = objectSum(polarBefore[1], objectSub(polarBefore[1], polarBefore[0]));
-                                            let interpData1 = objectSum(interpData0, objectSub(interpData0, polarBefore[1]));
-                                            polarAfter.push(interpData0, interpData1);
-                                        } else if (polarAfter.length === 1) {
-                                            let interpData = objectSum(polarAfter[0], objectSub(polarAfter[0], polarBefore[1]));
-                                            polarAfter.push(interpData);
-                                        }
-                                        let zpos = (timestampTmp - polarBefore[1].z) / (polarAfter[0].z - polarBefore[1].z);
-                                        let dataPolarTmp = catmullromPointMd(zpos, polarBefore[0], polarBefore[1], polarAfter[0], polarAfter[1]);
-                                        variables.forEach(key => {
-                                            if (key in dataPolarTmp) {
-                                                dataTmp[key] = dataPolarTmp[key];
-                                            }
-                                        });
-                                        dataTmp.z = timestampTmp;
-                                    }
-                                    break;
-                                } else if (data[dataIdx][k].z < timestampTmp && timestampTmp < data[dataIdx][k + 1].z) {
-                                    // interpolate polarimetric and photometric data points independently
-                                    let polarBefore = [], polarAfter = [];
-                                    let photoBefore = [], photoAfter = [];
+                                    let befores = {}, afters = {};
+                                    lackingVar.forEach(key => {
+                                        befores[key] = [];
+                                        afters[key] = [];
+                                    });
+
                                     let l = 1;
-                                    while ((0 <= k - l && (polarBefore.length < 2 || photoBefore.length < 2)) 
-                                        || (k + l < data[dataIdx].length && (polarAfter.length < 2 || photoAfter.length < 2))) {
+                                    while ((0 <= k - l || k + l < data[dataIdx].length) && checkTheNumOfBefAft(befores, afters)) {
                                         if (0 <= k - l) {
-                                            if (polarBefore.length < 2 && ('x' in data[dataIdx][k - l] || 'y' in data[dataIdx][k - l])) {
-                                                polarBefore.unshift(data[dataIdx][k - l]);
-                                            }
-                                            if (photoBefore.length < 2 && 'V' in data[dataIdx][k - l]) {
-                                                photoBefore.unshift(data[dataIdx][k - l]);
+                                            for (let key in befores) {
+                                                if (befores[key].length < 2 && key in data[dataIdx][k - l]) {
+                                                    befores[key].unshift(data[dataIdx][k - l]);
+                                                }
                                             }
                                         }
                                         if (k + l < data[dataIdx].length) {
-                                            if (polarAfter.length < 2 && ('x' in data[dataIdx][k + l] || 'y' in data[dataIdx][k + l])) {
-                                                polarAfter.push(data[dataIdx][k + l]);
+                                            for (let key in afters) {
+                                                if (afters[key].length < 2 && key in data[dataIdx][k + l]) {
+                                                    afters[key].push(data[dataIdx][k + l]);
+                                                }
                                             }
-                                            if (photoAfter.length < 2 && 'V' in data[dataIdx][k + l]) {
-                                                photoAfter.push(data[dataIdx][k + l]);
-                                            }
-                                        } 
+                                        }
                                         l++;
                                     }
-                                    // make shortcoming photometric data
-                                    // if there are not enough data samples before currently focued data points
-                                    if (photoBefore.length === 0) {
-                                        let interpData1 = objectSub(photoAfter[0], objectSub(photoAfter[1], photoAfter[0]));
-                                        let interpData0 = objectSub(interpData1, objectSub(photoAfter[0], interpData1));
-                                        photoBefore.push(interpData0, interpData1);
-                                    } else if (photoBefore.length === 1) {
-                                        let interpData = objectSub(photoBefore[0], objectSub(photoAfter[0], photoBefore[0]));
-                                        photoBefore.unshift(interpData);
-                                    }
 
-                                    // if there are not enough data samples after currently focued data points
-                                    if (photoAfter.length === 0) {
-                                        let interpData0 = objectSum(photoBefore[1], objectSub(photoBefore[1], photoBefore[0]));
-                                        let interpData1 = objectSum(interpData0, objectSub(interpData0, photoBefore[1]));
-                                        photoAfter.push(interpData0, interpData1);
-                                    } else if (photoAfter.length === 1) {
-                                        let interpData = objectSum(photoAfter[0], objectSub(photoAfter[0], photoBefore[1]));
-                                        photoAfter.push(interpData);
-                                    }
-
-                                    // make shortcoming polarimetric data
-                                    // if there are not enough data samples before currently focued data points
-                                    if (polarBefore.length === 0) {
-                                        let interpData1 = objectSub(polarAfter[0], objectSub(polarAfter[1], polarAfter[0]));
-                                        let interpData0 = objectSub(interpData1, objectSub(polarAfter[0], interpData1));
-                                        polarBefore.push(interpData0, interpData1);
-                                    } else if (polarBefore.length === 1) {
-                                        let interpData = objectSub(polarBefore[0], objectSub(polarAfter[0], polarBefore[0]));
-                                        polarBefore.unshift(interpData);
-                                    }
-
-                                    // if there are not enough data samples after currently focued data points
-                                    if (polarAfter.length === 0) {
-                                        let interpData0 = objectSum(polarBefore[1], objectSub(polarBefore[1], polarBefore[0]));
-                                        let interpData1 = objectSum(interpData0, objectSub(interpData0, polarBefore[1]));
-                                        polarAfter.push(interpData0, interpData1);
-                                    } else if (polarAfter.length === 1) {
-                                        let interpData = objectSum(polarAfter[0], objectSub(polarAfter[0], polarBefore[1]));
-                                        polarAfter.push(interpData);
-                                    }
-                                    let zposPhoto = (timestampTmp - photoBefore[1].z) / (photoAfter[0].z - photoBefore[1].z);
-                                    let dataPhotoTmp = catmullromPointMd(zposPhoto, photoBefore[0], photoBefore[1], photoAfter[0], photoAfter[1]);
-                                    variables.forEach(key => {
-                                        if (key in dataPhotoTmp) {
-                                            dataTmp[key] = dataPhotoTmp[key];
+                                    for (let key in befores) {
+                                        if (befores[key].length === 0) {
+                                            let interpData1 = objectSub(afters[key][0], objectSub(afters[key][1], afters[key][0]));
+                                            let interpData0 = objectSub(interpData1, objectSub(afters[key][0], interpData1));
+                                            befores[key].push(interpData0, interpData1);
+                                        } else if (befores[key].length === 1) {
+                                            let interpData = objectSub(befores[key][0], objectSub(afters[key][0], befores[key][0]));
+                                            befores[key].unshift(interpData);
                                         }
+                                    }
+                                    for (let key in afters) {
+                                        if (afters[key].length === 0) {
+                                            let interpData0 = objectSum(befores[key][1], objectSub(befores[key][1], befores[key][0]));
+                                            let interpData1 = objectSum(interpData0, objectSub(interpData0, befores[key][1]));
+                                            afters[key].push(interpData0, interpData1);
+                                        } else if (afters[key].length === 1) {
+                                            let interpData = objectSum(afters[key][0], objectSub(afters[key][0], befores[key][1]));
+                                            afters[key].push(interpData);
+                                        }
+                                    }
+
+                                    lackingVar.forEach(key => {
+                                        let zpos = (timestampTmp - befores[key][1].z) / (afters[key][0].z - befores[key][1].z);
+                                        let interpData = catmullromPointMd(zpos, befores[key][0], befores[key][1], afters[key][0], afters[key][1]);
+                                        dataTmp[key] = interpData[key];
                                     });
-                                    let zposPolar = (timestampTmp - polarBefore[1].z) / (polarAfter[0].z - polarBefore[1].z);
-                                    let dataPolarTmp = catmullromPointMd(zposPolar, polarBefore[0], polarBefore[1], polarAfter[0], polarAfter[1]);
+                                    dataTmp.z = timestampTmp;
+                                    break;
+                                } else if (data[dataIdx][k].z < timestampTmp && timestampTmp < data[dataIdx][k + 1].z) {
+                                    // interpolate polarimetric and photometric data points independently
+                                    let befores = {}, afters = {};
                                     variables.forEach(key => {
-                                        if (key in dataPolarTmp) {
-                                            dataTmp[key] = dataPolarTmp[key];
+                                        befores[key] = [];
+                                        afters[key] = [];
+                                    });
+
+                                    let l = 1;
+                                    while ((0 <= k - l || k + l < data[dataIdx].length) && checkTheNumOfBefAft(befores, afters)) {
+                                        if (0 <= k - l) {
+                                            for (let key in befores) {
+                                                if (befores[key].length < 2 && key in data[dataIdx][k - l]) {
+                                                    befores[key].unshift(data[dataIdx][k - l]);
+                                                }
+                                            }
                                         }
+                                        if (k + l < data[dataIdx].length) {
+                                            for (let key in afters) {
+                                                if (afters[key].length < 2 && key in data[dataIdx][k + l]) {
+                                                    afters[key].push(data[dataIdx][k + l]);
+                                                }
+                                            }
+                                        }
+                                        l++;
+                                    }
+
+                                    for (let key in befores) {
+                                        if (befores[key].length === 0) {
+                                            let interpData1 = objectSub(afters[key][0], objectSub(afters[key][1], afters[key][0]));
+                                            let interpData0 = objectSub(interpData1, objectSub(afters[key][0], interpData1));
+                                            befores[key].push(interpData0, interpData1);
+                                        } else if (befores[key].length === 1) {
+                                            let interpData = objectSub(befores[key][0], objectSub(afters[key][0], befores[key][0]));
+                                            befores[key].unshift(interpData);
+                                        }
+                                    }
+                                    for (let key in afters) {
+                                        if (afters[key].length === 0) {
+                                            let interpData0 = objectSum(befores[key][1], objectSub(befores[key][1], befores[key][0]));
+                                            let interpData1 = objectSum(interpData0, objectSub(interpData0, befores[key][1]));
+                                            afters[key].push(interpData0, interpData1);
+                                        } else if (afters[key].length === 1) {
+                                            let interpData = objectSum(afters[key][0], objectSub(afters[key][0], befores[key][1]));
+                                            afters[key].push(interpData);
+                                        }
+                                    }
+
+                                    variables.forEach(key => {
+                                        let zpos = (timestampTmp - befores[key][1].z) / (afters[key][0].z - befores[key][1].z);
+                                        let interpData = catmullromPointMd(zpos, befores[key][0], befores[key][1], afters[key][0], afters[key][1]);
+                                        dataTmp[key] = interpData[key];
                                     });
                                     dataTmp.z = timestampTmp;
                                     break;
@@ -1314,6 +1259,22 @@ export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = t
             }
         }
         return [isometricSS, changeDegrees];
+    }
+    function checkTheNumOfBefAft(befores, afters) {
+        let flag = false;
+        for (let key in befores) {
+            if (befores[key].length < 2) {
+                flag = true;
+                break;
+            }
+        }
+        for (let key in afters) {
+            if (afters[key].length < 2) {
+                flag = true;
+                break;
+            }
+        }
+        return flag;
     }
 }
 
