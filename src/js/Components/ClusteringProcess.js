@@ -4,6 +4,7 @@ import * as domActions from '../lib/domActions';
 import {reperformClustering} from '../lib/subsequenceClustering';
 import {selectMenu} from '../Actions/AppAction';
 import {showTimeTubesOfTimeSlice} from '../Actions/TimeTubesAction';
+import {formatValue} from '../lib/2DGraphLib';
 import * as ClusteringAction from '../Actions/ClusteringAction';
 import ClusteringStore from '../Stores/ClusteringStore';
 import DataStore from '../Stores/DataStore';
@@ -789,9 +790,9 @@ export default class ClusteringProcess extends React.Component {
                 let dataPointNum = data.dataPoints.length;
                 let mouseX = d.clientX + 15;
                 let mouseY = window.innerHeight - d.clientY + 5;
-                tooltipTable.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
-                    '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
-                    '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
+                tooltipTable.html('<table><tbody><tr><td class="tooltipTableLabel">File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Period</td><td class="tooltipTableValues">' + formatValue(period[0]) + '-' + formatValue(period[1]) + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
                 tooltip.css({
                     left: mouseX + 'px',
                     top: 'unset',
@@ -935,9 +936,9 @@ export default class ClusteringProcess extends React.Component {
                 let dataPointNum = data.dataPoints.length;
                 let mouseX = d.clientX + 15;
                 let mouseY = window.innerHeight - d.clientY + 5;
-                tooltipTable.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
-                    '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
-                    '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
+                tooltipTable.html('<table><tbody><tr><td class="tooltipTableLabel">File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Period</td><td class="tooltipTableValues">' + formatValue(period[0]) + '-' + formatValue(period[1]) + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
                 tooltip.css({
                     left: mouseX + 'px',
                     top: 'unset',

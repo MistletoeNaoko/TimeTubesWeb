@@ -4,6 +4,7 @@ import * as domActions from '../lib/domActions';
 import {resizeExtractionResultsArea, selectMenu} from '../Actions/AppAction';
 import {showTimeTubesOfTimeSlice} from '../Actions/TimeTubesAction';
 import {showClusterDetails, showTTViewOfSelectedSSClusteringResults} from '../Actions/ClusteringAction';
+import {formatValue} from '../lib/2DGraphLib';
 import DataStore from '../Stores/DataStore';
 import ClusteringStore from '../Stores/ClusteringStore';
 import AppStore from '../Stores/AppStore';
@@ -108,6 +109,7 @@ export default class ClusteringTimeline extends React.Component {
             fileNameWidth = 100;
         let widthTimeline = width - fileNameWidth,
             height = 40;
+        let maxFilenameLen = 20;
         
         let timelineArea = d3.select('#clusteringTimeline')
             .append('div')
@@ -119,14 +121,33 @@ export default class ClusteringTimeline extends React.Component {
                 .attr('class', 'clusteringTimelineSVG')
                 .attr('width', clientWidth)
                 .attr('height', 40);
+            let fileNames = [];
+            if (data.name.length > maxFilenameLen) {
+                let i = 0;
+                while(i * maxFilenameLen < data.name.length) {
+                    fileNames.push(data.name.slice(maxFilenameLen * i, Math.min(maxFilenameLen * i + maxFilenameLen + 1, data.name.length)));
+                    i++;
+                }
+            } else {
+                fileNames.push(data.name);
+            }
             let fileName = timeline
+                .selectAll('text.clusteringTimelineFileName')
+                .data(fileNames)
+                .enter()
                 .append('text')
                 .attr('x', 0)
-                .attr('y', height / 2)
+                .attr('y', (d, i) => {
+                    return i * height / fileNames.length + 0.5 * height / fileNames.length;
+                })
+                .attr('width', fileNameWidth)
                 .attr('id', 'clusteringTimeline_' + this.datasets[i])
+                .attr('class', 'clusteringTimelineFileName')
                 .attr('text-anchor', 'left')
                 .style('font-size', '10px')
-                .text(data.name)
+                .text((d) => {
+                    return d;
+                })
                 .on('click', expandTimeline().bind(this));
                 // .on('click', function(data,idx,elem) {
                 //     console.log(data, idx, elem, elem[0].id)
@@ -281,9 +302,9 @@ export default class ClusteringTimeline extends React.Component {
                     mouseX = d3.event.clientX - resultsPanelOffset.left + 5;
                     mouseY = d3.event.clientY + 5;//$(window).scrollTop() + d.clientY + 2;
                 }
-                tooltipTable.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
-                    '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
-                    '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
+                tooltipTable.html('<table><tbody><tr><td class="tooltipTableLabel">File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Period</td><td class="tooltipTableValues">' + formatValue(period[0]) + '-' + formatValue(period[1]) + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
                 tooltip.css({
                     left: mouseX + 'px',
                     top: mouseY + 'px',

@@ -54,6 +54,10 @@ table#extractionDetailInfoTable td {
     padding: 2px 4px;
 }
 
+td.tooltipTableLabel {
+    width: 140px;
+}
+
 .axisLabel {
     color: #3E3F3A;
 }
@@ -946,6 +950,8 @@ img.selectorIcon:active {
 
 #tooltipClusteringResults table {
     margin: 0.3rem;
+    table-layout: fixed;
+    max-width: 250px;
 }
 
 #tooltipClusteringResults tr, #tooltipClusteringResults td {
@@ -983,3 +989,4 @@ img.selectorIcon:active {
 #switchSparklineOrder {
     float: right;
 }
+

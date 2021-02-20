@@ -1,6 +1,7 @@
 import React from "react";
 import DataStore from "../Stores/DataStore";
 import { removeSelectedSubsequenceFromComparisonPanel } from "../Actions/ClusteringAction";
+import {formatValue} from '../lib/2DGraphLib';
 
 export default class ClusteringSubsequenceView extends React.Component {
 	constructor(props) {
@@ -38,7 +39,7 @@ export default class ClusteringSubsequenceView extends React.Component {
 						{DataStore.getFileName(this.props.dataId)}
 					</span>
 					<span className="subsequenceComparisonViewPeriod">
-						{this.props.period[0]}&ndash;{this.props.period[1]}
+						{formatValue(this.props.period[0])}&ndash;{formatValue(this.props.period[1])}
 					</span>
 					<button
 						type="button"

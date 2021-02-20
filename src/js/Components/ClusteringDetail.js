@@ -1027,10 +1027,10 @@ export default class ClusteringDetail extends React.Component {
                 let period = [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z];
                 let dataPointNum = data.dataPoints.length;
                 let silhouette = this.clusteringScores.silhouetteSS[i];
-                tooltipTable.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
-                    '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
-                    '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr>' +
-                    '<tr><td>Silhouette coefficient</td><td class="tooltipTableValues">' + formatValue(silhouette) + '</td></tr></tbody></table>');
+                tooltipTable.html('<table><tbody><tr><td class="tooltipTableLabel">File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Period</td><td class="tooltipTableValues">' + formatValue(period[0]) + '-' + formatValue(period[1]) + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Silhouette coefficient</td><td class="tooltipTableValues">' + formatValue(silhouette) + '</td></tr></tbody></table>');
                 let mouseX = document.body.clientWidth - d.clientX + 5;
                 let mouseY = document.body.clientHeight - d.clientY + 5; //d.clientY - tooltip.height() - 5;
                 tooltip.css({

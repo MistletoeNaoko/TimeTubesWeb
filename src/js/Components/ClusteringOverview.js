@@ -16,7 +16,6 @@ import * as d3 from 'd3';
 // import TextSprite from 'three.textsprite';
 import TextSprite from '@seregpie/three.text-sprite';
 import {formatValue} from '../lib/2DGraphLib';
-import {} from '../lib/TimeSeriesQuerying';
 
 d3.selection.prototype.moveToFront =
     function() {
@@ -1733,9 +1732,9 @@ export default class ClusteringOverview extends React.Component {
                         mouseY = d3.event.clientY - tooltipHeight - 5;
                     }
                 }
-                tooltipTable.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
-                    '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
-                    '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
+                tooltipTable.html('<table><tbody><tr><td class="tooltipTableLabel">File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Period</td><td class="tooltipTableValues">' + formatValue(period[0]) + '-' + formatValue(period[1]) + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
                 tooltip.css({
                     left: mouseX + 'px',
                     top: mouseY + 'px',
