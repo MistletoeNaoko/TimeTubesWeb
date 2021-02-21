@@ -131,6 +131,7 @@ export default class ClusteringOverview extends React.Component {
             this.showClusteringParameters();
             this.resetDetailView();
             this.drawMDSScatterplots();
+            this.drawClustersSummaryStuckedBarChart();
             this.setState({
                 clusteringScores: clusteringScores
             });
@@ -154,6 +155,7 @@ export default class ClusteringOverview extends React.Component {
             this.showClusteringParameters();
             this.resetDetailView();
             this.drawMDSScatterplots();
+            this.drawClustersSummaryStuckedBarChart();
             this.setState({
                 clusteringScores: clusteringScores
             });
@@ -172,6 +174,7 @@ export default class ClusteringOverview extends React.Component {
             this.showClusteringParameters();
             this.resetDetailView();
             this.drawMDSScatterplots();
+            this.drawClustersSummaryStuckedBarChart();
             this.setState({
                 clusteringScores: clusteringScores
             });
@@ -1477,7 +1480,7 @@ export default class ClusteringOverview extends React.Component {
             let appHeaderHeight = $('#appHeader').outerHeight(true);
             let timelineHeight = $('#clusteringTimeline').outerHeight(true);
             let height = window.innerHeight - appHeaderHeight - timelineHeight;
-            let svgPadding = {left: 50, right: 30, top: 30, bottom: 50};
+            let svgPadding = {left: 30, right: 30, top: 30, bottom: 30};
             this.MDSSPSvg = d3.select('#clusteringOverviewMDSScatterplots')
                 .append('svg')
                 .attr('id', 'clusteringOverviewMDSScatterplotsSVG')
@@ -1532,18 +1535,18 @@ export default class ClusteringOverview extends React.Component {
                     .range([height - svgPadding.bottom, svgPadding.top])
                     .nice();
             }
-            let xAxis = d3.axisBottom(this.xScale)
-                .tickSize(-height + svgPadding.top + svgPadding.bottom);
-            this.xLabel = this.MDSSPSvg.append('g')
-                .attr('class', 'x_axis')
-                .attr('transform', 'translate(0,' + (height - svgPadding.bottom) + ')')
-                .call(xAxis);
-            let yAxis = d3.axisLeft(this.yScale)
-                .tickSize(-width + svgPadding.left + svgPadding.right);
-            this.yLabel = this.MDSSPSvg.append('g')
-                .attr('class', 'y_axis')
-                .attr('transform', 'translate(' + svgPadding.left + ',0)')
-                .call(yAxis);
+            // let xAxis = d3.axisBottom(this.xScale)
+            //     .tickSize(-height + svgPadding.top + svgPadding.bottom);
+            // this.xLabel = this.MDSSPSvg.append('g')
+            //     .attr('class', 'x_axis')
+            //     .attr('transform', 'translate(0,' + (height - svgPadding.bottom) + ')')
+            //     .call(xAxis);
+            // let yAxis = d3.axisLeft(this.yScale)
+            //     .tickSize(-width + svgPadding.left + svgPadding.right);
+            // this.yLabel = this.MDSSPSvg.append('g')
+            //     .attr('class', 'y_axis')
+            //     .attr('transform', 'translate(' + svgPadding.left + ',0)')
+            //     .call(yAxis);
             // map each dataPoints on scatterplots
             this.dataPlots = this.MDSSPSvg.selectAll('circle.dataPointsMDS')
                 .data(dataCoords)
@@ -1607,6 +1610,9 @@ export default class ClusteringOverview extends React.Component {
                 .attr('y', function(d) {
                     return this.yScale(d[1]) + 16;
                 }.bind(this))
+                .attr('id', function(d, i) {
+                    return 'clusterCentersLabelMDS_' + i;
+                })
                 .attr('fill', function(d, i) {
                     let color = this.clusterColors[i];
                     return d3.hsl(color[0], color[1], color[2]);
@@ -1616,6 +1622,9 @@ export default class ClusteringOverview extends React.Component {
                 .text(function(d, i) {
                     return 'Cluster ' + i;
                 })
+                .on('mouseover', this.onMouseOverClusterCentersMDS().bind(this))
+                .on('mouseout', this.onMouseOutClusterCentersMDS().bind(this))
+                .on('click', this.onClickClusterCentersMDS().bind(this))
                 .moveToBack();
             this.SSCluster = [];
             let SSClusterCoords = [];
@@ -1652,6 +1661,44 @@ export default class ClusteringOverview extends React.Component {
                 );
             }
         }
+    }
+
+    drawClustersSummaryStuckedBarChart() {
+        let clusterMemberNum = new Array(this.clusterCenters.length).fill(0);
+        for (let  i = 0; i < this.SSLabels.length; i++) {
+            let cluster = typeof(this.SSLabels[i]) === 'object'? this.SSLabels[i].cluster: this.SSLabels[i];
+            clusterMemberNum[cluster]++;
+        }
+        
+        let width = $('#clusteringResultsOverview').width();
+        this.clusterSummaryBarChart = this.MDSSPSvg
+            .selectAll('rect.clusterSummaryBar')
+            .data(clusterMemberNum)
+            .enter()
+            .append('rect')
+            .attr('id', function(d, i) {
+                return 'clusterSummaryBar_' + i;
+            })
+            .attr('class', 'clusterSummaryBar')
+            .attr('x', function(d, i) {
+                let dataNumBefore = 0;
+                for (let j = 0; j < i; j++) {
+                    dataNumBefore += clusterMemberNum[j];
+                }
+                return dataNumBefore * width / this.SSLabels.length;
+            }.bind(this))
+            .attr('y', 5)
+            .attr('width', function(d) {
+                return d * width / this.SSLabels.length;
+            }.bind(this))
+            .attr('height', 10)
+            .attr('fill', function(d, i) {
+                let color = this.clusterColors[i];
+                return d3.hsl(color[0], color[1], color[2]);
+            }.bind(this))
+            .on('mouseover', this.onMouseOverClusterCentersMDS().bind(this))
+            .on('mouseout', this.onMouseOutClusterCentersMDS().bind(this))
+            .on('click', this.onClickClusterCentersMDS().bind(this));
     }
 
     onClickDataPointsMDS() {
@@ -1823,7 +1870,7 @@ export default class ClusteringOverview extends React.Component {
             let appHeaderHeight = $('#appHeader').outerHeight(true);
             let timelineHeight = $('#clusteringTimeline').outerHeight(true);
             const height = window.innerHeight - appHeaderHeight - timelineHeight;
-            let svgPadding = {left: 50, right: 30, top: 30, bottom: 50};
+            let svgPadding = {left: 30, right: 30, top: 30, bottom: 30};
             this.MDSSPSvg
                 .attr('width', width)
                 .attr('height', height);
@@ -1831,16 +1878,16 @@ export default class ClusteringOverview extends React.Component {
                 .range([svgPadding.left, width - svgPadding.right]);
             this.yScale
                 .range([height - svgPadding.bottom, svgPadding.top]);
-            this.xLabel.call(
-                d3.axisBottom(this.xScale)
-                    .tickSize(-height + svgPadding.top + svgPadding.bottom)
-            )
-            .attr('transform', 'translate(0,' + (height - svgPadding.bottom) + ')');
-            this.yLabel.call(
-                d3.axisLeft(this.yScale)
-                .tickSize(-width + svgPadding.left + svgPadding.right)
-            )
-            .attr('transform', 'translate(' + svgPadding.left + ',0)');
+            // this.xLabel.call(
+            //     d3.axisBottom(this.xScale)
+            //         .tickSize(-height + svgPadding.top + svgPadding.bottom)
+            // )
+            // .attr('transform', 'translate(0,' + (height - svgPadding.bottom) + ')');
+            // this.yLabel.call(
+            //     d3.axisLeft(this.yScale)
+            //     .tickSize(-width + svgPadding.left + svgPadding.right)
+            // )
+            // .attr('transform', 'translate(' + svgPadding.left + ',0)');
             this.dataPlots
                 .attr('cx', function(d) {
                     return this.xScale(d[0]);
@@ -1874,6 +1921,24 @@ export default class ClusteringOverview extends React.Component {
                 this.hulls[i]
                     .attr('d', hullData === null? null: 'M' + hullData.join('L') + 'Z');
             }
+
+            let clusterMemberNum = new Array(this.clusterCenters.length).fill(0);
+            for (let  i = 0; i < this.SSLabels.length; i++) {
+                let cluster = typeof(this.SSLabels[i]) === 'object'? this.SSLabels[i].cluster: this.SSLabels[i];
+                clusterMemberNum[cluster]++;
+            }    
+            this.clusterSummaryBarChart
+                .attr('x', function(d, i) {
+                    let dataNumBefore = 0;
+                    for (let j = 0; j < i; j++) {
+                        dataNumBefore += clusterMemberNum[j];
+                    }
+                    return dataNumBefore * width / this.SSLabels.length;
+                }.bind(this))
+                .attr('y', 5)
+                .attr('width', function(d) {
+                    return d * width / this.SSLabels.length;
+                }.bind(this));
         }
     }
 }
