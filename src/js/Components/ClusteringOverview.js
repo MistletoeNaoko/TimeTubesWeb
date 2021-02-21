@@ -132,6 +132,7 @@ export default class ClusteringOverview extends React.Component {
             this.resetDetailView();
             this.drawMDSScatterplots();
             this.drawClustersSummaryStuckedBarChart();
+            this.drawSilhouetteBarChart();
             this.setState({
                 clusteringScores: clusteringScores
             });
@@ -156,6 +157,7 @@ export default class ClusteringOverview extends React.Component {
             this.resetDetailView();
             this.drawMDSScatterplots();
             this.drawClustersSummaryStuckedBarChart();
+            this.drawSilhouetteBarChart();
             this.setState({
                 clusteringScores: clusteringScores
             });
@@ -175,6 +177,7 @@ export default class ClusteringOverview extends React.Component {
             this.resetDetailView();
             this.drawMDSScatterplots();
             this.drawClustersSummaryStuckedBarChart();
+            this.drawSilhouetteBarChart();
             this.setState({
                 clusteringScores: clusteringScores
             });
@@ -298,7 +301,17 @@ export default class ClusteringOverview extends React.Component {
                                 </div>
                             </div>
                         </div>
-                        <div id='clusteringOverviewMDSScatterplots' className="carousel-item">
+                        <div id='clusteringOverview2DCharts' className="carousel-item resultAreaElemNoPadding">
+                            <div className='container'>
+                                <div className='row'>
+                                    <div className='col-9'
+                                        id='clusteringOverviewMDSScatterplots'>
+                                    </div>
+                                    <div className='col'
+                                        id='silhouetteBarChart'>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <a className="carousel-control-prev" 
@@ -1476,7 +1489,7 @@ export default class ClusteringOverview extends React.Component {
     drawMDSScatterplots() {
         $('#clusteringOverviewMDSScatterplotsSVG').remove();
         if (this.clusterCenters.length > 0) {
-            let width = $('#clusteringResultsOverview').width();
+            let width = $('#clusteringResultsOverview').width() * 0.75 - 15 * 3;
             let appHeaderHeight = $('#appHeader').outerHeight(true);
             let timelineHeight = $('#clusteringTimeline').outerHeight(true);
             let height = window.innerHeight - appHeaderHeight - timelineHeight;
@@ -1670,7 +1683,7 @@ export default class ClusteringOverview extends React.Component {
             clusterMemberNum[cluster]++;
         }
         
-        let width = $('#clusteringResultsOverview').width();
+        let width = $('#clusteringResultsOverview').width() * 0.75 - 15 * 3;
         this.clusterSummaryBarChart = this.MDSSPSvg
             .selectAll('rect.clusterSummaryBar')
             .data(clusterMemberNum)
@@ -1699,6 +1712,69 @@ export default class ClusteringOverview extends React.Component {
             .on('mouseover', this.onMouseOverClusterCentersMDS().bind(this))
             .on('mouseout', this.onMouseOutClusterCentersMDS().bind(this))
             .on('click', this.onClickClusterCentersMDS().bind(this));
+    }
+
+    drawSilhouetteBarChart () {
+        $('#silhouetteBarChartSVG').remove();
+        if (this.SSLabels.length > 0) {
+            let width = $('#clusteringResultsOverview').width() * 0.25 - 15 * 3;
+            let appHeaderHeight = $('#appHeader').outerHeight(true);
+            let timelineHeight = $('#clusteringTimeline').outerHeight(true);
+            let height = window.innerHeight - appHeaderHeight - timelineHeight;
+            let svgPadding = {left: 30, right: 15, top: 15, bottom: 30};
+            this.SilhouetteSVG = d3.select('#silhouetteBarChart')
+                .append('svg')
+                .attr('id', 'silhouetteBarChartSVG')
+                .attr('width', width)
+                .attr('height', height)
+                .style('background-color', 'white');
+
+            let clusteringScore = ClusteringStore.getClusteringScores();
+            let clusterMembers = [];
+            for (let i = 0; i < this.clusterCenters.length; i++) {
+                clusterMembers.push([]);
+            }
+            for (let i = 0; i < this.SSLabels.length; i++) {
+                let cluster = typeof(this.SSLabels[i]) === 'object'? this.SSLabels[i].cluster: this.SSLabels[i];
+                clusterMembers[cluster].push({idx: i, silhouette: clusteringScore.silhouetteSS[i]});
+            }
+
+            this.xScaleSilhouette = d3.scaleLinear()
+                .range([svgPadding.left, width - svgPadding.right])
+                .domain([0, 1]);
+            this.yScaleSilhouette = d3.scaleBand()
+                .range([svgPadding.top, height - svgPadding.bottom])
+                .domain(this.SSLabels.map((d, i) => {
+                    return i;
+                }))
+                .padding(.05);
+            
+            let rectCounter = 0;
+            for (let i = 0; i < this.clusterCenters.length; i++) {
+                clusterMembers[i].sort((a, b) => b.silhouette - a.silhouette);
+                let color = this.clusterColors[i];
+                color = d3.hsl(color[0], color[1], color[2]);
+                this.SilhouetteBars = this.SilhouetteSVG
+                    .selectAll('rect.SilhouetteBarCluster_' + i)
+                    .data(clusterMembers[i])
+                    .enter()
+                    .append('rect')
+                    .attr('class', 'SilhouetteBarCluster_' + i)
+                    .attr('id', (d) => {
+                        return 'SilhouetteBar_' + d.idx;
+                    })
+                    .attr('width', function(d) {
+                        return this.xScaleSilhouette(d.silhouette);
+                    }.bind(this))
+                    .attr('x', svgPadding.left)
+                    .attr('y', function(d) {
+                        return this.yScaleSilhouette(rectCounter++);
+                    }.bind(this))
+                    .attr('height', this.yScaleSilhouette.bandwidth())
+                    .attr('fill', color);
+            }
+            
+        }
     }
 
     onClickDataPointsMDS() {
@@ -1866,16 +1942,17 @@ export default class ClusteringOverview extends React.Component {
 
     setMDSScatterplotsSize() {
         if ($('#clusteringOverviewMDSScatterplotsSVG').length) {
-            const width = $('#clusteringResultsOverview').width();
+            const MDSWidth = $('#clusteringResultsOverview').width() * 0.75 - 15 * 3,
+                BarChartWidth = $('#clusteringResultsOverview').width() * 0.25 - 15 * 3;
             let appHeaderHeight = $('#appHeader').outerHeight(true);
             let timelineHeight = $('#clusteringTimeline').outerHeight(true);
             const height = window.innerHeight - appHeaderHeight - timelineHeight;
             let svgPadding = {left: 30, right: 30, top: 30, bottom: 30};
             this.MDSSPSvg
-                .attr('width', width)
+                .attr('width', MDSWidth)
                 .attr('height', height);
             this.xScale
-                .range([svgPadding.left, width - svgPadding.right]);
+                .range([svgPadding.left, MDSWidth - svgPadding.right]);
             this.yScale
                 .range([height - svgPadding.bottom, svgPadding.top]);
             // this.xLabel.call(
@@ -1933,12 +2010,28 @@ export default class ClusteringOverview extends React.Component {
                     for (let j = 0; j < i; j++) {
                         dataNumBefore += clusterMemberNum[j];
                     }
-                    return dataNumBefore * width / this.SSLabels.length;
+                    return dataNumBefore * MDSWidth / this.SSLabels.length;
                 }.bind(this))
                 .attr('y', 5)
                 .attr('width', function(d) {
-                    return d * width / this.SSLabels.length;
+                    return d * MDSWidth / this.SSLabels.length;
                 }.bind(this));
+            
+            this.SilhouetteSVG
+                .attr('width', BarChartWidth)
+                .attr('height', height);
+            this.xScaleSilhouette
+                .range([svgPadding.left, BarChartWidth - svgPadding.right / 2]);
+            this.yScaleSilhouette
+                .range([svgPadding.top / 2, height - svgPadding.bottom]);
+            this.SilhouetteBars
+                .attr('width', function(d) {
+                    return this.xScaleSilhouette(d.silhouette);
+                }.bind(this))
+                .attr('y', function(d) {
+                    return this.yScaleSilhouette(rectCounter++);
+                }.bind(this))
+                .attr('height', this.yScaleSilhouette.bandwidth());
         }
     }
 }

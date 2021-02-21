@@ -451,6 +451,14 @@ img.selectorIcon:active {
     max-width: 100%;
 }
 
+.resultAreaElemNoPadding {
+    background-color: #fff;
+    border: 1px solid #DFD7CA;
+    border-radius: 5px;
+    width: 100%;
+    max-width: 100%;
+}
+
 .commentRow:after {
     content: '';
     display: table;
