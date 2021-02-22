@@ -15,7 +15,8 @@ export default class clusteringSettings extends React.Component {
             distanceMetric: 'DTW',
             medoidDefinition: 'each',
             targetList: FeatureStore.getTarget(),
-            filteringSS: ['dataDrivenSlidingWindow', 'sameStartingPoint', 'overlappingDegree']
+            filteringSS: ['dataDrivenSlidingWindow', 'sameStartingPoint', 'overlappingDegree'],
+            elbow: false
         };
     }    
 
@@ -368,6 +369,50 @@ export default class clusteringSettings extends React.Component {
                                 {medoidDefinition}
                             </div>
                         </div>
+                        <div className="row matchingOption">
+                            <div className='col-5'>
+                                Max trial
+                            </div>
+                            <div className='col'>
+                                <input className="form-control form-control-sm"
+                                    type="text"
+                                    placeholder="threshold"
+                                    id="maxTrialNum"
+                                    style={{width: '40%', marginRight: '0.5rem'}}
+                                    required={true}/>
+                            </div>
+                        </div>
+                        <div className='row matchingOption'>
+                            <div className='col-5'>
+                                <div className="custom-control custom-switch">
+                                    <input 
+                                        type="checkbox" 
+                                        className="custom-control-input" 
+                                        id="elbowMethodSwitch"
+                                        checked={this.state.elbow}
+                                        onClick={this.onClickElbowMethod.bind(this)}/>
+                                    <label className="custom-control-label" htmlFor="elbowMethodSwitch">Elbow method</label>
+                                </div>
+                            </div>
+                            <div className='col form-inline'>
+                                <input className="form-control form-control-sm"
+                                    type="text"
+                                    placeholder="min"
+                                    id="elbowMethodMinCluster"
+                                    style={{width: '20%', marginRight: '0.5rem'}}
+                                    disabled={!this.state.elbow}
+                                    required={true}/>
+                                ~
+                                <input className="form-control form-control-sm"
+                                    type="text"
+                                    placeholder="max"
+                                    id="elbowMethodMaxCluster"
+                                    style={{width: '20%', marginRight: '0.5rem', marginLeft: '0.5rem'}}
+                                    disabled={!this.state.elbow}
+                                    required={true}/>
+                                <label className="col-form-label col-form-label-sm"> clusters</label>
+                            </div>
+                        </div>
                     </div>
                 );
                 break;
@@ -444,6 +489,50 @@ export default class clusteringSettings extends React.Component {
                                 </form>
                             </div>
                         </div>
+                        <div className="row matchingOption">
+                            <div className='col-5'>
+                                Max trial
+                            </div>
+                            <div className='col'>
+                                <input className="form-control form-control-sm"
+                                    type="text"
+                                    placeholder="threshold"
+                                    id="maxTrialNum"
+                                    style={{width: '40%', marginRight: '0.5rem'}}
+                                    required={true}/>
+                            </div>
+                        </div>
+                        <div className='row matchingOption'>
+                            <div className='col-5'>
+                                <div className="custom-control custom-switch">
+                                    <input 
+                                        type="checkbox" 
+                                        className="custom-control-input" 
+                                        id="elbowMethodSwitch"
+                                        checked={this.state.elbow}
+                                        onClick={this.onClickElbowMethod.bind(this)}/>
+                                    <label className="custom-control-label" htmlFor="elbowMethodSwitch">Elbow method</label>
+                                </div>
+                            </div>
+                            <div className='col form-inline'>
+                                <input className="form-control form-control-sm"
+                                    type="text"
+                                    placeholder="min"
+                                    id="elbowMethodMinCluster"
+                                    style={{width: '20%', marginRight: '0.5rem'}}
+                                    disabled={!this.state.elbow}
+                                    required={true}/>
+                                ~
+                                <input className="form-control form-control-sm"
+                                    type="text"
+                                    placeholder="max"
+                                    id="elbowMethodMaxCluster"
+                                    style={{width: '20%', marginRight: '0.5rem', marginLeft: '0.5rem'}}
+                                    disabled={!this.state.elbow}
+                                    required={true}/>
+                                <label className="col-form-label col-form-label-sm"> clusters</label>
+                            </div>
+                        </div>
                     </div>
                 );
                 break;
@@ -463,19 +552,6 @@ export default class clusteringSettings extends React.Component {
                     </div>
                 </div>
                 {clusteringOptions}
-                <div className="row matchingOption">
-                    <div className='col-5'>
-                        Max trial
-                    </div>
-                    <div className='col'>
-                        <input className="form-control form-control-sm"
-                            type="text"
-                            placeholder="threshold"
-                            id="maxTrialNum"
-                            style={{width: '40%', marginRight: '0.5rem'}}
-                            required={true}/>
-                    </div>
-                </div>
             </div>
         );
         return clusteringCode;
@@ -514,6 +590,13 @@ export default class clusteringSettings extends React.Component {
         });
     }
 
+    onClickElbowMethod() {
+        let current = this.state.elbow;
+        this.setState({
+            elbow: !current
+        });
+    }
+    
     clickRunButton() {
         let variables = [];
         let variableList = document.getElementsByName('clusteringVariables');
@@ -542,7 +625,11 @@ export default class clusteringSettings extends React.Component {
                         distanceMetric: this.state.distanceMetric,
                         window: 0,
                         variables: variables,
-                        maxTrial: Number($('#maxTrialNum').val())
+                        maxTrial: Number($('#maxTrialNum').val()),
+                        elbow: this.state.elbow? [
+                            Number($('#elbowMethodMinCluster').val()), 
+                            Number($('#elbowMethodMaxCluster').val())
+                        ]: false
                     };
                     break;
                 case 'kmeans':
@@ -553,7 +640,11 @@ export default class clusteringSettings extends React.Component {
                         window: 0,
                         clusterCenter: $('input[name=clusterCenter]:checked').val(),
                         variables: variables,
-                        maxTrial: Number($('#maxTrialNum').val())
+                        maxTrial: Number($('#maxTrialNum').val()),
+                        elbow: this.state.elbow? [
+                            Number($('#elbowMethodMinCluster').val()), 
+                            Number($('#elbowMethodMaxCluster').val())
+                        ]: false
                     };
                     break;
                 default:
@@ -567,7 +658,16 @@ export default class clusteringSettings extends React.Component {
             if (this.state.filteringSS.indexOf('overlappingDegree') >= 0) {
                 subsequenceParameters.overlappingTh = Number($('#overlappingDegreeThreshold').val());
             }
-            let [subsequences, ranges, clusterCenters, labels, clusteringScores, filteringProcess, resultsCoordinates] = performClustering(datasets, clusteringParameters, subsequenceParameters);
+            let [
+                subsequences, 
+                ranges, 
+                clusterCenters, 
+                labels, 
+                clusteringScores, 
+                filteringProcess, 
+                resultsCoordinates, 
+                SSEClusters
+            ] = performClustering(datasets, clusteringParameters, subsequenceParameters);
             // let data = DataStore.getData(0),
             //     clusteringParameters = {
             //         method: 'kmedoids',
@@ -598,7 +698,8 @@ export default class clusteringSettings extends React.Component {
                 subsequenceParameters,
                 clusteringScores,
                 filteringProcess,
-                resultsCoordinates
+                resultsCoordinates, 
+                SSEClusters
             );
         }
     }
