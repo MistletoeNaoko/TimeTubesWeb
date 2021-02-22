@@ -1717,11 +1717,11 @@ export default class ClusteringOverview extends React.Component {
     drawSilhouetteBarChart () {
         $('#silhouetteBarChartSVG').remove();
         if (this.SSLabels.length > 0) {
+            let svgPadding = {left: 30, right: 15, top: 15, bottom: 30};
             let width = $('#clusteringResultsOverview').width() * 0.25 - 15 * 3;
             let appHeaderHeight = $('#appHeader').outerHeight(true);
             let timelineHeight = $('#clusteringTimeline').outerHeight(true);
             let height = window.innerHeight - appHeaderHeight - timelineHeight;
-            let svgPadding = {left: 30, right: 15, top: 15, bottom: 30};
             this.SilhouetteSVG = d3.select('#silhouetteBarChart')
                 .append('svg')
                 .attr('id', 'silhouetteBarChartSVG')
@@ -1742,24 +1742,44 @@ export default class ClusteringOverview extends React.Component {
             this.xScaleSilhouette = d3.scaleLinear()
                 .range([svgPadding.left, width - svgPadding.right])
                 .domain([0, 1]);
+            let xAxis = d3.axisBottom(this.xScaleSilhouette)
+                .ticks(5);
+            this.xLabelSilhouette = this.SilhouetteSVG
+                .append('g')
+                .attr('class', 'x_axis')
+                .attr('transform', 'translate(0, ' + (height - svgPadding.bottom) + ')')
+                .call(xAxis);
             this.yScaleSilhouette = d3.scaleBand()
                 .range([svgPadding.top, height - svgPadding.bottom])
                 .domain(this.SSLabels.map((d, i) => {
                     return i;
                 }))
                 .padding(.05);
-            
+            // let yAxis = d3.axisLeft(this.yScaleSilhouette)
+            //     .ticks(this.SSLabels.length);
+            // this.yLabelSilhouette = this.SilhouetteSVG
+            //     .append('g')
+            //     .attr('class', 'y_axis')
+            //     .attr('transform', 'translate(' + svgPadding.left + ',0)')
+            //     .call(yAxis);
+            this.SilhouetteBars = this.SilhouetteSVG
+                .append('g')
+                .attr('class', 'SilhouetteBars')
+                .on('mouseover', this.onMouseOverSilhouetteBarChart().bind(this))
+                .on('mouseout', this.onMouseOutSilhouetteBarChart().bind(this))
+                .on('click', this.onClickSilhouetteBarChart().bind(this))
+                .on('dblclick', this.onDoubleClickSilhouetteBarChart().bind(this));
             let rectCounter = 0;
             for (let i = 0; i < this.clusterCenters.length; i++) {
                 clusterMembers[i].sort((a, b) => b.silhouette - a.silhouette);
                 let color = this.clusterColors[i];
                 color = d3.hsl(color[0], color[1], color[2]);
-                this.SilhouetteBars = this.SilhouetteSVG
+                this.SilhouetteBars
                     .selectAll('rect.SilhouetteBarCluster_' + i)
                     .data(clusterMembers[i])
                     .enter()
                     .append('rect')
-                    .attr('class', 'SilhouetteBarCluster_' + i)
+                    .attr('class', 'SilhouetteBar SilhouetteBarCluster_' + i)
                     .attr('id', (d) => {
                         return 'SilhouetteBar_' + d.idx;
                     })
@@ -1773,7 +1793,38 @@ export default class ClusteringOverview extends React.Component {
                     .attr('height', this.yScaleSilhouette.bandwidth())
                     .attr('fill', color);
             }
-            
+            let drag = d3.drag()
+                .on('start', dragstarted)
+                .on('drag', dragged)
+                .on('end', dragended);
+            this.silhouetteVerticalLine = this.SilhouetteSVG
+                .append('line')
+                .attr('stroke-width', 3)
+                .attr('stroke', 'orange')
+                .attr('id', 'silhouetteVerticalLine')
+                .attr('x1', this.xScaleSilhouette(0.5))
+                .attr('y1', svgPadding.top)
+                .attr('x2', this.xScaleSilhouette(0.5))
+                .attr('y2', height - svgPadding.bottom)
+                .call(drag);
+            function dragstarted() {
+                d3.select(this)
+                    .classed('selectedLine', true);
+            }
+            function dragged() {
+                let line = d3.select('#silhouetteVerticalLine');
+                let pos = d3.event.x;
+                if (pos <= svgPadding.left)
+                    pos = svgPadding.left
+                else if (svgPadding.left + width <= pos)
+                    pos = svgPadding.left + width;
+                line.attr('x1', pos)
+                    .attr('x2', pos);
+            }
+            function dragended() {
+                d3.select(this)
+                    .classed('selectedLine', false);
+            }
         }
     }
 
@@ -1894,6 +1945,112 @@ export default class ClusteringOverview extends React.Component {
                 $('#tooltipClusteringResults').css('display', 'none');
 
                 domActions.removeHighlightCorrespondingElemInClusteringResults(dataId, SSId);
+            }
+        }
+    }
+
+    onClickSilhouetteBarChart() {
+        return function() {
+            // show the cluster which the selected SS belongs to
+            if (d3.event.target) {
+                let targetClass = d3.event.target.classList[1];
+                let clusterNum = Number(targetClass.split('_')[1]);
+                ClusteringAction.showClusterDetails(clusterNum);
+            }
+        }
+    }
+
+    onDoubleClickSilhouetteBarChart() {
+        return  function() {
+            let targetId = d3.event.target.id;
+            if (targetId) {
+                let targetEle = targetId.split('_');
+                let idx = Number(targetEle[1]);
+                let data = this.subsequences[idx];
+                $('#tooltipClusteringResults').css('display', 'none');
+                selectMenu('visualization');
+                showTimeTubesOfTimeSlice(data.id, [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
+            }
+        };
+    }
+
+    onMouseOverSilhouetteBarChart() {
+        return function() {
+            let targetId = d3.event.target.id;
+            console.log(targetId)
+            if (targetId) {
+                let tooltip = $('#tooltipClusteringResults'),
+                    tooltipTable = $('#tooltipClusteringResultsTable');
+                let targetEle = targetId.split('_');
+                let idx = Number(targetEle[1]);
+                let data = this.subsequences[idx];
+
+                // show detail information of the subsequence
+                let fileName = DataStore.getFileName(data.id);
+                let period = [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z];
+                let dataPointNum = data.dataPoints.length;
+                let scrollTop = window.pageYOffset;
+                let resultsPanelOffset = $('#clusteringResults').offset();
+                let mouseX, mouseY;
+                // if the position of the mouse is in the upper side of MDS plots, show tooltip below the mouse
+                // else, show tooltip above the mouse
+                if (scrollTop < resultsPanelOffset.top) {
+                    // header is visible
+                    mouseX = d3.event.clientX - resultsPanelOffset.left + 5;
+                    if (d3.event.clientY < $('#clusteringResults').height() / 2) {
+                        mouseY = d3.event.clientY - (resultsPanelOffset.top - scrollTop) + 5;
+                    } else {
+                        let tooltipHeight = tooltip.height() === 0? 230: tooltip.height();
+                        mouseY = d3.event.clientY - (resultsPanelOffset.top - scrollTop) - tooltipHeight - 5;
+                    }
+                } else {
+                    // header is invisible
+                    mouseX = d3.event.clientX - resultsPanelOffset.left + 5;
+                    if (d3.event.clientY < $('#clusteringOverviewMDSScatterplots').height() / 2) {
+                        mouseY = d3.event.clientY + 5;
+                    } else {
+                        let tooltipHeight = tooltip.height() === 0? 230: tooltip.height();
+                        mouseY = d3.event.clientY - tooltipHeight - 5;
+                    }
+                }
+                tooltipTable.html('<table><tbody><tr><td class="tooltipTableLabel">File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Period</td><td class="tooltipTableValues">' + formatValue(period[0]) + '-' + formatValue(period[1]) + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
+                tooltip.css({
+                    left: mouseX + 'px',
+                    top: mouseY + 'px',
+                    right: 'unset',
+                    bottom: 'unset'
+                });
+                tooltip.css('display', 'block');
+                
+                let beforeAfter = [undefined, undefined];
+                if (idx - 1 >= 0) {
+                    if (this.subsequences[idx - 1].id === this.subsequences[idx].id) {
+                        beforeAfter[0] = typeof(this.SSLabels[idx - 1]) === 'object'? this.SSLabels[idx - 1].cluster: this.SSLabels[idx - 1];
+                    }
+                }
+                if (idx + 1 < this.SSLabels.length) {
+                    if (this.subsequences[idx].id === this.subsequences[idx + 1].id) {
+                        beforeAfter[1] = typeof(this.SSLabels[idx + 1]) === 'object'? this.SSLabels[idx + 1].cluster: this.SSLabels[idx + 1];
+                    }
+                }
+                domActions.highlightCorrespondingElemInClusteringResults(data.id, data.idx, period, beforeAfter);
+                ClusteringAction.showTTViewOfSelectedSSClusteringResults(data.id, period);
+            }
+        }
+    }
+
+    onMouseOutSilhouetteBarChart() {
+        return function() {
+            let targetId = d3.event.target.id;
+            if (targetId) {
+                let targetEle = targetId.split('_');
+                let idx = Number(targetEle[1]);
+                // hide the tooltip
+                $('#tooltipClusteringResults').css('display', 'none');
+
+                domActions.removeHighlightCorrespondingElemInClusteringResults(this.subsequences[idx].id, this.subsequences[idx].idx);
             }
         }
     }
@@ -2022,6 +2179,12 @@ export default class ClusteringOverview extends React.Component {
                 .attr('height', height);
             this.xScaleSilhouette
                 .range([svgPadding.left, BarChartWidth - svgPadding.right / 2]);
+            this.xLabelSilhouette
+                .attr('transform', 'translate(0, ' + (height - svgPadding.bottom) + ')')
+                .call(
+                    d3.axisBottom(this.xScaleSilhouette)
+                        .ticks(5)
+                );
             this.yScaleSilhouette
                 .range([svgPadding.top / 2, height - svgPadding.bottom]);
             this.SilhouetteBars
@@ -2032,6 +2195,11 @@ export default class ClusteringOverview extends React.Component {
                     return this.yScaleSilhouette(rectCounter++);
                 }.bind(this))
                 .attr('height', this.yScaleSilhouette.bandwidth());
+            this.silhouetteVerticalLine
+                .attr('x1', this.xScaleSilhouette(0.5))
+                .attr('y1', svgPadding.top)
+                .attr('x2', this.xScaleSilhouette(0.5))
+                .attr('y2', height - svgPadding.bottom);
         }
     }
 }
