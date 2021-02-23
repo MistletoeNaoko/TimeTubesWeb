@@ -973,6 +973,11 @@ img.selectorIcon:active {
     transform: translate(-50%, 0);
 }
 
+#tooltipFeatureHeatmap {
+    opacity: 0.75;
+    position: absolute;
+}
+
 #selectedClusterCenterTimeTubesCanvas {
     margin: 0 50%;
     transform: translate(-50%, 0);

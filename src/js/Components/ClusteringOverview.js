@@ -2025,25 +2025,83 @@ export default class ClusteringOverview extends React.Component {
                         return this.yScaleSSE(d.SSE);
                     }.bind(this))
                 );
+            let plotsGroup = this.elbowMethodLineChartSVG
+                .append('g')
+                .attr('id', 'elbowMethodLineChartPlotGroup');
+            plotsGroup
+                .append('line')
+                .attr('id', 'elbowMethodLineChartFocusedV')
+                .attr('x1', svgPadding.left)
+                .attr('y1', svgPadding.top)
+                .attr('x2', svgPadding.left)
+                .attr('y2', height - svgPadding.bottom)
+                .attr('stroke', 'orange')
+                .attr('stroke-width', 1)
+                .style('visibility', 'hidden');
+            plotsGroup
+                .append('line')
+                .attr('id', 'elbowMethodLineChartFocusedH')
+                .attr('x1', svgPadding.left)
+                .attr('y1', svgPadding.top)
+                .attr('x2', width - svgPadding.right)
+                .attr('y2', svgPadding.top)
+                .attr('stroke', 'orange')
+                .attr('stroke-width', 1)
+                .style('visibility', 'hidden');
+            plotsGroup
+                .selectAll('circle')
+                .data(SSEs)
+                .enter()
+                .append('circle')
+                .attr('cx', function(d) {
+                    return this.xScaleSSE(d.clusterNum);
+                }.bind(this))
+                .attr('cy', function(d) {
+                    return this.yScaleSSE(d.SSE);
+                }.bind(this))
+                .attr('r', 2)
+                .attr('fill', 'white')
+                .attr('stroke-width', 1)
+                .attr('stroke', 'gray')
+                .on('mouseover', onMouseOverElbowMethodPlots)
+                .on('mouseout', onMouseOutElbowMethodPlots);
             this.elbowMethodLineChartSVG
-                    .append('text')
-                    .attr('x', svgPadding.left + (width - svgPadding.left) / 2)
-                    .attr('y', height - 8)
-                    .attr('id', 'elbowMethodLineChartXLabel')
-                    .attr('fill', 'black')
-                    .attr('font-size', '0.6rem')
-                    .attr('text-anchor', 'middle')
-                    .text('Cluster number');
+                .append('text')
+                .attr('x', svgPadding.left + (width - svgPadding.left) / 2)
+                .attr('y', height - 8)
+                .attr('id', 'elbowMethodLineChartXLabel')
+                .attr('fill', 'black')
+                .attr('font-size', '0.6rem')
+                .attr('text-anchor', 'middle')
+                .text('Cluster number');
             this.elbowMethodLineChartSVG
-                    .append('text')
-                    .attr('transform', 'rotate(-90)')
-                    .attr('y', 8)
-                    .attr('x', -1 * (height - svgPadding.bottom) / 2)
-                    .attr('id', 'elbowMethodLineChartYLabel')
-                    .attr('fill', 'black')
-                    .attr('font-size', '0.6rem')
-                    .attr('text-anchor', 'middle')
-                    .text('SSE');
+                .append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 8)
+                .attr('x', -1 * (height - svgPadding.bottom) / 2)
+                .attr('id', 'elbowMethodLineChartYLabel')
+                .attr('fill', 'black')
+                .attr('font-size', '0.6rem')
+                .attr('text-anchor', 'middle')
+                .text('SSE');
+            function onMouseOverElbowMethodPlots() {
+                let xPos = d3.select(this).attr('cx'),
+                    yPos = d3.select(this).attr('cy');
+                d3.select('#elbowMethodLineChartFocusedV')
+                    .attr('x1', xPos)
+                    .attr('x2', xPos)
+                    .style('visibility', 'visible');
+                d3.select('#elbowMethodLineChartFocusedH')
+                    .attr('y1', yPos)
+                    .attr('y2', yPos)
+                    .style('visibility', 'visible');
+            }
+            function onMouseOutElbowMethodPlots() {
+                d3.select('#elbowMethodLineChartFocusedV')
+                    .style('visibility', 'hidden');
+                d3.select('#elbowMethodLineChartFocusedH')
+                    .style('visibility', 'hidden');
+            }
         }
     }
 
@@ -2128,6 +2186,12 @@ export default class ClusteringOverview extends React.Component {
                 .attr('class', 'x_axis')
                 .attr('transform', 'translate(0,' + (height - svgPadding.bottom) + ')')
                 .call(d3.axisBottom(this.xScaleFeatureHeatmap));
+            this.xLabelFeatureHeatmap
+                .selectAll('text')
+                .attr('fill', function(d) {
+                    let color = this.clusterColors[d];
+                    return d3.hsl(color[0], color[1], color[2]);
+                }.bind(this))
             this.yScaleFeatureHeatmap = d3.scaleBand()
                 .range([svgPadding.top, height - svgPadding.bottom])
                 .domain(labels)
@@ -2160,7 +2224,10 @@ export default class ClusteringOverview extends React.Component {
                             (aveDataValues[i][variables[idx]] - minMax[variables[idx]][0]) 
                             / (minMax[variables[idx]][1] - minMax[variables[idx]][0])
                         );
-                    });
+                    })
+                    .on('mouseover', onMouseOverFeatureHeatmap.bind(this))
+                    .on('mouseout', onMouseOutFeatureHeatmap.bind(this))
+                    .on('click', onClickFeatureHeatmap);
             }
             // axis labels
             this.featureHeatmapSVG
@@ -2221,6 +2288,75 @@ export default class ClusteringOverview extends React.Component {
                 .attr('fill', 'black')
                 .attr('font-size', '0.6rem')
                 .text('large');
+            function onMouseOverFeatureHeatmap() {
+                if (d3.event.target) {
+                    let targetId = d3.event.target.id;
+                    let targetElem = targetId.split('_');
+                    let clusterId = Number(targetElem[1]);
+                    let tooltip = $('#tooltipFeatureHeatmap');
+                    tooltip.text(formatValue(aveDataValues[clusterId][targetElem[2]]));
+                    tooltip.css('display', 'block');
+                    let resultsPanelOffset = $('#clusteringResults').offset();
+                    let scrollTop = window.pageYOffset;
+                    let mouseX, mouseY;
+                    if (scrollTop < resultsPanelOffset.top) {
+                        // header is visible
+                        mouseX = d3.event.clientX - resultsPanelOffset.left + 5;
+                        if (d3.event.clientY < $('#clusteringResults').height() / 2) {
+                            mouseY = d3.event.clientY - (resultsPanelOffset.top - scrollTop) + 5;
+                        } else {
+                            let tooltipHeight = tooltip.height() === 0? 30: tooltip.height();
+                            mouseY = d3.event.clientY - (resultsPanelOffset.top - scrollTop) - tooltipHeight - 5;
+                        }
+                    } else {
+                        // header is invisible
+                        mouseX = d3.event.clientX - resultsPanelOffset.left + 5;
+                        if (d3.event.clientY < $('#clusteringOverviewMDSScatterplots').height() / 2) {
+                            mouseY = d3.event.clientY + 5;
+                        } else {
+                            let tooltipHeight = tooltip.height() === 0? 30: tooltip.height();
+                            mouseY = d3.event.clientY - tooltipHeight - 5;
+                        }
+                    }
+                    tooltip.css({
+                        left: mouseX + 'px',
+                        top: mouseY + 'px',
+                        right: 'unset',
+                        bottom: 'unset'
+                    });
+
+                    this.hulls[clusterId].style('visibility', 'visible');
+                    d3.selectAll('circle.dataPointsMDS')
+                        .style('opacity', 0.3);
+                    d3.selectAll('circle.clusterCentersMDS')
+                        .style('opacity', 0.3);
+                    d3.selectAll('circle.dataPointsMDS_' + clusterId)
+                        .style('opacity', 1);
+                    d3.select('#clusterCentersMDS_' + clusterId)
+                        .style('opacity', 1);
+                }
+            }
+            function onMouseOutFeatureHeatmap() {
+                if (d3.event.target) {
+                    let targetId = d3.event.target.id;
+                    let targetElem = targetId.split('_');
+                    let clusterId = Number(targetElem[1]);
+                    let tooltip = $('#tooltipFeatureHeatmap');
+                    tooltip.css('display', 'none');
+                    this.hulls[clusterId].style('visibility', 'hidden');
+                    d3.selectAll('circle.dataPointsMDS')
+                        .style('opacity', 1);
+                    d3.selectAll('circle.clusterCentersMDS')
+                        .style('opacity', 1);
+                }
+            }
+            function onClickFeatureHeatmap() {
+                if (d3.event.target) {
+                    let targetId = d3.event.target.id;
+                    let targetElem = targetId.split('_');
+                    ClusteringAction.showClusterDetails(Number(targetElem[1]));
+                }
+            }
         }
     }
 
@@ -2628,11 +2764,23 @@ export default class ClusteringOverview extends React.Component {
                             return this.yScaleSSE(d.SSE);
                         }.bind(this))
                     );
+                d3.select('g#elbowMethodLineChartPlotGroup')
+                    .selectAll('circle')
+                    .attr('cx', function(d) {
+                        return this.xScaleSSE(d.clusterNum);
+                    }.bind(this))
+                    .attr('cy', function(d) {
+                        return this.yScaleSSE(d.SSE);
+                    }.bind(this));
                 d3.select('#elbowMethodLineChartXLabel')
                     .attr('x', 1.5 * svgPadding.left + (parentWidth * this.chartsSize.elbowLineChart.width - 15 * 3 - 1.5 * svgPadding.left) / 2)
                     .attr('y', parentHeight * this.chartsSize.elbowLineChart.height - 8);
                 d3.select('#elbowMethodLineChartYLabel')
                     .attr('x', -1 * (parentHeight * this.chartsSize.elbowLineChart.height - svgPadding.bottom) / 2);
+                d3.select('#elbowMethodLineChartFocusedV')
+                    .attr('y2', parentHeight * this.chartsSize.elbowLineChart.height - svgPadding.bottom);
+                d3.select('#elbowMethodLineChartFocusedH')
+                    .attr('x2', parentWidth * this.chartsSize.elbowLineChart.width - 15 * 3 - svgPadding.right);
             }
 
             // heatmap
