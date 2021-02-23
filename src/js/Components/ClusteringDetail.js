@@ -888,6 +888,14 @@ export default class ClusteringDetail extends React.Component {
                 .attr('height', Math.min(tableWidth, cellHeight * (this.SSCluster.length + 1)));
             d3.select('#subsequencesOverviewTableBody')
                 .attr('height', Math.min(tableWidth, cellHeight * this.SSCluster.length));
+
+            // extract meta informations on each variables for the case the normalization option is not selected
+            let targets = ClusteringStore.getDatasets();
+            let metas = {};
+            for (let  i = 0; i < targets.length; i++) {
+                metas[targets[i]] = DataStore.getData(targets[i]).data.meta;
+            }
+
             for (let i = 0; i < this.SSCluster.length; i++) {
                 let dataId = this.SSCluster[i].id,
                     SSId = this.SSCluster[i].idx;
@@ -924,7 +932,12 @@ export default class ClusteringDetail extends React.Component {
                             return xScale(xVal);
                         }.bind(this))
                         .attr('cy', function(d) {
-                            return yScales[this.variables[j]](d[this.variables[j]]);
+                            let val = d[this.variables[j]];
+                            if (!this.subsequenceParameters.normalize) {
+                                // standardize
+                                val = (val - metas[dataId].mean[this.variables[j]]) / metas[dataId].std[this.variables[j]];
+                            }
+                            return yScales[this.variables[j]](val);
                         }.bind(this))
                         .attr('fill', 'white')
                         .attr('stroke', 'black')

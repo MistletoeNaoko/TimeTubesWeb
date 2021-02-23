@@ -830,7 +830,7 @@ export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = t
                         // compute change degrees
                         changeDegreesTmp.push(anomalyDegree(SSDataPoints, meta[dataIdx].min, meta[dataIdx].max));
 
-                        SStmp.dataPoints = SSDataPoints;
+                        SStmp.dataPoints = data[dataIdx].slice(ranges[dataIdx][i][0], ranges[dataIdx][i][1] + 1);//SSDataPoints;
                         SStmp.id = Number(dataIdx);
                         SStmp.idx = i;
                         isometricSSTmp.push(SStmp);
@@ -1024,21 +1024,21 @@ export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = t
                         }
                         // compute change degrees
                         changeDegreesTmp.push(anomalyDegree(SSDataPoints, meta[dataIdx].min, meta[dataIdx].max));
-                        // normalize SS here if needed
-                        let dataPoints = [], means, stds;
-                        [SStmp, means, stds] = zNormalization(SStmp, ['z']);
-                        for (let dataPointIdx = 0; dataPointIdx < SSDataPoints.length; dataPointIdx++) {
-                            let dataPointTmp = {};
-                            for (let key in SStmp[0]) {
-                                if (key === 'z') {
-                                    dataPointTmp[key] = SSDataPoints[dataPointIdx].z;
-                                } else if (key in SSDataPoints[dataPointIdx]) {
-                                    dataPointTmp[key] = (SSDataPoints[dataPointIdx][key] - means[key]) / stds[key];
-                                }
-                            }
-                            dataPoints.push(dataPointTmp);
-                        }
-                        SStmp.dataPoints = dataPoints;
+                        // // normalize SS here if needed
+                        // let dataPoints = [], means, stds;
+                        // [SStmp, means, stds] = zNormalization(SStmp, ['z']);
+                        // for (let dataPointIdx = 0; dataPointIdx < SSDataPoints.length; dataPointIdx++) {
+                        //     let dataPointTmp = {};
+                        //     for (let key in SStmp[0]) {
+                        //         if (key === 'z') {
+                        //             dataPointTmp[key] = SSDataPoints[dataPointIdx].z;
+                        //         } else if (key in SSDataPoints[dataPointIdx]) {
+                        //             dataPointTmp[key] = (SSDataPoints[dataPointIdx][key] - means[key]) / stds[key];
+                        //         }
+                        //     }
+                        //     dataPoints.push(dataPointTmp);
+                        // }
+                        SStmp.dataPoints = data[dataIdx].slice(ranges[dataIdx][i][0], ranges[dataIdx][i][1] + 1);
                         SStmp.id = Number(dataIdx);
                         SStmp.idx = i;
                         isometricSSTmp.push(SStmp);
