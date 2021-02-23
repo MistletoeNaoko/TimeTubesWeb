@@ -1861,7 +1861,7 @@ export default class ClusteringOverview extends React.Component {
             }
 
             this.xScaleSilhouette = d3.scaleLinear()
-                .range([svgPadding.left, width - svgPadding.right])
+                .range([0, width - svgPadding.left - svgPadding.right])
                 .domain([0, 1]);
             let xAxis = d3.axisBottom(this.xScaleSilhouette)
                 .ticks(5)
@@ -1869,7 +1869,7 @@ export default class ClusteringOverview extends React.Component {
             this.xLabelSilhouette = this.SilhouetteSVG
                 .append('g')
                 .attr('class', 'x_axis')
-                .attr('transform', 'translate(0, ' + (height - svgPadding.bottom) + ')')
+                .attr('transform', 'translate(' + svgPadding.left + ',' + (height - svgPadding.bottom) + ')')
                 .call(xAxis);
             this.yScaleSilhouette = d3.scaleBand()
                 .range([svgPadding.top, height - svgPadding.bottom])
@@ -1932,9 +1932,9 @@ export default class ClusteringOverview extends React.Component {
                 .attr('stroke-width', 3)
                 .attr('stroke', 'orange')
                 .attr('id', 'silhouetteVerticalLine')
-                .attr('x1', this.xScaleSilhouette(0.5))
+                .attr('x1', this.xScaleSilhouette(0.5) + svgPadding.left)
                 .attr('y1', svgPadding.top)
-                .attr('x2', this.xScaleSilhouette(0.5))
+                .attr('x2', this.xScaleSilhouette(0.5) + svgPadding.left)
                 .attr('y2', height - svgPadding.bottom)
                 .call(drag);
             function dragstarted() {
@@ -2393,9 +2393,9 @@ export default class ClusteringOverview extends React.Component {
                 .attr('width', parentWidth * this.chartsSize.barChart.width - 15 * 3)
                 .attr('height', parentHeight * this.chartsSize.barChart.height);
             this.xScaleSilhouette
-                .range([svgPadding.left, parentWidth * this.chartsSize.barChart.width - 15 * 3 - svgPadding.right / 2]);
+                .range([0, parentWidth * this.chartsSize.barChart.width - 15 * 3 - svgPadding.left - svgPadding.right / 2]);
             this.xLabelSilhouette
-                .attr('transform', 'translate(0, ' + (parentHeight * this.chartsSize.barChart.height - svgPadding.bottom) + ')')
+                .attr('transform', 'translate(' + svgPadding.left + ',' + (parentHeight * this.chartsSize.barChart.height - svgPadding.bottom) + ')')
                 .call(
                     d3.axisBottom(this.xScaleSilhouette)
                         .ticks(5)
@@ -2412,9 +2412,9 @@ export default class ClusteringOverview extends React.Component {
                 }.bind(this))
                 .attr('height', this.yScaleSilhouette.bandwidth());
             this.silhouetteVerticalLine
-                .attr('x1', this.xScaleSilhouette(0.5))
+                .attr('x1', this.xScaleSilhouette(0.5) + svgPadding.left)
                 .attr('y1', svgPadding.top / 2)
-                .attr('x2', this.xScaleSilhouette(0.5))
+                .attr('x2', this.xScaleSilhouette(0.5) + svgPadding.left)
                 .attr('y2', parentHeight * this.chartsSize.barChart.height - svgPadding.bottom);
 
             // line chart for cost
