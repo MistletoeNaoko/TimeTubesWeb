@@ -130,7 +130,7 @@ export default class ClusteringOverview extends React.Component {
             this.clusterColors = ClusteringStore.getClusterColors();
             this.selectedCluster = undefined;
             this.update2DGraphsFlag = true;
-            // let clusteringScores = ClusteringStore.getClusteringScores();
+            let clusteringScores = ClusteringStore.getClusteringScores();
             // this.setRendererSize();
             // this.computeSplines();
             // this.computeTubePositions();
@@ -156,7 +156,7 @@ export default class ClusteringOverview extends React.Component {
             this.SSLabels = ClusteringStore.getLabels();
             this.selectedCluster = undefined;
             this.update2DGraphsFlag = true;
-            // let clusteringScores = ClusteringStore.getClusteringScores();
+            let clusteringScores = ClusteringStore.getClusteringScores();
             // this.setRendererSize();
             // this.computeSplines();
             // this.computeTubePositions();
@@ -177,7 +177,7 @@ export default class ClusteringOverview extends React.Component {
             this.SSLabels = ClusteringStore.getLabels();
             this.selectedCluster = undefined;
             this.update2DGraphsFlag = true;
-            // let clusteringScores = ClusteringStore.getClusteringScores();
+            let clusteringScores = ClusteringStore.getClusteringScores();
             // this.setRendererSize();
             // this.computeSplines();
             // this.computeTubePositions();
@@ -1855,14 +1855,14 @@ export default class ClusteringOverview extends React.Component {
                 .attr('height', height)
                 .style('background-color', 'white');
 
-            let clusteringScore = ClusteringStore.getClusteringScores();
+            // let this.state.clusteringScore = ClusteringStore.getClusteringScores();
             let clusterMembers = [];
             for (let i = 0; i < this.clusterCenters.length; i++) {
                 clusterMembers.push([]);
             }
             for (let i = 0; i < this.SSLabels.length; i++) {
                 let cluster = typeof(this.SSLabels[i]) === 'object'? this.SSLabels[i].cluster: this.SSLabels[i];
-                clusterMembers[cluster].push({idx: i, silhouette: clusteringScore.silhouetteSS[i]});
+                clusterMembers[cluster].push({idx: i, silhouette: this.state.clusteringScores.silhouetteSS[i]});
             }
 
             this.xScaleSilhouette = d3.scaleLinear()
@@ -1928,38 +1928,38 @@ export default class ClusteringOverview extends React.Component {
                     .attr('height', this.yScaleSilhouette.bandwidth())
                     .attr('fill', color);
             }
-            let drag = d3.drag()
-                .on('start', dragstarted)
-                .on('drag', dragged)
-                .on('end', dragended);
+            // let drag = d3.drag()
+            //     .on('start', dragstarted)
+            //     .on('drag', dragged)
+            //     .on('end', dragended);
             this.silhouetteVerticalLine = this.SilhouetteSVG
                 .append('line')
-                .attr('stroke-width', 3)
-                .attr('stroke', 'orange')
+                .attr('stroke-width', 2)
+                .attr('stroke', 'black')
                 .attr('id', 'silhouetteVerticalLine')
-                .attr('x1', this.xScaleSilhouette(0.5) + svgPadding.left)
+                .attr('x1', this.xScaleSilhouette(this.state.clusteringScores.silhouette) + svgPadding.left)
                 .attr('y1', svgPadding.top)
-                .attr('x2', this.xScaleSilhouette(0.5) + svgPadding.left)
-                .attr('y2', height - svgPadding.bottom)
-                .call(drag);
-            function dragstarted() {
-                d3.select(this)
-                    .classed('selectedLine', true);
-            }
-            function dragged() {
-                let line = d3.select('#silhouetteVerticalLine');
-                let pos = d3.event.x;
-                if (pos <= svgPadding.left)
-                    pos = svgPadding.left
-                else if (svgPadding.left + width <= pos)
-                    pos = svgPadding.left + width;
-                line.attr('x1', pos)
-                    .attr('x2', pos);
-            }
-            function dragended() {
-                d3.select(this)
-                    .classed('selectedLine', false);
-            }
+                .attr('x2', this.xScaleSilhouette(this.state.clusteringScores.silhouette) + svgPadding.left)
+                .attr('y2', height - svgPadding.bottom);
+            //     .call(drag);
+            // function dragstarted() {
+            //     d3.select(this)
+            //         .classed('selectedLine', true);
+            // }
+            // function dragged() {
+            //     let line = d3.select('#silhouetteVerticalLine');
+            //     let pos = d3.event.x;
+            //     if (pos <= svgPadding.left)
+            //         pos = svgPadding.left
+            //     else if (svgPadding.left + width <= pos)
+            //         pos = svgPadding.left + width;
+            //     line.attr('x1', pos)
+            //         .attr('x2', pos);
+            // }
+            // function dragended() {
+            //     d3.select(this)
+            //         .classed('selectedLine', false);
+            // }
         }
     }
 
@@ -2707,6 +2707,7 @@ export default class ClusteringOverview extends React.Component {
                 }.bind(this));
             
             // bar chart for silhouette coefficient
+            // let clusteringScore = ClusteringStore.getClusteringScores();
             this.SilhouetteSVG
                 .attr('width', parentWidth * this.chartsSize.barChart.width - 15 * 3)
                 .attr('height', parentHeight * this.chartsSize.barChart.height);
@@ -2730,9 +2731,9 @@ export default class ClusteringOverview extends React.Component {
                 }.bind(this))
                 .attr('height', this.yScaleSilhouette.bandwidth());
             this.silhouetteVerticalLine
-                .attr('x1', this.xScaleSilhouette(0.5) + svgPadding.left)
+                .attr('x1', this.xScaleSilhouette(this.state.clusteringScores.silhouette) + svgPadding.left)
                 .attr('y1', svgPadding.top / 2)
-                .attr('x2', this.xScaleSilhouette(0.5) + svgPadding.left)
+                .attr('x2', this.xScaleSilhouette(this.state.clusteringScores.silhouette) + svgPadding.left)
                 .attr('y2', parentHeight * this.chartsSize.barChart.height - svgPadding.bottom);
 
             // line chart for cost
