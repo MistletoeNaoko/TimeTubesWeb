@@ -22,6 +22,7 @@ class ClusteringStore extends EventEmitter {
         this.updatedSS = {};
         this.resultsCoordinates = {}; // clustersCoord, dataCoord, medoidIdx
         this.selectedCluster = -1;
+        this.SSEClusters = [];
         // this.clusterOrder = [];
     }
 
@@ -38,7 +39,8 @@ class ClusteringStore extends EventEmitter {
                     action.subsequenceParameters,
                     action.clusteringScores,
                     action.filteringProcess, 
-                    action.resultsCoordinates
+                    action.resultsCoordinates,
+                    action.SSEClusters
                 );
                 break;
             case 'SHOW_CLUSTER_DETAILS':
@@ -55,7 +57,8 @@ class ClusteringStore extends EventEmitter {
                     action.clusteringScores, 
                     action.selectedSS, 
                     action.updatedSS,
-                    action.resultsCoordinates
+                    action.resultsCoordinates,
+                    action.SSEClusters
                 );
                 break;
             case 'RESET_CLUSTERING_RESULTS':
@@ -146,6 +149,10 @@ class ClusteringStore extends EventEmitter {
         return this.clusterOrder;
     }
 
+    getSSEClusters() {
+        return this.SSEClusters;
+    }
+
     showClusteringResults (
         datasets, 
         subsequences, 
@@ -156,7 +163,8 @@ class ClusteringStore extends EventEmitter {
         subsequenceParameters, 
         clusteringScores, 
         filteringProcess, 
-        resultsCoordinates) {
+        resultsCoordinates,
+        SSEClusters) {
         this.datasets = datasets;
         this.subsequences = subsequences;
         this.ranges = ranges;
@@ -194,6 +202,7 @@ class ClusteringStore extends EventEmitter {
         }
         this.selectedCluster = -1;
         this.resultsCoordinates = resultsCoordinates;
+        this.SSEClusters = SSEClusters;
         this.emit('showClusteringResults');
     }
 
@@ -213,7 +222,8 @@ class ClusteringStore extends EventEmitter {
         clusteringScores, 
         selectedSS, 
         updatedSS, 
-        resultsCoordinates) {
+        resultsCoordinates,
+        SSEClusters) {
         this.subsequences = subsequences;
         this.clusterCenters = clusterCenters;
         this.labels = labels;
@@ -221,6 +231,7 @@ class ClusteringStore extends EventEmitter {
         this.selectedSS = selectedSS;
         this.updatedSS = updatedSS;
         this.resultsCoordinates = resultsCoordinates;
+        this.SSEClusters = SSEClusters;
         this.emit('updateClusteringResults');
     }
 

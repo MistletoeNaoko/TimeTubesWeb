@@ -20,19 +20,25 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
     let variables = clusteringParameters.variables.slice();
     variables.push('z');
 
-    let rawData = {}, meta = {};
+    let rawData = {}, meta = {}, polarPhotoSplit = {};
     for (let i = 0; i < datasets.length; i++) {
         let rawDataTmp = [];
         for (let j = 0; j < datasets[i].data.spatial.length; j++) {
             let dataTmp = {};
             dataTmp.z = datasets[i].data.spatial[j].z;
             for (let k = 0; k < variables.length; k++) {
-                dataTmp[variables[k]] = datasets[i].data.spatial[j][variables[k]];
+                if (datasets[i].data.spatial[j][variables[k]]) {
+                    dataTmp[variables[k]] = datasets[i].data.spatial[j][variables[k]];
+                }
             }
-            rawDataTmp.push(dataTmp);
+            // make it empty if only z is added to the object (dataTmp)
+            if (Object.keys(dataTmp).length !== 1) {
+                rawDataTmp.push(dataTmp);
+            }
         }
         rawData[datasets[i].id] = rawDataTmp;
         meta[datasets[i].id] = datasets[i].data.meta;
+        polarPhotoSplit[datasets[i].id] = datasets[i].data.polarPhotoSplit;
     }
 
     let subsequences = {}, subsequenceData = [], ranges = [];
@@ -53,17 +59,18 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                 filteringProcess['dataDrivenSlidingWindow'][dataIdx].push(i);
             }
         }
-
+    
         // make subsequence isometric and compute anomaly degree
         [isometricData, anomalyDegrees] = timeSeriesIsometry(
                 rawData, 
                 SSRanges, 
                 subsequenceParameters.isometryLen, 
                 subsequenceParameters.normalize,
-                meta
+                meta, 
+                clusteringParameters.variables,
+                polarPhotoSplit
             );
         filteringProcess['subsequences'] = isometricData;
-
         // pick up a SS with the highest changeDegrees from SS which has the same starting data point
         if (subsequenceParameters.filtering.indexOf('sameStartingPoint') >= 0) {
             filteringProcess['sameStartingPoint'] = {};
@@ -162,7 +169,9 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                 SSRanges, 
                 subsequenceParameters.isometryLen, 
                 subsequenceParameters.normalize,
-                meta[dataIdx]
+                meta[dataIdx],
+                clusteringParameters.variables,
+                polarPhotoSplit
             );
             filteringProcess['subsequences'] = isometricData;
 
@@ -237,14 +246,13 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
             }
         }
     }
-
     // perform clustering
     let distanceParameters = {
         window: clusteringParameters.window,
         metric: clusteringParameters.distanceMetric,
         distFunc: EuclideanDist
     }
-    let clusterCenters, medoidIdx, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters;
+    let clusterCenters, medoidIdx, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters, SSEClusters;
     switch (clusteringParameters.method) {
         case 'kmedoids':
             distsBetweenClusters = [];
@@ -255,12 +263,13 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                 }
             }
             if (clusteringParameters.medoidDefinition === 'unified') {
-                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsUnified(
+                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix, SSEClusters] = kMedoidsUnified(
                     subsequenceData, 
                     clusteringParameters.clusterNum, 
                     distanceParameters, 
                     variables,
-                    clusteringParameters.maxTrial
+                    clusteringParameters.maxTrial,
+                    clusteringParameters.elbow
                 );
                 for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
                     for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
@@ -269,12 +278,13 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
                     }
                 }
             } else if (clusteringParameters.medoidDefinition === 'each') {
-                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsEach(
+                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix, SSEClusters] = kMedoidsEach(
                     subsequenceData, 
                     clusteringParameters.clusterNum, 
                     distanceParameters, 
                     variables,
-                    clusteringParameters.maxTrial
+                    clusteringParameters.maxTrial,
+                    clusteringParameters.elbow
                 );
                 for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
                     for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
@@ -330,12 +340,13 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
             }
             break;
         case 'kmeans':
-            [clusterCenters, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters] = kMeans(
+            [clusterCenters, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters, SSEClusters] = kMeans(
                 subsequenceData, 
                 clusteringParameters.clusterNum, 
                 distanceParameters, 
                 variables,
-                clusteringParameters.maxTrial
+                clusteringParameters.maxTrial,
+                clusteringParameters.elbow
             );
             // merge distance matrix for each SS and distance matrix for clusters
             // fill 0s to shortcoming parts of the distance matrix
@@ -377,7 +388,7 @@ export function performClustering(datasets, clusteringParameters, subsequencePar
         medoidIdx: medoidIdx
     };
 
-    return [subsequenceData, ranges, clusterCenters, labels, clusteringScores, filteringProcess, resultsCoordinates];
+    return [subsequenceData, ranges, clusterCenters, labels, clusteringScores, filteringProcess, resultsCoordinates, SSEClusters];
 }
 
 export function reperformClustering(data, clusteringParameters, dataLen) {
@@ -391,7 +402,7 @@ export function reperformClustering(data, clusteringParameters, dataLen) {
     }
 
 
-    let clusterCenters, medoidIdx, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters;
+    let clusterCenters, medoidIdx, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters, SSEClusters;
     switch (clusteringParameters.method) {
         case 'kmedoids':
             distsBetweenClusters = [];
@@ -402,12 +413,13 @@ export function reperformClustering(data, clusteringParameters, dataLen) {
                 }
             }
             if (clusteringParameters.medoidDefinition === 'unified') {
-                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsUnified(
+                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix, SSEClusters] = kMedoidsUnified(
                     data, 
                     clusteringParameters.clusterNum, 
                     distanceParameters, 
                     variablesZ,
-                    clusteringParameters.maxTrial
+                    clusteringParameters.maxTrial,
+                    clusteringParameters.elbow
                 );
                 for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
                     for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
@@ -416,12 +428,13 @@ export function reperformClustering(data, clusteringParameters, dataLen) {
                     }
                 }
             } else if (clusteringParameters.medoidDefinition === 'each') {
-                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix] = kMedoidsEach(
+                [clusterCenters, medoidIdx, labels, clusteringScores, distMatrix, SSEClusters] = kMedoidsEach(
                     data, 
                     clusteringParameters.clusterNum, 
                     distanceParameters, 
                     variablesZ,
-                    clusteringParameters.maxTrial
+                    clusteringParameters.maxTrial,
+                    clusteringParameters.elbow
                 );
                 for (let i = 0; i < clusteringParameters.clusterNum - 1; i++) {
                     for (let j = i + 1; j < clusteringParameters.clusterNum; j++) {
@@ -477,12 +490,13 @@ export function reperformClustering(data, clusteringParameters, dataLen) {
             }
             break;
         case 'kmeans':
-            [clusterCenters, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters] = kMeans(
+            [clusterCenters, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters, SSEClusters] = kMeans(
                 data, 
                 clusteringParameters.clusterNum, 
                 distanceParameters, 
                 variablesZ,
-                clusteringParameters.maxTrial
+                clusteringParameters.maxTrial,
+                clusteringParameters.elbow
             );
             // merge distance matrix for each SS and distance matrix for clusters
             // fill 0s to shortcoming parts of the distance matrix
@@ -527,7 +541,7 @@ export function reperformClustering(data, clusteringParameters, dataLen) {
         medoidIdx: medoidIdx
     };
 
-    return [clusterCenters, labels, clusteringScores, resultsCoordinates];
+    return [clusterCenters, labels, clusteringScores, resultsCoordinates, SSEClusters];
 }
 
 function divideSSIntoClusters (labels, clusterNum) {
@@ -663,152 +677,95 @@ function convertDataStyle(data, variables) {
     return dataNew;
 }
 
-export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = true, meta) {
+export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = true, meta, variables, polarPhotoSplit) {
     if (Array.isArray(data)) {
-        let standardizedData;
-        let isometricSS = [], changeDegrees = [];
-        if (!normalize) {
-            // if not normalized
-            standardizedData = zNormalizationWithMeanStd(data, meta.mean, meta.std, ['z']);
-            for (let i = 0; i < ranges.length; i++) {
-                let delta = (standardizedData[ranges[i][1]].z - standardizedData[ranges[i][0]].z) / isometryLen;
-                let SStmp = [], SSDataPoints = [];
-                SSDataPoints = standardizedData.slice(ranges[i][0], ranges[i][1] + 1);
-                for (let j = 0; j <= isometryLen; j++) {
-                    // get n (n = isometryLen) coordinates between the currently focused range
-                    let timestampTmp = j * delta + standardizedData[ranges[i][0]].z;
-                    let dataTmp;
-                    for (let k = ranges[i][0]; k <= ranges[i][1]; k++) {
-                        // find data points around z=timestampTmp
-                        if (standardizedData[k].z === timestampTmp) {
-                            dataTmp = data[k];
-                            break;
-                        } else if (standardizedData[k].z < timestampTmp && timestampTmp < standardizedData[k + 1].z) {
-                            let zpos = (timestampTmp - standardizedData[k].z) / (standardizedData[k + 1].z - standardizedData[k].z);
-                            if (k === 0) {
-                                // if the data point just before the current data point is the first data point in the dataset
-                                let interpData = objectSub(standardizedData[k], objectSub(standardizedData[k + 1], standardizedData[k]));
-                                dataTmp = catmullromPointMd(zpos, interpData, standardizedData[k], standardizedData[k + 1], standardizedData[k + 2]);
-                                dataTmp.z = timestampTmp;
-                            } else if (k == data.length - 2) {
-                                // if the data point just after the current data point is the second last data point in the dataset
-                                let interpData = objectSum(standardizedData[k + 1], objectSub(standardizedData[k + 1], standardizedData[k]));
-                                dataTmp = catmullromPointMd(zpos, standardizedData[k - 1], standardizedData[k], standardizedData[k + 1], interpData);
-                                dataTmp.z = timestampTmp;
-                            } else {
-                                // there are at least two data points before and after the current data point
-                                dataTmp = catmullromPointMd(zpos, standardizedData[k - 1], standardizedData[k], standardizedData[k + 1], standardizedData[k + 2]);
-                                dataTmp.z = timestampTmp;
-                            }
-                            break;
-                        }
-                    }
-                    SStmp.push(dataTmp);
-                }
-                // compute change degrees
-                changeDegrees.push(anomalyDegree(SSDataPoints, meta.min, meta.max));
-                SStmp.dataPoints = SSDataPoints;
-                SStmp.idx = i;
-            }
-            return [isometricSS, changeDegrees];
-        } else {
-            // if normalized
-            for (let i = 0; i < ranges.length; i++) {
-                let delta = (data[ranges[i][1]].z - data[ranges[i][0]].z) / isometryLen;
-                let SStmp = [], SSDataPoints = [];
-                SSDataPoints = data.slice(ranges[i][0], ranges[i][1] + 1);
-                for (let j = 0; j <= isometryLen; j++) {
-                    // get n (n = isometryLen) coordinates between the currently focused range
-                    let timestampTmp = j * delta + data[ranges[i][0]].z;
-                    let dataTmp;
-                    for (let k = ranges[i][0]; k <= ranges[i][1]; k++) {
-                        // find data points around z=timestampTmp
-                        if (data[k].z === timestampTmp) {
-                            dataTmp = data[k];
-                            break;
-                        } else if (data[k].z < timestampTmp && timestampTmp < data[k + 1].z) {
-                            let zpos = (timestampTmp - data[k].z) / (data[k + 1].z - data[k].z);
-                            if (k === 0) {
-                                // if the data point just before the current data point is the first data point in the dataset
-                                let interpData = objectSub(data[k], objectSub(data[k + 1], data[k]));
-                                dataTmp = catmullromPointMd(zpos, interpData, data[k], data[k + 1], data[k + 2]);
-                                dataTmp.z = timestampTmp;
-                            } else if (k == data.length - 2) {
-                                // if the data point just after the current data point is the second last data point in the dataset
-                                let interpData = objectSum(data[k + 1], objectSub(data[k + 1], data[k]));
-                                dataTmp = catmullromPointMd(zpos, data[k - 1], data[k], data[k + 1], interpData);
-                                dataTmp.z = timestampTmp;
-                            } else {
-                                // there are at least two data points before and after the current data point
-                                dataTmp = catmullromPointMd(zpos, data[k - 1], data[k], data[k + 1], data[k + 2]);
-                                dataTmp.z = timestampTmp;
-                            }
-                            break;
-                        }
-                    }
-                    SStmp.push(dataTmp);
-                }
-                // compute change degrees
-                changeDegrees.push(anomalyDegree(SSDataPoints, min, max));
-                // normalize SS here if needed
-                let dataPoints = [], means, stds;
-                [SStmp, means, stds] = zNormalization(SStmp, ['z']);
-                for (let dataPointIdx = 0; dataPointIdx < SSDataPoints.length; dataPointIdx++) {
-                    let dataPointTmp = {};
-                    for (let key in SStmp[0]) {
-                        if (key === 'z') {
-                            dataPointTmp[key] = SSDataPoints[dataPointIdx].z;
-                        } else {
-                            dataPointTmp[key] = (SSDataPoints[dataPointIdx][key] - means[key]) / stds[key];
-                        }
-                    }
-                    dataPoints.push(dataPointTmp);
-                }
-                SStmp.dataPoints = dataPoints;
-                SStmp.idx = i;
-                isometricSS.push(SStmp);
-            }
-            return [isometricSS, changeDegrees];
-        }
-        // for (let i = 0; i < ranges.length; i++) {
-        //     let delta = (data[ranges[i][1]].z - data[ranges[i][0]].z) / isometryLen;
-        //     let SStmp = [], SSDataPoints = [];
-        //     SSDataPoints = data.slice(ranges[i][0], ranges[i][1] + 1);
-        //     for (let j = 0; j <= isometryLen; j++) {
-        //         // get n (n = isometryLen) coordinates between the currently focused range
-        //         let timestampTmp = j * delta + data[ranges[i][0]].z;
-        //         let dataTmp;
-        //         for (let k = ranges[i][0]; k <= ranges[i][1]; k++) {
-        //             // find data points around z=timestampTmp
-        //             if (data[k].z === timestampTmp) {
-        //                 dataTmp = data[k];
-        //                 break;
-        //             } else if (data[k].z < timestampTmp && timestampTmp < data[k + 1].z) {
-        //                 let zpos = (timestampTmp - data[k].z) / (data[k + 1].z - data[k].z);
-        //                 if (k === 0) {
-        //                     // if the data point just before the current data point is the first data point in the dataset
-        //                     let interpData = objectSub(data[k], objectSub(data[k + 1], data[k]));
-        //                     dataTmp = catmullromPointMd(zpos, interpData, data[k], data[k + 1], data[k + 2]);
-        //                     dataTmp.z = timestampTmp;
-        //                 } else if (k == data.length - 2) {
-        //                     // if the data point just after the current data point is the second last data point in the dataset
-        //                     let interpData = objectSum(data[k + 1], objectSub(data[k + 1], data[k]));
-        //                     dataTmp = catmullromPointMd(zpos, data[k - 1], data[k], data[k + 1], interpData);
-        //                     dataTmp.z = timestampTmp;
-        //                 } else {
-        //                     // there are at least two data points before and after the current data point
-        //                     dataTmp = catmullromPointMd(zpos, data[k - 1], data[k], data[k + 1], data[k + 2]);
-        //                     dataTmp.z = timestampTmp;
+        // this cannot happen anymore
+        // let standardizedData;
+        // let isometricSS = [], changeDegrees = [];
+        // if (!normalize) {
+        //     // if not normalized
+        //     standardizedData = zNormalizationWithMeanStd(data, meta.mean, meta.std, ['z']);
+        //     for (let i = 0; i < ranges.length; i++) {
+        //         let delta = (standardizedData[ranges[i][1]].z - standardizedData[ranges[i][0]].z) / isometryLen;
+        //         let SStmp = [], SSDataPoints = [];
+        //         SSDataPoints = standardizedData.slice(ranges[i][0], ranges[i][1] + 1);
+        //         for (let j = 0; j <= isometryLen; j++) {
+        //             // get n (n = isometryLen) coordinates between the currently focused range
+        //             let timestampTmp = j * delta + standardizedData[ranges[i][0]].z;
+        //             let dataTmp;
+        //             for (let k = ranges[i][0]; k <= ranges[i][1]; k++) {
+        //                 // find data points around z=timestampTmp
+        //                 if (standardizedData[k].z === timestampTmp) {
+        //                     dataTmp = data[k];
+        //                     break;
+        //                 } else if (standardizedData[k].z < timestampTmp && timestampTmp < standardizedData[k + 1].z) {
+        //                     let zpos = (timestampTmp - standardizedData[k].z) / (standardizedData[k + 1].z - standardizedData[k].z);
+        //                     if (k === 0) {
+        //                         // if the data point just before the current data point is the first data point in the dataset
+        //                         let interpData = objectSub(standardizedData[k], objectSub(standardizedData[k + 1], standardizedData[k]));
+        //                         dataTmp = catmullromPointMd(zpos, interpData, standardizedData[k], standardizedData[k + 1], standardizedData[k + 2]);
+        //                         dataTmp.z = timestampTmp;
+        //                     } else if (k == data.length - 2) {
+        //                         // if the data point just after the current data point is the second last data point in the dataset
+        //                         let interpData = objectSum(standardizedData[k + 1], objectSub(standardizedData[k + 1], standardizedData[k]));
+        //                         dataTmp = catmullromPointMd(zpos, standardizedData[k - 1], standardizedData[k], standardizedData[k + 1], interpData);
+        //                         dataTmp.z = timestampTmp;
+        //                     } else {
+        //                         // there are at least two data points before and after the current data point
+        //                         dataTmp = catmullromPointMd(zpos, standardizedData[k - 1], standardizedData[k], standardizedData[k + 1], standardizedData[k + 2]);
+        //                         dataTmp.z = timestampTmp;
+        //                     }
+        //                     break;
         //                 }
-        //                 break;
         //             }
+        //             SStmp.push(dataTmp);
         //         }
-        //         SStmp.push(dataTmp);
+        //         // compute change degrees
+        //         changeDegrees.push(anomalyDegree(SSDataPoints, meta.min, meta.max));
+        //         SStmp.dataPoints = SSDataPoints;
+        //         SStmp.idx = i;
         //     }
-        //     // compute change degrees
-        //     changeDegrees.push(anomalyDegree(SStmp, min, max));
-        //     // normalize SS here if needed
-        //     if (normalize) {
+        //     return [isometricSS, changeDegrees];
+        // } else {
+        //     // if normalized
+        //     for (let i = 0; i < ranges.length; i++) {
+        //         let delta = (data[ranges[i][1]].z - data[ranges[i][0]].z) / isometryLen;
+        //         let SStmp = [], SSDataPoints = [];
+        //         SSDataPoints = data.slice(ranges[i][0], ranges[i][1] + 1);
+        //         for (let j = 0; j <= isometryLen; j++) {
+        //             // get n (n = isometryLen) coordinates between the currently focused range
+        //             let timestampTmp = j * delta + data[ranges[i][0]].z;
+        //             let dataTmp;
+        //             for (let k = ranges[i][0]; k <= ranges[i][1]; k++) {
+        //                 // find data points around z=timestampTmp
+        //                 if (data[k].z === timestampTmp) {
+        //                     dataTmp = data[k];
+        //                     break;
+        //                 } else if (data[k].z < timestampTmp && timestampTmp < data[k + 1].z) {
+        //                     let zpos = (timestampTmp - data[k].z) / (data[k + 1].z - data[k].z);
+        //                     if (k === 0) {
+        //                         // if the data point just before the current data point is the first data point in the dataset
+        //                         let interpData = objectSub(data[k], objectSub(data[k + 1], data[k]));
+        //                         dataTmp = catmullromPointMd(zpos, interpData, data[k], data[k + 1], data[k + 2]);
+        //                         dataTmp.z = timestampTmp;
+        //                     } else if (k == data.length - 2) {
+        //                         // if the data point just after the current data point is the second last data point in the dataset
+        //                         let interpData = objectSum(data[k + 1], objectSub(data[k + 1], data[k]));
+        //                         dataTmp = catmullromPointMd(zpos, data[k - 1], data[k], data[k + 1], interpData);
+        //                         dataTmp.z = timestampTmp;
+        //                     } else {
+        //                         // there are at least two data points before and after the current data point
+        //                         dataTmp = catmullromPointMd(zpos, data[k - 1], data[k], data[k + 1], data[k + 2]);
+        //                         dataTmp.z = timestampTmp;
+        //                     }
+        //                     break;
+        //                 }
+        //             }
+        //             SStmp.push(dataTmp);
+        //         }
+        //         // compute change degrees
+        //         changeDegrees.push(anomalyDegree(SSDataPoints, min, max));
+        //         // normalize SS here if needed
         //         let dataPoints = [], means, stds;
         //         [SStmp, means, stds] = zNormalization(SStmp, ['z']);
         //         for (let dataPointIdx = 0; dataPointIdx < SSDataPoints.length; dataPointIdx++) {
@@ -824,192 +781,506 @@ export function timeSeriesIsometry(data, ranges, isometryLen = 50, normalize = t
         //         }
         //         SStmp.dataPoints = dataPoints;
         //         SStmp.idx = i;
-        //     } else {
-        //         SStmp.dataPoints = SSDataPoints;
-        //         SStmp.idx = i;
+        //         isometricSS.push(SStmp);
         //     }
-        //     isometricSS.push(SStmp);
+        //     return [isometricSS, changeDegrees];
         // }
-        // return [isometricSS, changeDegrees];
     } else {
         let isometricSS = {}, changeDegrees = {};
         for (let dataIdx in data) {
             if (!normalize) {
                 let standardizedData = zNormalizationWithMeanStd(data[dataIdx], meta[dataIdx].mean, meta[dataIdx].std, ['z']);
-                let isometricSSTmp = [], changeDegreesTmp = [];
-                for (let i = 0; i < ranges[dataIdx].length; i++) {
-                    let delta = (standardizedData[ranges[dataIdx][i][1]].z - standardizedData[ranges[dataIdx][i][0]].z) / isometryLen;
-                    let SStmp = [], SSDataPoints = [];
-                    SSDataPoints = standardizedData.slice(ranges[dataIdx][i][0], ranges[dataIdx][i][1] + 1);
-                    for (let j = 0; j <= isometryLen; j++) {
-                        // get n (n = isometryLen) coordinates between the currently focused range
-                        let timestampTmp = j * delta + standardizedData[ranges[dataIdx][i][0]].z;
-                        let dataTmp;
-                        for (let k = ranges[dataIdx][i][0]; k <= ranges[dataIdx][i][1]; k++) {
-                            // find data points around z=timestampTmp
-                            if (standardizedData[k].z === timestampTmp) {
-                                dataTmp = standardizedData[k];
-                                break;
-                            } else if (standardizedData[k].z < timestampTmp && timestampTmp < standardizedData[k + 1].z) {
-                                let zpos = (timestampTmp - standardizedData[k].z) / (standardizedData[k + 1].z - standardizedData[k].z);
-                                if (k === 0) {
-                                    // if the data point just before the current data point is the first data point in the dataset
-                                    let interpData = objectSub(standardizedData[k], objectSub(standardizedData[k + 1], standardizedData[k]));
-                                    dataTmp = catmullromPointMd(zpos, interpData, standardizedData[k], standardizedData[k + 1], standardizedData[k + 2]);
-                                    dataTmp.z = timestampTmp;
-                                } else if (k == standardizedData.length - 2) {
-                                    // if the data point just after the current data point is the second last data point in the dataset
-                                    let interpData = objectSum(standardizedData[k + 1], objectSub(standardizedData[k + 1], standardizedData[k]));
-                                    dataTmp = catmullromPointMd(zpos, standardizedData[k - 1], standardizedData[k], standardizedData[k + 1], interpData);
-                                    dataTmp.z = timestampTmp;
-                                } else {
-                                    // there are at least two data points before and after the current data point
-                                    dataTmp = catmullromPointMd(zpos, standardizedData[k - 1], standardizedData[k], standardizedData[k + 1], standardizedData[k + 2]);
-                                    dataTmp.z = timestampTmp;
+                if (!polarPhotoSplit[dataIdx]) {
+                    let isometricSSTmp = [], changeDegreesTmp = [];
+                    for (let i = 0; i < ranges[dataIdx].length; i++) {
+                        let delta = (standardizedData[ranges[dataIdx][i][1]].z - standardizedData[ranges[dataIdx][i][0]].z) / isometryLen;
+                        let SStmp = [], SSDataPoints = [];
+                        SSDataPoints = standardizedData.slice(ranges[dataIdx][i][0], ranges[dataIdx][i][1] + 1);
+                        for (let j = 0; j <= isometryLen; j++) {
+                            // get n (n = isometryLen) coordinates between the currently focused range
+                            let timestampTmp = j * delta + standardizedData[ranges[dataIdx][i][0]].z;
+                            let dataTmp;
+                            for (let k = ranges[dataIdx][i][0]; k <= ranges[dataIdx][i][1]; k++) {
+                                // find data points around z=timestampTmp
+                                if (standardizedData[k].z === timestampTmp) {
+                                    dataTmp = standardizedData[k];
+                                    break;
+                                } else if (standardizedData[k].z < timestampTmp && timestampTmp < standardizedData[k + 1].z) {
+                                    let zpos = (timestampTmp - standardizedData[k].z) / (standardizedData[k + 1].z - standardizedData[k].z);
+                                    if (k === 0) {
+                                        // if the data point just before the current data point is the first data point in the dataset
+                                        let interpData = objectSub(standardizedData[k], objectSub(standardizedData[k + 1], standardizedData[k]));
+                                        dataTmp = catmullromPointMd(zpos, interpData, standardizedData[k], standardizedData[k + 1], standardizedData[k + 2]);
+                                        dataTmp.z = timestampTmp;
+                                    } else if (k == standardizedData.length - 2) {
+                                        // if the data point just after the current data point is the second last data point in the dataset
+                                        let interpData = objectSum(standardizedData[k + 1], objectSub(standardizedData[k + 1], standardizedData[k]));
+                                        dataTmp = catmullromPointMd(zpos, standardizedData[k - 1], standardizedData[k], standardizedData[k + 1], interpData);
+                                        dataTmp.z = timestampTmp;
+                                    } else {
+                                        // there are at least two data points before and after the current data point
+                                        dataTmp = catmullromPointMd(zpos, standardizedData[k - 1], standardizedData[k], standardizedData[k + 1], standardizedData[k + 2]);
+                                        dataTmp.z = timestampTmp;
+                                    }
+                                    break;
                                 }
-                                break;
                             }
+                            SStmp.push(dataTmp);
                         }
-                        SStmp.push(dataTmp);
-                    }
-                    // compute change degrees
-                    changeDegreesTmp.push(anomalyDegree(SSDataPoints, meta[dataIdx].min, meta[dataIdx].max));
+                        // compute change degrees
+                        changeDegreesTmp.push(anomalyDegree(SSDataPoints, meta[dataIdx].min, meta[dataIdx].max));
 
-                    SStmp.dataPoints = SSDataPoints;
-                    SStmp.id = dataIdx;
-                    SStmp.idx = i;
-                    isometricSSTmp.push(SStmp);
-                }
-                isometricSS[dataIdx] = isometricSSTmp;
-                changeDegrees[dataIdx] = changeDegreesTmp;
-            } else {
-                let isometricSSTmp = [], changeDegreesTmp = [];
-                for (let i = 0; i < ranges[dataIdx].length; i++) {
-                    let delta = (data[dataIdx][ranges[dataIdx][i][1]].z - data[dataIdx][ranges[dataIdx][i][0]].z) / isometryLen;
-                    let SStmp = [], SSDataPoints = [];
-                    SSDataPoints = data[dataIdx].slice(ranges[dataIdx][i][0], ranges[dataIdx][i][1] + 1);
-                    for (let j = 0; j <= isometryLen; j++) {
-                        // get n (n = isometryLen) coordinates between the currently focused range
-                        let timestampTmp = j * delta + data[dataIdx][ranges[dataIdx][i][0]].z;
-                        let dataTmp;
-                        for (let k = ranges[dataIdx][i][0]; k <= ranges[dataIdx][i][1]; k++) {
-                            // find data points around z=timestampTmp
-                            if (data[dataIdx][k].z === timestampTmp) {
-                                dataTmp = data[dataIdx][k];
-                                break;
-                            } else if (data[dataIdx][k].z < timestampTmp && timestampTmp < data[dataIdx][k + 1].z) {
-                                let zpos = (timestampTmp - data[dataIdx][k].z) / (data[dataIdx][k + 1].z - data[dataIdx][k].z);
-                                if (k === 0) {
-                                    // if the data point just before the current data point is the first data point in the dataset
-                                    let interpData = objectSub(data[dataIdx][k], objectSub(data[dataIdx][k + 1], data[dataIdx][k]));
-                                    dataTmp = catmullromPointMd(zpos, interpData, data[dataIdx][k], data[dataIdx][k + 1], data[dataIdx][k + 2]);
+                        SStmp.dataPoints = data[dataIdx].slice(ranges[dataIdx][i][0], ranges[dataIdx][i][1] + 1);//SSDataPoints;
+                        SStmp.id = Number(dataIdx);
+                        SStmp.idx = i;
+                        isometricSSTmp.push(SStmp);
+                    }
+                    isometricSS[dataIdx] = isometricSSTmp;
+                    changeDegrees[dataIdx] = changeDegreesTmp;
+                } else {
+                    let isometricSSTmp = [], changeDegreesTmp = [];
+                    for (let i = 0; i < ranges[dataIdx].length; i++) {
+                        let delta = (standardizedData[ranges[dataIdx][i][1]].z - standardizedData[ranges[dataIdx][i][0]].z) / isometryLen;
+                        let SStmp = [], SSDataPoints = [];
+                        SSDataPoints = standardizedData.slice(ranges[dataIdx][i][0], ranges[dataIdx][i][1] + 1);
+                        for (let j = 0; j <= isometryLen; j++) {
+                            // get n (n = isometryLen) coordinates between the currently focused range
+                            let timestampTmp = j * delta + standardizedData[ranges[dataIdx][i][0]].z;
+                            let dataTmp = {};
+                            for (let k = ranges[dataIdx][i][0]; k <= ranges[dataIdx][i][1]; k++) {
+                                // find data points around z=timestampTmp
+                                dataTmp = {};
+                                if (standardizedData[k].z === timestampTmp) {
+                                    dataTmp = Object.assign({}, standardizedData[k]);
+                                    if (variables.indexOf('V') >= 0 && ('x' in standardizedData[k] || 'y' in standardizedData[k])) {
+                                        // compute interpolated values of photometric observations
+                                        let photoBefore = [], photoAfter = [];
+                                        let l = 1;
+                                        while ((0 <= k - l && photoBefore.length < 2) 
+                                            || (k + l < standardizedData.length && photoAfter.length < 2)) {
+                                            if (photoBefore.length < 2 && 0 <= k - l && 'V' in standardizedData[k - l]) {
+                                                photoBefore.unshift(standardizedData[k - l]);
+                                            }
+                                            if (photoAfter.length < 2 && k + l < standardizedData.length && 'V' in standardizedData[k + l]) {
+                                                photoAfter.push(standardizedData[k + l]);
+                                            }
+                                            l++;
+                                        }
+                                        // if there are not enough data samples before currently focued data points
+                                        if (photoBefore.length === 0) {
+                                            let interpData1 = objectSub(photoAfter[0], objectSub(photoAfter[1], photoAfter[0]));
+                                            let interpData0 = objectSub(interpData1, objectSub(photoAfter[0], interpData1));
+                                            photoBefore.push(interpData0, interpData1);
+                                        } else if (photoBefore.length === 1) {
+                                            let interpData = objectSub(photoBefore[0], objectSub(photoAfter[0], photoBefore[0]));
+                                            photoBefore.unshift(interpData);
+                                        }
+
+                                        // if there are not enough data samples after currently focued data points
+                                        if (photoAfter.length === 0) {
+                                            let interpData0 = objectSum(photoBefore[1], objectSub(photoBefore[1], photoBefore[0]));
+                                            let interpData1 = objectSum(interpData0, objectSub(interpData0, photoBefore[1]));
+                                            photoAfter.push(interpData0, interpData1);
+                                        } else if (photoAfter.length === 1) {
+                                            let interpData = objectSum(photoAfter[0], objectSub(photoAfter[0], photoBefore[1]));
+                                            photoAfter.push(interpData);
+                                        }
+                                        let zpos = (timestampTmp - photoBefore[1].z) / (photoAfter[0].z - photoBefore[1].z);
+                                        let dataPhotoTmp = catmullromPointMd(zpos, photoBefore[0], photoBefore[1], photoAfter[0], photoAfter[1]);
+                                        variables.forEach(key => {
+                                            if (key in dataPhotoTmp) {
+                                                dataTmp[key] = dataPhotoTmp[key];
+                                            }
+                                        });
+                                        dataTmp.z = timestampTmp;
+                                    } else if ((variables.indexOf('x') >= 0 || variables.indexOf('y') >= 0) && 'V' in standardizedData[k]) {
+                                        // compute interpolated values of polarimetric observations
+                                        let polarBefore = [], polarAfter = [];
+                                        let l = 1;
+                                        while ((0 <= k - l && polarBefore.length < 2) 
+                                            || (k + l < standardizedData.length && polarAfter.length < 2)) {
+                                            if (polarBefore.length < 2 && 0 <= k - l && ('x' in standardizedData[k - l] || 'y' in standardizedData[k - l])) {
+                                                polarBefore.unshift(standardizedData[k - l]);
+                                            }
+                                            if (polarAfter.length < 2 && k + l < standardizedData.length && 'x' in standardizedData[k + l]) {
+                                                polarAfter.push(standardizedData[k + l]);
+                                            }
+                                            l++;
+                                        }
+                                        // if there are not enough data samples before currently focued data points
+                                        if (polarBefore.length === 0) {
+                                            let interpData1 = objectSub(polarAfter[0], objectSub(polarAfter[1], polarAfter[0]));
+                                            let interpData0 = objectSub(interpData1, objectSub(polarAfter[0], interpData1));
+                                            polarBefore.push(interpData0, interpData1);
+                                        } else if (polarBefore.length === 1) {
+                                            let interpData = objectSub(polarBefore[0], objectSub(polarAfter[0], polarBefore[0]));
+                                            polarBefore.unshift(interpData);
+                                        }
+                                        
+                                        // if there are not enough data samples after currently focued data points
+                                        if (polarAfter.length === 0) {
+                                            let interpData0 = objectSum(polarBefore[1], objectSub(polarBefore[1], polarBefore[0]));
+                                            let interpData1 = objectSum(interpData0, objectSub(interpData0, polarBefore[1]));
+                                            polarAfter.push(interpData0, interpData1);
+                                        } else if (polarAfter.length === 1) {
+                                            let interpData = objectSum(polarAfter[0], objectSub(polarAfter[0], polarBefore[1]));
+                                            polarAfter.push(interpData);
+                                        }
+                                        let zpos = (timestampTmp - polarBefore[1].z) / (polarAfter[0].z - polarBefore[1].z);
+                                        let dataPolarTmp = catmullromPointMd(zpos, polarBefore[0], polarBefore[1], polarAfter[0], polarAfter[1]);
+                                        variables.forEach(key => {
+                                            if (key in dataPolarTmp) {
+                                                dataTmp[key] = dataPolarTmp[key];
+                                            }
+                                        });
+                                        dataTmp.z = timestampTmp;
+                                    }
+                                    break;
+                                } else if (standardizedData[k].z < timestampTmp && timestampTmp < standardizedData[k + 1].z) {
+                                    // interpolate polarimetric and photometric data points independently
+                                    let polarBefore = [], polarAfter = [];
+                                    let photoBefore = [], photoAfter = [];
+                                    let l = 1;
+                                    while ((0 <= k - l && (polarBefore.length < 2 || photoBefore.length < 2)) 
+                                        || (k + l < standardizedData.length && (polarAfter.length < 2 || photoAfter.length < 2))) {
+                                        if (0 <= k - l) {
+                                            if (polarBefore.length < 2 && ('x' in standardizedData[k - l] || 'y' in standardizedData[k - l])) {
+                                                polarBefore.unshift(standardizedData[k - l]);
+                                            }
+                                            if (photoBefore.length < 2 && 'V' in standardizedData[k - l]) {
+                                                photoBefore.unshift(standardizedData[k - l]);
+                                            }
+                                        }
+                                        if (k + l < standardizedData.length) {
+                                            if (polarAfter.length < 2 && ('x' in standardizedData[k + l] || 'y' in standardizedData[k + l])) {
+                                                polarAfter.push(standardizedData[k + l]);
+                                            }
+                                            if (photoAfter.length < 2 && 'V' in standardizedData[k + l]) {
+                                                photoAfter.push(standardizedData[k + l]);
+                                            }
+                                        } 
+                                        l++;
+                                    }
+                                    // make shortcoming photometric data
+                                    // if there are not enough data samples before currently focued data points
+                                    if (photoBefore.length === 0) {
+                                        let interpData1 = objectSub(photoAfter[0], objectSub(photoAfter[1], photoAfter[0]));
+                                        let interpData0 = objectSub(interpData1, objectSub(photoAfter[0], interpData1));
+                                        photoBefore.push(interpData0, interpData1);
+                                    } else if (photoBefore.length === 1) {
+                                        let interpData = objectSub(photoBefore[0], objectSub(photoAfter[0], photoBefore[0]));
+                                        photoBefore.unshift(interpData);
+                                    }
+
+                                    // if there are not enough data samples after currently focued data points
+                                    if (photoAfter.length === 0) {
+                                        let interpData0 = objectSum(photoBefore[1], objectSub(photoBefore[1], photoBefore[0]));
+                                        let interpData1 = objectSum(interpData0, objectSub(interpData0, photoBefore[1]));
+                                        photoAfter.push(interpData0, interpData1);
+                                    } else if (photoAfter.length === 1) {
+                                        let interpData = objectSum(photoAfter[0], objectSub(photoAfter[0], photoBefore[1]));
+                                        photoAfter.push(interpData);
+                                    }
+
+                                    // make shortcoming polarimetric data
+                                    // if there are not enough data samples before currently focued data points
+                                    if (polarBefore.length === 0) {
+                                        let interpData1 = objectSub(polarAfter[0], objectSub(polarAfter[1], polarAfter[0]));
+                                        let interpData0 = objectSub(interpData1, objectSub(polarAfter[0], interpData1));
+                                        polarBefore.push(interpData0, interpData1);
+                                    } else if (polarBefore.length === 1) {
+                                        let interpData = objectSub(polarBefore[0], objectSub(polarAfter[0], polarBefore[0]));
+                                        polarBefore.unshift(interpData);
+                                    }
+
+                                    // if there are not enough data samples after currently focued data points
+                                    if (polarAfter.length === 0) {
+                                        let interpData0 = objectSum(polarBefore[1], objectSub(polarBefore[1], polarBefore[0]));
+                                        let interpData1 = objectSum(interpData0, objectSub(interpData0, polarBefore[1]));
+                                        polarAfter.push(interpData0, interpData1);
+                                    } else if (polarAfter.length === 1) {
+                                        let interpData = objectSum(polarAfter[0], objectSub(polarAfter[0], polarBefore[1]));
+                                        polarAfter.push(interpData);
+                                    }
+                                    let zposPhoto = (timestampTmp - photoBefore[1].z) / (photoAfter[0].z - photoBefore[1].z);
+                                    let dataPhotoTmp = catmullromPointMd(zposPhoto, photoBefore[0], photoBefore[1], photoAfter[0], photoAfter[1]);
+                                    variables.forEach(key => {
+                                        if (key in dataPhotoTmp) {
+                                            dataTmp[key] = dataPhotoTmp[key];
+                                        }
+                                    });
+                                    let zposPolar = (timestampTmp - polarBefore[1].z) / (polarAfter[0].z - polarBefore[1].z);
+                                    let dataPolarTmp = catmullromPointMd(zposPolar, polarBefore[0], polarBefore[1], polarAfter[0], polarAfter[1]);
+                                    variables.forEach(key => {
+                                        if (key in dataPolarTmp) {
+                                            dataTmp[key] = dataPolarTmp[key];
+                                        }
+                                    });
                                     dataTmp.z = timestampTmp;
-                                } else if (k == data[dataIdx].length - 2) {
-                                    // if the data point just after the current data point is the second last data point in the dataset
-                                    let interpData = objectSum(data[dataIdx][k + 1], objectSub(data[dataIdx][k + 1], data[dataIdx][k]));
-                                    dataTmp = catmullromPointMd(zpos, data[dataIdx][k - 1], data[dataIdx][k], data[dataIdx][k + 1], interpData);
-                                    dataTmp.z = timestampTmp;
-                                } else {
-                                    // there are at least two data points before and after the current data point
-                                    dataTmp = catmullromPointMd(zpos, data[dataIdx][k - 1], data[dataIdx][k], data[dataIdx][k + 1], data[dataIdx][k + 2]);
-                                    dataTmp.z = timestampTmp;
+                                    break;
                                 }
-                                break;
                             }
+                            SStmp.push(dataTmp);
                         }
-                        SStmp.push(dataTmp);
+                        // compute change degrees
+                        changeDegreesTmp.push(anomalyDegree(SSDataPoints, meta[dataIdx].min, meta[dataIdx].max));
+                        // // normalize SS here if needed
+                        // let dataPoints = [], means, stds;
+                        // [SStmp, means, stds] = zNormalization(SStmp, ['z']);
+                        // for (let dataPointIdx = 0; dataPointIdx < SSDataPoints.length; dataPointIdx++) {
+                        //     let dataPointTmp = {};
+                        //     for (let key in SStmp[0]) {
+                        //         if (key === 'z') {
+                        //             dataPointTmp[key] = SSDataPoints[dataPointIdx].z;
+                        //         } else if (key in SSDataPoints[dataPointIdx]) {
+                        //             dataPointTmp[key] = (SSDataPoints[dataPointIdx][key] - means[key]) / stds[key];
+                        //         }
+                        //     }
+                        //     dataPoints.push(dataPointTmp);
+                        // }
+                        SStmp.dataPoints = data[dataIdx].slice(ranges[dataIdx][i][0], ranges[dataIdx][i][1] + 1);
+                        SStmp.id = Number(dataIdx);
+                        SStmp.idx = i;
+                        isometricSSTmp.push(SStmp);
                     }
-                    // compute change degrees
-                    changeDegreesTmp.push(anomalyDegree(SSDataPoints, meta[dataIdx].min, meta[dataIdx].max));
-                    // normalize SS here if needed
-                    let dataPoints = [], means, stds;
-                    [SStmp, means, stds] = zNormalization(SStmp, ['z']);
-                    for (let dataPointIdx = 0; dataPointIdx < SSDataPoints.length; dataPointIdx++) {
-                        let dataPointTmp = {};
-                        for (let key in SStmp[0]) {
-                            if (key === 'z') {
-                                dataPointTmp[key] = SSDataPoints[dataPointIdx].z;
-                            } else {
-                                dataPointTmp[key] = (SSDataPoints[dataPointIdx][key] - means[key]) / stds[key];
-                            }
-                        }
-                        dataPoints.push(dataPointTmp);
-                    }
-                    SStmp.dataPoints = dataPoints;
-                    SStmp.id = dataIdx;
-                    SStmp.idx = i;
-                    isometricSSTmp.push(SStmp);
+                    isometricSS[dataIdx] = isometricSSTmp;
+                    changeDegrees[dataIdx] = changeDegreesTmp;
                 }
-                isometricSS[dataIdx] = isometricSSTmp;
-                changeDegrees[dataIdx] = changeDegreesTmp;
+            } else {
+                if (!polarPhotoSplit[dataIdx]) {
+                    let isometricSSTmp = [], changeDegreesTmp = [];
+                    for (let i = 0; i < ranges[dataIdx].length; i++) {
+                        let delta = (data[dataIdx][ranges[dataIdx][i][1]].z - data[dataIdx][ranges[dataIdx][i][0]].z) / isometryLen;
+                        let SStmp = [], SSDataPoints = [];
+                        SSDataPoints = data[dataIdx].slice(ranges[dataIdx][i][0], ranges[dataIdx][i][1] + 1);
+                        for (let j = 0; j <= isometryLen; j++) {
+                            // get n (n = isometryLen) coordinates between the currently focused range
+                            let timestampTmp = j * delta + data[dataIdx][ranges[dataIdx][i][0]].z;
+                            let dataTmp;
+                            for (let k = ranges[dataIdx][i][0]; k <= ranges[dataIdx][i][1]; k++) {
+                                // find data points around z=timestampTmp
+                                if (data[dataIdx][k].z === timestampTmp) {
+                                    dataTmp = data[dataIdx][k];
+                                    break;
+                                } else if (data[dataIdx][k].z < timestampTmp && timestampTmp < data[dataIdx][k + 1].z) {
+                                    let zpos = (timestampTmp - data[dataIdx][k].z) / (data[dataIdx][k + 1].z - data[dataIdx][k].z);
+                                    if (k === 0) {
+                                        // if the data point just before the current data point is the first data point in the dataset
+                                        let interpData = objectSub(data[dataIdx][k], objectSub(data[dataIdx][k + 1], data[dataIdx][k]));
+                                        dataTmp = catmullromPointMd(zpos, interpData, data[dataIdx][k], data[dataIdx][k + 1], data[dataIdx][k + 2]);
+                                        dataTmp.z = timestampTmp;
+                                    } else if (k == data[dataIdx].length - 2) {
+                                        // if the data point just after the current data point is the second last data point in the dataset
+                                        let interpData = objectSum(data[dataIdx][k + 1], objectSub(data[dataIdx][k + 1], data[dataIdx][k]));
+                                        dataTmp = catmullromPointMd(zpos, data[dataIdx][k - 1], data[dataIdx][k], data[dataIdx][k + 1], interpData);
+                                        dataTmp.z = timestampTmp;
+                                    } else {
+                                        // there are at least two data points before and after the current data point
+                                        dataTmp = catmullromPointMd(zpos, data[dataIdx][k - 1], data[dataIdx][k], data[dataIdx][k + 1], data[dataIdx][k + 2]);
+                                        dataTmp.z = timestampTmp;
+                                    }
+                                    break;
+                                }
+                            }
+                            SStmp.push(dataTmp);
+                        }
+                        // compute change degrees
+                        changeDegreesTmp.push(anomalyDegree(SSDataPoints, meta[dataIdx].min, meta[dataIdx].max));
+                        // normalize SS here if needed
+                        let dataPoints = [], means, stds;
+                        [SStmp, means, stds] = zNormalization(SStmp, ['z']);
+                        for (let dataPointIdx = 0; dataPointIdx < SSDataPoints.length; dataPointIdx++) {
+                            let dataPointTmp = {};
+                            for (let key in SStmp[0]) {
+                                if (key === 'z') {
+                                    dataPointTmp[key] = SSDataPoints[dataPointIdx].z;
+                                } else {
+                                    dataPointTmp[key] = (SSDataPoints[dataPointIdx][key] - means[key]) / stds[key];
+                                }
+                            }
+                            dataPoints.push(dataPointTmp);
+                        }
+                        SStmp.dataPoints = dataPoints;
+                        SStmp.id = Number(dataIdx);
+                        SStmp.idx = i;
+                        isometricSSTmp.push(SStmp);
+                    }
+                    isometricSS[dataIdx] = isometricSSTmp;
+                    changeDegrees[dataIdx] = changeDegreesTmp;
+                } else {
+                    let isometricSSTmp = [], changeDegreesTmp = [];
+                    for (let i = 0; i < ranges[dataIdx].length; i++) {
+                        let delta = (data[dataIdx][ranges[dataIdx][i][1]].z - data[dataIdx][ranges[dataIdx][i][0]].z) / isometryLen;
+                        let SStmp = [], SSDataPoints = [];
+                        SSDataPoints = data[dataIdx].slice(ranges[dataIdx][i][0], ranges[dataIdx][i][1] + 1);
+                        for (let j = 0; j <= isometryLen; j++) {
+                            // get n (n = isometryLen) coordinates between the currently focused range
+                            let timestampTmp = j * delta + data[dataIdx][ranges[dataIdx][i][0]].z;
+                            let dataTmp = {};
+                            for (let k = ranges[dataIdx][i][0]; k <= ranges[dataIdx][i][1]; k++) {
+                                // find data points around z=timestampTmp
+                                dataTmp = {};
+                                if (data[dataIdx][k].z === timestampTmp) {
+                                    dataTmp = Object.assign({}, data[dataIdx][k]);
+                                    let lackingVar = variables.filter((key) => 
+                                        !(key in dataTmp)
+                                    );
+
+                                    let befores = {}, afters = {};
+                                    lackingVar.forEach(key => {
+                                        befores[key] = [];
+                                        afters[key] = [];
+                                    });
+
+                                    let l = 1;
+                                    while ((0 <= k - l || k + l < data[dataIdx].length) && checkTheNumOfBefAft(befores, afters)) {
+                                        if (0 <= k - l) {
+                                            for (let key in befores) {
+                                                if (befores[key].length < 2 && key in data[dataIdx][k - l]) {
+                                                    befores[key].unshift(data[dataIdx][k - l]);
+                                                }
+                                            }
+                                        }
+                                        if (k + l < data[dataIdx].length) {
+                                            for (let key in afters) {
+                                                if (afters[key].length < 2 && key in data[dataIdx][k + l]) {
+                                                    afters[key].push(data[dataIdx][k + l]);
+                                                }
+                                            }
+                                        }
+                                        l++;
+                                    }
+
+                                    for (let key in befores) {
+                                        if (befores[key].length === 0) {
+                                            let interpData1 = objectSub(afters[key][0], objectSub(afters[key][1], afters[key][0]));
+                                            let interpData0 = objectSub(interpData1, objectSub(afters[key][0], interpData1));
+                                            befores[key].push(interpData0, interpData1);
+                                        } else if (befores[key].length === 1) {
+                                            let interpData = objectSub(befores[key][0], objectSub(afters[key][0], befores[key][0]));
+                                            befores[key].unshift(interpData);
+                                        }
+                                    }
+                                    for (let key in afters) {
+                                        if (afters[key].length === 0) {
+                                            let interpData0 = objectSum(befores[key][1], objectSub(befores[key][1], befores[key][0]));
+                                            let interpData1 = objectSum(interpData0, objectSub(interpData0, befores[key][1]));
+                                            afters[key].push(interpData0, interpData1);
+                                        } else if (afters[key].length === 1) {
+                                            let interpData = objectSum(afters[key][0], objectSub(afters[key][0], befores[key][1]));
+                                            afters[key].push(interpData);
+                                        }
+                                    }
+
+                                    lackingVar.forEach(key => {
+                                        let zpos = (timestampTmp - befores[key][1].z) / (afters[key][0].z - befores[key][1].z);
+                                        let interpData = catmullromPointMd(zpos, befores[key][0], befores[key][1], afters[key][0], afters[key][1]);
+                                        dataTmp[key] = interpData[key];
+                                    });
+                                    dataTmp.z = timestampTmp;
+                                    break;
+                                } else if (data[dataIdx][k].z < timestampTmp && timestampTmp < data[dataIdx][k + 1].z) {
+                                    // interpolate polarimetric and photometric data points independently
+                                    let befores = {}, afters = {};
+                                    variables.forEach(key => {
+                                        befores[key] = [];
+                                        afters[key] = [];
+                                    });
+
+                                    let l = 1;
+                                    while ((0 <= k - l || k + l < data[dataIdx].length) && checkTheNumOfBefAft(befores, afters)) {
+                                        if (0 <= k - l) {
+                                            for (let key in befores) {
+                                                if (befores[key].length < 2 && key in data[dataIdx][k - l]) {
+                                                    befores[key].unshift(data[dataIdx][k - l]);
+                                                }
+                                            }
+                                        }
+                                        if (k + l < data[dataIdx].length) {
+                                            for (let key in afters) {
+                                                if (afters[key].length < 2 && key in data[dataIdx][k + l]) {
+                                                    afters[key].push(data[dataIdx][k + l]);
+                                                }
+                                            }
+                                        }
+                                        l++;
+                                    }
+
+                                    for (let key in befores) {
+                                        if (befores[key].length === 0) {
+                                            let interpData1 = objectSub(afters[key][0], objectSub(afters[key][1], afters[key][0]));
+                                            let interpData0 = objectSub(interpData1, objectSub(afters[key][0], interpData1));
+                                            befores[key].push(interpData0, interpData1);
+                                        } else if (befores[key].length === 1) {
+                                            let interpData = objectSub(befores[key][0], objectSub(afters[key][0], befores[key][0]));
+                                            befores[key].unshift(interpData);
+                                        }
+                                    }
+                                    for (let key in afters) {
+                                        if (afters[key].length === 0) {
+                                            let interpData0 = objectSum(befores[key][1], objectSub(befores[key][1], befores[key][0]));
+                                            let interpData1 = objectSum(interpData0, objectSub(interpData0, befores[key][1]));
+                                            afters[key].push(interpData0, interpData1);
+                                        } else if (afters[key].length === 1) {
+                                            let interpData = objectSum(afters[key][0], objectSub(afters[key][0], befores[key][1]));
+                                            afters[key].push(interpData);
+                                        }
+                                    }
+
+                                    variables.forEach(key => {
+                                        let zpos = (timestampTmp - befores[key][1].z) / (afters[key][0].z - befores[key][1].z);
+                                        let interpData = catmullromPointMd(zpos, befores[key][0], befores[key][1], afters[key][0], afters[key][1]);
+                                        dataTmp[key] = interpData[key];
+                                    });
+                                    dataTmp.z = timestampTmp;
+                                    break;
+                                }
+                            }
+                            SStmp.push(dataTmp);
+                        }
+                        // compute change degrees
+                        changeDegreesTmp.push(anomalyDegree(SSDataPoints, meta[dataIdx].min, meta[dataIdx].max));
+                        // normalize SS here if needed
+                        let dataPoints = [], means, stds;
+                        [SStmp, means, stds] = zNormalization(SStmp, ['z']);
+                        for (let dataPointIdx = 0; dataPointIdx < SSDataPoints.length; dataPointIdx++) {
+                            let dataPointTmp = {};
+                            for (let key in SStmp[0]) {
+                                if (key === 'z') {
+                                    dataPointTmp[key] = SSDataPoints[dataPointIdx].z;
+                                } else if (key in SSDataPoints[dataPointIdx]) {
+                                    dataPointTmp[key] = (SSDataPoints[dataPointIdx][key] - means[key]) / stds[key];
+                                }
+                            }
+                            dataPoints.push(dataPointTmp);
+                        }
+                        SStmp.dataPoints = dataPoints;
+                        SStmp.id = Number(dataIdx);
+                        SStmp.idx = i;
+                        isometricSSTmp.push(SStmp);
+                    }
+                    isometricSS[dataIdx] = isometricSSTmp;
+                    changeDegrees[dataIdx] = changeDegreesTmp;
+                }
             }
-            // let isometricSSTmp = [], changeDegreesTmp = [];
-            // for (let i = 0; i < ranges[dataIdx].length; i++) {
-            //     let delta = (data[dataIdx][ranges[dataIdx][i][1]].z - data[dataIdx][ranges[dataIdx][i][0]].z) / isometryLen;
-            //     let SStmp = [], SSDataPoints = [];
-            //     SSDataPoints = data[dataIdx].slice(ranges[dataIdx][i][0], ranges[dataIdx][i][1] + 1);
-            //     for (let j = 0; j <= isometryLen; j++) {
-            //         // get n (n = isometryLen) coordinates between the currently focused range
-            //         let timestampTmp = j * delta + data[dataIdx][ranges[dataIdx][i][0]].z;
-            //         let dataTmp;
-            //         for (let k = ranges[dataIdx][i][0]; k <= ranges[dataIdx][i][1]; k++) {
-            //             // find data points around z=timestampTmp
-            //             if (data[dataIdx][k].z === timestampTmp) {
-            //                 dataTmp = data[dataIdx][k];
-            //                 break;
-            //             } else if (data[dataIdx][k].z < timestampTmp && timestampTmp < data[dataIdx][k + 1].z) {
-            //                 let zpos = (timestampTmp - data[dataIdx][k].z) / (data[dataIdx][k + 1].z - data[dataIdx][k].z);
-            //                 if (k === 0) {
-            //                     // if the data point just before the current data point is the first data point in the dataset
-            //                     let interpData = objectSub(data[dataIdx][k], objectSub(data[dataIdx][k + 1], data[dataIdx][k]));
-            //                     dataTmp = catmullromPointMd(zpos, interpData, data[dataIdx][k], data[dataIdx][k + 1], data[dataIdx][k + 2]);
-            //                     dataTmp.z = timestampTmp;
-            //                 } else if (k == data[dataIdx].length - 2) {
-            //                     // if the data point just after the current data point is the second last data point in the dataset
-            //                     let interpData = objectSum(data[dataIdx][k + 1], objectSub(data[dataIdx][k + 1], data[dataIdx][k]));
-            //                     dataTmp = catmullromPointMd(zpos, data[dataIdx][k - 1], data[dataIdx][k], data[dataIdx][k + 1], interpData);
-            //                     dataTmp.z = timestampTmp;
-            //                 } else {
-            //                     // there are at least two data points before and after the current data point
-            //                     dataTmp = catmullromPointMd(zpos, data[dataIdx][k - 1], data[dataIdx][k], data[dataIdx][k + 1], data[dataIdx][k + 2]);
-            //                     dataTmp.z = timestampTmp;
-            //                 }
-            //                 break;
-            //             }
-            //         }
-            //         SStmp.push(dataTmp);
-            //     }
-            //     // compute change degrees
-            //     changeDegreesTmp.push(anomalyDegree(SStmp, min[dataIdx], max[dataIdx]));
-            //     // normalize SS here if needed
-            //     if (normalize) {
-            //         let dataPoints = [], means, stds;
-            //         [SStmp, means, stds] = zNormalization(SStmp, ['z']);
-            //         for (let dataPointIdx = 0; dataPointIdx < SSDataPoints.length; dataPointIdx++) {
-            //             let dataPointTmp = {};
-            //             for (let key in SStmp[0]) {
-            //                 if (key === 'z') {
-            //                     dataPointTmp[key] = SSDataPoints[dataPointIdx].z;
-            //                 } else {
-            //                     dataPointTmp[key] = (SSDataPoints[dataPointIdx][key] - means[key]) / stds[key];
-            //                 }
-            //             }
-            //             dataPoints.push(dataPointTmp);
-            //         }
-            //         SStmp.dataPoints = dataPoints;
-            //         SStmp.id = dataIdx;
-            //         SStmp.idx = i;
-            //     } else {
-            //         SStmp.dataPoints = SSDataPoints;
-            //         SStmp.id = dataIdx;
-            //         SStmp.idx = i;
-            //     }
-            //     isometricSSTmp.push(SStmp);
-            // }
-            // isometricSS[dataIdx] = isometricSSTmp;
-            // changeDegrees[dataIdx] = changeDegreesTmp;
         }
         return [isometricSS, changeDegrees];
+    }
+    function checkTheNumOfBefAft(befores, afters) {
+        let flag = false;
+        for (let key in befores) {
+            if (befores[key].length < 2) {
+                flag = true;
+                break;
+            }
+        }
+        for (let key in afters) {
+            if (afters[key].length < 2) {
+                flag = true;
+                break;
+            }
+        }
+        return flag;
     }
 }
 
@@ -1420,17 +1691,17 @@ function computeDataCenter(data, distanceParameters, variables, dataLen) {
     }
 }
 
-function kMedoidsEach(data, clusterNum, distanceParameters, variables, maxTrial) {
+function kMedoidsEach(data, clusterNum, distanceParameters, variables, maxTrial, elbow) {
     // step 1: compute distance matrix between SS
     // step 2: pick up k medoids from all SS
     // step 3: assign other SS to medoids
     // step 4: re-find medoids which minimize the total distances
     // step 5: repeat steps 3 and 4
-
     // step 1
     // note: when comparing SSi and SSj (i < j), refer distMatrix[i][j - i - 1]
     let variableList = variables.filter(ele => ele !== 'z');
     let distMatrix = distanceMatrix(data, distanceParameters, variableList);
+
     // step 2
     // find the inital medoids which make the errors inside the clusters minimum
     let initSearch = 5;
@@ -1438,12 +1709,53 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables, maxTrial)
     let clusteringScores = {};
     let bestMedoids, bestLabels, bestDist = Infinity, bestDists;
 
+    // for the elbow method, compute SSE (sum of squared errors) in each cluster num
+    let SSEClusters;
+    if (Array.isArray(elbow)) {
+        SSEClusters = {};
+        for (let clusterNumTmp = elbow[0]; clusterNumTmp <= elbow[1]; clusterNumTmp++) {
+            if (clusterNumTmp !== clusterNum) {
+                let score = Infinity;
+                medoids = [], labels = [];
+                for (let i = 0; i < initSearch; i++) {
+                    let [medoidsTmp, scoreTmp, labelsTmp] = initMedoids(variableList, clusterNumTmp);
+                    if (scoreTmp < score) {
+                        score = scoreTmp;
+                        medoids = medoidsTmp;
+                        labels = labelsTmp;
+                    }
+                }
+                let newMedoids = [], newLabels = [], distSum = [];
+                let loop = 0, maxIteration = 300;
+                while (!checkMedoidsUpdates(medoids, newMedoids, variableList) && loop < maxIteration) {//(medoids.filter(i => newMedoids.indexOf(i) == -1).length > 0 && loop < maxIteration) {
+                    // update medoids until there are no medoid updates or repeat updating medoids maxIteration times
+                    if (newMedoids.length !== 0 && newLabels.length !== 0) {
+                        medoids = newMedoids;
+                        labels = newLabels;
+                    }
+                    [newMedoids, distSum] = updateMedoids(labels, variableList, clusterNumTmp);
+                    newLabels = assignSSToMedoids(newMedoids, variableList);
+                    loop++;
+                }
+                medoids = newMedoids;
+                newLabels = labels;
+                let distSumTmp = 0;
+                for (let i = 0; i < distSum.length; i++) {
+                    for (let key in distSum[i]) {
+                        distSumTmp += distSum[i][key];
+                    }
+                }
+                SSEClusters[clusterNumTmp] = distSumTmp;
+            }
+        }
+    }
+
     for (let trial = 0; trial < maxTrial; trial++) {
         let score = Infinity;
         medoids = [], labels = [];
         for (let i = 0; i < initSearch; i++) {
             // step 3
-            let [medoidsTmp, scoreTmp, labelsTmp] = initMedoids(variableList);
+            let [medoidsTmp, scoreTmp, labelsTmp] = initMedoids(variableList, clusterNum);
             if (scoreTmp < score) {
                 score = scoreTmp;
                 medoids = medoidsTmp;
@@ -1460,7 +1772,7 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables, maxTrial)
                 labels = newLabels;
             }
             // step 3
-            [newMedoids, distSum] = updateMedoids(labels, variableList);
+            [newMedoids, distSum] = updateMedoids(labels, variableList, clusterNum);
             // step 4
             newLabels = assignSSToMedoids(newMedoids, variableList);
             loop++;
@@ -1485,6 +1797,10 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables, maxTrial)
     }
     medoids = bestMedoids;
     labels = bestLabels;
+    if (Array.isArray(elbow)) {
+        SSEClusters[clusterNum] = bestDist;
+    }
+
     let medoidData = [];
     for (let i = 0; i < medoids.length; i++) {
         let dataTmp = [];
@@ -1533,11 +1849,10 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables, maxTrial)
     }
     medoids = sortedMedoids;
     medoidData = sortedMedoidData;
-
     [clusteringScores.silhouette, clusteringScores.silhouetteSS] = silhouetteCoefficient();
     clusteringScores.davisBouldin = davisBouldinIndex();
     
-    return [medoidData, medoids, labels, clusteringScores, distMatrix];
+    return [medoidData, medoids, labels, clusteringScores, distMatrix, SSEClusters];
 
     function divideSSIntoClusters() {
         let clustersTmp = [];
@@ -1593,18 +1908,21 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables, maxTrial)
                         }
                     }
                 }
-
-                for (let k = 0; k < clusters[i].length; k++) {
-                    // compute cohesion of the focused data sample (data[clusters[i][j]])
-                    if (clusters[i][j] !== clusters[i][k]) {
-                        // let dataIdxMin = Math.min(clusters[i][j], clusters[i][k]),
-                        //     dataIdxMax = Math.max(clusters[i][j], clusters[i][k]);
-                        variableList.forEach(key => {
-                            cohesionTmp += distMatrix[clusters[i][j]][clusters[i][k]][key];//distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1][key];
-                        });
+                if (clusters[i].length - 1 === 0) {
+                    cohesionTmp = 0;
+                } else {
+                    for (let k = 0; k <  clusters[i].length; k++) {
+                        // compute cohesion of the focused data sample (data[clusters[i][j]])
+                        if (clusters[i][j] !== clusters[i][k]) {
+                            // let dataIdxMin = Math.min(clusters[i][j], clusters[i][k]),
+                            //     dataIdxMax = Math.max(clusters[i][j], clusters[i][k]);
+                            variableList.forEach(key => {
+                                cohesionTmp += distMatrix[clusters[i][j]][clusters[i][k]][key];//distMatrix[dataIdxMin][dataIdxMax - dataIdxMin - 1][key];
+                            });
+                        }
                     }
+                    cohesionTmp /= (clusters[i].length - 1);
                 }
-                cohesionTmp /= (clusters[i].length - 1);
                 for (let k = 0; k < clusters[clusterNear].length; k++) {
                     // compute separation of the focused data sample (data[clusters[i][j]])
                     // let dataIdxMin = Math.min(clusters[i][j], clusters[clusterNear][k]),
@@ -1661,7 +1979,7 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables, maxTrial)
         db /= clusters.length;
         return db;
     }
-    function initMedoids(activeVariables) {
+    function initMedoids(activeVariables, clusterNum) {
         // randomly pick up k SS from the dataset
         let medoids = [];
         while (medoids.length < clusterNum) {
@@ -1787,7 +2105,7 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables, maxTrial)
         }
         return labels;
     }
-    function updateMedoids(labels, activeVariables) {
+    function updateMedoids(labels, activeVariables, clusterNum) {
         // divide SS by clusters
         let clusters = [];
         for (let i = 0; i < clusterNum; i++) {
@@ -1884,7 +2202,7 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables, maxTrial)
 }
 
 
-function kMedoidsUnified(data, clusterNum, distanceParameters, variables, maxTrial) {
+function kMedoidsUnified(data, clusterNum, distanceParameters, variables, maxTrial, elbow) {
     // step 1: compute distance matrix between SS
     // step 2: pick up k medoids from all SS
     // step 3: assign other SS to medoids
@@ -1902,10 +2220,48 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables, maxTri
     let clusteringScores = {};
     let bestMedoids, bestLabels, bestDist = Infinity, bestDists;
 
+    // for the elbow method, compute SSE (sum of squared errors) in each cluster num
+    let SSEClusters;
+    if (Array.isArray(elbow)) {
+        SSEClusters = {};
+        for (let clusterNumTmp = elbow[0]; clusterNumTmp <= elbow[1]; clusterNumTmp++) {
+            if (clusterNumTmp !== clusterNum) {
+                for (let i = 0; i < initSearch; i++) {
+                    let [medoidsTmp, scoreTmp, labelsTmp] = initMedoids(clusterNumTmp);
+                    if (scoreTmp < score) {
+                        score = scoreTmp;
+                        medoids = medoidsTmp;
+                        labels = labelsTmp;
+                    }
+                }
+
+                let newMedoids = [], newLabels = [], distSum = [];
+                let loop = 0, maxIteration = 300;
+                while (medoids.filter(i => newMedoids.indexOf(i) == -1).length > 0 && loop < maxIteration) {
+                    // update medoids until there are no medoid updates or repeat updating medoids maxIteration times
+                    if (newMedoids.length !== 0 && newLabels.length !== 0) {
+                        medoids = newMedoids;
+                        labels = newLabels;
+                    }
+                    [newMedoids, distSum] = updateMedoids(labels, clusterNumTmp);
+                    newLabels = assignSSToMedoids(newMedoids);
+                    loop++;
+                }
+                medoids = newMedoids;
+                newLabels = labels;
+                let distSumTmp = 0;
+                for (let i = 0; i < distSum.length; i++) {
+                    distSumTmp += distSum[i];
+                }
+                SSEClusters[clusterNumTmp] = distSumTmp;
+            }
+        }
+    }
+
     for (let trial = 0; trial < maxTrial; trial++) {
         for (let i = 0; i < initSearch; i++) {
             // step 3
-            let [medoidsTmp, scoreTmp, labelsTmp] = initMedoids();
+            let [medoidsTmp, scoreTmp, labelsTmp] = initMedoids(clusterNum);
             if (scoreTmp < score) {
                 score = scoreTmp;
                 medoids = medoidsTmp;
@@ -1923,11 +2279,13 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables, maxTri
                 labels = newLabels;
             }
             // step 3
-            [newMedoids, distSum] = updateMedoids(labels);
+            [newMedoids, distSum] = updateMedoids(labels, clusterNum);
             // step 4
             newLabels = assignSSToMedoids(newMedoids);
             loop++;
         }
+        medoids = newMedoids;
+        newLabels = labels;
         let distSumTmp = 0;
         for (let i = 0; i < distSum.length; i++) {
             distSumTmp += distSum[i];
@@ -1935,12 +2293,16 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables, maxTri
         if (distSumTmp < bestDist) {
             bestDist = distSumTmp;
             bestDists = distSum;
-            bestMedoids = newMedoids;
-            bestLabels = newLabels;
+            bestMedoids = medoids;
+            bestLabels = labels;
         }
     }
     medoids = bestMedoids;
     labels = bestLabels;
+    if (Array.isArray(elbow)) {
+        SSEClusters[clusterNum] = bestDist;
+    }
+
     let medoidData = [];
     for (let i = 0; i < medoids.length; i++) {
         medoidData.push(data[medoids[i]]);
@@ -1982,7 +2344,7 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables, maxTri
 
     [clusteringScores.silhouette, clusteringScores.silhouetteSS] = silhouetteCoefficient();
     clusteringScores.davisBouldin = davisBouldinIndex();
-    return [medoidData, medoids, labels, clusteringScores, distMatrix];
+    return [medoidData, medoids, labels, clusteringScores, distMatrix, SSEClusters];
 
     function divideSSIntoClusters() {
         let clustersTmp = [];
@@ -2066,7 +2428,7 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables, maxTri
         db /= clusters.length;
         return db;
     }
-    function initMedoids() {
+    function initMedoids(clusterNum) {
         // randomly pick up k SS from the dataset
         let medoids = [];
         while (medoids.length < clusterNum) {
@@ -2127,7 +2489,7 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables, maxTri
         }
         return labels;
     }
-    function updateMedoids(labels) {
+    function updateMedoids(labels, clusterNum) {
         // divide SS by clusters
         let clusters = [];
         for (let i = 0; i < clusterNum; i++) {
@@ -2171,7 +2533,7 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables, maxTri
     }
 }
 
-function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
+function kMeans(data, clusterNum, distanceParameters, variables, maxTrial, elbow) {
 // step 1: randomly assign SS to k clusters
     // step 2: compute barycenters (centroids) of the clusters
     // step 3: re-assign SS to the nearest cluster
@@ -2183,12 +2545,65 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
     let clusteringScores = {};
     let centroids = [], labels = [], distsToClusters;// = assignSSToCentroids(centroids);
     let bestDist = Infinity, bestCentroids, bestLabels, bestDistsToClusters;
+
+    // for the elbow method, compute SSE (sum of squared errors) in each cluster num
+    let SSEClusters;
+    if (Array.isArray(elbow)) {
+        SSEClusters = {};
+        for (let clusterNumTmp = elbow[0]; clusterNumTmp <= elbow[1]; clusterNumTmp++) {
+            if (clusterNumTmp !== clusterNum) {
+                centroids = [], labels = [], distsToClusters = [];
+                // initialize centroids
+                centroids = initCentroids(clusterNumTmp);
+                let centroidsTmp;
+                [labels, centroidsTmp] = assignSSToCentroids(centroids, clusterNumTmp);
+                if (centroidsTmp.length > 0) {
+                    centroids = centroidsTmp;
+                }
+
+                let newCentroids = [], newLabels = [], distsToClusters;
+                // step 3 and 4
+                let loop = 0, maxIteration = 100;
+                while (loop < maxIteration && checkUpdates(labels, newLabels)) {//(checkUpdatesCentroids(centroids, newCentroids) && loop < maxIteration) {
+                    if (newCentroids.length !== 0 && newLabels.length !== 0) {
+                        centroids = newCentroids;
+                        labels = newLabels;
+                    }
+                    newCentroids = updateCentroids(labels, dataLen, clusterNumTmp);
+                    let newCentroidsTmp;
+                    [newLabels, newCentroidsTmp] = assignSSToCentroids(newCentroids, clusterNumTmp);
+                    if (newCentroidsTmp.length > 0) {
+                        newCentroids = newCentroidsTmp;
+                    }
+                    loop++;
+                }
+                // cluster members are no more updated, so update centroids only
+                loop = 0;
+                while (loop < maxIteration && checkUpdatesCentroids(centroids, newCentroids)) {
+                    centroids = newCentroids;
+                    labels = newLabels;
+                    [newCentroids, newLabels] = performDBA(labels, dataLen, clusterNumTmp);
+                    loop++;
+                }
+                centroids = newCentroids;
+                labels = newLabels;
+                distsToClusters = computeDistsToClusters(centroids);
+                // if the total distances to clusters are smaller than the previous results
+                let distSumTmp = 0;
+                for (let i = 0; i < distsToClusters.length; i++) {
+                    distSumTmp += distsToClusters[i][labels[i].cluster];
+                }
+                SSEClusters[clusterNumTmp] = distSumTmp;
+            }
+        }
+    }
+
     for (let i = 0; i < maxTrial; i++) {
         centroids = [], labels = [], distsToClusters = [];
         // initialize centroids
-        centroids = initCentroids();
+        centroids = initCentroids(clusterNum);
         let centroidsTmp;
-        [labels, centroidsTmp] = assignSSToCentroids(centroids);
+        [labels, centroidsTmp] = assignSSToCentroids(centroids, clusterNum);
         if (centroidsTmp.length > 0) {
             centroids = centroidsTmp;
         }
@@ -2201,9 +2616,9 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
                 centroids = newCentroids;
                 labels = newLabels;
             }
-            newCentroids = updateCentroids(labels, dataLen);
+            newCentroids = updateCentroids(labels, dataLen, clusterNum);
             let newCentroidsTmp;
-            [newLabels, newCentroidsTmp] = assignSSToCentroids(newCentroids);
+            [newLabels, newCentroidsTmp] = assignSSToCentroids(newCentroids, clusterNum);
             if (newCentroidsTmp.length > 0) {
                 newCentroids = newCentroidsTmp;
             }
@@ -2214,7 +2629,7 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
         while (loop < maxIteration && checkUpdatesCentroids(centroids, newCentroids)) {
             centroids = newCentroids;
             labels = newLabels;
-            [newCentroids, newLabels] = performDBA(labels, dataLen);
+            [newCentroids, newLabels] = performDBA(labels, dataLen, clusterNum);
             loop++;
         }
         centroids = newCentroids;
@@ -2235,6 +2650,9 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
     centroids = bestCentroids;//newCentroids;
     labels = bestLabels;//newLabels;
     distsToClusters = bestDistsToClusters;
+    if (Array.isArray(elbow)) {
+        SSEClusters[clusterNum] = bestDist;
+    }
 
     let clusters = divideSSIntoClusters();
     let distsBetweenClusters;
@@ -2285,7 +2703,7 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
 
     [clusteringScores.silhouette, clusteringScores.silhouetteSS] = silhouetteCoefficient();
     [clusteringScores.davisBouldin, distsBetweenClusters] = davisBouldinIndex();
-    return [centroids, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters];
+    return [centroids, labels, clusteringScores, distMatrix, distsToClusters, distsBetweenClusters, SSEClusters];
 
     // function createCentroids() {
     //     // choose k SS from the dataset as a initial centroid of the clusters
@@ -2447,7 +2865,7 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
         db /= clusters.length;
         return [db, clusterDists];
     }
-    function initCentroids() {
+    function initCentroids(clusterNum) {
         let clusters = [], clustersTmp = [];
         let newCentroid = [];
         for (let i = 0; i < clusterNum * 2; i++) {
@@ -2735,7 +3153,7 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
             return flag;
         }
     }
-    function assignSSToCentroids(currentCentroids) {
+    function assignSSToCentroids(currentCentroids, clusterNum) {
         // distToClusters: distances between a data and cluster centers
         let centroidsTmp = [];//currentCentroids.slice(0, currentCentroids.length);
         let labels = [], distsToClusters = [];
@@ -3015,7 +3433,7 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
         // }
         return [labels, centroidsTmp];
     }
-    function updateCentroids(labels, dataLen) {
+    function updateCentroids(labels, dataLen, clusterNum) {
         // divide SS into clusters according to labels
         let clusters = []; // store indexes of data samples belonging to each cluster
         for (let i = 0; i < clusterNum; i++) {
@@ -3110,7 +3528,7 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial) {
         }
         return newCentroids;
     }
-    function performDBA(labels, dataLen) {
+    function performDBA(labels, dataLen, clusterNum) {
         // decide new barycenters
         // divide SS into clusters according to labels
         let clusters = []; // store indexes of data samples belonging to each cluster

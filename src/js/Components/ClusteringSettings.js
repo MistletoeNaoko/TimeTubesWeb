@@ -15,7 +15,8 @@ export default class clusteringSettings extends React.Component {
             distanceMetric: 'DTW',
             medoidDefinition: 'each',
             targetList: FeatureStore.getTarget(),
-            filteringSS: ['dataDrivenSlidingWindow', 'sameStartingPoint', 'overlappingDegree']
+            filteringSS: ['dataDrivenSlidingWindow', 'sameStartingPoint', 'overlappingDegree'],
+            elbow: false
         };
     }    
 
@@ -213,7 +214,7 @@ export default class clusteringSettings extends React.Component {
             for (let key in variables) {
                 let label = '';
                 // TODO: PAPDを考慮したクラスタリングもできるように！！
-                if (key !== 'z' && key !== 'PA' && key !== 'PD') {
+                if (key !== 'z') {// && key !== 'PA' && key !== 'PD') {
                     if (variables[key].length > 1) {
                         label = variables[key].join(',');
                     } else {
@@ -368,6 +369,50 @@ export default class clusteringSettings extends React.Component {
                                 {medoidDefinition}
                             </div>
                         </div>
+                        <div className="row matchingOption">
+                            <div className='col-5'>
+                                Max trial
+                            </div>
+                            <div className='col'>
+                                <input className="form-control form-control-sm"
+                                    type="text"
+                                    placeholder="threshold"
+                                    id="maxTrialNum"
+                                    style={{width: '40%', marginRight: '0.5rem'}}
+                                    required={true}/>
+                            </div>
+                        </div>
+                        <div className='row matchingOption'>
+                            <div className='col-5'>
+                                <div className="custom-control custom-switch">
+                                    <input 
+                                        type="checkbox" 
+                                        className="custom-control-input" 
+                                        id="elbowMethodSwitch"
+                                        checked={this.state.elbow}
+                                        onClick={this.onClickElbowMethod.bind(this)}/>
+                                    <label className="custom-control-label" htmlFor="elbowMethodSwitch">Elbow method</label>
+                                </div>
+                            </div>
+                            <div className='col form-inline'>
+                                <input className="form-control form-control-sm"
+                                    type="text"
+                                    placeholder="min"
+                                    id="elbowMethodMinCluster"
+                                    style={{width: '20%', marginRight: '0.5rem'}}
+                                    disabled={!this.state.elbow}
+                                    required={true}/>
+                                ~
+                                <input className="form-control form-control-sm"
+                                    type="text"
+                                    placeholder="max"
+                                    id="elbowMethodMaxCluster"
+                                    style={{width: '20%', marginRight: '0.5rem', marginLeft: '0.5rem'}}
+                                    disabled={!this.state.elbow}
+                                    required={true}/>
+                                <label className="col-form-label col-form-label-sm"> clusters</label>
+                            </div>
+                        </div>
                     </div>
                 );
                 break;
@@ -444,6 +489,50 @@ export default class clusteringSettings extends React.Component {
                                 </form>
                             </div>
                         </div>
+                        <div className="row matchingOption">
+                            <div className='col-5'>
+                                Max trial
+                            </div>
+                            <div className='col'>
+                                <input className="form-control form-control-sm"
+                                    type="text"
+                                    placeholder="threshold"
+                                    id="maxTrialNum"
+                                    style={{width: '40%', marginRight: '0.5rem'}}
+                                    required={true}/>
+                            </div>
+                        </div>
+                        <div className='row matchingOption'>
+                            <div className='col-5'>
+                                <div className="custom-control custom-switch">
+                                    <input 
+                                        type="checkbox" 
+                                        className="custom-control-input" 
+                                        id="elbowMethodSwitch"
+                                        checked={this.state.elbow}
+                                        onClick={this.onClickElbowMethod.bind(this)}/>
+                                    <label className="custom-control-label" htmlFor="elbowMethodSwitch">Elbow method</label>
+                                </div>
+                            </div>
+                            <div className='col form-inline'>
+                                <input className="form-control form-control-sm"
+                                    type="text"
+                                    placeholder="min"
+                                    id="elbowMethodMinCluster"
+                                    style={{width: '20%', marginRight: '0.5rem'}}
+                                    disabled={!this.state.elbow}
+                                    required={true}/>
+                                ~
+                                <input className="form-control form-control-sm"
+                                    type="text"
+                                    placeholder="max"
+                                    id="elbowMethodMaxCluster"
+                                    style={{width: '20%', marginRight: '0.5rem', marginLeft: '0.5rem'}}
+                                    disabled={!this.state.elbow}
+                                    required={true}/>
+                                <label className="col-form-label col-form-label-sm"> clusters</label>
+                            </div>
+                        </div>
                     </div>
                 );
                 break;
@@ -463,19 +552,6 @@ export default class clusteringSettings extends React.Component {
                     </div>
                 </div>
                 {clusteringOptions}
-                <div className="row matchingOption">
-                    <div className='col-5'>
-                        Max trial
-                    </div>
-                    <div className='col'>
-                        <input className="form-control form-control-sm"
-                            type="text"
-                            placeholder="threshold"
-                            id="maxTrialNum"
-                            style={{width: '40%', marginRight: '0.5rem'}}
-                            required={true}/>
-                    </div>
-                </div>
             </div>
         );
         return clusteringCode;
@@ -514,11 +590,14 @@ export default class clusteringSettings extends React.Component {
         });
     }
 
+    onClickElbowMethod() {
+        let current = this.state.elbow;
+        this.setState({
+            elbow: !current
+        });
+    }
+    
     clickRunButton() {
-        let datasets = [];
-        for (let i = 0; i < this.state.targetList.length; i++) {
-            datasets.push(DataStore.getData(this.state.targetList[i]));
-        }
         let variables = [];
         let variableList = document.getElementsByName('clusteringVariables');
         for (let i = 0; i < variableList.length; i++) {
@@ -526,73 +605,102 @@ export default class clusteringSettings extends React.Component {
                 variables.push(variableList[i].value);
             }
         }
-        let clusteringParameters;
-        switch (this.state.clusteringMethod) {
-            case 'kmedoids':
-                clusteringParameters = {
-                    method: 'kmedoids',
-                    clusterNum: Number($('#clusterNumber').val()),
-                    medoidDefinition: this.state.medoidDefinition,
-                    distanceMetric: this.state.distanceMetric,
-                    window: 0,
-                    variables: variables,
-                    maxTrial: Number($('#maxTrialNum').val())
-                };
-                break;
-            case 'kmeans':
-                clusteringParameters = {
-                    method: 'kmeans',
-                    clusterNum: Number($('#clusterNumber').val()),
-                    distanceMetric: this.state.distanceMetric,
-                    window: 0,
-                    clusterCenter: $('input[name=clusterCenter]:checked').val(),
-                    variables: variables,
-                    maxTrial: Number($('#maxTrialNum').val())
-                };
-                break;
-            default:
-                break;
+        if ((variables.indexOf('x') >= 0 && variables.indexOf('y') < 0 && variables.indexOf('PA') >= 0 && variables.indexOf('PD') < 0)
+            || (variables.indexOf('x') >= 0 && variables.indexOf('y') < 0 && variables.indexOf('PA') < 0 && variables.indexOf('PD') >= 0)
+            || (variables.indexOf('x') < 0 && variables.indexOf('y') >= 0 && variables.indexOf('PA') >= 0 && variables.indexOf('PD') < 0)
+            || (variables.indexOf('x') < 0 && variables.indexOf('y') >= 0 && variables.indexOf('PA') < 0 && variables.indexOf('PD') >= 0)) {
+                alert('Tentatively, the combinations of q and PA, q and PD, u and PA, and u and PD are not allowed. If you are interested in the variations on the Stokes plane, please select PA and PD or q and u.');
+        } else {
+            let datasets = [];
+            for (let i = 0; i < this.state.targetList.length; i++) {
+                datasets.push(DataStore.getData(this.state.targetList[i]));
+            }
+            let clusteringParameters;
+            switch (this.state.clusteringMethod) {
+                case 'kmedoids':
+                    clusteringParameters = {
+                        method: 'kmedoids',
+                        clusterNum: Number($('#clusterNumber').val()),
+                        medoidDefinition: this.state.medoidDefinition,
+                        distanceMetric: this.state.distanceMetric,
+                        window: 0,
+                        variables: variables,
+                        maxTrial: Number($('#maxTrialNum').val()),
+                        elbow: this.state.elbow? [
+                            Number($('#elbowMethodMinCluster').val()), 
+                            Number($('#elbowMethodMaxCluster').val())
+                        ]: false
+                    };
+                    break;
+                case 'kmeans':
+                    clusteringParameters = {
+                        method: 'kmeans',
+                        clusterNum: Number($('#clusterNumber').val()),
+                        distanceMetric: this.state.distanceMetric,
+                        window: 0,
+                        clusterCenter: $('input[name=clusterCenter]:checked').val(),
+                        variables: variables,
+                        maxTrial: Number($('#maxTrialNum').val()),
+                        elbow: this.state.elbow? [
+                            Number($('#elbowMethodMinCluster').val()), 
+                            Number($('#elbowMethodMaxCluster').val())
+                        ]: false
+                    };
+                    break;
+                default:
+                    break;
+            }
+            let subsequenceParameters = {};
+            subsequenceParameters.filtering = this.state.filteringSS;
+            subsequenceParameters.SSperiod = [Number($('#targetLengthMinClustering').val()), Number($('#targetLengthMaxClustering').val())];
+            subsequenceParameters.isometryLen = Number($('#resolutionOfTimeNormalizedSS').val());
+            subsequenceParameters.normalize = this.state.normalize;
+            if (this.state.filteringSS.indexOf('overlappingDegree') >= 0) {
+                subsequenceParameters.overlappingTh = Number($('#overlappingDegreeThreshold').val());
+            }
+            let [
+                subsequences, 
+                ranges, 
+                clusterCenters, 
+                labels, 
+                clusteringScores, 
+                filteringProcess, 
+                resultsCoordinates, 
+                SSEClusters
+            ] = performClustering(datasets, clusteringParameters, subsequenceParameters);
+            // let data = DataStore.getData(0),
+            //     clusteringParameters = {
+            //         method: 'kmedoids',
+            //         clusterNum: 6,
+            //         distanceMetric: 'DTWD',
+            //         window: 0,
+            //     },
+            //     SSperiod = [20, 30],
+            //     isometryLen = 30,
+            //     overlappingTh = 70,
+            //     variables = ['x', 'y', 'V', 'H'];
+            // // perform clustering
+            // let [subsequences, clusterCenters, labels] = performClustering(data, clusteringParameters, SSperiod, isometryLen, overlappingTh, variables);
+            // // show clustering results
+            let datasetIds = [];
+            for (let i = 0; i < datasets.length; i++) {
+                datasetIds.push(datasets[i].id);
+            }
+            toggleExtractionMenu('none');
+            $('#clusteringResults').css('width', '100%');
+            ClusteringAction.showClusteringResults(
+                datasetIds, 
+                subsequences, 
+                ranges,
+                clusterCenters, 
+                labels, 
+                clusteringParameters, 
+                subsequenceParameters,
+                clusteringScores,
+                filteringProcess,
+                resultsCoordinates, 
+                SSEClusters
+            );
         }
-        let subsequenceParameters = {};
-        subsequenceParameters.filtering = this.state.filteringSS;
-        subsequenceParameters.SSperiod = [Number($('#targetLengthMinClustering').val()), Number($('#targetLengthMaxClustering').val())];
-        subsequenceParameters.isometryLen = Number($('#resolutionOfTimeNormalizedSS').val());
-        subsequenceParameters.normalize = this.state.normalize;
-        if (this.state.filteringSS.indexOf('overlappingDegree') >= 0) {
-            subsequenceParameters.overlappingTh = Number($('#overlappingDegreeThreshold').val());
-        }
-        let [subsequences, ranges, clusterCenters, labels, clusteringScores, filteringProcess, resultsCoordinates] = performClustering(datasets, clusteringParameters, subsequenceParameters);
-        // let data = DataStore.getData(0),
-        //     clusteringParameters = {
-        //         method: 'kmedoids',
-        //         clusterNum: 6,
-        //         distanceMetric: 'DTWD',
-        //         window: 0,
-        //     },
-        //     SSperiod = [20, 30],
-        //     isometryLen = 30,
-        //     overlappingTh = 70,
-        //     variables = ['x', 'y', 'V', 'H'];
-        // // perform clustering
-        // let [subsequences, clusterCenters, labels] = performClustering(data, clusteringParameters, SSperiod, isometryLen, overlappingTh, variables);
-        // // show clustering results
-        let datasetIds = [];
-        for (let i = 0; i < datasets.length; i++) {
-            datasetIds.push(datasets[i].id);
-        }
-        toggleExtractionMenu('none');
-        $('#clusteringResults').css('width', '100%');
-        ClusteringAction.showClusteringResults(
-            datasetIds, 
-            subsequences, 
-            ranges,
-            clusterCenters, 
-            labels, 
-            clusteringParameters, 
-            subsequenceParameters,
-            clusteringScores,
-            filteringProcess,
-            resultsCoordinates
-        );
     }
 }

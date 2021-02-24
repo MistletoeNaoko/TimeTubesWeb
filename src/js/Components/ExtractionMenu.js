@@ -7,7 +7,6 @@ import {resizeExtractionResultsArea} from '../Actions/AppAction';
 import {toggleExtractionMenu} from '../lib/domActions';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
-import ClusteringStore from '../Stores/ClusteringStore';
 
 export default class ExtractionMenu extends React.Component {
     constructor(props) {

@@ -31,6 +31,8 @@ export function toggleExtractionMenu(display) {
             $('#clusteringDetail').css('width', '30%');
         }
         $('#collapseExtractionMenu').text('Close');
+        let tabHeight = window.innerHeight - $('#appHeader').outerHeight(true) - $('#targetDatasetsList').outerHeight(true) - $('#extractionMenuNavTabs').outerHeight(true);
+        $('#extractionMenuTabs').height(tabHeight);
     }
 }
 

@@ -615,6 +615,7 @@ export default class ClusteringDetail extends React.Component {
 
             if (this.datasetsIdx.length === 1) {
                 let rectColor = TimeTubesStore.getPlotColor(this.datasetsIdx[0]);
+                if (typeof(rectColor) === 'undefined') rectColor = 'gray';
                 svg.selectAll('rect')
                     .data(bins)
                     .enter()
@@ -875,7 +876,8 @@ export default class ClusteringDetail extends React.Component {
             
             let dataColors = {};
             for (let i = 0; i < this.datasetsIdx.length; i++) {
-                dataColors[this.datasetsIdx[i]] = TimeTubesStore.getPlotColor(this.datasetsIdx[i]);
+                let color = TimeTubesStore.getPlotColor(this.datasetsIdx[i]);
+                dataColors[this.datasetsIdx[i]] = typeof(color) !== 'undefined'? color: 'gray';
             }
             // update the height of the table accroding to the number of cluster members
             for (let i = 0; i < this.variables.length; i++) {
@@ -886,6 +888,14 @@ export default class ClusteringDetail extends React.Component {
                 .attr('height', Math.min(tableWidth, cellHeight * (this.SSCluster.length + 1)));
             d3.select('#subsequencesOverviewTableBody')
                 .attr('height', Math.min(tableWidth, cellHeight * this.SSCluster.length));
+
+            // extract meta informations on each variables for the case the normalization option is not selected
+            let targets = ClusteringStore.getDatasets();
+            let metas = {};
+            for (let  i = 0; i < targets.length; i++) {
+                metas[targets[i]] = DataStore.getData(targets[i]).data.meta;
+            }
+
             for (let i = 0; i < this.SSCluster.length; i++) {
                 let dataId = this.SSCluster[i].id,
                     SSId = this.SSCluster[i].idx;
@@ -908,7 +918,11 @@ export default class ClusteringDetail extends React.Component {
                         }.bind(this));
                     sparklineGroup 
                         .selectAll('circle')
-                        .data(this.SSCluster[i].dataPoints)
+                        .data(this.SSCluster[i].dataPoints.filter(
+                            function(d) {
+                                return this.variables[j] in d;
+                            }.bind(this)
+                        ))
                         .enter()
                         .append('circle')
                         .attr('cx', function(d) {
@@ -918,7 +932,12 @@ export default class ClusteringDetail extends React.Component {
                             return xScale(xVal);
                         }.bind(this))
                         .attr('cy', function(d) {
-                            return yScales[this.variables[j]](d[this.variables[j]]);
+                            let val = d[this.variables[j]];
+                            if (!this.subsequenceParameters.normalize) {
+                                // standardize
+                                val = (val - metas[dataId].mean[this.variables[j]]) / metas[dataId].std[this.variables[j]];
+                            }
+                            return yScales[this.variables[j]](val);
                         }.bind(this))
                         .attr('fill', 'white')
                         .attr('stroke', 'black')
@@ -963,7 +982,7 @@ export default class ClusteringDetail extends React.Component {
             let targetId = d.target.id;
             if (targetId) {
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
 
                 let selectedSS = ClusteringStore.getSelectedSS(),
@@ -1006,7 +1025,7 @@ export default class ClusteringDetail extends React.Component {
                 let tooltip = $('#tooltipClusteringResults'),
                     tooltipTable = $('#tooltipClusteringResultsTable');
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 let data;
                 let i = 0;
@@ -1021,10 +1040,10 @@ export default class ClusteringDetail extends React.Component {
                 let period = [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z];
                 let dataPointNum = data.dataPoints.length;
                 let silhouette = this.clusteringScores.silhouetteSS[i];
-                tooltipTable.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
-                    '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
-                    '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr>' +
-                    '<tr><td>Silhouette coefficient</td><td class="tooltipTableValues">' + formatValue(silhouette) + '</td></tr></tbody></table>');
+                tooltipTable.html('<table><tbody><tr><td class="tooltipTableLabel">File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Period</td><td class="tooltipTableValues">' + formatValue(period[0]) + '-' + formatValue(period[1]) + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Silhouette coefficient</td><td class="tooltipTableValues">' + formatValue(silhouette) + '</td></tr></tbody></table>');
                 let mouseX = document.body.clientWidth - d.clientX + 5;
                 let mouseY = document.body.clientHeight - d.clientY + 5; //d.clientY - tooltip.height() - 5;
                 tooltip.css({
@@ -1048,7 +1067,7 @@ export default class ClusteringDetail extends React.Component {
                     }
                 }
                 domActions.highlightCorrespondingElemInClusteringResults(dataId, SSId, period, beforeAfter);
-                ClusteringAction.showTTViewOfSelectedSSClusteringResults(Number(dataId), period);
+                ClusteringAction.showTTViewOfSelectedSSClusteringResults(dataId, period);
                 // // highlight histogram
                 // d3.select('#SSLengthBar_' + Math.floor(period[1] - period[0]))
                 //     .attr('stroke', 'black')
@@ -1106,7 +1125,7 @@ export default class ClusteringDetail extends React.Component {
             let targetId = d.target.id;
             if (targetId) {
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 // hide the tooltip
                 $('#tooltipClusteringResults').css('display', 'none');
@@ -1170,8 +1189,8 @@ export default class ClusteringDetail extends React.Component {
                 d.preventDefault();
                 drag.style.top = d.pageY - this.clickedY + 'px';
                 drag.style.left = d.pageX - this.clickedX - drag.clientWidth / 2 - $('#extractionMenu').width() + 'px';
-
-                if ($('#subsequenceComparisonNavLink').length > 0 && $('#subsequenceComparisonNavLink').hasClass('active')) {
+                let comparisonPanel = $('#subsequenceComparisonNavLink');
+                if ($('#clusteringResultsLeftColumn').css('display') === 'block' && comparisonPanel.length > 0 && comparisonPanel.hasClass('active')) {
                     let subsequenceComparisonPanel = $('#subsequenceComparisonTab');
                     let subsequenceComparisonPanelPos = subsequenceComparisonPanel.offset(),
                         subsequenceComparisonPanelWidth = subsequenceComparisonPanel.width()
@@ -1192,7 +1211,6 @@ export default class ClusteringDetail extends React.Component {
                             let selectedTimeSlicePos = selectedTimeSlice.offset(),
                                 selectedTimeSliceWidth = selectedTimeSlice.width(),
                                 selectedTimeSliceHeight = selectedTimeSlice.height();
-                            
                             if ((selectedTimeSlicePos.left <= d.pageX && d.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
                             && (selectedTimeSlicePos.top <= d.pageY && d.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
                                 let overlayPanel = $('#selectedTimeSliceView > .overlayHidingPanel');
@@ -1235,7 +1253,7 @@ export default class ClusteringDetail extends React.Component {
             }
 
             let targetEle = this.selectedTrId.split('_');
-            let dataId = targetEle[1];
+            let dataId = Number(targetEle[1]);
             let SSId = Number(targetEle[2]);
             let period = [0, 0];
             for (let i = 0; i < this.SSCluster.length; i++) {
@@ -1246,7 +1264,8 @@ export default class ClusteringDetail extends React.Component {
                 }
             }
 
-            if ($('#subsequenceComparisonNavLink').length > 0 && $('#subsequenceComparisonNavLink').hasClass('active')) {
+            let comparisonPanel = $('#subsequenceComparisonNavLink');
+            if ($('#clusteringResultsLeftColumn').css('display') === 'block' && comparisonPanel.length > 0 && comparisonPanel.hasClass('active')) {
                 let overlayPanel = $('#clusteringSubsequenceComparison > .overlayHidingPanel');
                 overlayPanel.css('display', 'none');
                 let subsequenceComparisonPanel = $('#subsequenceComparisonTab');
@@ -1258,7 +1277,7 @@ export default class ClusteringDetail extends React.Component {
                 if ((subsequenceComparisonPanelPos.left <= d.pageX && d.pageX <= subsequenceComparisonPanelPos.left + subsequenceComparisonPanelWidth)
                 && (subsequenceComparisonPanelPos.top <= d.pageY && d.pageY <= subsequenceComparisonPanelPos.top + subsequenceComparisonPanelHeight)) {
                     // create new canvas on clustering comparison panel
-                    ClusteringAction.showSelectedSubsequenceInComparisonPanel(Number(dataId), period, SSId);
+                    ClusteringAction.showSelectedSubsequenceInComparisonPanel(dataId, period, SSId);
                 }
             } else {
                 switch(this.queryMode) {
@@ -1272,7 +1291,7 @@ export default class ClusteringDetail extends React.Component {
                             if ((selectedTimeSlicePos.left <= d.pageX && d.pageX <= selectedTimeSlicePos.left + selectedTimeSliceWidth)
                             && (selectedTimeSlicePos.top <= d.pageY && d.pageY <= selectedTimeSlicePos.top + selectedTimeSliceHeight)) {
                                 // convert the result into a new query
-                                convertResultIntoQuery(Number(dataId), period, this.variables);
+                                convertResultIntoQuery(dataId, period, this.variables);
                                 if (FeatureStore.getSource() !== dataId) {
                                     let promise = Promise.resolve();
                                     promise
@@ -1297,7 +1316,7 @@ export default class ClusteringDetail extends React.Component {
                             if ((sketchPadPos.left <= d.pageX && d.pageX <= sketchPadPos.left + sketchPadWidth)
                             && (sketchPadPos.top <= d.pageY && d.pageY <= sketchPadPos.top + sketchPadHeight)) {
                                 // convert the result into a new query
-                                convertResultIntoQuery(Number(dataId), period, this.variables);
+                                convertResultIntoQuery(dataId, period, this.variables);
                             }
                         }
                         break;
@@ -1338,7 +1357,7 @@ export default class ClusteringDetail extends React.Component {
             let targetId = d.target.id;
             if (targetId) {
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 let data;
                 for (let i = 0; i < this.subsequences.length; i++) {
@@ -1349,7 +1368,7 @@ export default class ClusteringDetail extends React.Component {
                 }
                 $('#tooltipClusteringResults').css('display', 'none');
                 selectMenu('visualization');
-                showTimeTubesOfTimeSlice(Number(dataId), [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
+                showTimeTubesOfTimeSlice(dataId, [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
             }
         };
     }

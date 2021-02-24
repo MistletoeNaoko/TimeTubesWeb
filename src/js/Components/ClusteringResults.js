@@ -80,6 +80,10 @@ export default class ClusteringResults extends React.Component {
 					></canvas>
 					<div id="tooltipClusteringResultsTable"></div>
 				</div>
+                <div className="tooltip"
+                    id='tooltipFeatureHeatmap'
+					style={{ display: "none" }}>
+                </div>
 			</div>
 		);
 	}

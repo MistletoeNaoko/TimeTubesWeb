@@ -13,7 +13,7 @@ export function formatValue(value) {
         result = value.toExponential(1);
     } else if (Math.log10(value) > 3) {
         // in the case of JD
-        result = value.toFixed(0);
+        result = value.toFixed(2);
     } else {
         result = value.toFixed(2);
     }

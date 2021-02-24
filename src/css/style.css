@@ -54,6 +54,10 @@ table#extractionDetailInfoTable td {
     padding: 2px 4px;
 }
 
+td.tooltipTableLabel {
+    width: 140px;
+}
+
 .axisLabel {
     color: #3E3F3A;
 }
@@ -443,6 +447,14 @@ img.selectorIcon:active {
     border: 1px solid #DFD7CA;
     border-radius: 5px;
     padding: 0.5rem 1rem;
+    width: 100%;
+    max-width: 100%;
+}
+
+.resultAreaElemNoPadding {
+    background-color: #fff;
+    border: 1px solid #DFD7CA;
+    border-radius: 5px;
     width: 100%;
     max-width: 100%;
 }
@@ -946,6 +958,8 @@ img.selectorIcon:active {
 
 #tooltipClusteringResults table {
     margin: 0.3rem;
+    table-layout: fixed;
+    max-width: 250px;
 }
 
 #tooltipClusteringResults tr, #tooltipClusteringResults td {
@@ -957,6 +971,11 @@ img.selectorIcon:active {
 #tooltipClusteringResultsSubsequencesTTView {
     margin: 0 50%;
     transform: translate(-50%, 0);
+}
+
+#tooltipFeatureHeatmap {
+    opacity: 0.75;
+    position: absolute;
 }
 
 #selectedClusterCenterTimeTubesCanvas {
@@ -974,6 +993,7 @@ img.selectorIcon:active {
 
 #carouselControlPrevClusteringOverview {
     height: 50px;
+    width: 50px;
 }
 
 #carouselControlNextClusteringOverview {
@@ -983,3 +1003,4 @@ img.selectorIcon:active {
 #switchSparklineOrder {
     float: right;
 }
+

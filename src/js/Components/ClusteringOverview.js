@@ -16,7 +16,6 @@ import * as d3 from 'd3';
 // import TextSprite from 'three.textsprite';
 import TextSprite from '@seregpie/three.text-sprite';
 import {formatValue} from '../lib/2DGraphLib';
-import {} from '../lib/TimeSeriesQuerying';
 
 d3.selection.prototype.moveToFront =
     function() {
@@ -55,9 +54,16 @@ export default class ClusteringOverview extends React.Component {
         this.gridSize = undefined;
         this.selectedCluster = undefined;
         this.clusterRadiuses = undefined;
+        this.update2DGraphsFlag = false;
         this.queryMode = FeatureStore.getMode();
         this.clickedX;
         this.clickedY;
+        this.chartsSize = {
+            MDS: {width: 0.75, height: 1},
+            barChart: {width: 0.25, height: 1},
+            elbowLineChart: {width: 0, height: 0},
+            featureHeatmap: {width: 0, height: 0}
+        };
         this.state = {
             clusteringScores: {}
         };
@@ -123,15 +129,18 @@ export default class ClusteringOverview extends React.Component {
             this.SSLabels = ClusteringStore.getLabels();
             this.clusterColors = ClusteringStore.getClusterColors();
             this.selectedCluster = undefined;
-            let clusteringScores = ClusteringStore.getClusteringScores();
-            this.setRendererSize();
-            this.computeSplines();
-            this.computeTubePositions();
-            this.drawClusterCentersAsTubes();
-            this.drawClusterRadiusesAsRings(clusteringScores.clusterRadiuses);
-            this.showClusteringParameters();
-            this.resetDetailView();
-            this.drawMDSScatterplots();
+            this.update2DGraphsFlag = true;
+            // let clusteringScores = ClusteringStore.getClusteringScores();
+            // this.setRendererSize();
+            // this.computeSplines();
+            // this.computeTubePositions();
+            // this.drawClusterCentersAsTubes();
+            // this.drawClusterRadiusesAsRings(clusteringScores.clusterRadiuses);
+            // this.showClusteringParameters();
+            // this.resetDetailView();
+            // this.drawMDSScatterplots();
+            // this.drawClustersSummaryStuckedBarChart();
+            // this.drawSilhouetteBarChart();
             this.setState({
                 clusteringScores: clusteringScores
             });
@@ -146,15 +155,18 @@ export default class ClusteringOverview extends React.Component {
             this.subsequences = ClusteringStore.getSubsequences();
             this.SSLabels = ClusteringStore.getLabels();
             this.selectedCluster = undefined;
-            let clusteringScores = ClusteringStore.getClusteringScores();
-            this.setRendererSize();
-            this.computeSplines();
-            this.computeTubePositions();
-            this.drawClusterCentersAsTubes();
-            this.drawClusterRadiusesAsRings(clusteringScores.clusterRadiuses);
-            this.showClusteringParameters();
-            this.resetDetailView();
-            this.drawMDSScatterplots();
+            this.update2DGraphsFlag = true;
+            // let clusteringScores = ClusteringStore.getClusteringScores();
+            // this.setRendererSize();
+            // this.computeSplines();
+            // this.computeTubePositions();
+            // this.drawClusterCentersAsTubes();
+            // this.drawClusterRadiusesAsRings(clusteringScores.clusterRadiuses);
+            // this.showClusteringParameters();
+            // this.resetDetailView();
+            // this.drawMDSScatterplots();
+            // this.drawClustersSummaryStuckedBarChart();
+            // this.drawSilhouetteBarChart();
             this.setState({
                 clusteringScores: clusteringScores
             });
@@ -164,6 +176,26 @@ export default class ClusteringOverview extends React.Component {
             this.subsequences = ClusteringStore.getSubsequences();
             this.SSLabels = ClusteringStore.getLabels();
             this.selectedCluster = undefined;
+            this.update2DGraphsFlag = true;
+            // let clusteringScores = ClusteringStore.getClusteringScores();
+            // this.setRendererSize();
+            // this.computeSplines();
+            // this.computeTubePositions();
+            // this.drawClusterCentersAsTubes();
+            // this.drawClusterRadiusesAsRings(clusteringScores.clusterRadiuses);
+            // this.showClusteringParameters();
+            // this.resetDetailView();
+            // this.drawMDSScatterplots();
+            // this.drawClustersSummaryStuckedBarChart();
+            // this.drawSilhouetteBarChart();
+            this.setState({
+                clusteringScores: clusteringScores
+            });
+        });
+    }
+
+    componentDidUpdate() {
+        if (this.update2DGraphsFlag) {
             let clusteringScores = ClusteringStore.getClusteringScores();
             this.setRendererSize();
             this.computeSplines();
@@ -173,10 +205,12 @@ export default class ClusteringOverview extends React.Component {
             this.showClusteringParameters();
             this.resetDetailView();
             this.drawMDSScatterplots();
-            this.setState({
-                clusteringScores: clusteringScores
-            });
-        });
+            this.drawClustersSummaryStuckedBarChart();
+            this.drawSilhouetteBarChart();
+            this.drawElbowMethodLineChart();
+            this.drawFeatureHeatmap();
+            this.update2DGraphsFlag = false;
+        }
     }
 
     render() {
@@ -197,6 +231,107 @@ export default class ClusteringOverview extends React.Component {
                         </td>
                     </tr>
                 );
+            }
+            
+        }
+        let overviewArea2d;
+        let clusteringParameters = ClusteringStore.getClusteringParameters(),
+            subsequenceParameters = ClusteringStore.getSubsequenceParameters();
+        if (Object.keys(clusteringParameters).length > 0) {
+            if (subsequenceParameters.normalize && !Array.isArray(clusteringParameters.elbow)) {
+                // show two charts (MDS, bar charts)
+                overviewArea2d = (
+                    <div className='container'>
+                        <div className='row'>
+                            <div className='col-9'
+                                id='clusteringOverviewMDSScatterplots'>
+                            </div>
+                            <div className='col-3'
+                                id='silhouetteBarChart'>
+                            </div>
+                        </div>
+                    </div>
+                );
+                this.chartsSize = {
+                    MDS: {width: 0.75, height: 1},
+                    barChart: {width: 0.25, height: 1},
+                    elbowLineChart: {width: 0, height: 0},
+                    featureHeatmap: {width: 0, height: 0}
+                };
+            } else if (!subsequenceParameters.normalize && !Array.isArray(clusteringParameters.elbow)) {
+                // show three charts (MDS, bar charts, heatmap)
+                overviewArea2d = (
+                    <div className='container'>
+                        <div className='row'>
+                            <div className='col-9'
+                                id='clusteringOverviewMDSScatterplots'>
+                            </div>
+                            <div className='col-3'>
+                                <div id='silhouetteBarChart'> 
+                                </div>
+                                <div id='clusterFeatureHeatmap'>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+                this.chartsSize = {
+                    MDS: {width: 0.75, height: 1},
+                    barChart: {width: 0.25, height: 0.75},
+                    elbowLineChart: {width: 0, height: 0},
+                    featureHeatmap: {width: 0.25, height: 0.25}
+                };
+            } else if (subsequenceParameters.normalize && Array.isArray(clusteringParameters.elbow)) {
+                // show three charts (MDS, bar charts, cost)
+                overviewArea2d = (
+                    <div className='container'>
+                        <div className='row'>
+                            <div className='col-9'
+                                id='clusteringOverviewMDSScatterplots'>
+                            </div>
+                            <div className='col-3'>
+                                <div id='silhouetteBarChart'> 
+                                </div>
+                                <div id='elbowMethodLineChart'>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+                this.chartsSize = {
+                    MDS: {width: 0.75, height: 1},
+                    barChart: {width: 0.25, height: 0.75},
+                    elbowLineChart: {width: 0.25, height: 0.25},
+                    featureHeatmap: {width: 0, height: 0}
+                };
+            } else if (!subsequenceParameters.normalize && Array.isArray(clusteringParameters.elbow)) {
+                // show four charts (MDS, bar charts, heatmap, cost)
+                overviewArea2d = (
+                    <div className='container'>
+                        <div className='row'>
+                            <div className='col-9'
+                                id='clusteringOverviewMDSScatterplots'>
+                            </div>
+                            <div className='col'
+                                id='silhouetteBarChart'>
+                            </div>
+                        </div>
+                        <div className='row'>
+                            <div className='col-6'
+                                id='clusterFeatureHeatmap'>
+                            </div>
+                            <div className='col-6'
+                                id='elbowMethodLineChart'>
+                            </div>
+                        </div>
+                    </div>
+                );
+                this.chartsSize = {
+                    MDS: {width: 0.75, height: 0.75},
+                    barChart: {width: 0.25, height: 0.75},
+                    elbowLineChart: {width: 0.5, height: 0.25},
+                    featureHeatmap: {width: 0.5, height: 0.25}
+                };
             }
         }
         return (
@@ -296,7 +431,9 @@ export default class ClusteringOverview extends React.Component {
                                 </div>
                             </div>
                         </div>
-                        <div id='clusteringOverviewMDSScatterplots' className="carousel-item">
+                        <div id='clusteringOverview2DCharts' 
+                            className="carousel-item resultAreaElemNoPadding">
+                            {overviewArea2d}
                         </div>
                     </div>
                     <a className="carousel-control-prev" 
@@ -802,13 +939,14 @@ export default class ClusteringOverview extends React.Component {
                 let position = [], radius = [], color = [];
                 for (let j = 0; j < this.clusterCenters[i].length; j++) {
                     let curdata = this.clusterCenters[i][j];
-                    let PARad = curdata.PA * Math.PI / 180;//curdata.PA * Math.PI / 180;
-                    // if (90 < curdata.PA) {
-                    //     PARad = (curdata.PA - 180) * Math.PI / 180;
-                    // }
+                    let PARad = curdata.PA;
+                    if (0.5 * Math.PI < PARad && PARad <= Math.PI) {
+                        PARad -= Math.PI;
+                    }
+                    PARad *= 2;
                     let currentValues = {
-                        x: curdata.PD * Math.cos(2 * PARad),
-                        y: curdata.PD * Math.sin(2 * PARad),
+                        x: curdata.PD * Math.cos(PARad),
+                        y: curdata.PD * Math.sin(PARad),
                         r_x: 'r_x' in curdata? curdata.r_x: 0.5,
                         r_y: 'r_y' in curdata? curdata.r_y: 0.5,
                         H: 'H' in curdata? curdata.H: 0.5, 
@@ -831,80 +969,64 @@ export default class ClusteringOverview extends React.Component {
                 this.splines.push(spline);
             }
         } else if ((variables.indexOf('x') >= 0 || variables.indexOf('y') >= 0) && (variables.indexOf('PA') >= 0 || variables.indexOf('PD') >= 0)) {
-            for (let i = 0; i < this.clusterCenters.length; i++) {
-                let position = [], radius = [], color = [];
-                for (let j = 0; j < this.clusterCenters[i].length; j++) {
-                    let curdata = this.clusterCenters[i][j];
-                    let xCur, yCur;
-                    if (variables.indexOf('PA') >= 0) {
-                        let PDCur;
-                        if (variables.indexOf('x') >= 0) {
-                            // PDCur = Math.abs(curdata.x / Math.cos(2 * curdata.PA));
-                            xCur = curdata.x;
-                            // if (curdata.PA >= 0) {
-                            //     yCur = Math.sqrt(Math.pow(PDCur, 2) - Math.pow(curdata.x, 2));
-                            // } else if (curdata.PA <= 0) {
-                            //     yCur = -1 * Math.sqrt(Math.pow(PDCur, 2) - Math.pow(curdata.x, 2));
-                            // }
-                            // yCur = PDCur * Math.sin(2 * curdata.PA);
-                            // let xy = Math.tan(2 * curdata.PA * Math.PI / 180);
-                            // yCur = xy * curdata.x;
-                            // yCur = Math.sqrt(Math.pow(curdata.x / Math.cos(2 * curdata.PA * Math.PI / 180), 2) - Math.pow(curdata.x, 2));
-                            // if (curdata.PA < 0)
-                            //     yCur = -1 * yCur;
-                            let PARad = curdata.PA * Math.PI / 180;
-                            if (90 < curdata.PA) {
-                                PARad = (curdata.PA - 180) * Math.PI / 180;
-                            }
-                            // yCur = Math.sin(2 * PARad * Math.PI / 180) * (curdata.x / Math.cos(2 * PARad * Math.PI / 180));
-                            let xy = Math.tan(2 * PARad);
-                            yCur = xy * curdata.x;
-                            // if (curdata.PA >= 0) {
-                            //     yCur = Math.sin(2 * curdata.PA * Math.PI / 180) * (x / Math.cos(2 * curdata.PA * Math.PI / 180));
-                            // } else if (curdata.PA <= 0) {
-
-                            // }
-                        } else if (variables.indexOf('y') >= 0) {
-                            PDCur = curdata.y / Math.sin(2 * curdata.PA);
-                            xCur = PDCur * Math.cos(2 * curdata.PA);
-                            yCur = curdata.y;
-                        }
-                    } else if (variables.indexOf('PD') >= 0) {
-                        let PACur;
-                        if (variables.indexOf('x') >= 0) {
-                            PACur = Math.acos(curdata.x / curdata.PD) / 2;
-                            xCur = curdata.x;
-                            yCur = curdata.PD * Math.sin(2 * PACur);
-                        } else if (variables.indexOf('y') >= 0) {
-                            PACur = Math.asin(curdata.y / curdata.PD) / 2;
-                            xCur = curdata.PD * Math.cos(2 * PACur);
-                            yCur = curdata.y;
-                        }
-                    }
-                    let currentValues = {
-                        x: xCur,
-                        y: yCur,
-                        r_x: 'r_x' in curdata? curdata.r_x: 0.5,
-                        r_y: 'r_y' in curdata? curdata.r_y: 0.5,
-                        H: 'H' in curdata? curdata.H: 0.5, 
-                        V: 'V' in curdata? curdata.V: 0.5
-                    };
-                    position.push(new THREE.Vector3(currentValues.x, currentValues.y, j));
-                    radius.push(new THREE.Vector3(currentValues.r_x, currentValues.r_y, j));
-                    color.push(new THREE.Vector3(currentValues.H, currentValues.V, j));
-                    for (let key in this.minmax) {
-                        if (currentValues[key] < this.minmax[key][0])
-                            this.minmax[key][0] = currentValues[key];
-                        if (this.minmax[key][1] < currentValues[key])
-                            this.minmax[key][1] = currentValues[key];
-                    }
-                }
-                let spline = {};
-                spline.position = new THREE.CatmullRomCurve3(position, false, 'catmullrom');
-                spline.radius = new THREE.CatmullRomCurve3(radius, false, 'catmullrom');
-                spline.color = new THREE.CatmullRomCurve3(color, false, 'catmullrom');
-                this.splines.push(spline);
-            }
+            // TODO: tentatively prohibit these variable selection
+            // for (let i = 0; i < this.clusterCenters.length; i++) {
+            //     let position = [], radius = [], color = [];
+            //     for (let j = 0; j < this.clusterCenters[i].length; j++) {
+            //         let curdata = this.clusterCenters[i][j];
+            //         let xCur, yCur;
+            //         if (variables.indexOf('PA') >= 0) {
+            //             let PDCur;
+            //             if (variables.indexOf('x') >= 0) {
+            //                 xCur = curdata.x;
+            //                 let PARad = curdata.PA;
+            //                 if (0.5 * Math.PI < PARad && PARad <= Math.PI) {
+            //                     PARad -= Math.PI;
+            //                 }
+            //                 PARad *= 2;
+            //                 PDCur = curdata.x / Math.cos(PARad);
+            //                 yCur = PDCur * Math.sin(PARad);
+            //             } else if (variables.indexOf('y') >= 0) {
+            //                 PDCur = curdata.y / Math.sin(2 * curdata.PA);
+            //                 xCur = PDCur * Math.cos(2 * curdata.PA);
+            //                 yCur = curdata.y;
+            //             }
+            //         } else if (variables.indexOf('PD') >= 0) {
+            //             let PACur;
+            //             if (variables.indexOf('x') >= 0) {
+            //                 PACur = Math.acos(curdata.x / curdata.PD) / 2;
+            //                 xCur = curdata.x;
+            //                 yCur = curdata.PD * Math.sin(2 * PACur);
+            //             } else if (variables.indexOf('y') >= 0) {
+            //                 PACur = Math.asin(curdata.y / curdata.PD) / 2;
+            //                 xCur = curdata.PD * Math.cos(2 * PACur);
+            //                 yCur = curdata.y;
+            //             }
+            //         }
+            //         let currentValues = {
+            //             x: xCur,
+            //             y: yCur,
+            //             r_x: 'r_x' in curdata? curdata.r_x: 0.5,
+            //             r_y: 'r_y' in curdata? curdata.r_y: 0.5,
+            //             H: 'H' in curdata? curdata.H: 0.5, 
+            //             V: 'V' in curdata? curdata.V: 0.5
+            //         };
+            //         position.push(new THREE.Vector3(currentValues.x, currentValues.y, j));
+            //         radius.push(new THREE.Vector3(currentValues.r_x, currentValues.r_y, j));
+            //         color.push(new THREE.Vector3(currentValues.H, currentValues.V, j));
+            //         for (let key in this.minmax) {
+            //             if (currentValues[key] < this.minmax[key][0])
+            //                 this.minmax[key][0] = currentValues[key];
+            //             if (this.minmax[key][1] < currentValues[key])
+            //                 this.minmax[key][1] = currentValues[key];
+            //         }
+            //     }
+            //     let spline = {};
+            //     spline.position = new THREE.CatmullRomCurve3(position, false, 'catmullrom');
+            //     spline.radius = new THREE.CatmullRomCurve3(radius, false, 'catmullrom');
+            //     spline.color = new THREE.CatmullRomCurve3(color, false, 'catmullrom');
+            //     this.splines.push(spline);
+            // }
         } else if (variables.indexOf('x') >= 0 || variables.indexOf('y') >= 0) {
             for (let i = 0; i < this.clusterCenters.length; i++) {
                 let position = [], radius = [], color = [];
@@ -945,7 +1067,7 @@ export default class ClusteringOverview extends React.Component {
                         xCur = PDTmp * Math.cos(2 * curdata.PA);
                         yCur = PDTmp * Math.sin(2 * curdata.PA);
                     } else if (variables.indexOf('PD') >= 0) {
-                        let PATmp = 0.5 * Math.PI / 180;
+                        let PATmp = 0.5 * Math.PI;
                         xCur = curdata.PD * Math.cos(PATmp);
                         yCur = curdata.PD * Math.sin(PATmp);
                     }
@@ -1006,24 +1128,36 @@ export default class ClusteringOverview extends React.Component {
         this.clusterRadiuses = undefined;
 
         // min cluster radius === this.gridSize
-        let ratio = this.gridSize * 0.7 / clusterRadiuses[0];
+        let minClusterRad = 0;
+        for (let i = 0; i < clusterRadiuses.length; i++) {
+            if (clusterRadiuses[i] > 0) {
+                minClusterRad = clusterRadiuses[i];
+                break;
+            }
+        }
+        let ratio = this.gridSize * 0.7 / minClusterRad;
         let segment = 32;
-        let circleIndices = Array(segment * 2 * clusterRadiuses.length),
+        
+        let circleIndices = Array(segment * 2 * clusterRadiuses.filter(d => d !== 0).length),
             circlePositions = [],
             del = Math.PI * 2 / segment;
+        let radiusRingsCount = 0;
         for (let i = 0; i < clusterRadiuses.length; i++) {
-            let currentIdx = segment * 2 * i;
-            circleIndices[currentIdx] = i * segment;
-            circleIndices[currentIdx + segment * 2 - 1] = i * segment;
-            for (let j = 0; j < segment; j++) {
-                circlePositions.push(this.tubeCoords[i].x + clusterRadiuses[i] * ratio * Math.cos(del * j));
-                circlePositions.push(this.tubeCoords[i].y + clusterRadiuses[i] * ratio * Math.sin(del * j));
-                circlePositions.push(0);
+            if (clusterRadiuses[i] > 0) {
+                let currentIdx = segment * 2 * radiusRingsCount;
+                circleIndices[currentIdx] = radiusRingsCount * segment;
+                circleIndices[currentIdx + segment * 2 - 1] = radiusRingsCount * segment;
+                for (let j = 0; j < segment; j++) {
+                    circlePositions.push(this.tubeCoords[i].x + clusterRadiuses[i] * ratio * Math.cos(del * j));
+                    circlePositions.push(this.tubeCoords[i].y + clusterRadiuses[i] * ratio * Math.sin(del * j));
+                    circlePositions.push(0);
 
-                if (j !== 0) {
-                    circleIndices[currentIdx + 2 * (j - 1) + 1] = i * segment + j;
-                    circleIndices[currentIdx + 2 * (j - 1) + 2] = i * segment + j;
+                    if (j !== 0) {
+                        circleIndices[currentIdx + 2 * (j - 1) + 1] = radiusRingsCount * segment + j;
+                        circleIndices[currentIdx + 2 * (j - 1) + 2] = radiusRingsCount * segment + j;
+                    }
                 }
+                radiusRingsCount++;
             }
         }
         let circleGeometry = new THREE.BufferGeometry();
@@ -1477,11 +1611,11 @@ export default class ClusteringOverview extends React.Component {
     drawMDSScatterplots() {
         $('#clusteringOverviewMDSScatterplotsSVG').remove();
         if (this.clusterCenters.length > 0) {
-            let width = $('#clusteringResultsOverview').width();
+            let width = $('#clusteringResultsOverview').width() * this.chartsSize.MDS.width - 15 * 3;
             let appHeaderHeight = $('#appHeader').outerHeight(true);
             let timelineHeight = $('#clusteringTimeline').outerHeight(true);
-            let height = window.innerHeight - appHeaderHeight - timelineHeight;
-            let svgPadding = {left: 50, right: 30, top: 30, bottom: 50};
+            let height = (window.innerHeight - appHeaderHeight - timelineHeight) * this.chartsSize.MDS.height;
+            let svgPadding = {left: 30, right: 30, top: 30, bottom: 30};
             this.MDSSPSvg = d3.select('#clusteringOverviewMDSScatterplots')
                 .append('svg')
                 .attr('id', 'clusteringOverviewMDSScatterplotsSVG')
@@ -1536,18 +1670,18 @@ export default class ClusteringOverview extends React.Component {
                     .range([height - svgPadding.bottom, svgPadding.top])
                     .nice();
             }
-            let xAxis = d3.axisBottom(this.xScale)
-                .tickSize(-height + svgPadding.top + svgPadding.bottom);
-            this.xLabel = this.MDSSPSvg.append('g')
-                .attr('class', 'x_axis')
-                .attr('transform', 'translate(0,' + (height - svgPadding.bottom) + ')')
-                .call(xAxis);
-            let yAxis = d3.axisLeft(this.yScale)
-                .tickSize(-width + svgPadding.left + svgPadding.right);
-            this.yLabel = this.MDSSPSvg.append('g')
-                .attr('class', 'y_axis')
-                .attr('transform', 'translate(' + svgPadding.left + ',0)')
-                .call(yAxis);
+            // let xAxis = d3.axisBottom(this.xScale)
+            //     .tickSize(-height + svgPadding.top + svgPadding.bottom);
+            // this.xLabel = this.MDSSPSvg.append('g')
+            //     .attr('class', 'x_axis')
+            //     .attr('transform', 'translate(0,' + (height - svgPadding.bottom) + ')')
+            //     .call(xAxis);
+            // let yAxis = d3.axisLeft(this.yScale)
+            //     .tickSize(-width + svgPadding.left + svgPadding.right);
+            // this.yLabel = this.MDSSPSvg.append('g')
+            //     .attr('class', 'y_axis')
+            //     .attr('transform', 'translate(' + svgPadding.left + ',0)')
+            //     .call(yAxis);
             // map each dataPoints on scatterplots
             this.dataPlots = this.MDSSPSvg.selectAll('circle.dataPointsMDS')
                 .data(dataCoords)
@@ -1591,7 +1725,7 @@ export default class ClusteringOverview extends React.Component {
                 .attr('id', function(d, i) {
                     return 'clusterCentersMDS_' + i;
                 })
-                .attr('fill', 'white')
+                .attr('fill', 'none')
                 .attr('stroke', function(d, i) {
                     let color = this.clusterColors[i];
                     return d3.hsl(color[0], color[1], color[2]);
@@ -1611,6 +1745,9 @@ export default class ClusteringOverview extends React.Component {
                 .attr('y', function(d) {
                     return this.yScale(d[1]) + 16;
                 }.bind(this))
+                .attr('id', function(d, i) {
+                    return 'clusterCentersLabelMDS_' + i;
+                })
                 .attr('fill', function(d, i) {
                     let color = this.clusterColors[i];
                     return d3.hsl(color[0], color[1], color[2]);
@@ -1620,22 +1757,29 @@ export default class ClusteringOverview extends React.Component {
                 .text(function(d, i) {
                     return 'Cluster ' + i;
                 })
+                .on('mouseover', this.onMouseOverClusterCentersMDS().bind(this))
+                .on('mouseout', this.onMouseOutClusterCentersMDS().bind(this))
+                .on('click', this.onClickClusterCentersMDS().bind(this))
                 .moveToBack();
+            this.SSClusterCoords = [];
             this.SSCluster = [];
             let SSClusterCoords = [];
             for (let i = 0; i < this.clusterCenters.length; i++) {
-                this.SSCluster.push([]);
+                this.SSClusterCoords.push([]);
                 SSClusterCoords.push([]);
-                this.SSCluster[i].push(clusterCenterCoords[i]);
+                this.SSClusterCoords[i].push(clusterCenterCoords[i]);
                 SSClusterCoords[i].push([this.xScale(clusterCenterCoords[i][0]), this.yScale(clusterCenterCoords[i][1])]);
+                this.SSCluster.push([]);
             }
             for (let i = 0; i < this.SSLabels.length; i++) {
                 if (typeof(this.SSLabels[i]) === 'object') {
-                    this.SSCluster[this.SSLabels[i].cluster].push(dataCoords[i]);
+                    this.SSClusterCoords[this.SSLabels[i].cluster].push(dataCoords[i]);
                     SSClusterCoords[this.SSLabels[i].cluster].push([this.xScale(dataCoords[i][0]), this.yScale(dataCoords[i][1])]);
+                    this.SSCluster[this.SSLabels[i].cluster].push(this.subsequences[i]);
                 } else {
-                    this.SSCluster[this.SSLabels[i]].push(dataCoords[i]);
+                    this.SSClusterCoords[this.SSLabels[i]].push(dataCoords[i]);
                     SSClusterCoords[this.SSLabels[i]].push([this.xScale(dataCoords[i][0]), this.yScale(dataCoords[i][1])]);
+                    this.SSCluster[this.SSLabels[i]].push(this.subsequences[i]);
                 }
             }
             this.hulls = [];
@@ -1658,6 +1802,564 @@ export default class ClusteringOverview extends React.Component {
         }
     }
 
+    drawClustersSummaryStuckedBarChart() {
+        let clusterMemberNum = new Array(this.clusterCenters.length).fill(0);
+        for (let  i = 0; i < this.SSLabels.length; i++) {
+            let cluster = typeof(this.SSLabels[i]) === 'object'? this.SSLabels[i].cluster: this.SSLabels[i];
+            clusterMemberNum[cluster]++;
+        }
+        
+        let width = $('#clusteringResultsOverview').width() * this.chartsSize.MDS.width - 15 * 3;
+        this.clusterSummaryBarChart = this.MDSSPSvg
+            .selectAll('rect.clusterSummaryBar')
+            .data(clusterMemberNum)
+            .enter()
+            .append('rect')
+            .attr('id', function(d, i) {
+                return 'clusterSummaryBar_' + i;
+            })
+            .attr('class', 'clusterSummaryBar')
+            .attr('x', function(d, i) {
+                let dataNumBefore = 0;
+                for (let j = 0; j < i; j++) {
+                    dataNumBefore += clusterMemberNum[j];
+                }
+                return dataNumBefore * width / this.SSLabels.length;
+            }.bind(this))
+            .attr('y', 5)
+            .attr('width', function(d) {
+                return d * width / this.SSLabels.length;
+            }.bind(this))
+            .attr('height', 10)
+            .attr('fill', function(d, i) {
+                let color = this.clusterColors[i];
+                return d3.hsl(color[0], color[1], color[2]);
+            }.bind(this))
+            .on('mouseover', this.onMouseOverClusterCentersMDS().bind(this))
+            .on('mouseout', this.onMouseOutClusterCentersMDS().bind(this))
+            .on('click', this.onClickClusterCentersMDS().bind(this));
+    }
+
+    drawSilhouetteBarChart () {
+        $('#silhouetteBarChartSVG').remove();
+        if (this.SSLabels.length > 0) {
+            let svgPadding = {left: 30, right: 15, top: 15, bottom: 30};
+            let width = $('#clusteringResultsOverview').width() * this.chartsSize.barChart.width - 15 * 3;
+            let appHeaderHeight = $('#appHeader').outerHeight(true);
+            let timelineHeight = $('#clusteringTimeline').outerHeight(true);
+            let height = (window.innerHeight - appHeaderHeight - timelineHeight) * this.chartsSize.barChart.height;
+            this.SilhouetteSVG = d3.select('#silhouetteBarChart')
+                .append('svg')
+                .attr('id', 'silhouetteBarChartSVG')
+                .attr('width', width)
+                .attr('height', height)
+                .style('background-color', 'white');
+
+            let clusteringScore = ClusteringStore.getClusteringScores();
+            let clusterMembers = [];
+            for (let i = 0; i < this.clusterCenters.length; i++) {
+                clusterMembers.push([]);
+            }
+            for (let i = 0; i < this.SSLabels.length; i++) {
+                let cluster = typeof(this.SSLabels[i]) === 'object'? this.SSLabels[i].cluster: this.SSLabels[i];
+                clusterMembers[cluster].push({idx: i, silhouette: clusteringScore.silhouetteSS[i]});
+            }
+
+            this.xScaleSilhouette = d3.scaleLinear()
+                .range([0, width - svgPadding.left - svgPadding.right])
+                .domain([0, 1]);
+            let xAxis = d3.axisBottom(this.xScaleSilhouette)
+                .ticks(5)
+                .tickSize(-height + svgPadding.top + svgPadding.bottom);
+            this.xLabelSilhouette = this.SilhouetteSVG
+                .append('g')
+                .attr('class', 'x_axis')
+                .attr('transform', 'translate(' + svgPadding.left + ',' + (height - svgPadding.bottom) + ')')
+                .call(xAxis);
+            this.yScaleSilhouette = d3.scaleBand()
+                .range([svgPadding.top, height - svgPadding.bottom])
+                .domain(this.SSLabels.map((d, i) => {
+                    return i;
+                }))
+                .padding(.05);
+            // let yAxis = d3.axisLeft(this.yScaleSilhouette)
+            //     .ticks(this.SSLabels.length);
+            // this.yLabelSilhouette = this.SilhouetteSVG
+            //     .append('g')
+            //     .attr('class', 'y_axis')
+            //     .attr('transform', 'translate(' + svgPadding.left + ',0)')
+            //     .call(yAxis);
+            this.SilhouetteBars = this.SilhouetteSVG
+                .append('g')
+                .attr('class', 'SilhouetteBars')
+                .on('mouseover', this.onMouseOverSilhouetteBarChart().bind(this))
+                .on('mouseout', this.onMouseOutSilhouetteBarChart().bind(this))
+                .on('click', this.onClickSilhouetteBarChart().bind(this))
+                .on('dblclick', this.onDoubleClickSilhouetteBarChart().bind(this));
+            for (let i = 0; i < clusterMembers.length; i++) {
+                clusterMembers[i].sort((a, b) => b.silhouette - a.silhouette);
+                for (let j = 0; j < clusterMembers[i].length; j++) {
+                    let previousClusterNum = 0;
+                    for (let k = 0; k < i; k++) {
+                        previousClusterNum += clusterMembers[k].length;
+                    }
+                    clusterMembers[i][j].order = previousClusterNum + j;
+                }
+            }
+            for (let i = 0; i < this.clusterCenters.length; i++) {
+                let color = this.clusterColors[i];
+                color = d3.hsl(color[0], color[1], color[2]);
+                this.SilhouetteBars
+                    .selectAll('rect.SilhouetteBarCluster_' + i)
+                    .data(clusterMembers[i])
+                    .enter()
+                    .append('rect')
+                    .attr('class', 'SilhouetteBar SilhouetteBarCluster_' + i)
+                    .attr('id', (d) => {
+                        return 'SilhouetteBar_' + d.idx;
+                    })
+                    .attr('width', function(d) {
+                        return this.xScaleSilhouette(d.silhouette);
+                    }.bind(this))
+                    .attr('x', svgPadding.left)
+                    .attr('y', function(d) {
+                        return this.yScaleSilhouette(d.order);
+                    }.bind(this))
+                    .attr('height', this.yScaleSilhouette.bandwidth())
+                    .attr('fill', color);
+            }
+            let drag = d3.drag()
+                .on('start', dragstarted)
+                .on('drag', dragged)
+                .on('end', dragended);
+            this.silhouetteVerticalLine = this.SilhouetteSVG
+                .append('line')
+                .attr('stroke-width', 3)
+                .attr('stroke', 'orange')
+                .attr('id', 'silhouetteVerticalLine')
+                .attr('x1', this.xScaleSilhouette(0.5) + svgPadding.left)
+                .attr('y1', svgPadding.top)
+                .attr('x2', this.xScaleSilhouette(0.5) + svgPadding.left)
+                .attr('y2', height - svgPadding.bottom)
+                .call(drag);
+            function dragstarted() {
+                d3.select(this)
+                    .classed('selectedLine', true);
+            }
+            function dragged() {
+                let line = d3.select('#silhouetteVerticalLine');
+                let pos = d3.event.x;
+                if (pos <= svgPadding.left)
+                    pos = svgPadding.left
+                else if (svgPadding.left + width <= pos)
+                    pos = svgPadding.left + width;
+                line.attr('x1', pos)
+                    .attr('x2', pos);
+            }
+            function dragended() {
+                d3.select(this)
+                    .classed('selectedLine', false);
+            }
+        }
+    }
+
+    drawElbowMethodLineChart() {
+        $('#elbowMethodLineChartSVG').remove();
+        if ($('#elbowMethodLineChart').length > 0) {
+            let width = $('#clusteringResultsOverview').width() * this.chartsSize.elbowLineChart.width - 15 * 3;
+            let appHeaderHeight = $('#appHeader').outerHeight(true);
+            let timelineHeight = $('#clusteringTimeline').outerHeight(true);
+            let height = (window.innerHeight - appHeaderHeight - timelineHeight) * this.chartsSize.elbowLineChart.height;
+            let svgPadding = {left: 45, right: 15, top: 15, bottom: 30};
+
+            this.elbowMethodLineChartSVG = d3.select('#elbowMethodLineChart')
+                .append('svg')
+                .attr('id', 'elbowMethodLineChartSVG')
+                .attr('width', width)
+                .attr('height', height)
+                .style('background-color', 'white');
+
+            let SSEClusters = ClusteringStore.getSSEClusters();
+            let SSEkeys = Object.keys(SSEClusters);
+            SSEkeys.sort((a, b) => a - b);
+            let SSEs = [];
+            for (let i = 0; i < SSEkeys.length; i++) {
+                SSEkeys[i] = Number(SSEkeys[i]);
+                SSEs.push({clusterNum: Number(SSEkeys[i]), SSE: SSEClusters[SSEkeys[i]]});
+            }
+            this.xScaleSSE = d3.scaleLinear()
+                .range([svgPadding.left, width - svgPadding.right])
+                .domain(d3.extent(SSEkeys));
+            let xAxis = d3.axisBottom(this.xScaleSSE)
+                .ticks(SSEkeys.length);
+            this.xLabelSSE = this.elbowMethodLineChartSVG
+                .append('g')
+                .attr('class', 'x_axis')
+                .attr('transform', 'translate(0,' + (height - svgPadding.bottom) + ')')
+                .call(xAxis)
+                .attr('font-size', '0.5rem');
+            this.yScaleSSE = d3.scaleLinear()
+                .range([height - svgPadding.bottom, svgPadding.top])
+                .domain([0, d3.max(SSEs, d => d.SSE)])
+                .nice();
+            let yAxis = d3.axisLeft(this.yScaleSSE)
+                .ticks(5);
+            this.yLabelSSE = this.elbowMethodLineChartSVG
+                .append('g')
+                .attr('class', 'y_axis')
+                .attr('transform', 'translate(' + svgPadding.left + ',0)')
+                .call(yAxis)
+                .attr('font-size', '0.5rem');
+            this.elbowMethodLineChartSVG
+                .append('path')
+                .datum(SSEs)
+                .attr('id', 'elbowMethodLineChartPath')
+                .attr('fill', 'none')
+                .attr('stroke', 'gray')
+                .attr('stroke-width', 1.5)
+                .attr('d', d3.line()
+                    .x(function(d) {
+                        return this.xScaleSSE(d.clusterNum);
+                    }.bind(this))
+                    .y(function(d) {
+                        return this.yScaleSSE(d.SSE);
+                    }.bind(this))
+                );
+            let plotsGroup = this.elbowMethodLineChartSVG
+                .append('g')
+                .attr('id', 'elbowMethodLineChartPlotGroup');
+            plotsGroup
+                .append('line')
+                .attr('id', 'elbowMethodLineChartFocusedV')
+                .attr('x1', svgPadding.left)
+                .attr('y1', svgPadding.top)
+                .attr('x2', svgPadding.left)
+                .attr('y2', height - svgPadding.bottom)
+                .attr('stroke', 'orange')
+                .attr('stroke-width', 1)
+                .style('visibility', 'hidden');
+            plotsGroup
+                .append('line')
+                .attr('id', 'elbowMethodLineChartFocusedH')
+                .attr('x1', svgPadding.left)
+                .attr('y1', svgPadding.top)
+                .attr('x2', width - svgPadding.right)
+                .attr('y2', svgPadding.top)
+                .attr('stroke', 'orange')
+                .attr('stroke-width', 1)
+                .style('visibility', 'hidden');
+            plotsGroup
+                .selectAll('circle')
+                .data(SSEs)
+                .enter()
+                .append('circle')
+                .attr('cx', function(d) {
+                    return this.xScaleSSE(d.clusterNum);
+                }.bind(this))
+                .attr('cy', function(d) {
+                    return this.yScaleSSE(d.SSE);
+                }.bind(this))
+                .attr('r', 2)
+                .attr('fill', 'white')
+                .attr('stroke-width', 1)
+                .attr('stroke', 'gray')
+                .on('mouseover', onMouseOverElbowMethodPlots)
+                .on('mouseout', onMouseOutElbowMethodPlots);
+            this.elbowMethodLineChartSVG
+                .append('text')
+                .attr('x', svgPadding.left + (width - svgPadding.left) / 2)
+                .attr('y', height - 8)
+                .attr('id', 'elbowMethodLineChartXLabel')
+                .attr('fill', 'black')
+                .attr('font-size', '0.6rem')
+                .attr('text-anchor', 'middle')
+                .text('Cluster number');
+            this.elbowMethodLineChartSVG
+                .append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 8)
+                .attr('x', -1 * (height - svgPadding.bottom) / 2)
+                .attr('id', 'elbowMethodLineChartYLabel')
+                .attr('fill', 'black')
+                .attr('font-size', '0.6rem')
+                .attr('text-anchor', 'middle')
+                .text('SSE');
+            function onMouseOverElbowMethodPlots() {
+                let xPos = d3.select(this).attr('cx'),
+                    yPos = d3.select(this).attr('cy');
+                d3.select('#elbowMethodLineChartFocusedV')
+                    .attr('x1', xPos)
+                    .attr('x2', xPos)
+                    .style('visibility', 'visible');
+                d3.select('#elbowMethodLineChartFocusedH')
+                    .attr('y1', yPos)
+                    .attr('y2', yPos)
+                    .style('visibility', 'visible');
+            }
+            function onMouseOutElbowMethodPlots() {
+                d3.select('#elbowMethodLineChartFocusedV')
+                    .style('visibility', 'hidden');
+                d3.select('#elbowMethodLineChartFocusedH')
+                    .style('visibility', 'hidden');
+            }
+        }
+    }
+
+    drawFeatureHeatmap() {
+        $('#clusterFeatureHeatmapSVG').remove();
+        if ($('#clusterFeatureHeatmap').length > 0) {
+            let width = $('#clusteringResultsOverview').width() * this.chartsSize.featureHeatmap.width - 15 * 3;
+            let appHeaderHeight = $('#appHeader').outerHeight(true);
+            let timelineHeight = $('#clusteringTimeline').outerHeight(true);
+            let height = (window.innerHeight - appHeaderHeight - timelineHeight) * this.chartsSize.featureHeatmap.height;
+            let svgPadding = {left: 45, right: 15, top: 20, bottom: 30};
+
+            this.featureHeatmapSVG = d3.select('#clusterFeatureHeatmap')
+                .append('svg')
+                .attr('id', 'clusterFeatureHeatmapSVG')
+                .attr('width', width)
+                .attr('height', height)
+                .style('background-color', 'white');
+
+            let variables = ClusteringStore.getClusteringParameters().variables;
+            let aveDataValues = [];
+            for (let i = 0; i < this.SSCluster.length; i++) {
+                let sumDataValues = {}, sumDataPointsNum = {};
+                variables.forEach(function(key) {
+                    sumDataValues[key] = 0;
+                    sumDataPointsNum[key] = 0;
+                    for (let j = 0; j < this.SSCluster[i].length; j++) {
+                        for (let k = 0; k < this.SSCluster[i][j].dataPoints.length; k++) {
+                            if (key in this.SSCluster[i][j].dataPoints[k]) {
+                                sumDataValues[key] += this.SSCluster[i][j].dataPoints[k][key];
+                                sumDataPointsNum[key]++;
+                            }
+                        }
+                    }
+                }.bind(this));
+                variables.forEach(function(key) {
+                    sumDataValues[key] /= sumDataPointsNum[key];
+                }.bind(this));
+                aveDataValues.push(sumDataValues);
+            }
+            let minMax = {};
+            variables.forEach((key) => {
+                minMax[key] = [Infinity, -Infinity];
+            })
+            for (let i = 0; i < aveDataValues.length; i++) {
+                variables.forEach((key) => {
+                    if (aveDataValues[i][key] < minMax[key][0]) {
+                        minMax[key][0] = aveDataValues[i][key];
+                    }
+                    if (minMax[key][1] < aveDataValues[i][key]) {
+                        minMax[key][1] = aveDataValues[i][key];
+                    }
+                });
+            }
+            let variableLabels = {};
+            let targets = ClusteringStore.getDatasets();
+            for (let i = 0; i < targets.length; i++) {
+                let lookup = DataStore.getData(targets[i]).data.lookup;
+                for (let key in lookup) {
+                    if (!(key in variableLabels)) {
+                        variableLabels[key] = lookup[key];
+                    } else {
+                        for (let j = 0; j < lookup[key].length; j++) {
+                            if (variableLabels[key].indexOf(lookup[key][j]) < 0) {
+                                variableLabels[key].push(lookup[key][j]);
+                            }
+                        }
+                    }
+                }
+            }
+            let labels = [];
+            variables.forEach((key) => {
+                labels.push(variableLabels[key].join(', '));
+            });
+            let clusterIdxs = Array(this.clusterCenters.length).fill().map((_, i) => i);
+            this.xScaleFeatureHeatmap = d3.scaleBand()
+                .range([svgPadding.left, width - svgPadding.right])
+                .domain(clusterIdxs)
+                .padding(.05);
+            this.xLabelFeatureHeatmap = this.featureHeatmapSVG
+                .append('g')
+                .attr('class', 'x_axis')
+                .attr('transform', 'translate(0,' + (height - svgPadding.bottom) + ')')
+                .call(d3.axisBottom(this.xScaleFeatureHeatmap));
+            this.xLabelFeatureHeatmap
+                .selectAll('text')
+                .attr('fill', function(d) {
+                    let color = this.clusterColors[d];
+                    return d3.hsl(color[0], color[1], color[2]);
+                }.bind(this))
+            this.yScaleFeatureHeatmap = d3.scaleBand()
+                .range([svgPadding.top, height - svgPadding.bottom])
+                .domain(labels)
+                .padding(.05);
+            this.yLabelFeatureHeatmap = this.featureHeatmapSVG
+                .append('g')
+                .attr('class', 'y_axis')
+                .attr('transform', 'translate(' + svgPadding.left + ',0)')
+                .call(d3.axisLeft(this.yScaleFeatureHeatmap));
+            for (let i = 0; i < aveDataValues.length; i++) {
+                this.featureHeatmapSVG
+                    .selectAll('rect.featureHeatmapRect_' + i)
+                    .data(labels)
+                    .enter()
+                    .append('rect')
+                    .attr('class', 'featureHeatmapRect featureHeatmapRect_' + i)
+                    .attr('id', function(d, idx) {
+                        return 'featureHeatmapRect_' + i + '_' + variables[idx];
+                    })
+                    .attr('x', function(d) {
+                        return this.xScaleFeatureHeatmap(i);
+                    }.bind(this))
+                    .attr('y', function(d, idx) {
+                        return this.yScaleFeatureHeatmap(d)
+                    }.bind(this))
+                    .attr('width', this.xScaleFeatureHeatmap.bandwidth())
+                    .attr('height', this.yScaleFeatureHeatmap.bandwidth())
+                    .attr('fill', function(d, idx) {
+                        return d3.interpolateRdBu(
+                            (aveDataValues[i][variables[idx]] - minMax[variables[idx]][0]) 
+                            / (minMax[variables[idx]][1] - minMax[variables[idx]][0])
+                        );
+                    })
+                    .on('mouseover', onMouseOverFeatureHeatmap.bind(this))
+                    .on('mouseout', onMouseOutFeatureHeatmap.bind(this))
+                    .on('click', onClickFeatureHeatmap);
+            }
+            // axis labels
+            this.featureHeatmapSVG
+                .append('text')
+                .attr('x', svgPadding.left + (width - svgPadding.left) / 2)
+                .attr('y', height - 8)
+                .attr('id', 'featureHeatmapXLabel')
+                .attr('fill', 'black')
+                .attr('font-size', '0.6rem')
+                .attr('text-anchor', 'middle')
+                .text('Cluster name');
+            this.featureHeatmapSVG
+                .append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 8)
+                .attr('x', -1 * (height - svgPadding.bottom) / 2)
+                .attr('id', 'featureHeatmapYLabel')
+                .attr('fill', 'black')
+                .attr('font-size', '0.6rem')
+                .attr('text-anchor', 'middle')
+                .text('Variables');
+
+            // show color legend for references
+            let rectSize = (width - svgPadding.left - svgPadding.right) / 2 / this.clusterCenters.length;
+            let featureHeatmapLegend = this.featureHeatmapSVG
+                .append('g')
+                .attr('class', 'featureHeatmapLegend');
+            featureHeatmapLegend
+                .selectAll('rect.featureHeatmapLegendRect')
+                .data(clusterIdxs)
+                .enter()
+                .append('rect')
+                .attr('class', 'featureHeatmapLegendRect')
+                .attr('x', function(d) {
+                    return width / 2 + d * rectSize;
+                })
+                .attr('y', 0)
+                .attr('width', rectSize)
+                .attr('height', 10)
+                .attr('fill', function(d) {
+                    return d3.interpolateRdBu(d / (this.clusterCenters.length - 1));
+                }.bind(this));
+            featureHeatmapLegend
+                .append('text')
+                .attr('id', 'featureHeatmapLegendLabelSmall')
+                .attr('x', width / 2 - 15)
+                .attr('y', 10)
+                .attr('text-anchor', 'middle')
+                .attr('fill', 'black')
+                .attr('font-size', '0.6rem')
+                .text('small');
+            featureHeatmapLegend
+                .append('text')
+                .attr('id', 'featureHeatmapLegendLabelLarge')
+                .attr('x', width - svgPadding.right - 2)
+                .attr('y', 10)
+                .attr('text-anchor', 'middle')
+                .attr('fill', 'black')
+                .attr('font-size', '0.6rem')
+                .text('large');
+            function onMouseOverFeatureHeatmap() {
+                if (d3.event.target) {
+                    let targetId = d3.event.target.id;
+                    let targetElem = targetId.split('_');
+                    let clusterId = Number(targetElem[1]);
+                    let tooltip = $('#tooltipFeatureHeatmap');
+                    tooltip.text(formatValue(aveDataValues[clusterId][targetElem[2]]));
+                    tooltip.css('display', 'block');
+                    let resultsPanelOffset = $('#clusteringResults').offset();
+                    let scrollTop = window.pageYOffset;
+                    let mouseX, mouseY;
+                    if (scrollTop < resultsPanelOffset.top) {
+                        // header is visible
+                        mouseX = d3.event.clientX - resultsPanelOffset.left + 5;
+                        if (d3.event.clientY < $('#clusteringResults').height() / 2) {
+                            mouseY = d3.event.clientY - (resultsPanelOffset.top - scrollTop) + 5;
+                        } else {
+                            let tooltipHeight = tooltip.height() === 0? 30: tooltip.height();
+                            mouseY = d3.event.clientY - (resultsPanelOffset.top - scrollTop) - tooltipHeight - 5;
+                        }
+                    } else {
+                        // header is invisible
+                        mouseX = d3.event.clientX - resultsPanelOffset.left + 5;
+                        if (d3.event.clientY < $('#clusteringOverviewMDSScatterplots').height() / 2) {
+                            mouseY = d3.event.clientY + 5;
+                        } else {
+                            let tooltipHeight = tooltip.height() === 0? 30: tooltip.height();
+                            mouseY = d3.event.clientY - tooltipHeight - 5;
+                        }
+                    }
+                    tooltip.css({
+                        left: mouseX + 'px',
+                        top: mouseY + 'px',
+                        right: 'unset',
+                        bottom: 'unset'
+                    });
+
+                    this.hulls[clusterId].style('visibility', 'visible');
+                    d3.selectAll('circle.dataPointsMDS')
+                        .style('opacity', 0.3);
+                    d3.selectAll('circle.clusterCentersMDS')
+                        .style('opacity', 0.3);
+                    d3.selectAll('circle.dataPointsMDS_' + clusterId)
+                        .style('opacity', 1);
+                    d3.select('#clusterCentersMDS_' + clusterId)
+                        .style('opacity', 1);
+                }
+            }
+            function onMouseOutFeatureHeatmap() {
+                if (d3.event.target) {
+                    let targetId = d3.event.target.id;
+                    let targetElem = targetId.split('_');
+                    let clusterId = Number(targetElem[1]);
+                    let tooltip = $('#tooltipFeatureHeatmap');
+                    tooltip.css('display', 'none');
+                    this.hulls[clusterId].style('visibility', 'hidden');
+                    d3.selectAll('circle.dataPointsMDS')
+                        .style('opacity', 1);
+                    d3.selectAll('circle.clusterCentersMDS')
+                        .style('opacity', 1);
+                }
+            }
+            function onClickFeatureHeatmap() {
+                if (d3.event.target) {
+                    let targetId = d3.event.target.id;
+                    let targetElem = targetId.split('_');
+                    ClusteringAction.showClusterDetails(Number(targetElem[1]));
+                }
+            }
+        }
+    }
+
     onClickDataPointsMDS() {
         return function() {
             // show the cluster which the selected SS belongs to
@@ -1674,7 +2376,7 @@ export default class ClusteringOverview extends React.Component {
             let targetId = d3.event.target.id;
             if (targetId) {
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 let data;
                 for (let i = 0; i < this.subsequences.length; i++) {
@@ -1685,7 +2387,7 @@ export default class ClusteringOverview extends React.Component {
                 }
                 $('#tooltipClusteringResults').css('display', 'none');
                 selectMenu('visualization');
-                showTimeTubesOfTimeSlice(Number(dataId), [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
+                showTimeTubesOfTimeSlice(dataId, [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
             }
         };
     }
@@ -1697,7 +2399,7 @@ export default class ClusteringOverview extends React.Component {
                 let tooltip = $('#tooltipClusteringResults'),
                     tooltipTable = $('#tooltipClusteringResultsTable');
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 let data;
                 let i = 0;
@@ -1736,9 +2438,9 @@ export default class ClusteringOverview extends React.Component {
                         mouseY = d3.event.clientY - tooltipHeight - 5;
                     }
                 }
-                tooltipTable.html('<table><tbody><tr><td>File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
-                    '<tr><td>Period</td><td class="tooltipTableValues">' + period[0] + '-' + period[1] + '</td></tr>' +
-                    '<tr><td>Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
+                tooltipTable.html('<table><tbody><tr><td class="tooltipTableLabel">File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Period</td><td class="tooltipTableValues">' + formatValue(period[0]) + '-' + formatValue(period[1]) + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
                 tooltip.css({
                     left: mouseX + 'px',
                     top: mouseY + 'px',
@@ -1769,12 +2471,117 @@ export default class ClusteringOverview extends React.Component {
             let targetId = d3.event.target.id;
             if (targetId) {
                 let targetEle = targetId.split('_');
-                let dataId = targetEle[1],
+                let dataId = Number(targetEle[1]),
                     SSId = Number(targetEle[2]);
                 // hide the tooltip
                 $('#tooltipClusteringResults').css('display', 'none');
 
                 domActions.removeHighlightCorrespondingElemInClusteringResults(dataId, SSId);
+            }
+        }
+    }
+
+    onClickSilhouetteBarChart() {
+        return function() {
+            // show the cluster which the selected SS belongs to
+            if (d3.event.target) {
+                let targetClass = d3.event.target.classList[1];
+                let clusterNum = Number(targetClass.split('_')[1]);
+                ClusteringAction.showClusterDetails(clusterNum);
+            }
+        }
+    }
+
+    onDoubleClickSilhouetteBarChart() {
+        return  function() {
+            let targetId = d3.event.target.id;
+            if (targetId) {
+                let targetEle = targetId.split('_');
+                let idx = Number(targetEle[1]);
+                let data = this.subsequences[idx];
+                $('#tooltipClusteringResults').css('display', 'none');
+                selectMenu('visualization');
+                showTimeTubesOfTimeSlice(data.id, [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z]);
+            }
+        };
+    }
+
+    onMouseOverSilhouetteBarChart() {
+        return function() {
+            let targetId = d3.event.target.id;
+            if (targetId) {
+                let tooltip = $('#tooltipClusteringResults'),
+                    tooltipTable = $('#tooltipClusteringResultsTable');
+                let targetEle = targetId.split('_');
+                let idx = Number(targetEle[1]);
+                let data = this.subsequences[idx];
+
+                // show detail information of the subsequence
+                let fileName = DataStore.getFileName(data.id);
+                let period = [data.dataPoints[0].z, data.dataPoints[data.dataPoints.length - 1].z];
+                let dataPointNum = data.dataPoints.length;
+                let scrollTop = window.pageYOffset;
+                let resultsPanelOffset = $('#clusteringResults').offset();
+                let mouseX, mouseY;
+                // if the position of the mouse is in the upper side of MDS plots, show tooltip below the mouse
+                // else, show tooltip above the mouse
+                if (scrollTop < resultsPanelOffset.top) {
+                    // header is visible
+                    mouseX = d3.event.clientX - resultsPanelOffset.left + 5;
+                    if (d3.event.clientY < $('#clusteringResults').height() / 2) {
+                        mouseY = d3.event.clientY - (resultsPanelOffset.top - scrollTop) + 5;
+                    } else {
+                        let tooltipHeight = tooltip.height() === 0? 230: tooltip.height();
+                        mouseY = d3.event.clientY - (resultsPanelOffset.top - scrollTop) - tooltipHeight - 5;
+                    }
+                } else {
+                    // header is invisible
+                    mouseX = d3.event.clientX - resultsPanelOffset.left + 5;
+                    if (d3.event.clientY < $('#clusteringOverviewMDSScatterplots').height() / 2) {
+                        mouseY = d3.event.clientY + 5;
+                    } else {
+                        let tooltipHeight = tooltip.height() === 0? 230: tooltip.height();
+                        mouseY = d3.event.clientY - tooltipHeight - 5;
+                    }
+                }
+                tooltipTable.html('<table><tbody><tr><td class="tooltipTableLabel">File name</td><td class="tooltipTableValues">' + fileName + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Period</td><td class="tooltipTableValues">' + formatValue(period[0]) + '-' + formatValue(period[1]) + '</td></tr>' +
+                    '<tr><td class="tooltipTableLabel">Data points number</td><td class="tooltipTableValues">' + dataPointNum + '</td></tr></tbody></table>');
+                tooltip.css({
+                    left: mouseX + 'px',
+                    top: mouseY + 'px',
+                    right: 'unset',
+                    bottom: 'unset'
+                });
+                tooltip.css('display', 'block');
+                
+                let beforeAfter = [undefined, undefined];
+                if (idx - 1 >= 0) {
+                    if (this.subsequences[idx - 1].id === this.subsequences[idx].id) {
+                        beforeAfter[0] = typeof(this.SSLabels[idx - 1]) === 'object'? this.SSLabels[idx - 1].cluster: this.SSLabels[idx - 1];
+                    }
+                }
+                if (idx + 1 < this.SSLabels.length) {
+                    if (this.subsequences[idx].id === this.subsequences[idx + 1].id) {
+                        beforeAfter[1] = typeof(this.SSLabels[idx + 1]) === 'object'? this.SSLabels[idx + 1].cluster: this.SSLabels[idx + 1];
+                    }
+                }
+                domActions.highlightCorrespondingElemInClusteringResults(data.id, data.idx, period, beforeAfter);
+                ClusteringAction.showTTViewOfSelectedSSClusteringResults(data.id, period);
+            }
+        }
+    }
+
+    onMouseOutSilhouetteBarChart() {
+        return function() {
+            let targetId = d3.event.target.id;
+            if (targetId) {
+                let targetEle = targetId.split('_');
+                let idx = Number(targetEle[1]);
+                // hide the tooltip
+                $('#tooltipClusteringResults').css('display', 'none');
+
+                domActions.removeHighlightCorrespondingElemInClusteringResults(this.subsequences[idx].id, this.subsequences[idx].idx);
             }
         }
     }
@@ -1823,28 +2630,29 @@ export default class ClusteringOverview extends React.Component {
 
     setMDSScatterplotsSize() {
         if ($('#clusteringOverviewMDSScatterplotsSVG').length) {
-            const width = $('#clusteringResultsOverview').width();
+            let parentWidth = $('#clusteringResultsOverview').width();
             let appHeaderHeight = $('#appHeader').outerHeight(true);
             let timelineHeight = $('#clusteringTimeline').outerHeight(true);
-            const height = window.innerHeight - appHeaderHeight - timelineHeight;
-            let svgPadding = {left: 50, right: 30, top: 30, bottom: 50};
+            const parentHeight = window.innerHeight - appHeaderHeight - timelineHeight;
+            let svgPadding = {left: 30, right: 30, top: 30, bottom: 30};
+            // MDS plot
             this.MDSSPSvg
-                .attr('width', width)
-                .attr('height', height);
+                .attr('width', parentWidth * this.chartsSize.MDS.width - 15 * 3)
+                .attr('height', parentHeight * this.chartsSize.MDS.height);
             this.xScale
-                .range([svgPadding.left, width - svgPadding.right]);
+                .range([svgPadding.left, parentWidth * this.chartsSize.MDS.width - 15 * 3 - svgPadding.right]);
             this.yScale
-                .range([height - svgPadding.bottom, svgPadding.top]);
-            this.xLabel.call(
-                d3.axisBottom(this.xScale)
-                    .tickSize(-height + svgPadding.top + svgPadding.bottom)
-            )
-            .attr('transform', 'translate(0,' + (height - svgPadding.bottom) + ')');
-            this.yLabel.call(
-                d3.axisLeft(this.yScale)
-                .tickSize(-width + svgPadding.left + svgPadding.right)
-            )
-            .attr('transform', 'translate(' + svgPadding.left + ',0)');
+                .range([parentHeight * this.chartsSize.MDS.height - svgPadding.bottom, svgPadding.top]);
+            // this.xLabel.call(
+            //     d3.axisBottom(this.xScale)
+            //         .tickSize(-height + svgPadding.top + svgPadding.bottom)
+            // )
+            // .attr('transform', 'translate(0,' + (height - svgPadding.bottom) + ')');
+            // this.yLabel.call(
+            //     d3.axisLeft(this.yScale)
+            //     .tickSize(-width + svgPadding.left + svgPadding.right)
+            // )
+            // .attr('transform', 'translate(' + svgPadding.left + ',0)');
             this.dataPlots
                 .attr('cx', function(d) {
                     return this.xScale(d[0]);
@@ -1867,16 +2675,157 @@ export default class ClusteringOverview extends React.Component {
                     return this.yScale(d[1]) + 16;
                 }.bind(this));
             let SSClusterCoords = [];
-            for (let i = 0; i < this.SSCluster.length; i++) {
+            for (let i = 0; i < this.SSClusterCoords.length; i++) {
                 SSClusterCoords.push([]);
-                for (let j = 0; j < this.SSCluster[i].length; j++) {
-                    SSClusterCoords[i].push([this.xScale(this.SSCluster[i][j][0]), this.yScale(this.SSCluster[i][j][1])]);
+                for (let j = 0; j < this.SSClusterCoords[i].length; j++) {
+                    SSClusterCoords[i].push([this.xScale(this.SSClusterCoords[i][j][0]), this.yScale(this.SSClusterCoords[i][j][1])]);
                 }
             }
             for (let i = 0; i < this.hulls.length; i++) {
                 let hullData = d3.polygonHull(SSClusterCoords[i]);
                 this.hulls[i]
                     .attr('d', hullData === null? null: 'M' + hullData.join('L') + 'Z');
+            }
+
+            // clusters summary stucked bar chart
+            let clusterMemberNum = new Array(this.clusterCenters.length).fill(0);
+            for (let  i = 0; i < this.SSLabels.length; i++) {
+                let cluster = typeof(this.SSLabels[i]) === 'object'? this.SSLabels[i].cluster: this.SSLabels[i];
+                clusterMemberNum[cluster]++;
+            }    
+            this.clusterSummaryBarChart
+                .attr('x', function(d, i) {
+                    let dataNumBefore = 0;
+                    for (let j = 0; j < i; j++) {
+                        dataNumBefore += clusterMemberNum[j];
+                    }
+                    return dataNumBefore * (parentWidth * this.chartsSize.MDS.width - 15 * 3) / this.SSLabels.length;
+                }.bind(this))
+                .attr('y', 5)
+                .attr('width', function(d) {
+                    return d * (parentWidth * this.chartsSize.MDS.width - 15 * 3) / this.SSLabels.length;
+                }.bind(this));
+            
+            // bar chart for silhouette coefficient
+            this.SilhouetteSVG
+                .attr('width', parentWidth * this.chartsSize.barChart.width - 15 * 3)
+                .attr('height', parentHeight * this.chartsSize.barChart.height);
+            this.xScaleSilhouette
+                .range([0, parentWidth * this.chartsSize.barChart.width - 15 * 3 - svgPadding.left - svgPadding.right / 2]);
+            this.xLabelSilhouette
+                .attr('transform', 'translate(' + svgPadding.left + ',' + (parentHeight * this.chartsSize.barChart.height - svgPadding.bottom) + ')')
+                .call(
+                    d3.axisBottom(this.xScaleSilhouette)
+                        .ticks(5)
+                        .tickSize(-(parentHeight * this.chartsSize.barChart.height) + svgPadding.top / 2 + svgPadding.bottom)
+                );
+            this.yScaleSilhouette
+                .range([svgPadding.top / 2, parentHeight * this.chartsSize.barChart.height - svgPadding.bottom]);
+            this.SilhouetteBars.selectAll('rect.SilhouetteBar')
+                .attr('width', function(d) {
+                    return this.xScaleSilhouette(d.silhouette);
+                }.bind(this))
+                .attr('y', function(d) {
+                    return this.yScaleSilhouette(d.order);
+                }.bind(this))
+                .attr('height', this.yScaleSilhouette.bandwidth());
+            this.silhouetteVerticalLine
+                .attr('x1', this.xScaleSilhouette(0.5) + svgPadding.left)
+                .attr('y1', svgPadding.top / 2)
+                .attr('x2', this.xScaleSilhouette(0.5) + svgPadding.left)
+                .attr('y2', parentHeight * this.chartsSize.barChart.height - svgPadding.bottom);
+
+            // line chart for cost
+            if ($('#elbowMethodLineChart').length > 0) {
+                this.elbowMethodLineChartSVG
+                    .attr('width', parentWidth * this.chartsSize.elbowLineChart.width - 15 * 3)
+                    .attr('height', parentHeight * this.chartsSize.elbowLineChart.height);
+                this.xScaleSSE
+                    .range([svgPadding.left * 1.5, parentWidth * this.chartsSize.elbowLineChart.width - 15 * 3 - svgPadding.right / 2]);
+                this.xLabelSSE
+                    .attr('transform', 'translate(0,' + (parentHeight * this.chartsSize.elbowLineChart.height - svgPadding.bottom) + ')')
+                    .call(
+                        d3.axisBottom(this.xScaleSSE)
+                            .ticks(Object.keys(ClusteringStore.getSSEClusters()).length)
+                    );
+                this.yScaleSSE
+                    .range([parentHeight * this.chartsSize.elbowLineChart.height - svgPadding.bottom, svgPadding.top / 2]);
+                this.yLabelSSE
+                    .call(
+                        d3.axisLeft(this.yScaleSSE)
+                            .ticks(5)
+                    );
+                d3.select('#elbowMethodLineChartPath')
+                    .attr('d', d3.line()
+                        .x(function(d) {
+                            return this.xScaleSSE(d.clusterNum);
+                        }.bind(this))
+                        .y(function(d) {
+                            return this.yScaleSSE(d.SSE);
+                        }.bind(this))
+                    );
+                d3.select('g#elbowMethodLineChartPlotGroup')
+                    .selectAll('circle')
+                    .attr('cx', function(d) {
+                        return this.xScaleSSE(d.clusterNum);
+                    }.bind(this))
+                    .attr('cy', function(d) {
+                        return this.yScaleSSE(d.SSE);
+                    }.bind(this));
+                d3.select('#elbowMethodLineChartXLabel')
+                    .attr('x', 1.5 * svgPadding.left + (parentWidth * this.chartsSize.elbowLineChart.width - 15 * 3 - 1.5 * svgPadding.left) / 2)
+                    .attr('y', parentHeight * this.chartsSize.elbowLineChart.height - 8);
+                d3.select('#elbowMethodLineChartYLabel')
+                    .attr('x', -1 * (parentHeight * this.chartsSize.elbowLineChart.height - svgPadding.bottom) / 2);
+                d3.select('#elbowMethodLineChartFocusedV')
+                    .attr('y2', parentHeight * this.chartsSize.elbowLineChart.height - svgPadding.bottom);
+                d3.select('#elbowMethodLineChartFocusedH')
+                    .attr('x2', parentWidth * this.chartsSize.elbowLineChart.width - 15 * 3 - svgPadding.right);
+            }
+
+            // heatmap
+            if ($('#clusterFeatureHeatmap').length > 0) {
+                this.featureHeatmapSVG
+                    .attr('width', parentWidth * this.chartsSize.featureHeatmap.width - 15 * 3)
+                    .attr('height', parentHeight * this.chartsSize.featureHeatmap.height);
+                this.xScaleFeatureHeatmap
+                    .range([1.5 * svgPadding.left, parentWidth * this.chartsSize.featureHeatmap.width - 15 * 3 - svgPadding.right / 2]);
+                this.xLabelFeatureHeatmap
+                    .attr('transform', 'translate(0,' + (parentHeight * this.chartsSize.featureHeatmap.height - svgPadding.bottom) + ')')
+                    .call(
+                        d3.axisBottom(this.xScaleFeatureHeatmap)
+                    );
+                this.yScaleFeatureHeatmap
+                    .range([svgPadding.top * 2 / 3, parentHeight * this.chartsSize.featureHeatmap.height - svgPadding.bottom]);
+                this.yLabelFeatureHeatmap
+                    .call(d3.axisLeft(this.yScaleFeatureHeatmap));
+                for (let i = 0; i < this.clusterCenters.length; i++) {
+                    d3.selectAll('rect.featureHeatmapRect_' + i)
+                        .attr('x', function(d) {
+                            return this.xScaleFeatureHeatmap(i);
+                        }.bind(this))
+                        .attr('y', function(d, idx) {
+                            return this.yScaleFeatureHeatmap(d)
+                        }.bind(this))
+                        .attr('width', this.xScaleFeatureHeatmap.bandwidth())
+                        .attr('height', this.yScaleFeatureHeatmap.bandwidth());
+                }
+                d3.select('#featureHeatmapXLabel')
+                    .attr('x', 1.5 * svgPadding.left + (parentWidth * this.chartsSize.featureHeatmap.width - 15 * 3 - 1.5 * svgPadding.left) / 2)
+                    .attr('y', parentHeight * this.chartsSize.featureHeatmap.height - 8);
+                d3.select('#featureHeatmapYLabel')
+                    .attr('x', -1 * (parentHeight * this.chartsSize.featureHeatmap.height - svgPadding.bottom) / 2);
+
+                let rectSize = (parentWidth * this.chartsSize.featureHeatmap.width - 15 * 3 - 1.5 * svgPadding.left - svgPadding.right / 2) / 2 / this.clusterCenters.length;
+                d3.selectAll('rect.featureHeatmapLegendRect')
+                    .attr('x', function(d) {
+                        return (parentWidth * this.chartsSize.featureHeatmap.width - 15 * 3) / 2 + d * rectSize;
+                    }.bind(this))
+                    .attr('width', rectSize);
+                d3.select('#featureHeatmapLegendLabelSmall')  
+                    .attr('x', (parentWidth * this.chartsSize.featureHeatmap.width - 15 * 3) / 2 - 15);
+                d3.select('#featureHeatmapLegendLabelLarge')
+                    .attr('x', (parentWidth * this.chartsSize.featureHeatmap.width - 15 * 3) - svgPadding.right / 2 - 2);
             }
         }
     }

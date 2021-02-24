@@ -181,7 +181,7 @@ export default class TimeTubes extends React.Component{
             } else {
                 this.menu = menu;
             }
-            if (menu === 'visualization') {
+            if (menu === 'visualization' && AppStore.getPreviousMenu() !== 'visualization') {
                 this.tubeGroup.position.z = this.currentTubeStatus.position;
                 this.grid.visible = this.currentTubeStatus.grid;
                 this.plot.visible = this.currentTubeStatus.plot;

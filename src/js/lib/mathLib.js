@@ -1,5 +1,3 @@
-import { result } from "lodash";
-
 export function getGaussData(sigma) {
     let data = [];
     if (sigma > 0) {
