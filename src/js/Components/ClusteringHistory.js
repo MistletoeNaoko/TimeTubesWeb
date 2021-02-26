@@ -334,6 +334,8 @@ export default class ClusteringHistory extends React.Component {
 													this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
 												].idx;
 										if (cDataId === pDataId && cSSId === pSSId) {
+											let plotColor = TimeTubesStore.getPlotColor(cDataId);
+											if (typeof plotColor === "undefined") plotColor = "gray";
 											let cXPos, pXPos;
 											// how many data points before the cluster ci
 											let cLeftShift = 0;
@@ -399,6 +401,17 @@ export default class ClusteringHistory extends React.Component {
 												.datum(correlationPos)
 												.attr("class", "clusteringHistoryCorrelationPath")
 												.attr(
+													"id",
+													"clusteringHistoryCorrelationPath_" +
+														sessionIds[sessionIdx - 1] +
+														"_" +
+														sessionId +
+														"_" +
+														cDataId +
+														"_" +
+														cSSId
+												)
+												.attr(
 													"d",
 													d3
 														.line()
@@ -409,7 +422,7 @@ export default class ClusteringHistory extends React.Component {
 															return d.y;
 														})
 												)
-												.attr("fill", "gray")
+												.attr("fill", plotColor)
 												.style("opacity", 0.3);
 										}
 									}
@@ -610,6 +623,297 @@ export default class ClusteringHistory extends React.Component {
 							.text((d) => {
 								return d;
 							});
+						if (sessionIdx > 0) {
+							let previousSession = this.state.sessions[
+								sessionIds[sessionIdx - 1]
+							];
+							let currentSession = this.state.sessions[sessionId];
+							let datasetsEqual = isEqual(
+									previousSession.datasets,
+									currentSession.datasets
+								),
+								SSparametersEqual = isEqual(
+									previousSession.subsequenceParameters,
+									currentSession.subsequenceParameters
+								),
+								SSEqual = isEqual(
+									previousSession.subsequences,
+									currentSession.subsequences
+								);
+							if (datasetsEqual && SSparametersEqual && SSEqual) {
+								// case 1: target datasets, subsequence parameters, subsequences are the same
+								if (
+									$(
+										"#clusteringHistoryCorrelationGroup_" +
+											sessionIds[sessionIdx - 1] +
+											"_" +
+											sessionId
+									).length > 0
+								) {
+									let correlationGroup = d3.select(
+										"#clusteringHistoryCorrelationGroup_" +
+											sessionIds[sessionIdx - 1] +
+											"_" +
+											sessionId
+									);
+                                    for (let ci = 0; ci < this.clusters[sessionId].length; ci++) {
+                                        for (let cj = 0; cj < this.clusters[sessionId][ci].length; cj++) {
+                                            let cDataId =
+                                                    currentSession.subsequences[
+                                                        this.clusters[sessionId][ci][cj]
+                                                    ].id,
+                                                cSSId =
+                                                    currentSession.subsequences[
+                                                        this.clusters[sessionId][ci][cj]
+                                                    ].idx;
+                                            for (
+                                                let pi = 0;
+                                                pi < this.clusters[sessionIds[sessionIdx - 1]].length;
+                                                pi++
+                                            ) {
+                                                for (
+                                                    let pj = 0;
+                                                    pj < this.clusters[sessionIds[sessionIdx - 1]][pi].length;
+                                                    pj++
+                                                ) {
+                                                    let pDataId =
+                                                            previousSession.subsequences[
+                                                                this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
+                                                            ].id,
+                                                        pSSId =
+                                                            previousSession.subsequences[
+                                                                this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
+                                                            ].idx;
+                                                    if (cDataId === pDataId && cSSId === pSSId) {
+                                                        let plotColor = TimeTubesStore.getPlotColor(cDataId);
+                                                        if (typeof plotColor === "undefined") plotColor = "gray";
+                                                        let cXPos, pXPos;
+                                                        // how many data points before the cluster ci
+                                                        let cLeftShift = 0;
+                                                        if (ci > 0) {
+                                                            for (let cii = 0; cii < ci; cii++) {
+                                                                cLeftShift += this.clusters[sessionId][cii].length;
+                                                            }
+                                                        }
+                                                        // how many data points before the cluster pi
+                                                        let pLeftShift = 0;
+                                                        if (pi > 0) {
+                                                            for (let pii = 0; pii < pi; pii++) {
+                                                                pLeftShift += this.clusters[
+                                                                    sessionIds[sessionIdx - 1]
+                                                                ][pii].length;
+                                                            }
+                                                        }
+                                                        cXPos =
+                                                            this.padding.left +
+                                                            this.timestampWidth +
+                                                            barWidth * (cLeftShift + cj);
+                                                        pXPos =
+                                                            this.padding.left +
+                                                            this.timestampWidth +
+                                                            barWidth * (pLeftShift + pj);
+                                                        let correlationPos = [
+                                                            {
+                                                                x: pXPos,
+                                                                y:
+                                                                    this.padding.top +
+                                                                    this.barHeight *
+                                                                        (sessionIdx + 2 * (sessionIdx - 1)),
+                                                            },
+                                                            {
+                                                                x: pXPos + barWidth,
+                                                                y:
+                                                                    this.padding.top +
+                                                                    this.barHeight *
+                                                                        (sessionIdx + 2 * (sessionIdx - 1)),
+                                                            },
+                                                            {
+                                                                x: cXPos + barWidth,
+                                                                y:
+                                                                    this.padding.top +
+                                                                    this.barHeight * (sessionIdx + 2 * sessionIdx),
+                                                            },
+                                                            {
+                                                                x: cXPos,
+                                                                y:
+                                                                    this.padding.top +
+                                                                    this.barHeight * (sessionIdx + 2 * sessionIdx),
+                                                            },
+                                                            {
+                                                                x: pXPos,
+                                                                y:
+                                                                    this.padding.top +
+                                                                    this.barHeight *
+                                                                        (sessionIdx + 2 * (sessionIdx - 1)),
+                                                            },
+                                                        ];
+                                                        correlationGroup
+                                                            .select('#clusteringHistoryCorrelationPath_' +
+                                                                sessionIds[sessionIdx - 1] +
+                                                                "_" +
+                                                                sessionId +
+                                                                "_" +
+                                                                cDataId +
+                                                                "_" +
+                                                                cSSId
+                                                            )
+                                                            .attr(
+                                                                "d",
+                                                                d3
+                                                                    .line()
+                                                                    .x(function (d) {
+                                                                        return d.x;
+                                                                    })
+                                                                    .y(function (d) {
+                                                                        return d.y;
+                                                                    })
+                                                            )
+                                                            .attr("fill", plotColor)
+                                                            .style("opacity", 0.3);
+
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+								} else {
+									let correlationGroup = this.clusteringHistorySVG
+										.append("g")
+										.attr("class", "clusteringHistoryCorrelationGroup")
+										.attr(
+											"id",
+											"clusteringHistoryCorrelationGroup_" +
+												sessionIds[sessionIdx - 1] +
+												"_" +
+												sessionId
+										);
+                                    for (let ci = 0; ci < this.clusters[sessionId].length; ci++) {
+                                        for (let cj = 0; cj < this.clusters[sessionId][ci].length; cj++) {
+                                            let cDataId =
+                                                    currentSession.subsequences[
+                                                        this.clusters[sessionId][ci][cj]
+                                                    ].id,
+                                                cSSId =
+                                                    currentSession.subsequences[
+                                                        this.clusters[sessionId][ci][cj]
+                                                    ].idx;
+                                            for (
+                                                let pi = 0;
+                                                pi < this.clusters[sessionIds[sessionIdx - 1]].length;
+                                                pi++
+                                            ) {
+                                                for (
+                                                    let pj = 0;
+                                                    pj < this.clusters[sessionIds[sessionIdx - 1]][pi].length;
+                                                    pj++
+                                                ) {
+                                                    let pDataId =
+                                                            previousSession.subsequences[
+                                                                this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
+                                                            ].id,
+                                                        pSSId =
+                                                            previousSession.subsequences[
+                                                                this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
+                                                            ].idx;
+                                                    if (cDataId === pDataId && cSSId === pSSId) {
+                                                        let plotColor = TimeTubesStore.getPlotColor(cDataId);
+                                                        if (typeof plotColor === "undefined") plotColor = "gray";
+                                                        let cXPos, pXPos;
+                                                        // how many data points before the cluster ci
+                                                        let cLeftShift = 0;
+                                                        if (ci > 0) {
+                                                            for (let cii = 0; cii < ci; cii++) {
+                                                                cLeftShift += this.clusters[sessionId][cii].length;
+                                                            }
+                                                        }
+                                                        // how many data points before the cluster pi
+                                                        let pLeftShift = 0;
+                                                        if (pi > 0) {
+                                                            for (let pii = 0; pii < pi; pii++) {
+                                                                pLeftShift += this.clusters[
+                                                                    sessionIds[sessionIdx - 1]
+                                                                ][pii].length;
+                                                            }
+                                                        }
+                                                        cXPos =
+                                                            this.padding.left +
+                                                            this.timestampWidth +
+                                                            barWidth * (cLeftShift + cj);
+                                                        pXPos =
+                                                            this.padding.left +
+                                                            this.timestampWidth +
+                                                            barWidth * (pLeftShift + pj);
+                                                        let correlationPos = [
+                                                            {
+                                                                x: pXPos,
+                                                                y:
+                                                                    this.padding.top +
+                                                                    this.barHeight *
+                                                                        (sessionIdx + 2 * (sessionIdx - 1)),
+                                                            },
+                                                            {
+                                                                x: pXPos + barWidth,
+                                                                y:
+                                                                    this.padding.top +
+                                                                    this.barHeight *
+                                                                        (sessionIdx + 2 * (sessionIdx - 1)),
+                                                            },
+                                                            {
+                                                                x: cXPos + barWidth,
+                                                                y:
+                                                                    this.padding.top +
+                                                                    this.barHeight * (sessionIdx + 2 * sessionIdx),
+                                                            },
+                                                            {
+                                                                x: cXPos,
+                                                                y:
+                                                                    this.padding.top +
+                                                                    this.barHeight * (sessionIdx + 2 * sessionIdx),
+                                                            },
+                                                            {
+                                                                x: pXPos,
+                                                                y:
+                                                                    this.padding.top +
+                                                                    this.barHeight *
+                                                                        (sessionIdx + 2 * (sessionIdx - 1)),
+                                                            },
+                                                        ];
+                                                        correlationGroup
+                                                            .append("path")
+                                                            .datum(correlationPos)
+                                                            .attr("class", "clusteringHistoryCorrelationPath")
+                                                            .attr(
+                                                                "id",
+                                                                "clusteringHistoryCorrelationPath_" +
+                                                                    sessionIds[sessionIdx - 1] +
+                                                                    "_" +
+                                                                    sessionId +
+                                                                    "_" +
+                                                                    cDataId +
+                                                                    "_" +
+                                                                    cSSId
+                                                            )
+                                                            .attr(
+                                                                "d",
+                                                                d3
+                                                                    .line()
+                                                                    .x(function (d) {
+                                                                        return d.x;
+                                                                    })
+                                                                    .y(function (d) {
+                                                                        return d.y;
+                                                                    })
+                                                            )
+                                                            .attr("fill", plotColor)
+                                                            .style("opacity", 0.3);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+								}
+							}
+						}
 					}
 				}
 			}
