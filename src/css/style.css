@@ -832,6 +832,10 @@ img.selectorIcon:active {
     overflow: auto;
 }
 
+#clusteringHistory {
+    overflow: auto;
+}
+
 #clusteringDetail {
     width: 20%;
     padding: 0px 10px;

@@ -15,6 +15,10 @@ if (localStorage.getItem('queryTable') === null || localStorage.getItem('queryTa
     localStorage.setItem('queryTable', JSON.stringify({}));
 }
 
+if (sessionStorage.getItem('clusteringHistory') === null) {
+    sessionStorage.setItem('clusteringHistory', JSON.stringify({}));
+}
+
 // const mongoose = require('mongoose');
 // const MongoClient = require('mongodb').MongoClient;
 // const url = 'mongodb://localhost:27017';
