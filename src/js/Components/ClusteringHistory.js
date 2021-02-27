@@ -18,6 +18,7 @@ export default class ClusteringHistory extends React.Component {
 		this.metaInfoWidth = 50;
 		this.barHeight = 60;
 		this.clusters = {};
+		this.symbolGenerator = d3.symbol().size(50);
 		this.state = {
 			sessions: getDataFromSessionStorage("clusteringHistory"),
 		};
@@ -25,15 +26,7 @@ export default class ClusteringHistory extends React.Component {
 
 	render() {
 		return (
-			<div
-				id="clusteringHistory"
-				className="clusteringPanel"
-				style={{
-					height:
-						$("#mainFeatureArea").outerHeight(true) -
-						$("#clusteringResultsLeftColumnNavTabs").outerHeight(true),
-				}}
-			>
+			<div id="clusteringHistory" className="clusteringPanel">
 				<button
 					type="button"
 					id="saveCurrentClusteringSessionBtn"
@@ -42,7 +35,14 @@ export default class ClusteringHistory extends React.Component {
 				>
 					Save the clustering results
 				</button>
-				<div id="clusteringHistoryChart"></div>
+				<div
+					id="clusteringHistoryChart"
+					style={{
+						height:
+							$("#mainFeatureArea").outerHeight(true) -
+							$("#clusteringResultsLeftColumnNavTabs").outerHeight(true),
+					}}
+				></div>
 			</div>
 		);
 	}
@@ -51,7 +51,7 @@ export default class ClusteringHistory extends React.Component {
 		let width = Math.max(
 				$("#clusteringResultsLeftColumn").width(),
 				$("#mainFeatureArea").outerWidth(true) * 0.2
-			),
+			) * 0.95,
 			parentHeight =
 				$("#mainFeatureArea").outerHeight(true) -
 				$("#clusteringResultsLeftColumnNavTabs").outerHeight(true);
@@ -72,7 +72,7 @@ export default class ClusteringHistory extends React.Component {
 		let width = Math.max(
 				$("#clusteringResultsLeftColumn").width(),
 				$("#mainFeatureArea").outerWidth(true) * 0.2
-			),
+			) * 0.95,
 			parentHeight =
 				$("#mainFeatureArea").outerHeight(true) -
 				$("#clusteringResultsLeftColumnNavTabs").outerHeight(true);
@@ -152,7 +152,7 @@ export default class ClusteringHistory extends React.Component {
 			let width = Math.max(
 				$("#clusteringResultsLeftColumn").width(),
 				$("#mainFeatureArea").outerWidth(true) * 0.2
-			); //,
+			) * 0.95; //,
 			// 	parentHeight =
 			// 		$("#mainFeatureArea").outerHeight(true) -
 			// 		$("#clusteringResultsLeftColumnNavTabs").outerHeight(true);
@@ -297,14 +297,25 @@ export default class ClusteringHistory extends React.Component {
 							previousSession.datasets,
 							currentSession.datasets
 						),
-						SSparametersEqual = isEqual(
-							previousSession.subsequenceParameters,
-							currentSession.subsequenceParameters
-						),
+						SSparametersEqual = false,
 						SSEqual = isEqual(
 							previousSession.subsequences,
 							currentSession.subsequences
 						);
+					if (
+						previousSession.subsequenceParameters.filtering.indexOf(
+							"dataDrivenSlidingWindow"
+						) ===
+							currentSession.subsequenceParameters.filtering.indexOf(
+								"dataDrivenSlidingWindow"
+							) &&
+						isEqual(
+							previousSession.subsequenceParameters.SSperiod,
+							currentSession.subsequenceParameters.SSperiod
+						)
+					) {
+						SSparametersEqual = true;
+					}
 					if (datasetsEqual && SSparametersEqual && SSEqual) {
 						// case 1: target datasets, subsequence parameters, subsequences are the same
 						// (does not care the differences of clustering parameters)
@@ -452,8 +463,291 @@ export default class ClusteringHistory extends React.Component {
 					} else if (datasetsEqual && SSparametersEqual && !SSEqual) {
 						// case 2: subsequences used in the clustering process are different
 						console.log("SS are different");
+						// SSids coincides between previous session and current session
+						let added = [],
+							removed = [];
+						// check added SS
+						for (let i = 0; i < currentSession.subsequences.length; i++) {
+							let addedFlag = true;
+							for (let j = 0; j < previousSession.subsequences.length; j++) {
+								if (
+									previousSession.subsequences[j].idx ===
+									currentSession.subsequences[i].idx
+								) {
+									addedFlag = false;
+									break;
+								}
+							}
+							if (addedFlag) added.push(i);
+						}
+						// check removed SS
+						for (let i = 0; i < previousSession.subsequences.length; i++) {
+							let removedFlag = true;
+							for (let j = 0; j < currentSession.subsequences.length; j++) {
+								if (
+									previousSession.subsequences[i].idx ===
+									currentSession.subsequences[j].idx
+								) {
+									removedFlag = false;
+									break;
+								}
+							}
+							if (removedFlag) removed.push(i);
+						}
+						if (added.length > 0) {
+							let addedMarks = this.clusteringHistorySVG
+								.select("#clusteringHistoryGroup_" + sessionId)
+								.append("g")
+								.attr("class", "addedMarksGroup");
+							addedMarks
+								.selectAll("path.addedMark")
+								.data(added)
+								.enter()
+								.append("path")
+								.attr("class", "addedMark")
+								.attr(
+									"d",
+									function (d) {
+										this.symbolGenerator.type(d3["symbolTriangle"]);
+										return this.symbolGenerator();
+									}.bind(this)
+								)
+								.attr("fill", "#93c54b")
+								.style(
+									"transform",
+									function (d) {
+										let cluster =
+											typeof currentSession.labels[d] === "object"
+												? currentSession.labels[d].cluster
+												: currentSession.labels[d];
+										let leftShift = 0;
+										for (let i = 0; i < cluster; i++) {
+											leftShift += this.clusters[sessionId][i].length;
+										}
+										let orderInCluster = this.clusters[sessionId][
+											cluster
+										].indexOf(d);
+										return (
+											"translate(" +
+											(this.padding.left +
+												this.timestampWidth +
+												(leftShift + orderInCluster) * barWidth +
+												barWidth / 2) +
+											"px," +
+											(this.padding.top +
+												this.barHeight * (sessionIdx + 2 * sessionIdx) -
+												5) +
+											"px) rotate(180deg)"
+										);
+									}.bind(this)
+								);
+						}
+						if (removed.length > 0) {
+							let removedMarks = this.clusteringHistorySVG
+								.select("#clusteringHistoryGroup_" + sessionIds[sessionIdx - 1])
+								.append("g")
+								.attr("class", "removedMarksGroup");
+							removedMarks
+								.selectAll("path.removedMark")
+								.data(removed)
+								.enter()
+								.append("path")
+								.attr("class", "removedMark")
+								.attr(
+									"d",
+									function (d) {
+										this.symbolGenerator.type(d3["symbolTriangle"]);
+										return this.symbolGenerator();
+									}.bind(this)
+								)
+								.attr("fill", "#d9534f")
+								.style(
+									"transform",
+									function (d) {
+										let cluster =
+											typeof previousSession.labels[d] === "object"
+												? previousSession.labels[d].cluster
+												: previousSession.labels[d];
+										let leftShift = 0;
+										for (let i = 0; i < cluster; i++) {
+											leftShift += this.clusters[sessionIds[sessionIdx - 1]][i]
+												.length;
+										}
+										let orderInCluster = this.clusters[
+											sessionIds[sessionIdx - 1]
+										][cluster].indexOf(d);
+										return (
+											"translate(" +
+											(this.padding.left +
+												this.timestampWidth +
+												(leftShift + orderInCluster) * barWidth +
+												barWidth / 2) +
+											"px," +
+											(this.padding.top +
+												this.barHeight *
+													(sessionIdx +
+														2 * (sessionIdx - 1 > 0 ? sessionIdx - 1 : 0)) +
+												5) +
+											"px)"
+										);
+									}.bind(this)
+								);
+						}
+						$(
+							"#clusteringHistoryCorrelationGroup_" +
+								sessionIds[sessionIdx - 1] +
+								"_" +
+								sessionId
+						).remove();
+						let correlationGroup = this.clusteringHistorySVG
+							.append("g")
+							.attr("class", "clusteringHistoryCorrelationGroup")
+							.attr(
+								"id",
+								"clusteringHistoryCorrelationGroup_" +
+									sessionIds[sessionIdx - 1] +
+									"_" +
+									sessionId
+							);
+						for (let ci = 0; ci < this.clusters[sessionId].length; ci++) {
+							for (let cj = 0; cj < this.clusters[sessionId][ci].length; cj++) {
+								let cDataId =
+										currentSession.subsequences[
+											this.clusters[sessionId][ci][cj]
+										].id,
+									cSSId =
+										currentSession.subsequences[
+											this.clusters[sessionId][ci][cj]
+										].idx;
+								if (added.indexOf(this.clusters[sessionId][ci][cj]) < 0) {
+									for (
+										let pi = 0;
+										pi < this.clusters[sessionIds[sessionIdx - 1]].length;
+										pi++
+									) {
+										for (
+											let pj = 0;
+											pj < this.clusters[sessionIds[sessionIdx - 1]][pi].length;
+											pj++
+										) {
+											if (
+												removed.indexOf(
+													this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
+												) < 0
+											) {
+												// show correlations
+												let pDataId =
+														previousSession.subsequences[
+															this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
+														].id,
+													pSSId =
+														previousSession.subsequences[
+															this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
+														].idx;
+												if (cDataId === pDataId && cSSId === pSSId) {
+													let plotColor = TimeTubesStore.getPlotColor(cDataId);
+													if (typeof plotColor === "undefined")
+														plotColor = "gray";
+													let cXPos, pXPos;
+													// how many data points before the cluster ci
+													let cLeftShift = 0;
+													if (ci > 0) {
+														for (let cii = 0; cii < ci; cii++) {
+															cLeftShift += this.clusters[sessionId][cii]
+																.length;
+														}
+													}
+													// how many data points before the cluster pi
+													let pLeftShift = 0;
+													if (pi > 0) {
+														for (let pii = 0; pii < pi; pii++) {
+															pLeftShift += this.clusters[
+																sessionIds[sessionIdx - 1]
+															][pii].length;
+														}
+													}
+													cXPos =
+														this.padding.left +
+														this.timestampWidth +
+														barWidth * (cLeftShift + cj);
+													pXPos =
+														this.padding.left +
+														this.timestampWidth +
+														barWidth * (pLeftShift + pj);
+													let correlationPos = [
+														{
+															x: pXPos,
+															y:
+																this.padding.top +
+																this.barHeight *
+																	(sessionIdx + 2 * (sessionIdx - 1)),
+														},
+														{
+															x: pXPos + barWidth,
+															y:
+																this.padding.top +
+																this.barHeight *
+																	(sessionIdx + 2 * (sessionIdx - 1)),
+														},
+														{
+															x: cXPos + barWidth,
+															y:
+																this.padding.top +
+																this.barHeight * (sessionIdx + 2 * sessionIdx),
+														},
+														{
+															x: cXPos,
+															y:
+																this.padding.top +
+																this.barHeight * (sessionIdx + 2 * sessionIdx),
+														},
+														{
+															x: pXPos,
+															y:
+																this.padding.top +
+																this.barHeight *
+																	(sessionIdx + 2 * (sessionIdx - 1)),
+														},
+													];
+													correlationGroup
+														.append("path")
+														.datum(correlationPos)
+														.attr("class", "clusteringHistoryCorrelationPath")
+														.attr(
+															"id",
+															"clusteringHistoryCorrelationPath_" +
+																sessionIds[sessionIdx - 1] +
+																"_" +
+																sessionId +
+																"_" +
+																cDataId +
+																"_" +
+																cSSId
+														)
+														.attr(
+															"d",
+															d3
+																.line()
+																.x(function (d) {
+																	return d.x;
+																})
+																.y(function (d) {
+																	return d.y;
+																})
+														)
+														.attr("fill", plotColor)
+														.style("opacity", 0.3);
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					} else if (!datasetsEqual && SSparametersEqual && !SSEqual) {
+						// case 3: datasets are different
 					} else if (!SSParametersEqual) {
-						// case 3: different subsequence parameters
+						// case 4: different subsequence parameters
 						console.log("different SS parameters");
 					}
 				}
@@ -473,7 +767,7 @@ export default class ClusteringHistory extends React.Component {
 			let width = Math.max(
 				$("#clusteringResultsLeftColumn").width(),
 				$("#mainFeatureArea").outerWidth(true) * 0.2
-			); //,
+			) * 0.95; //,
 			// 	parentHeight =
 			// 		$("#mainFeatureArea").outerHeight(true) -
 			// 		$("#clusteringResultsLeftColumnNavTabs").outerHeight(true);
@@ -530,11 +824,6 @@ export default class ClusteringHistory extends React.Component {
 				let sessionGroup = this.clusteringHistorySVG.select(
 					"#clusteringHistoryGroup_" + sessionId
 				);
-				// if (sessionGroup.size() <= 0) {
-				// 	sessionGroup = this.clusteringHistorySVG
-				// 		.append("g")
-				// 		.attr("id", "clusteringHistoryGroup_" + sessionId);
-				// }
 				if ($("#removeClusteringSession_" + sessionId).length > 0) {
 					d3.select("#removeClusteringSession_" + sessionId)
 						.attr("x", width - this.padding.right - 5)
@@ -672,22 +961,31 @@ export default class ClusteringHistory extends React.Component {
 							});
 					}
 					if (sessionIdx > 0) {
-						let previousSession = this.state.sessions[
-							sessionIds[sessionIdx - 1]
-						];
-						let currentSession = this.state.sessions[sessionId];
-						let datasetsEqual = isEqual(
-								previousSession.datasets,
-								currentSession.datasets
-							),
-							SSparametersEqual = isEqual(
-								previousSession.subsequenceParameters,
-								currentSession.subsequenceParameters
-							),
-							SSEqual = isEqual(
-								previousSession.subsequences,
-								currentSession.subsequences
-							);
+						let previousSession = this.state.sessions[sessionIds[sessionIdx - 1]];
+                        let currentSession = this.state.sessions[sessionId];
+                        let datasetsEqual = isEqual(
+                                previousSession.datasets,
+                                currentSession.datasets
+                            ),
+                            SSparametersEqual = false,
+                            SSEqual = isEqual(
+                                previousSession.subsequences,
+                                currentSession.subsequences
+                            );
+                        if (
+                            previousSession.subsequenceParameters.filtering.indexOf(
+                                "dataDrivenSlidingWindow"
+                            ) ===
+                                currentSession.subsequenceParameters.filtering.indexOf(
+                                    "dataDrivenSlidingWindow"
+                                ) &&
+                            isEqual(
+                                previousSession.subsequenceParameters.SSperiod,
+                                currentSession.subsequenceParameters.SSperiod
+                            )
+                        ) {
+                            SSparametersEqual = true;
+                        }
 						if (datasetsEqual && SSparametersEqual && SSEqual) {
 							// case 1: target datasets, subsequence parameters, subsequences are the same
 							$(
@@ -835,7 +1133,303 @@ export default class ClusteringHistory extends React.Component {
 									}
 								}
 							}
-						}
+						} else if (datasetsEqual && SSparametersEqual && !SSEqual) {
+                            this.clusteringHistorySVG
+                                .select("#clusteringHistoryGroup_" + sessionId)
+                                .selectAll('.addedMarksGroup')
+                                .remove();
+                            this.clusteringHistorySVG
+                                .select("#clusteringHistoryGroup_" + sessionIds[sessionIdx - 1])
+                                .selectAll('.removedMarksGroup')
+                                .remove();
+                            // case 2: subsequences used in the clustering process are different
+                            // SSids coincides between previous session and current session
+                            let added = [],
+                                removed = [];
+                            // check added SS
+                            for (let i = 0; i < currentSession.subsequences.length; i++) {
+                                let addedFlag = true;
+                                for (let j = 0; j < previousSession.subsequences.length; j++) {
+                                    if (
+                                        previousSession.subsequences[j].idx ===
+                                        currentSession.subsequences[i].idx
+                                    ) {
+                                        addedFlag = false;
+                                        break;
+                                    }
+                                }
+                                if (addedFlag) added.push(i);
+                            }
+                            // check removed SS
+                            for (let i = 0; i < previousSession.subsequences.length; i++) {
+                                let removedFlag = true;
+                                for (let j = 0; j < currentSession.subsequences.length; j++) {
+                                    if (
+                                        previousSession.subsequences[i].idx ===
+                                        currentSession.subsequences[j].idx
+                                    ) {
+                                        removedFlag = false;
+                                        break;
+                                    }
+                                }
+                                if (removedFlag) removed.push(i);
+                            }
+                            if (added.length > 0) {
+                                let addedMarks = this.clusteringHistorySVG
+                                    .select("#clusteringHistoryGroup_" + sessionId)
+                                    .append("g")
+                                    .attr("class", "addedMarksGroup");
+                                addedMarks
+                                    .selectAll("path.addedMark")
+                                    .data(added)
+                                    .enter()
+                                    .append("path")
+                                    .attr("class", "addedMark")
+                                    .attr(
+                                        "d",
+                                        function (d) {
+                                            this.symbolGenerator.type(d3["symbolTriangle"]);
+                                            return this.symbolGenerator();
+                                        }.bind(this)
+                                    )
+                                    .attr("fill", "#93c54b")
+                                    .style(
+                                        "transform",
+                                        function (d) {
+                                            let cluster =
+                                                typeof currentSession.labels[d] === "object"
+                                                    ? currentSession.labels[d].cluster
+                                                    : currentSession.labels[d];
+                                            let leftShift = 0;
+                                            for (let i = 0; i < cluster; i++) {
+                                                leftShift += this.clusters[sessionId][i].length;
+                                            }
+                                            let orderInCluster = this.clusters[sessionId][
+                                                cluster
+                                            ].indexOf(d);
+                                            return (
+                                                "translate(" +
+                                                (this.padding.left +
+                                                    this.timestampWidth +
+                                                    (leftShift + orderInCluster) * barWidth +
+                                                    barWidth / 2) +
+                                                "px," +
+                                                (this.padding.top +
+                                                    this.barHeight * (sessionIdx + 2 * sessionIdx) -
+                                                    5) +
+                                                "px) rotate(180deg)"
+                                            );
+                                        }.bind(this)
+                                    );
+                            }
+                            if (removed.length > 0) {
+                                let removedMarks = this.clusteringHistorySVG
+                                    .select("#clusteringHistoryGroup_" + sessionIds[sessionIdx - 1])
+                                    .append("g")
+                                    .attr("class", "removedMarksGroup");
+                                removedMarks
+                                    .selectAll("path.removedMark")
+                                    .data(removed)
+                                    .enter()
+                                    .append("path")
+                                    .attr("class", "removedMark")
+                                    .attr(
+                                        "d",
+                                        function (d) {
+                                            this.symbolGenerator.type(d3["symbolTriangle"]);
+                                            return this.symbolGenerator();
+                                        }.bind(this)
+                                    )
+                                    .attr("fill", "#d9534f")
+                                    .style(
+                                        "transform",
+                                        function (d) {
+                                            let cluster =
+                                                typeof previousSession.labels[d] === "object"
+                                                    ? previousSession.labels[d].cluster
+                                                    : previousSession.labels[d];
+                                            let leftShift = 0;
+                                            for (let i = 0; i < cluster; i++) {
+                                                leftShift += this.clusters[sessionIds[sessionIdx - 1]][i]
+                                                    .length;
+                                            }
+                                            let orderInCluster = this.clusters[
+                                                sessionIds[sessionIdx - 1]
+                                            ][cluster].indexOf(d);
+                                            return (
+                                                "translate(" +
+                                                (this.padding.left +
+                                                    this.timestampWidth +
+                                                    (leftShift + orderInCluster) * barWidth +
+                                                    barWidth / 2) +
+                                                "px," +
+                                                (this.padding.top +
+                                                    this.barHeight *
+                                                        (sessionIdx +
+                                                            2 * (sessionIdx - 1 > 0 ? sessionIdx - 1 : 0)) +
+                                                    5) +
+                                                "px)"
+                                            );
+                                        }.bind(this)
+                                    );
+                            }
+                            $(
+                                "#clusteringHistoryCorrelationGroup_" +
+                                    sessionIds[sessionIdx - 1] +
+                                    "_" +
+                                    sessionId
+                            ).remove();
+                            let correlationGroup = this.clusteringHistorySVG
+                                .append("g")
+                                .attr("class", "clusteringHistoryCorrelationGroup")
+                                .attr(
+                                    "id",
+                                    "clusteringHistoryCorrelationGroup_" +
+                                        sessionIds[sessionIdx - 1] +
+                                        "_" +
+                                        sessionId
+                                );
+                            for (let ci = 0; ci < this.clusters[sessionId].length; ci++) {
+                                for (let cj = 0; cj < this.clusters[sessionId][ci].length; cj++) {
+                                    let cDataId =
+                                            currentSession.subsequences[
+                                                this.clusters[sessionId][ci][cj]
+                                            ].id,
+                                        cSSId =
+                                            currentSession.subsequences[
+                                                this.clusters[sessionId][ci][cj]
+                                            ].idx;
+                                    if (added.indexOf(this.clusters[sessionId][ci][cj]) < 0) {
+                                        for (
+                                            let pi = 0;
+                                            pi < this.clusters[sessionIds[sessionIdx - 1]].length;
+                                            pi++
+                                        ) {
+                                            for (
+                                                let pj = 0;
+                                                pj < this.clusters[sessionIds[sessionIdx - 1]][pi].length;
+                                                pj++
+                                            ) {
+                                                if (
+                                                    removed.indexOf(
+                                                        this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
+                                                    ) < 0
+                                                ) {
+                                                    // show correlations
+                                                    let pDataId =
+                                                            previousSession.subsequences[
+                                                                this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
+                                                            ].id,
+                                                        pSSId =
+                                                            previousSession.subsequences[
+                                                                this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
+                                                            ].idx;
+                                                    if (cDataId === pDataId && cSSId === pSSId) {
+                                                        let plotColor = TimeTubesStore.getPlotColor(cDataId);
+                                                        if (typeof plotColor === "undefined")
+                                                            plotColor = "gray";
+                                                        let cXPos, pXPos;
+                                                        // how many data points before the cluster ci
+                                                        let cLeftShift = 0;
+                                                        if (ci > 0) {
+                                                            for (let cii = 0; cii < ci; cii++) {
+                                                                cLeftShift += this.clusters[sessionId][cii]
+                                                                    .length;
+                                                            }
+                                                        }
+                                                        // how many data points before the cluster pi
+                                                        let pLeftShift = 0;
+                                                        if (pi > 0) {
+                                                            for (let pii = 0; pii < pi; pii++) {
+                                                                pLeftShift += this.clusters[
+                                                                    sessionIds[sessionIdx - 1]
+                                                                ][pii].length;
+                                                            }
+                                                        }
+                                                        cXPos =
+                                                            this.padding.left +
+                                                            this.timestampWidth +
+                                                            barWidth * (cLeftShift + cj);
+                                                        pXPos =
+                                                            this.padding.left +
+                                                            this.timestampWidth +
+                                                            barWidth * (pLeftShift + pj);
+                                                        let correlationPos = [
+                                                            {
+                                                                x: pXPos,
+                                                                y:
+                                                                    this.padding.top +
+                                                                    this.barHeight *
+                                                                        (sessionIdx + 2 * (sessionIdx - 1)),
+                                                            },
+                                                            {
+                                                                x: pXPos + barWidth,
+                                                                y:
+                                                                    this.padding.top +
+                                                                    this.barHeight *
+                                                                        (sessionIdx + 2 * (sessionIdx - 1)),
+                                                            },
+                                                            {
+                                                                x: cXPos + barWidth,
+                                                                y:
+                                                                    this.padding.top +
+                                                                    this.barHeight * (sessionIdx + 2 * sessionIdx),
+                                                            },
+                                                            {
+                                                                x: cXPos,
+                                                                y:
+                                                                    this.padding.top +
+                                                                    this.barHeight * (sessionIdx + 2 * sessionIdx),
+                                                            },
+                                                            {
+                                                                x: pXPos,
+                                                                y:
+                                                                    this.padding.top +
+                                                                    this.barHeight *
+                                                                        (sessionIdx + 2 * (sessionIdx - 1)),
+                                                            },
+                                                        ];
+                                                        correlationGroup
+                                                            .append("path")
+                                                            .datum(correlationPos)
+                                                            .attr("class", "clusteringHistoryCorrelationPath")
+                                                            .attr(
+                                                                "id",
+                                                                "clusteringHistoryCorrelationPath_" +
+                                                                    sessionIds[sessionIdx - 1] +
+                                                                    "_" +
+                                                                    sessionId +
+                                                                    "_" +
+                                                                    cDataId +
+                                                                    "_" +
+                                                                    cSSId
+                                                            )
+                                                            .attr(
+                                                                "d",
+                                                                d3
+                                                                    .line()
+                                                                    .x(function (d) {
+                                                                        return d.x;
+                                                                    })
+                                                                    .y(function (d) {
+                                                                        return d.y;
+                                                                    })
+                                                            )
+                                                            .attr("fill", plotColor)
+                                                            .style("opacity", 0.3);
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (!datasetsEqual && SSparametersEqual && !SSEqual) {
+                            // case 3: datasets are different
+                        } else if (!SSParametersEqual) {
+                            // case 4: different subsequence parameters
+                            console.log("different SS parameters");
+                        }
 					}
 				}
 			}
