@@ -120,9 +120,9 @@ export default class ClusteringHistory extends React.Component {
 			};
 			sessionInfo.timeStamp = new Date().toLocaleString("en-US", options);
 			let datasets = ClusteringStore.getDatasets();
-			sessionInfo.datasets = [];
+			sessionInfo.datasets = {};
 			for (let i = 0; i < datasets.length; i++) {
-				sessionInfo.datasets.push(DataStore.getFileName(datasets[i]));
+                sessionInfo.datasets[datasets[i]] = DataStore.getFileName(datasets[i]);
 			}
 			sessionInfo.clusteringParameters = ClusteringStore.getClusteringParameters();
 			sessionInfo.subsequenceParameters = ClusteringStore.getSubsequenceParameters();
@@ -293,9 +293,11 @@ export default class ClusteringHistory extends React.Component {
 					// show correlation between the previous session
 					let previousSession = this.state.sessions[sessionIds[sessionIdx - 1]];
 					let currentSession = this.state.sessions[sessionId];
+                    let previousDatasets = Object.keys(previousSession.datasets).map(d => {return previousSession.datasets[d]}).sort((a, b) => a - b),
+                        currentDatasets = Object.keys(currentSession.datasets).map(d => {return currentSession.datasets[d]}).sort((a, b) => a - b);
 					let datasetsEqual = isEqual(
-							previousSession.datasets,
-							currentSession.datasets
+							previousDatasets,
+							currentDatasets
 						),
 						SSparametersEqual = false,
 						SSEqual = isEqual(
@@ -338,10 +340,12 @@ export default class ClusteringHistory extends React.Component {
 							);
 						for (let ci = 0; ci < this.clusters[sessionId].length; ci++) {
 							for (let cj = 0; cj < this.clusters[sessionId][ci].length; cj++) {
-								let cDataId =
-										currentSession.subsequences[
-											this.clusters[sessionId][ci][cj]
-										].id,
+								let cDataName =
+                                    currentSession.datasets[
+                                        currentSession.subsequences[
+                                                this.clusters[sessionId][ci][cj]
+                                            ].id
+                                    ],
 									cSSId =
 										currentSession.subsequences[
 											this.clusters[sessionId][ci][cj]
@@ -356,16 +360,18 @@ export default class ClusteringHistory extends React.Component {
 										pj < this.clusters[sessionIds[sessionIdx - 1]][pi].length;
 										pj++
 									) {
-										let pDataId =
+										let pDataName =
+                                            previousSession.datasets[
 												previousSession.subsequences[
 													this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
-												].id,
+												].id
+                                            ],
 											pSSId =
 												previousSession.subsequences[
 													this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
 												].idx;
-										if (cDataId === pDataId && cSSId === pSSId) {
-											let plotColor = TimeTubesStore.getPlotColor(cDataId);
+										if (cDataName === pDataName && cSSId === pSSId) {
+											let plotColor = TimeTubesStore.getPlotColor(DataStore.getIdFromName(cDataName));
 											if (typeof plotColor === "undefined") plotColor = "gray";
 											let cXPos, pXPos;
 											// how many data points before the cluster ci
@@ -438,7 +444,7 @@ export default class ClusteringHistory extends React.Component {
 														"_" +
 														sessionId +
 														"_" +
-														cDataId +
+														cDataName +
 														"_" +
 														cSSId
 												)
@@ -471,6 +477,8 @@ export default class ClusteringHistory extends React.Component {
 							let addedFlag = true;
 							for (let j = 0; j < previousSession.subsequences.length; j++) {
 								if (
+                                    previousSession.datasets[previousSession.subsequences[j].id] ===
+                                    currentSession.datasets[currentSession.subsequences[i].id] &&
 									previousSession.subsequences[j].idx ===
 									currentSession.subsequences[i].idx
 								) {
@@ -485,6 +493,8 @@ export default class ClusteringHistory extends React.Component {
 							let removedFlag = true;
 							for (let j = 0; j < currentSession.subsequences.length; j++) {
 								if (
+                                    previousSession.datasets[previousSession.subsequences[i].id] ===
+                                    currentSession.datasets[currentSession.subsequences[j].id] &&
 									previousSession.subsequences[i].idx ===
 									currentSession.subsequences[j].idx
 								) {
@@ -611,10 +621,12 @@ export default class ClusteringHistory extends React.Component {
 							);
 						for (let ci = 0; ci < this.clusters[sessionId].length; ci++) {
 							for (let cj = 0; cj < this.clusters[sessionId][ci].length; cj++) {
-								let cDataId =
-										currentSession.subsequences[
-											this.clusters[sessionId][ci][cj]
-										].id,
+								let cDataName =
+                                    currentSession.datasets[
+                                        currentSession.subsequences[
+                                                this.clusters[sessionId][ci][cj]
+                                            ].id
+                                    ],
 									cSSId =
 										currentSession.subsequences[
 											this.clusters[sessionId][ci][cj]
@@ -636,16 +648,18 @@ export default class ClusteringHistory extends React.Component {
 												) < 0
 											) {
 												// show correlations
-												let pDataId =
-														previousSession.subsequences[
-															this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
-														].id,
+												let pDataName =
+                                                    previousSession.datasets[
+                                                        previousSession.subsequences[
+                                                            this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
+                                                        ].id
+                                                    ],
 													pSSId =
 														previousSession.subsequences[
 															this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
 														].idx;
-												if (cDataId === pDataId && cSSId === pSSId) {
-													let plotColor = TimeTubesStore.getPlotColor(cDataId);
+												if (cDataName === pDataName && cSSId === pSSId) {
+                                                    let plotColor = TimeTubesStore.getPlotColor(DataStore.getIdFromName(cDataName));
 													if (typeof plotColor === "undefined")
 														plotColor = "gray";
 													let cXPos, pXPos;
@@ -720,7 +734,7 @@ export default class ClusteringHistory extends React.Component {
 																"_" +
 																sessionId +
 																"_" +
-																cDataId +
+															    cDataName +
 																"_" +
 																cSSId
 														)
@@ -745,10 +759,17 @@ export default class ClusteringHistory extends React.Component {
 							}
 						}
 					} else if (!datasetsEqual && SSparametersEqual && !SSEqual) {
-						// case 3: datasets are different
+						// case 3: datasets are different (SS id coincides)
+                        // check whether the previous session and current session use the same dataset
+                        let overlappingFile;
+                        for (let i = 0; i < previousSession.datasets.length; i++) {
+                            
+                        }
+
 					} else if (!SSParametersEqual) {
 						// case 4: different subsequence parameters
 						console.log("different SS parameters");
+                        // just show the session bar
 					}
 				}
 			}
@@ -1010,10 +1031,12 @@ export default class ClusteringHistory extends React.Component {
 									cj < this.clusters[sessionId][ci].length;
 									cj++
 								) {
-									let cDataId =
-											currentSession.subsequences[
-												this.clusters[sessionId][ci][cj]
-											].id,
+									let cDataName =
+                                            currentSession.datasets[
+                                                currentSession.subsequences[
+                                                        this.clusters[sessionId][ci][cj]
+                                                    ].id
+                                            ],
 										cSSId =
 											currentSession.subsequences[
 												this.clusters[sessionId][ci][cj]
@@ -1028,16 +1051,18 @@ export default class ClusteringHistory extends React.Component {
 											pj < this.clusters[sessionIds[sessionIdx - 1]][pi].length;
 											pj++
 										) {
-											let pDataId =
-													previousSession.subsequences[
-														this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
-													].id,
+											let pDataName =
+                                                    previousSession.datasets[
+                                                        previousSession.subsequences[
+                                                            this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
+                                                        ].id
+                                                    ],
 												pSSId =
 													previousSession.subsequences[
 														this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
 													].idx;
-											if (cDataId === pDataId && cSSId === pSSId) {
-												let plotColor = TimeTubesStore.getPlotColor(cDataId);
+											if (cDataName === pDataName && cSSId === pSSId) {
+                                                let plotColor = TimeTubesStore.getPlotColor(DataStore.getIdFromName(cDataName));
 												if (typeof plotColor === "undefined")
 													plotColor = "gray";
 												let cXPos, pXPos;
@@ -1111,7 +1136,7 @@ export default class ClusteringHistory extends React.Component {
 															"_" +
 															sessionId +
 															"_" +
-															cDataId +
+															cDataName +
 															"_" +
 															cSSId
 													)
@@ -1151,6 +1176,8 @@ export default class ClusteringHistory extends React.Component {
                                 let addedFlag = true;
                                 for (let j = 0; j < previousSession.subsequences.length; j++) {
                                     if (
+                                        previousSession.datasets[previousSession.subsequences[j].id] ===
+                                        currentSession.datasets[currentSession.subsequences[i].id] &&
                                         previousSession.subsequences[j].idx ===
                                         currentSession.subsequences[i].idx
                                     ) {
@@ -1165,6 +1192,8 @@ export default class ClusteringHistory extends React.Component {
                                 let removedFlag = true;
                                 for (let j = 0; j < currentSession.subsequences.length; j++) {
                                     if (
+                                        previousSession.datasets[previousSession.subsequences[i].id] ===
+                                        currentSession.datasets[currentSession.subsequences[j].id] &&
                                         previousSession.subsequences[i].idx ===
                                         currentSession.subsequences[j].idx
                                     ) {
@@ -1291,10 +1320,12 @@ export default class ClusteringHistory extends React.Component {
                                 );
                             for (let ci = 0; ci < this.clusters[sessionId].length; ci++) {
                                 for (let cj = 0; cj < this.clusters[sessionId][ci].length; cj++) {
-                                    let cDataId =
-                                            currentSession.subsequences[
-                                                this.clusters[sessionId][ci][cj]
-                                            ].id,
+                                    let cDataName =
+                                            currentSession.datasets[
+                                                currentSession.subsequences[
+                                                        this.clusters[sessionId][ci][cj]
+                                                    ].id
+                                            ],
                                         cSSId =
                                             currentSession.subsequences[
                                                 this.clusters[sessionId][ci][cj]
@@ -1316,16 +1347,18 @@ export default class ClusteringHistory extends React.Component {
                                                     ) < 0
                                                 ) {
                                                     // show correlations
-                                                    let pDataId =
-                                                            previousSession.subsequences[
-                                                                this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
-                                                            ].id,
+                                                    let pDataName =
+                                                            previousSession.datasets[
+                                                                previousSession.subsequences[
+                                                                    this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
+                                                                ].id
+                                                            ],
                                                         pSSId =
                                                             previousSession.subsequences[
                                                                 this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
                                                             ].idx;
-                                                    if (cDataId === pDataId && cSSId === pSSId) {
-                                                        let plotColor = TimeTubesStore.getPlotColor(cDataId);
+                                                    if (cDataName === pDataName && cSSId === pSSId) {
+                                                        let plotColor = TimeTubesStore.getPlotColor(DataStore.getIdFromName(cDataName));
                                                         if (typeof plotColor === "undefined")
                                                             plotColor = "gray";
                                                         let cXPos, pXPos;
@@ -1400,7 +1433,7 @@ export default class ClusteringHistory extends React.Component {
                                                                     "_" +
                                                                     sessionId +
                                                                     "_" +
-                                                                    cDataId +
+                                                                    cDataName +
                                                                     "_" +
                                                                     cSSId
                                                             )
