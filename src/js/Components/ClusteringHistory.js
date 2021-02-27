@@ -48,10 +48,11 @@ export default class ClusteringHistory extends React.Component {
 	}
 
 	componentDidMount() {
-		let width = Math.max(
-				$("#clusteringResultsLeftColumn").width(),
-				$("#mainFeatureArea").outerWidth(true) * 0.2
-			) * 0.95,
+		let width =
+				Math.max(
+					$("#clusteringResultsLeftColumn").width(),
+					$("#mainFeatureArea").outerWidth(true) * 0.2
+				) * 0.95,
 			parentHeight =
 				$("#mainFeatureArea").outerHeight(true) -
 				$("#clusteringResultsLeftColumnNavTabs").outerHeight(true);
@@ -69,10 +70,11 @@ export default class ClusteringHistory extends React.Component {
 	}
 
 	componentDidUpdate() {
-		let width = Math.max(
-				$("#clusteringResultsLeftColumn").width(),
-				$("#mainFeatureArea").outerWidth(true) * 0.2
-			) * 0.95,
+		let width =
+				Math.max(
+					$("#clusteringResultsLeftColumn").width(),
+					$("#mainFeatureArea").outerWidth(true) * 0.2
+				) * 0.95,
 			parentHeight =
 				$("#mainFeatureArea").outerHeight(true) -
 				$("#clusteringResultsLeftColumnNavTabs").outerHeight(true);
@@ -122,7 +124,7 @@ export default class ClusteringHistory extends React.Component {
 			let datasets = ClusteringStore.getDatasets();
 			sessionInfo.datasets = {};
 			for (let i = 0; i < datasets.length; i++) {
-                sessionInfo.datasets[datasets[i]] = DataStore.getFileName(datasets[i]);
+				sessionInfo.datasets[datasets[i]] = DataStore.getFileName(datasets[i]);
 			}
 			sessionInfo.clusteringParameters = ClusteringStore.getClusteringParameters();
 			sessionInfo.subsequenceParameters = ClusteringStore.getSubsequenceParameters();
@@ -149,10 +151,11 @@ export default class ClusteringHistory extends React.Component {
 					maxSSnum = this.state.sessions[key].subsequences.length;
 				}
 			}
-			let width = Math.max(
-				$("#clusteringResultsLeftColumn").width(),
-				$("#mainFeatureArea").outerWidth(true) * 0.2
-			) * 0.95; //,
+			let width =
+				Math.max(
+					$("#clusteringResultsLeftColumn").width(),
+					$("#mainFeatureArea").outerWidth(true) * 0.2
+				) * 0.95; //,
 			// 	parentHeight =
 			// 		$("#mainFeatureArea").outerHeight(true) -
 			// 		$("#clusteringResultsLeftColumnNavTabs").outerHeight(true);
@@ -227,10 +230,27 @@ export default class ClusteringHistory extends React.Component {
 						.append("rect")
 						.attr(
 							"class",
-							"clusteringHistogramRect clusteringHistoryRect_" +
+							"clusteringHistoryRect clusteringHistoryRect_" +
 								sessionId +
 								"_" +
 								i
+						)
+						.attr(
+							"id",
+							function (d) {
+								return (
+									"clusteringHistoryRect_" +
+									sessionId +
+									"_" +
+									i +
+									"_" +
+									this.state.sessions[sessionId].datasets[
+										this.state.sessions[sessionId].subsequences[d].id
+									] +
+									"_" +
+									this.state.sessions[sessionId].subsequences[d].idx
+								);
+							}.bind(this)
 						)
 						.attr(
 							"x",
@@ -258,7 +278,9 @@ export default class ClusteringHistory extends React.Component {
 						)
 						.attr("width", barWidth)
 						.attr("height", this.barHeight)
-						.attr("fill", d3.hsl(color[0], color[1], color[2]));
+						.attr("fill", d3.hsl(color[0], color[1], color[2]))
+						.on("mouseover", this.onMouseOverRectOnSessionBar().bind(this))
+						.on("mouseout", this.onMouseOutRectOnSessionBar().bind(this));
 					let timeStamps = this.state.sessions[sessionId].timeStamp
 						.toLocaleString("en-US")
 						.split(", ");
@@ -293,12 +315,17 @@ export default class ClusteringHistory extends React.Component {
 					// show correlation between the previous session
 					let previousSession = this.state.sessions[sessionIds[sessionIdx - 1]];
 					let currentSession = this.state.sessions[sessionId];
-                    let previousDatasets = Object.keys(previousSession.datasets).map(d => {return previousSession.datasets[d]}).sort((a, b) => a - b),
-                        currentDatasets = Object.keys(currentSession.datasets).map(d => {return currentSession.datasets[d]}).sort((a, b) => a - b);
-					let datasetsEqual = isEqual(
-							previousDatasets,
-							currentDatasets
-						),
+					let previousDatasets = Object.keys(previousSession.datasets)
+							.map((d) => {
+								return previousSession.datasets[d];
+							})
+							.sort((a, b) => a - b),
+						currentDatasets = Object.keys(currentSession.datasets)
+							.map((d) => {
+								return currentSession.datasets[d];
+							})
+							.sort((a, b) => a - b);
+					let datasetsEqual = isEqual(previousDatasets, currentDatasets),
 						SSparametersEqual = false,
 						SSEqual = isEqual(
 							previousSession.subsequences,
@@ -341,11 +368,11 @@ export default class ClusteringHistory extends React.Component {
 						for (let ci = 0; ci < this.clusters[sessionId].length; ci++) {
 							for (let cj = 0; cj < this.clusters[sessionId][ci].length; cj++) {
 								let cDataName =
-                                    currentSession.datasets[
-                                        currentSession.subsequences[
-                                                this.clusters[sessionId][ci][cj]
-                                            ].id
-                                    ],
+										currentSession.datasets[
+											currentSession.subsequences[
+												this.clusters[sessionId][ci][cj]
+											].id
+										],
 									cSSId =
 										currentSession.subsequences[
 											this.clusters[sessionId][ci][cj]
@@ -361,17 +388,19 @@ export default class ClusteringHistory extends React.Component {
 										pj++
 									) {
 										let pDataName =
-                                            previousSession.datasets[
-												previousSession.subsequences[
-													this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
-												].id
-                                            ],
+												previousSession.datasets[
+													previousSession.subsequences[
+														this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
+													].id
+												],
 											pSSId =
 												previousSession.subsequences[
 													this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
 												].idx;
 										if (cDataName === pDataName && cSSId === pSSId) {
-											let plotColor = TimeTubesStore.getPlotColor(DataStore.getIdFromName(cDataName));
+											let plotColor = TimeTubesStore.getPlotColor(
+												DataStore.getIdFromName(cDataName)
+											);
 											if (typeof plotColor === "undefined") plotColor = "gray";
 											let cXPos, pXPos;
 											// how many data points before the cluster ci
@@ -460,13 +489,24 @@ export default class ClusteringHistory extends React.Component {
 														})
 												)
 												.attr("fill", plotColor)
-												.style("opacity", 0.3);
+												.style("opacity", 0.3)
+												.on(
+													"mouseover",
+													this.onMouseOverCorrelationPath().bind(this)
+												)
+												.on(
+													"mouseout",
+													this.onMouseOutCorrelationPath().bind(this)
+												);
 										}
 									}
 								}
 							}
 						}
-					} else if (datasetsEqual && SSparametersEqual && !SSEqual) {
+					} else if (
+						(datasetsEqual && SSparametersEqual && !SSEqual) ||
+						(!datasetsEqual && SSparametersEqual && !SSEqual)
+					) {
 						// case 2: subsequences used in the clustering process are different
 						console.log("SS are different");
 						// SSids coincides between previous session and current session
@@ -477,10 +517,14 @@ export default class ClusteringHistory extends React.Component {
 							let addedFlag = true;
 							for (let j = 0; j < previousSession.subsequences.length; j++) {
 								if (
-                                    previousSession.datasets[previousSession.subsequences[j].id] ===
-                                    currentSession.datasets[currentSession.subsequences[i].id] &&
+									previousSession.datasets[
+										previousSession.subsequences[j].id
+									] ===
+										currentSession.datasets[
+											currentSession.subsequences[i].id
+										] &&
 									previousSession.subsequences[j].idx ===
-									currentSession.subsequences[i].idx
+										currentSession.subsequences[i].idx
 								) {
 									addedFlag = false;
 									break;
@@ -493,10 +537,14 @@ export default class ClusteringHistory extends React.Component {
 							let removedFlag = true;
 							for (let j = 0; j < currentSession.subsequences.length; j++) {
 								if (
-                                    previousSession.datasets[previousSession.subsequences[i].id] ===
-                                    currentSession.datasets[currentSession.subsequences[j].id] &&
+									previousSession.datasets[
+										previousSession.subsequences[i].id
+									] ===
+										currentSession.datasets[
+											currentSession.subsequences[j].id
+										] &&
 									previousSession.subsequences[i].idx ===
-									currentSession.subsequences[j].idx
+										currentSession.subsequences[j].idx
 								) {
 									removedFlag = false;
 									break;
@@ -622,11 +670,11 @@ export default class ClusteringHistory extends React.Component {
 						for (let ci = 0; ci < this.clusters[sessionId].length; ci++) {
 							for (let cj = 0; cj < this.clusters[sessionId][ci].length; cj++) {
 								let cDataName =
-                                    currentSession.datasets[
-                                        currentSession.subsequences[
-                                                this.clusters[sessionId][ci][cj]
-                                            ].id
-                                    ],
+										currentSession.datasets[
+											currentSession.subsequences[
+												this.clusters[sessionId][ci][cj]
+											].id
+										],
 									cSSId =
 										currentSession.subsequences[
 											this.clusters[sessionId][ci][cj]
@@ -649,17 +697,21 @@ export default class ClusteringHistory extends React.Component {
 											) {
 												// show correlations
 												let pDataName =
-                                                    previousSession.datasets[
-                                                        previousSession.subsequences[
-                                                            this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
-                                                        ].id
-                                                    ],
+														previousSession.datasets[
+															previousSession.subsequences[
+																this.clusters[sessionIds[sessionIdx - 1]][pi][
+																	pj
+																]
+															].id
+														],
 													pSSId =
 														previousSession.subsequences[
 															this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
 														].idx;
 												if (cDataName === pDataName && cSSId === pSSId) {
-                                                    let plotColor = TimeTubesStore.getPlotColor(DataStore.getIdFromName(cDataName));
+													let plotColor = TimeTubesStore.getPlotColor(
+														DataStore.getIdFromName(cDataName)
+													);
 													if (typeof plotColor === "undefined")
 														plotColor = "gray";
 													let cXPos, pXPos;
@@ -734,7 +786,7 @@ export default class ClusteringHistory extends React.Component {
 																"_" +
 																sessionId +
 																"_" +
-															    cDataName +
+																cDataName +
 																"_" +
 																cSSId
 														)
@@ -750,7 +802,15 @@ export default class ClusteringHistory extends React.Component {
 																})
 														)
 														.attr("fill", plotColor)
-														.style("opacity", 0.3);
+														.style("opacity", 0.3)
+														.on(
+															"mouseover",
+															this.onMouseOverCorrelationPath().bind(this)
+														)
+														.on(
+															"mouseout",
+															this.onMouseOutCorrelationPath().bind(this)
+														);
 												}
 											}
 										}
@@ -760,16 +820,89 @@ export default class ClusteringHistory extends React.Component {
 						}
 					} else if (!datasetsEqual && SSparametersEqual && !SSEqual) {
 						// case 3: datasets are different (SS id coincides)
-                        // check whether the previous session and current session use the same dataset
-                        let overlappingFile;
-                        for (let i = 0; i < previousSession.datasets.length; i++) {
-                            
-                        }
-
+						// check whether the previous session and current session use the same dataset
+						let overlappingDatasets = [];
+						let previousDatasets = Object.keys(previousSession.datasets)
+								.map((d) => {
+									return previousSession.datasets[d];
+								})
+								.sort((a, b) => a - b),
+							currentDatasets = Object.keys(currentSession.datasets)
+								.map((d) => {
+									return currentSession.datasets[d];
+								})
+								.sort((a, b) => a - b);
+						for (let pi = 0; pi < previousDatasets.length; pi++) {
+							if (currentDatasets.indexOf(previousDatasets[pi]) >= 0) {
+								let pDataId, cDataId;
+								for (let key in previousSession.datasets) {
+									if (previousSession.datasets[key] === previousDatasets[pi]) {
+										pDataId = key;
+										break;
+									}
+								}
+								for (let key in currentSession.datasets) {
+									if (currentSession.datasets[key] === previousDatasets[pi]) {
+										cDataId = key;
+										break;
+									}
+								}
+								overlappingDatasets.push({
+									fileName: previousDatasets[pi],
+									pDataId: pDataId,
+									cDataId: cDataId,
+								});
+							}
+						}
+						if (overlappingDatasets.length > 0) {
+							// draw correlation and add/remove marks
+							let added = [],
+								removed = [];
+							// check added SS
+							for (let i = 0; i < currentSession.subsequences.length; i++) {
+								let addedFlag = true;
+								for (let j = 0; j < previousSession.subsequences.length; j++) {
+									if (
+										previousSession.datasets[
+											previousSession.subsequences[j].id
+										] ===
+											currentSession.datasets[
+												currentSession.subsequences[i].id
+											] &&
+										previousSession.subsequences[j].idx ===
+											currentSession.subsequences[i].idx
+									) {
+										addedFlag = false;
+										break;
+									}
+								}
+								if (addedFlag) added.push(i);
+							}
+							// check removed SS
+							for (let i = 0; i < previousSession.subsequences.length; i++) {
+								let removedFlag = true;
+								for (let j = 0; j < currentSession.subsequences.length; j++) {
+									if (
+										previousSession.datasets[
+											previousSession.subsequences[i].id
+										] ===
+											currentSession.datasets[
+												currentSession.subsequences[j].id
+											] &&
+										previousSession.subsequences[i].idx ===
+											currentSession.subsequences[j].idx
+									) {
+										removedFlag = false;
+										break;
+									}
+								}
+								if (removedFlag) removed.push(i);
+							}
+						}
 					} else if (!SSParametersEqual) {
 						// case 4: different subsequence parameters
 						console.log("different SS parameters");
-                        // just show the session bar
+						// no correlation charts
 					}
 				}
 			}
@@ -785,15 +918,11 @@ export default class ClusteringHistory extends React.Component {
 					maxSSnum = this.state.sessions[key].subsequences.length;
 				}
 			}
-			let width = Math.max(
-				$("#clusteringResultsLeftColumn").width(),
-				$("#mainFeatureArea").outerWidth(true) * 0.2
-			) * 0.95; //,
-			// 	parentHeight =
-			// 		$("#mainFeatureArea").outerHeight(true) -
-			// 		$("#clusteringResultsLeftColumnNavTabs").outerHeight(true);
-			// let height =
-			// 	parentHeight - $("#saveCurrentClusteringSessionBtn").height();
+			let width =
+				Math.max(
+					$("#clusteringResultsLeftColumn").width(),
+					$("#mainFeatureArea").outerWidth(true) * 0.2
+				) * 0.95;
 			let height =
 				this.padding.top +
 				this.padding.bottom +
@@ -807,9 +936,6 @@ export default class ClusteringHistory extends React.Component {
 						this.metaInfoWidth)) /
 				maxSSnum;
 			let clusteringHistoryGroups = $("g.clusteringHistoryGroup");
-			//  = this.clusteringHistorySVG.selectAll(
-			// 	"g.clusteringHistoryGroup"
-			// );
 			if (sessionIds.length > clusteringHistoryGroups.length) {
 				this.clusteringHistorySVG
 					.selectAll("g.clusteringHistoryGroup")
@@ -919,10 +1045,27 @@ export default class ClusteringHistory extends React.Component {
 							.append("rect")
 							.attr(
 								"class",
-								"clusteringHistogramRect clusteringHistoryRect_" +
+								"clusteringHistoryRect clusteringHistoryRect_" +
 									sessionId +
 									"_" +
 									i
+							)
+							.attr(
+								"id",
+								function (d) {
+									return (
+										"clusteringHistoryRect_" +
+										sessionId +
+										"_" +
+										i +
+										"_" +
+										this.state.sessions[sessionId].datasets[
+											this.state.sessions[sessionId].subsequences[d].id
+										] +
+										"_" +
+										this.state.sessions[sessionId].subsequences[d].idx
+									);
+								}.bind(this)
 							)
 							.attr(
 								"x",
@@ -950,7 +1093,9 @@ export default class ClusteringHistory extends React.Component {
 							)
 							.attr("width", barWidth)
 							.attr("height", this.barHeight)
-							.attr("fill", d3.hsl(color[0], color[1], color[2]));
+							.attr("fill", d3.hsl(color[0], color[1], color[2]))
+							.on("mouseover", this.onMouseOverRectOnSessionBar().bind(this))
+							.on("mouseout", this.onMouseOutRectOnSessionBar().bind(this));
 						let timeStamps = this.state.sessions[sessionId].timeStamp
 							.toLocaleString("en-US")
 							.split(", ");
@@ -982,31 +1127,33 @@ export default class ClusteringHistory extends React.Component {
 							});
 					}
 					if (sessionIdx > 0) {
-						let previousSession = this.state.sessions[sessionIds[sessionIdx - 1]];
-                        let currentSession = this.state.sessions[sessionId];
-                        let datasetsEqual = isEqual(
-                                previousSession.datasets,
-                                currentSession.datasets
-                            ),
-                            SSparametersEqual = false,
-                            SSEqual = isEqual(
-                                previousSession.subsequences,
-                                currentSession.subsequences
-                            );
-                        if (
-                            previousSession.subsequenceParameters.filtering.indexOf(
-                                "dataDrivenSlidingWindow"
-                            ) ===
-                                currentSession.subsequenceParameters.filtering.indexOf(
-                                    "dataDrivenSlidingWindow"
-                                ) &&
-                            isEqual(
-                                previousSession.subsequenceParameters.SSperiod,
-                                currentSession.subsequenceParameters.SSperiod
-                            )
-                        ) {
-                            SSparametersEqual = true;
-                        }
+						let previousSession = this.state.sessions[
+							sessionIds[sessionIdx - 1]
+						];
+						let currentSession = this.state.sessions[sessionId];
+						let datasetsEqual = isEqual(
+								previousSession.datasets,
+								currentSession.datasets
+							),
+							SSparametersEqual = false,
+							SSEqual = isEqual(
+								previousSession.subsequences,
+								currentSession.subsequences
+							);
+						if (
+							previousSession.subsequenceParameters.filtering.indexOf(
+								"dataDrivenSlidingWindow"
+							) ===
+								currentSession.subsequenceParameters.filtering.indexOf(
+									"dataDrivenSlidingWindow"
+								) &&
+							isEqual(
+								previousSession.subsequenceParameters.SSperiod,
+								currentSession.subsequenceParameters.SSperiod
+							)
+						) {
+							SSparametersEqual = true;
+						}
 						if (datasetsEqual && SSparametersEqual && SSEqual) {
 							// case 1: target datasets, subsequence parameters, subsequences are the same
 							$(
@@ -1032,11 +1179,11 @@ export default class ClusteringHistory extends React.Component {
 									cj++
 								) {
 									let cDataName =
-                                            currentSession.datasets[
-                                                currentSession.subsequences[
-                                                        this.clusters[sessionId][ci][cj]
-                                                    ].id
-                                            ],
+											currentSession.datasets[
+												currentSession.subsequences[
+													this.clusters[sessionId][ci][cj]
+												].id
+											],
 										cSSId =
 											currentSession.subsequences[
 												this.clusters[sessionId][ci][cj]
@@ -1052,17 +1199,19 @@ export default class ClusteringHistory extends React.Component {
 											pj++
 										) {
 											let pDataName =
-                                                    previousSession.datasets[
-                                                        previousSession.subsequences[
-                                                            this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
-                                                        ].id
-                                                    ],
+													previousSession.datasets[
+														previousSession.subsequences[
+															this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
+														].id
+													],
 												pSSId =
 													previousSession.subsequences[
 														this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
 													].idx;
 											if (cDataName === pDataName && cSSId === pSSId) {
-                                                let plotColor = TimeTubesStore.getPlotColor(DataStore.getIdFromName(cDataName));
+												let plotColor = TimeTubesStore.getPlotColor(
+													DataStore.getIdFromName(cDataName)
+												);
 												if (typeof plotColor === "undefined")
 													plotColor = "gray";
 												let cXPos, pXPos;
@@ -1152,317 +1301,360 @@ export default class ClusteringHistory extends React.Component {
 															})
 													)
 													.attr("fill", plotColor)
-													.style("opacity", 0.3);
+													.style("opacity", 0.3)
+													.on(
+														"mouseover",
+														this.onMouseOverCorrelationPath().bind(this)
+													)
+													.on(
+														"mouseout",
+														this.onMouseOutCorrelationPath().bind(this)
+													);
 											}
 										}
 									}
 								}
 							}
-						} else if (datasetsEqual && SSparametersEqual && !SSEqual) {
-                            this.clusteringHistorySVG
-                                .select("#clusteringHistoryGroup_" + sessionId)
-                                .selectAll('.addedMarksGroup')
-                                .remove();
-                            this.clusteringHistorySVG
-                                .select("#clusteringHistoryGroup_" + sessionIds[sessionIdx - 1])
-                                .selectAll('.removedMarksGroup')
-                                .remove();
-                            // case 2: subsequences used in the clustering process are different
-                            // SSids coincides between previous session and current session
-                            let added = [],
-                                removed = [];
-                            // check added SS
-                            for (let i = 0; i < currentSession.subsequences.length; i++) {
-                                let addedFlag = true;
-                                for (let j = 0; j < previousSession.subsequences.length; j++) {
-                                    if (
-                                        previousSession.datasets[previousSession.subsequences[j].id] ===
-                                        currentSession.datasets[currentSession.subsequences[i].id] &&
-                                        previousSession.subsequences[j].idx ===
-                                        currentSession.subsequences[i].idx
-                                    ) {
-                                        addedFlag = false;
-                                        break;
-                                    }
-                                }
-                                if (addedFlag) added.push(i);
-                            }
-                            // check removed SS
-                            for (let i = 0; i < previousSession.subsequences.length; i++) {
-                                let removedFlag = true;
-                                for (let j = 0; j < currentSession.subsequences.length; j++) {
-                                    if (
-                                        previousSession.datasets[previousSession.subsequences[i].id] ===
-                                        currentSession.datasets[currentSession.subsequences[j].id] &&
-                                        previousSession.subsequences[i].idx ===
-                                        currentSession.subsequences[j].idx
-                                    ) {
-                                        removedFlag = false;
-                                        break;
-                                    }
-                                }
-                                if (removedFlag) removed.push(i);
-                            }
-                            if (added.length > 0) {
-                                let addedMarks = this.clusteringHistorySVG
-                                    .select("#clusteringHistoryGroup_" + sessionId)
-                                    .append("g")
-                                    .attr("class", "addedMarksGroup");
-                                addedMarks
-                                    .selectAll("path.addedMark")
-                                    .data(added)
-                                    .enter()
-                                    .append("path")
-                                    .attr("class", "addedMark")
-                                    .attr(
-                                        "d",
-                                        function (d) {
-                                            this.symbolGenerator.type(d3["symbolTriangle"]);
-                                            return this.symbolGenerator();
-                                        }.bind(this)
-                                    )
-                                    .attr("fill", "#93c54b")
-                                    .style(
-                                        "transform",
-                                        function (d) {
-                                            let cluster =
-                                                typeof currentSession.labels[d] === "object"
-                                                    ? currentSession.labels[d].cluster
-                                                    : currentSession.labels[d];
-                                            let leftShift = 0;
-                                            for (let i = 0; i < cluster; i++) {
-                                                leftShift += this.clusters[sessionId][i].length;
-                                            }
-                                            let orderInCluster = this.clusters[sessionId][
-                                                cluster
-                                            ].indexOf(d);
-                                            return (
-                                                "translate(" +
-                                                (this.padding.left +
-                                                    this.timestampWidth +
-                                                    (leftShift + orderInCluster) * barWidth +
-                                                    barWidth / 2) +
-                                                "px," +
-                                                (this.padding.top +
-                                                    this.barHeight * (sessionIdx + 2 * sessionIdx) -
-                                                    5) +
-                                                "px) rotate(180deg)"
-                                            );
-                                        }.bind(this)
-                                    );
-                            }
-                            if (removed.length > 0) {
-                                let removedMarks = this.clusteringHistorySVG
-                                    .select("#clusteringHistoryGroup_" + sessionIds[sessionIdx - 1])
-                                    .append("g")
-                                    .attr("class", "removedMarksGroup");
-                                removedMarks
-                                    .selectAll("path.removedMark")
-                                    .data(removed)
-                                    .enter()
-                                    .append("path")
-                                    .attr("class", "removedMark")
-                                    .attr(
-                                        "d",
-                                        function (d) {
-                                            this.symbolGenerator.type(d3["symbolTriangle"]);
-                                            return this.symbolGenerator();
-                                        }.bind(this)
-                                    )
-                                    .attr("fill", "#d9534f")
-                                    .style(
-                                        "transform",
-                                        function (d) {
-                                            let cluster =
-                                                typeof previousSession.labels[d] === "object"
-                                                    ? previousSession.labels[d].cluster
-                                                    : previousSession.labels[d];
-                                            let leftShift = 0;
-                                            for (let i = 0; i < cluster; i++) {
-                                                leftShift += this.clusters[sessionIds[sessionIdx - 1]][i]
-                                                    .length;
-                                            }
-                                            let orderInCluster = this.clusters[
-                                                sessionIds[sessionIdx - 1]
-                                            ][cluster].indexOf(d);
-                                            return (
-                                                "translate(" +
-                                                (this.padding.left +
-                                                    this.timestampWidth +
-                                                    (leftShift + orderInCluster) * barWidth +
-                                                    barWidth / 2) +
-                                                "px," +
-                                                (this.padding.top +
-                                                    this.barHeight *
-                                                        (sessionIdx +
-                                                            2 * (sessionIdx - 1 > 0 ? sessionIdx - 1 : 0)) +
-                                                    5) +
-                                                "px)"
-                                            );
-                                        }.bind(this)
-                                    );
-                            }
-                            $(
-                                "#clusteringHistoryCorrelationGroup_" +
-                                    sessionIds[sessionIdx - 1] +
-                                    "_" +
-                                    sessionId
-                            ).remove();
-                            let correlationGroup = this.clusteringHistorySVG
-                                .append("g")
-                                .attr("class", "clusteringHistoryCorrelationGroup")
-                                .attr(
-                                    "id",
-                                    "clusteringHistoryCorrelationGroup_" +
-                                        sessionIds[sessionIdx - 1] +
-                                        "_" +
-                                        sessionId
-                                );
-                            for (let ci = 0; ci < this.clusters[sessionId].length; ci++) {
-                                for (let cj = 0; cj < this.clusters[sessionId][ci].length; cj++) {
-                                    let cDataName =
-                                            currentSession.datasets[
-                                                currentSession.subsequences[
-                                                        this.clusters[sessionId][ci][cj]
-                                                    ].id
-                                            ],
-                                        cSSId =
-                                            currentSession.subsequences[
-                                                this.clusters[sessionId][ci][cj]
-                                            ].idx;
-                                    if (added.indexOf(this.clusters[sessionId][ci][cj]) < 0) {
-                                        for (
-                                            let pi = 0;
-                                            pi < this.clusters[sessionIds[sessionIdx - 1]].length;
-                                            pi++
-                                        ) {
-                                            for (
-                                                let pj = 0;
-                                                pj < this.clusters[sessionIds[sessionIdx - 1]][pi].length;
-                                                pj++
-                                            ) {
-                                                if (
-                                                    removed.indexOf(
-                                                        this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
-                                                    ) < 0
-                                                ) {
-                                                    // show correlations
-                                                    let pDataName =
-                                                            previousSession.datasets[
-                                                                previousSession.subsequences[
-                                                                    this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
-                                                                ].id
-                                                            ],
-                                                        pSSId =
-                                                            previousSession.subsequences[
-                                                                this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
-                                                            ].idx;
-                                                    if (cDataName === pDataName && cSSId === pSSId) {
-                                                        let plotColor = TimeTubesStore.getPlotColor(DataStore.getIdFromName(cDataName));
-                                                        if (typeof plotColor === "undefined")
-                                                            plotColor = "gray";
-                                                        let cXPos, pXPos;
-                                                        // how many data points before the cluster ci
-                                                        let cLeftShift = 0;
-                                                        if (ci > 0) {
-                                                            for (let cii = 0; cii < ci; cii++) {
-                                                                cLeftShift += this.clusters[sessionId][cii]
-                                                                    .length;
-                                                            }
-                                                        }
-                                                        // how many data points before the cluster pi
-                                                        let pLeftShift = 0;
-                                                        if (pi > 0) {
-                                                            for (let pii = 0; pii < pi; pii++) {
-                                                                pLeftShift += this.clusters[
-                                                                    sessionIds[sessionIdx - 1]
-                                                                ][pii].length;
-                                                            }
-                                                        }
-                                                        cXPos =
-                                                            this.padding.left +
-                                                            this.timestampWidth +
-                                                            barWidth * (cLeftShift + cj);
-                                                        pXPos =
-                                                            this.padding.left +
-                                                            this.timestampWidth +
-                                                            barWidth * (pLeftShift + pj);
-                                                        let correlationPos = [
-                                                            {
-                                                                x: pXPos,
-                                                                y:
-                                                                    this.padding.top +
-                                                                    this.barHeight *
-                                                                        (sessionIdx + 2 * (sessionIdx - 1)),
-                                                            },
-                                                            {
-                                                                x: pXPos + barWidth,
-                                                                y:
-                                                                    this.padding.top +
-                                                                    this.barHeight *
-                                                                        (sessionIdx + 2 * (sessionIdx - 1)),
-                                                            },
-                                                            {
-                                                                x: cXPos + barWidth,
-                                                                y:
-                                                                    this.padding.top +
-                                                                    this.barHeight * (sessionIdx + 2 * sessionIdx),
-                                                            },
-                                                            {
-                                                                x: cXPos,
-                                                                y:
-                                                                    this.padding.top +
-                                                                    this.barHeight * (sessionIdx + 2 * sessionIdx),
-                                                            },
-                                                            {
-                                                                x: pXPos,
-                                                                y:
-                                                                    this.padding.top +
-                                                                    this.barHeight *
-                                                                        (sessionIdx + 2 * (sessionIdx - 1)),
-                                                            },
-                                                        ];
-                                                        correlationGroup
-                                                            .append("path")
-                                                            .datum(correlationPos)
-                                                            .attr("class", "clusteringHistoryCorrelationPath")
-                                                            .attr(
-                                                                "id",
-                                                                "clusteringHistoryCorrelationPath_" +
-                                                                    sessionIds[sessionIdx - 1] +
-                                                                    "_" +
-                                                                    sessionId +
-                                                                    "_" +
-                                                                    cDataName +
-                                                                    "_" +
-                                                                    cSSId
-                                                            )
-                                                            .attr(
-                                                                "d",
-                                                                d3
-                                                                    .line()
-                                                                    .x(function (d) {
-                                                                        return d.x;
-                                                                    })
-                                                                    .y(function (d) {
-                                                                        return d.y;
-                                                                    })
-                                                            )
-                                                            .attr("fill", plotColor)
-                                                            .style("opacity", 0.3);
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        } else if (!datasetsEqual && SSparametersEqual && !SSEqual) {
-                            // case 3: datasets are different
-                        } else if (!SSParametersEqual) {
-                            // case 4: different subsequence parameters
-                            console.log("different SS parameters");
-                        }
+						} else if (
+							(datasetsEqual && SSparametersEqual && !SSEqual) ||
+							(!datasetsEqual && SSparametersEqual && !SSEqual)
+						) {
+							this.clusteringHistorySVG
+								.select("#clusteringHistoryGroup_" + sessionId)
+								.selectAll(".addedMarksGroup")
+								.remove();
+							this.clusteringHistorySVG
+								.select("#clusteringHistoryGroup_" + sessionIds[sessionIdx - 1])
+								.selectAll(".removedMarksGroup")
+								.remove();
+							// case 2: subsequences used in the clustering process are different
+							// SSids coincides between previous session and current session
+							let added = [],
+								removed = [];
+							// check added SS
+							for (let i = 0; i < currentSession.subsequences.length; i++) {
+								let addedFlag = true;
+								for (let j = 0; j < previousSession.subsequences.length; j++) {
+									if (
+										previousSession.datasets[
+											previousSession.subsequences[j].id
+										] ===
+											currentSession.datasets[
+												currentSession.subsequences[i].id
+											] &&
+										previousSession.subsequences[j].idx ===
+											currentSession.subsequences[i].idx
+									) {
+										addedFlag = false;
+										break;
+									}
+								}
+								if (addedFlag) added.push(i);
+							}
+							// check removed SS
+							for (let i = 0; i < previousSession.subsequences.length; i++) {
+								let removedFlag = true;
+								for (let j = 0; j < currentSession.subsequences.length; j++) {
+									if (
+										previousSession.datasets[
+											previousSession.subsequences[i].id
+										] ===
+											currentSession.datasets[
+												currentSession.subsequences[j].id
+											] &&
+										previousSession.subsequences[i].idx ===
+											currentSession.subsequences[j].idx
+									) {
+										removedFlag = false;
+										break;
+									}
+								}
+								if (removedFlag) removed.push(i);
+							}
+							if (added.length > 0) {
+								let addedMarks = this.clusteringHistorySVG
+									.select("#clusteringHistoryGroup_" + sessionId)
+									.append("g")
+									.attr("class", "addedMarksGroup");
+								addedMarks
+									.selectAll("path.addedMark")
+									.data(added)
+									.enter()
+									.append("path")
+									.attr("class", "addedMark")
+									.attr(
+										"d",
+										function (d) {
+											this.symbolGenerator.type(d3["symbolTriangle"]);
+											return this.symbolGenerator();
+										}.bind(this)
+									)
+									.attr("fill", "#93c54b")
+									.style(
+										"transform",
+										function (d) {
+											let cluster =
+												typeof currentSession.labels[d] === "object"
+													? currentSession.labels[d].cluster
+													: currentSession.labels[d];
+											let leftShift = 0;
+											for (let i = 0; i < cluster; i++) {
+												leftShift += this.clusters[sessionId][i].length;
+											}
+											let orderInCluster = this.clusters[sessionId][
+												cluster
+											].indexOf(d);
+											return (
+												"translate(" +
+												(this.padding.left +
+													this.timestampWidth +
+													(leftShift + orderInCluster) * barWidth +
+													barWidth / 2) +
+												"px," +
+												(this.padding.top +
+													this.barHeight * (sessionIdx + 2 * sessionIdx) -
+													5) +
+												"px) rotate(180deg)"
+											);
+										}.bind(this)
+									);
+							}
+							if (removed.length > 0) {
+								let removedMarks = this.clusteringHistorySVG
+									.select(
+										"#clusteringHistoryGroup_" + sessionIds[sessionIdx - 1]
+									)
+									.append("g")
+									.attr("class", "removedMarksGroup");
+								removedMarks
+									.selectAll("path.removedMark")
+									.data(removed)
+									.enter()
+									.append("path")
+									.attr("class", "removedMark")
+									.attr(
+										"d",
+										function (d) {
+											this.symbolGenerator.type(d3["symbolTriangle"]);
+											return this.symbolGenerator();
+										}.bind(this)
+									)
+									.attr("fill", "#d9534f")
+									.style(
+										"transform",
+										function (d) {
+											let cluster =
+												typeof previousSession.labels[d] === "object"
+													? previousSession.labels[d].cluster
+													: previousSession.labels[d];
+											let leftShift = 0;
+											for (let i = 0; i < cluster; i++) {
+												leftShift += this.clusters[sessionIds[sessionIdx - 1]][
+													i
+												].length;
+											}
+											let orderInCluster = this.clusters[
+												sessionIds[sessionIdx - 1]
+											][cluster].indexOf(d);
+											return (
+												"translate(" +
+												(this.padding.left +
+													this.timestampWidth +
+													(leftShift + orderInCluster) * barWidth +
+													barWidth / 2) +
+												"px," +
+												(this.padding.top +
+													this.barHeight *
+														(sessionIdx +
+															2 * (sessionIdx - 1 > 0 ? sessionIdx - 1 : 0)) +
+													5) +
+												"px)"
+											);
+										}.bind(this)
+									);
+							}
+							$(
+								"#clusteringHistoryCorrelationGroup_" +
+									sessionIds[sessionIdx - 1] +
+									"_" +
+									sessionId
+							).remove();
+							let correlationGroup = this.clusteringHistorySVG
+								.append("g")
+								.attr("class", "clusteringHistoryCorrelationGroup")
+								.attr(
+									"id",
+									"clusteringHistoryCorrelationGroup_" +
+										sessionIds[sessionIdx - 1] +
+										"_" +
+										sessionId
+								);
+							for (let ci = 0; ci < this.clusters[sessionId].length; ci++) {
+								for (
+									let cj = 0;
+									cj < this.clusters[sessionId][ci].length;
+									cj++
+								) {
+									let cDataName =
+											currentSession.datasets[
+												currentSession.subsequences[
+													this.clusters[sessionId][ci][cj]
+												].id
+											],
+										cSSId =
+											currentSession.subsequences[
+												this.clusters[sessionId][ci][cj]
+											].idx;
+									if (added.indexOf(this.clusters[sessionId][ci][cj]) < 0) {
+										for (
+											let pi = 0;
+											pi < this.clusters[sessionIds[sessionIdx - 1]].length;
+											pi++
+										) {
+											for (
+												let pj = 0;
+												pj <
+												this.clusters[sessionIds[sessionIdx - 1]][pi].length;
+												pj++
+											) {
+												if (
+													removed.indexOf(
+														this.clusters[sessionIds[sessionIdx - 1]][pi][pj]
+													) < 0
+												) {
+													// show correlations
+													let pDataName =
+															previousSession.datasets[
+																previousSession.subsequences[
+																	this.clusters[sessionIds[sessionIdx - 1]][pi][
+																		pj
+																	]
+																].id
+															],
+														pSSId =
+															previousSession.subsequences[
+																this.clusters[sessionIds[sessionIdx - 1]][pi][
+																	pj
+																]
+															].idx;
+													if (cDataName === pDataName && cSSId === pSSId) {
+														let plotColor = TimeTubesStore.getPlotColor(
+															DataStore.getIdFromName(cDataName)
+														);
+														if (typeof plotColor === "undefined")
+															plotColor = "gray";
+														let cXPos, pXPos;
+														// how many data points before the cluster ci
+														let cLeftShift = 0;
+														if (ci > 0) {
+															for (let cii = 0; cii < ci; cii++) {
+																cLeftShift += this.clusters[sessionId][cii]
+																	.length;
+															}
+														}
+														// how many data points before the cluster pi
+														let pLeftShift = 0;
+														if (pi > 0) {
+															for (let pii = 0; pii < pi; pii++) {
+																pLeftShift += this.clusters[
+																	sessionIds[sessionIdx - 1]
+																][pii].length;
+															}
+														}
+														cXPos =
+															this.padding.left +
+															this.timestampWidth +
+															barWidth * (cLeftShift + cj);
+														pXPos =
+															this.padding.left +
+															this.timestampWidth +
+															barWidth * (pLeftShift + pj);
+														let correlationPos = [
+															{
+																x: pXPos,
+																y:
+																	this.padding.top +
+																	this.barHeight *
+																		(sessionIdx + 2 * (sessionIdx - 1)),
+															},
+															{
+																x: pXPos + barWidth,
+																y:
+																	this.padding.top +
+																	this.barHeight *
+																		(sessionIdx + 2 * (sessionIdx - 1)),
+															},
+															{
+																x: cXPos + barWidth,
+																y:
+																	this.padding.top +
+																	this.barHeight *
+																		(sessionIdx + 2 * sessionIdx),
+															},
+															{
+																x: cXPos,
+																y:
+																	this.padding.top +
+																	this.barHeight *
+																		(sessionIdx + 2 * sessionIdx),
+															},
+															{
+																x: pXPos,
+																y:
+																	this.padding.top +
+																	this.barHeight *
+																		(sessionIdx + 2 * (sessionIdx - 1)),
+															},
+														];
+														correlationGroup
+															.append("path")
+															.datum(correlationPos)
+															.attr("class", "clusteringHistoryCorrelationPath")
+															.attr(
+																"id",
+																"clusteringHistoryCorrelationPath_" +
+																	sessionIds[sessionIdx - 1] +
+																	"_" +
+																	sessionId +
+																	"_" +
+																	cDataName +
+																	"_" +
+																	cSSId
+															)
+															.attr(
+																"d",
+																d3
+																	.line()
+																	.x(function (d) {
+																		return d.x;
+																	})
+																	.y(function (d) {
+																		return d.y;
+																	})
+															)
+															.attr("fill", plotColor)
+															.style("opacity", 0.3)
+															.on(
+																"mouseover",
+																this.onMouseOverCorrelationPath().bind(this)
+															)
+															.on(
+																"mouseout",
+																this.onMouseOutCorrelationPath().bind(this)
+															);
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						} else if (!datasetsEqual && SSparametersEqual && !SSEqual) {
+							// case 3: datasets are different
+						} else if (!SSParametersEqual) {
+							// case 4: different subsequence parameters
+							console.log("different SS parameters");
+						}
 					}
 				}
 			}
@@ -1517,5 +1709,113 @@ export default class ClusteringHistory extends React.Component {
 				});
 			}
 		};
+	}
+
+	onMouseOverRectOnSessionBar() {
+		return function (d) {
+			let targetId = d3.event.target.id;
+			if (targetId) {
+				// highlight paths
+				let targetEle = targetId.split("_");
+				let sessionId = targetEle[1],
+					clusterId = targetEle[2];
+				let dataName;
+				if (targetEle.length > 4) {
+					dataName = targetEle.slice(3, -1).join("_");
+				} else {
+					dataName = targetEle[3];
+				}
+				let clusterColor = this.state.sessions[sessionId].clusterColors[
+					Number(clusterId)
+				];
+				let SSIds = [];
+				for (let i = 0; i < this.clusters[sessionId][clusterId].length; i++) {
+					SSIds.push(
+						this.state.sessions[sessionId].subsequences[
+							this.clusters[sessionId][clusterId][i]
+						].idx
+					);
+				}
+				let sessionIds = Object.keys(this.state.sessions);
+				for (
+					let sessionIdx = 0;
+					sessionIdx < sessionIds.length - 1;
+					sessionIdx++
+				) {
+					for (let i = 0; i < SSIds.length; i++) {
+                        let path = document.getElementById("clusteringHistoryCorrelationPath_" +
+                            sessionIds[sessionIdx] +
+                            "_" +
+                            sessionIds[sessionIdx + 1] +
+                            "_" +
+                            dataName +
+                            "_" +
+                            SSIds[i]);
+                        if (path) {
+                            path.style.stroke = d3.hsl(clusterColor[0], clusterColor[1], clusterColor[2]);
+                            path.style.strokeWidth = 2;
+                        }
+					}
+				}
+			}
+		};
+	}
+
+	onMouseOutRectOnSessionBar() {
+		return function (d) {
+            let targetId = d3.event.target.id;
+			if (targetId) {
+				// highlight paths
+                d3.selectAll('.clusteringHistoryCorrelationPath')
+                    .style('stroke-width', 0);
+			}
+        };
+	}
+
+	onMouseOverCorrelationPath() {
+		return function (d) {
+            let targetId = d3.event.target.id;
+			if (targetId) {
+				// highlight paths
+				let targetEle = targetId.split("_");
+				let SSId = targetEle[targetEle.length - 1];
+				let dataName;
+				if (targetEle.length > 4) {
+					dataName = targetEle.slice(3, -1).join("_");
+				} else {
+					dataName = targetEle[3];
+				}
+
+				let sessionIds = Object.keys(this.state.sessions);
+				for (
+					let sessionIdx = 0;
+					sessionIdx < sessionIds.length - 1;
+					sessionIdx++
+				) {
+                    let path = document.getElementById(
+                        'clusteringHistoryCorrelationPath_' + 
+                        sessionIds[sessionIdx] + 
+                        '_' + 
+                        sessionIds[sessionIdx + 1] + 
+                        '_' + 
+                        dataName +
+                        '_' + 
+                        SSId
+                    );
+                    if (path) {
+                        path.style.stroke = 'black';
+                        path.style.strokeWidth = 2;
+                    }
+                }
+            }
+        };
+	}
+
+	onMouseOutCorrelationPath() {
+		return function (d) {
+            // highlight paths
+            d3.selectAll('.clusteringHistoryCorrelationPath')
+                .style('stroke-width', 0);
+        };
 	}
 }
