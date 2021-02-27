@@ -15,9 +15,9 @@ if (localStorage.getItem('queryTable') === null || localStorage.getItem('queryTa
     localStorage.setItem('queryTable', JSON.stringify({}));
 }
 
-// initialize sessionStorage whenever the app is reloaded
-sessionStorage.setItem('clusteringHistory', JSON.stringify({}));
-
+if (sessionStorage.getItem('clusteringHistory') === null) {
+    sessionStorage.setItem('clusteringHistory', JSON.stringify({}));
+}
 // const mongoose = require('mongoose');
 // const MongoClient = require('mongodb').MongoClient;
 // const url = 'mongodb://localhost:27017';

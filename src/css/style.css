@@ -633,6 +633,18 @@ img.selectorIcon:active {
     font-size: 0.8rem;
     margin: 0 0.3rem;
 }
+
+.removeClusteringSession {
+    fill: #dfd7ca;
+    font-size: 1.3125rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.removeClusteringSession:hover {
+    fill: #b9a78a;
+}
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
