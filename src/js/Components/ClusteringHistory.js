@@ -1088,6 +1088,72 @@ export default class ClusteringHistory extends React.Component {
                             return d;
                         });
                 }
+                // bar controllers
+                if ($('#recoverButtonGroup_' + sessionId).length > 0) {
+                    d3.select('#recoverButtonRect_' + sessionId)
+                        .attr('x', width - this.padding.right - this.metaInfoWidth + 5)
+                        .attr('y', this.padding.top + this.barHeight * 3 * sessionIdx + 5);
+                    d3.select('#recoverButtonText_' + sessionId)
+                        .attr('x', width - this.padding.right - this.metaInfoWidth + 5 + 48 / 2)
+                        .attr('y', this.padding.top + this.barHeight * 3 * sessionIdx + 8 + 23 / 2);
+                    d3.select('#detailButtonRect_' + sessionId)
+                        .attr('x', width - this.padding.right - this.metaInfoWidth + 5)
+                        .attr('y', this.padding.top + this.barHeight * 3 * sessionIdx + 5 + 23 + 4);
+                    d3.select('#detailButtonText_' + sessionId)
+                        .attr('x', width - this.padding.right - this.metaInfoWidth + 5 + 48 / 2)
+                        .attr('y', this.padding.top + this.barHeight * 3 * sessionIdx + 5 + 23 + 4 + 3 + 23 / 2);
+                } else {
+                    let recoverButtonGroup = sessionGroup 
+                        .append('g')
+                        .attr('class', 'recoverButtonGroup btn btn-primary')
+                        .attr('id', 'recoverButtonGroup_' + sessionId)
+                        .on('click', this.onClickRecoverButton().bind(this));
+                    recoverButtonGroup
+                        .append('rect')
+                        .attr('id', 'recoverButtonRect_' + sessionId)
+                        .attr('x', width - this.padding.right - this.metaInfoWidth + 5)
+                        .attr('y', this.padding.top + this.barHeight * 3 * sessionIdx + 5)
+                        .attr('width', 48)
+                        .attr('height', 23)
+                        .attr('fill', '#325d88')
+                        .attr('rx', '0.25rem')
+                        .attr('ry', '0.25rem');
+                    recoverButtonGroup
+                        .append('text')
+                        .attr('id', 'recoverButtonText_' + sessionId)
+                        .attr('x', width - this.padding.right - this.metaInfoWidth + 5 + 48 / 2)
+                        .attr('y', this.padding.top + this.barHeight * 3 * sessionIdx + 8 + 23 / 2)
+                        .attr('fill', 'white')
+                        .attr("font-size", "0.6rem")
+                        .attr("text-anchor", "middle")
+                        .text('RECOVER');
+                    // detail button
+                    let detailButtonGroup = sessionGroup 
+                        .append('g')
+                        .attr('class', 'detailButtonGroup btn btn-primary')
+                        .attr('id', 'detailButtonGroup_' + sessionId)
+                        .on('mouseover', this.onMouseOverDetailButton().bind(this))
+                        .on('mouseout', this.onMouseOutDetailButton().bind(this));
+                    detailButtonGroup
+                        .append('rect')
+                        .attr('id', 'detailButtonRect_' + sessionId)
+                        .attr('x', width - this.padding.right - this.metaInfoWidth + 5)
+                        .attr('y', this.padding.top + this.barHeight * 3 * sessionIdx + 5 + 23 + 4)
+                        .attr('width', 48)
+                        .attr('height', 23)
+                        .attr('fill', '#325d88')
+                        .attr('rx', '0.25rem')
+                        .attr('ry', '0.25rem');
+                    detailButtonGroup
+                        .append('text')
+                        .attr('id', 'detailButtonText_' + sessionId)
+                        .attr('x', width - this.padding.right - this.metaInfoWidth + 5 + 48 / 2)
+                        .attr('y', this.padding.top + this.barHeight * 3 * sessionIdx + 5 + 23 + 4 + 3 + 23 / 2)
+                        .attr('fill', 'white')
+                        .attr("font-size", "0.6rem")
+                        .attr("text-anchor", "middle")
+                        .text('DETAIL');
+                }
 				for (let i = 0; i < this.clusters[sessionId].length; i++) {
 					if (
 						sessionGroup
