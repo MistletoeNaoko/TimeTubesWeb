@@ -282,10 +282,12 @@ export default class ClusteringHistory extends React.Component {
                 let detailButtonGroup = sessionGroup 
                     .append('g')
                     .attr('class', 'detailButtonGroup btn btn-primary')
-                    .attr('id', 'detailButtonGroup_' + sessionId);
+                    .attr('id', 'detailButtonGroup_' + sessionId)
+                    .on('mouseover', this.onMouseOverDetailButton().bind(this))
+                    .on('mouseout', this.onMouseOutDetailButton().bind(this));
                 detailButtonGroup
                     .append('rect')
-                    .attr('class', 'detailButtonRect')
+                    .attr('id', 'detailButtonRect_' + sessionId)
                     .attr('x', width - this.padding.right - this.metaInfoWidth + 5)
                     .attr('y', this.padding.top + this.barHeight * 3 * sessionIdx + 5 + 23 + 4)
                     .attr('width', 48)
@@ -295,6 +297,7 @@ export default class ClusteringHistory extends React.Component {
                     .attr('ry', '0.25rem');
                 detailButtonGroup
                     .append('text')
+                    .attr('id', 'detailButtonText_' + sessionId)
                     .attr('x', width - this.padding.right - this.metaInfoWidth + 5 + 48 / 2)
                     .attr('y', this.padding.top + this.barHeight * 3 * sessionIdx + 5 + 23 + 4 + 3 + 23 / 2)
                     .attr('fill', 'white')
@@ -1890,4 +1893,76 @@ export default class ClusteringHistory extends React.Component {
         };
     }
 
+    onMouseOverDetailButton() {
+        return function(d) {
+            let targetId = d3.event.target.id;
+            if (targetId) {
+                let targetEle = targetId.split('_');
+                let selectedSession = this.state.sessions[targetEle[1]];
+                let popover = $('#sessionDetailInfo');
+                let button = $('#detailButtonRect_' + targetEle[1]);
+                popover.css('display', 'block');
+                popover.css('top', button.offset().top - $('#appHeader').outerHeight(true) - 32);
+                popover.css('left', button.offset().left + 50);
+                let datasets = Object.keys(selectedSession.datasets).map((d) => {
+                    return selectedSession.datasets[d];
+                });
+                $('#sessionDetailPopoverTitle').text(datasets.join(', '));
+                let variableLabels = {};
+                for (let key in selectedSession.datasets) {
+                    let dataId = DataStore.getIdFromName(selectedSession.datasets[key]);
+                    if (dataId >= 0) {
+                        let lookup = DataStore.getData(dataId).data.lookup;
+                        for (let key in lookup) {
+                            if (!(key in variableLabels)) {
+                                variableLabels[key] = lookup[key];
+                            } else {
+                                for (let j = 0; j < lookup[key].length; j++) {
+                                    if (variableLabels[key].indexOf(lookup[key][j]) < 0) {
+                                        variableLabels[key].push(lookup[key][j]);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                let variableList = '';
+                if (Object.keys(variableLabels).length === 0) {
+                    variableList = selectedSession.clusteringParameters.variables.join(', ');
+                } else {
+                    for (let i = 0; i < selectedSession.clusteringParameters.variables.length; i++) {
+                        variableList += variableLabels[selectedSession.clusteringParameters.variables[i]].join(', ');
+                        if (i !== selectedSession.clusteringParameters.variables.length - 1) {
+                            variableList += ', ';
+                        }
+                    }
+                }
+                let clusteringParameters = '<h6>Clustering Parameters</h6><table id="clusteringParameterTableCluteringHistoryChart"><tbody><tr><td>Method</td><td>' + 
+                    selectedSession.clusteringParameters.method + 
+                    '</td></tr><tr><td>Cluster number</td><td>' + 
+                    selectedSession.clusteringParameters.clusterNum + 
+                    '</td></tr><tr><td>Variables</td><td>' + 
+                    variableList +
+                    '</td></tr><tr><td>Distance metric</td><td>' + 
+                    selectedSession.clusteringParameters.distanceMetric + 
+                    '</td></tr></tbody></table>';
+                let subsequenceParameters = '<h6>Subsequence Parameters</h6><table id="SSParameterTableCluteringHistoryChart"><tbody><tr><td>Subsquence period</td><td>' + 
+                    selectedSession.subsequenceParameters.SSperiod[0] + 
+                    '-' +
+                    selectedSession.subsequenceParameters.SSperiod[1] + 
+                    '</td></tr><tr><td>Filtering</td><td>' + 
+                    selectedSession.subsequenceParameters.filtering.join(', ') + 
+                    '</td></tr><tr><td>Normalize</td><td>' + 
+                    selectedSession.subsequenceParameters.normalize + 
+                    '</td></tr></tbody></table>';
+                $('#sessionDetailPopoverBody').html(clusteringParameters + subsequenceParameters);
+            }
+        };
+    }
+    onMouseOutDetailButton() {
+        return function (d) {
+            let popover = $('#sessionDetailInfo');
+            popover.css('display', 'none');
+        };
+    }
 }

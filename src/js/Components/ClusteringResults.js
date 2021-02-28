@@ -98,6 +98,16 @@ export default class ClusteringResults extends React.Component {
                     id='tooltipFeatureHeatmap'
 					style={{ display: "none" }}>
                 </div>
+				<div className="popover fade show bs-popover-right" 
+					id='sessionDetailInfo'
+					x-placement="right"
+					style={{ display: "none" }}>
+					<div className="arrow" style={{top: '24px'}}></div>
+					<h3 className='popover-header'
+						id='sessionDetailPopoverTitle'></h3>
+					<div className='popover-body'
+						id='sessionDetailPopoverBody'></div>
+				</div>
 			</div>
 		);
 	}

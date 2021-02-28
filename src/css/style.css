@@ -913,6 +913,18 @@ img.selectorIcon:active {
     padding: 0px 5px;
 }
 
+#clusteringParameterTableCluteringHistoryChart tr, #clusteringParameterTableCluteringHistoryChart td {
+    border: 1px solid;
+    border-color: #dfd7ca;
+    padding: 0px 5px;
+}
+
+#SSParameterTableCluteringHistoryChart tr, #SSParameterTableCluteringHistoryChart td {
+    border: 1px solid;
+    border-color: #dfd7ca;
+    padding: 0px 5px;
+}
+
 #clusteringOverviewRightTables {
     position: absolute;
     color: #fff;
