@@ -645,6 +645,14 @@ img.selectorIcon:active {
 .removeClusteringSession:hover {
     fill: #b9a78a;
 }
+
+.recoverButtonGroup rect:hover{
+    fill: #284a6c;
+}
+
+.detailButtonGroup rect:hover{
+    fill: #284a6c;
+}
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/

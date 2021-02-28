@@ -5,6 +5,7 @@ import {
 	getDataFromSessionStorage,
 	removeClusteringSession,
 } from "../lib/dataLib";
+import {recoverClusteringSession} from '../Actions/ClusteringAction';
 import DataStore from "../Stores/DataStore";
 import TimeTubesStore from "../Stores/TimeTubesStore";
 import ClusteringStore from "../Stores/ClusteringStore";
@@ -13,7 +14,7 @@ import { isEqual } from "lodash";
 export default class ClusteringHistory extends React.Component {
 	constructor(props) {
 		super();
-		this.padding = { left: 10, right: 10, top: 20, bottom: 10 };
+		this.padding = { left: 10, right: 5, top: 20, bottom: 10 };
 		this.timestampWidth = 50;
 		this.metaInfoWidth = 50;
 		this.barHeight = 60;
@@ -132,7 +133,7 @@ export default class ClusteringHistory extends React.Component {
 			sessionInfo.clusterCenters = ClusteringStore.getClusterCenters();
 			sessionInfo.labels = ClusteringStore.getLabels();
 			sessionInfo.clusteringScores = ClusteringStore.getClusteringScores();
-			sessionInfo.resultsCoordinate = ClusteringStore.getResultsCoordinates();
+			sessionInfo.resultsCoordinates = ClusteringStore.getResultsCoordinates();
 			sessionInfo.SSEClusters = ClusteringStore.getSSEClusters();
 			sessionInfo.clusterColors = ClusteringStore.getClusterColors();
 			saveClusteringSession(sessionInfo);
@@ -221,6 +222,85 @@ export default class ClusteringHistory extends React.Component {
 					.attr("text-anchor", "middle")
 					.text("x")
 					.on("click", this.removeClusteringSession().bind(this));
+                // timestamps
+                let timeStamps = this.state.sessions[sessionId].timeStamp
+                    .toLocaleString("en-US")
+                    .split(", ");
+                sessionGroup
+                    .selectAll("text.clusteringHistoryTimeStamps_" + sessionId)
+                    .data(timeStamps)
+                    .enter()
+                    .append("text")
+                    .attr("class", "clusteringHistoryTimeStamps_" + sessionId)
+                    .attr("x", 5)
+                    .attr(
+                        "y",
+                        function (d, i) {
+                            return i === 0
+                                ? this.padding.top +
+                                        this.barHeight * 3 * sessionIdx +
+                                        this.barHeight / 2
+                                : this.padding.top +
+                                        this.barHeight * 3 * sessionIdx +
+                                        this.barHeight / 2 +
+                                        8;
+                        }.bind(this)
+                    )
+                    .attr("font-size", "0.6rem")
+                    .attr("text-anchor", "left")
+                    .attr("fill", "black")
+                    .text((d) => {
+                        return d;
+                    });
+                // bar controller
+                // recover button
+                let recoverButtonGroup = sessionGroup 
+                    .append('g')
+                    .attr('class', 'recoverButtonGroup btn btn-primary')
+                    .attr('id', 'recoverButtonGroup_' + sessionId)
+                    .on('click', this.onClickRecoverButton().bind(this));
+                recoverButtonGroup
+                    .append('rect')
+                    .attr('id', 'recoverButtonRect_' + sessionId)
+                    .attr('x', width - this.padding.right - this.metaInfoWidth + 5)
+                    .attr('y', this.padding.top + this.barHeight * 3 * sessionIdx + 5)
+                    .attr('width', 48)
+                    .attr('height', 23)
+                    .attr('fill', '#325d88')
+                    .attr('rx', '0.25rem')
+                    .attr('ry', '0.25rem');
+                recoverButtonGroup
+                    .append('text')
+                    .attr('id', 'recoverButtonText_' + sessionId)
+                    .attr('x', width - this.padding.right - this.metaInfoWidth + 5 + 48 / 2)
+                    .attr('y', this.padding.top + this.barHeight * 3 * sessionIdx + 8 + 23 / 2)
+                    .attr('fill', 'white')
+                    .attr("font-size", "0.6rem")
+                    .attr("text-anchor", "middle")
+                    .text('RECOVER');
+                // detail button
+                let detailButtonGroup = sessionGroup 
+                    .append('g')
+                    .attr('class', 'detailButtonGroup btn btn-primary')
+                    .attr('id', 'detailButtonGroup_' + sessionId);
+                detailButtonGroup
+                    .append('rect')
+                    .attr('class', 'detailButtonRect')
+                    .attr('x', width - this.padding.right - this.metaInfoWidth + 5)
+                    .attr('y', this.padding.top + this.barHeight * 3 * sessionIdx + 5 + 23 + 4)
+                    .attr('width', 48)
+                    .attr('height', 23)
+                    .attr('fill', '#325d88')
+                    .attr('rx', '0.25rem')
+                    .attr('ry', '0.25rem');
+                detailButtonGroup
+                    .append('text')
+                    .attr('x', width - this.padding.right - this.metaInfoWidth + 5 + 48 / 2)
+                    .attr('y', this.padding.top + this.barHeight * 3 * sessionIdx + 5 + 23 + 4 + 3 + 23 / 2)
+                    .attr('fill', 'white')
+                    .attr("font-size", "0.6rem")
+                    .attr("text-anchor", "middle")
+                    .text('DETAIL');
 				for (let i = 0; i < this.clusters[sessionId].length; i++) {
 					let color = this.state.sessions[sessionId].clusterColors[i];
 					sessionGroup
@@ -281,35 +361,6 @@ export default class ClusteringHistory extends React.Component {
 						.attr("fill", d3.hsl(color[0], color[1], color[2]))
 						.on("mouseover", this.onMouseOverRectOnSessionBar().bind(this))
 						.on("mouseout", this.onMouseOutRectOnSessionBar().bind(this));
-					let timeStamps = this.state.sessions[sessionId].timeStamp
-						.toLocaleString("en-US")
-						.split(", ");
-					sessionGroup
-						.selectAll("text.clusteringHistoryTimeStamps_" + sessionId)
-						.data(timeStamps)
-						.enter()
-						.append("text")
-						.attr("class", "clusteringHistoryTimeStamps_" + sessionId)
-						.attr("x", 5)
-						.attr(
-							"y",
-							function (d, i) {
-								return i === 0
-									? this.padding.top +
-											this.barHeight * 3 * sessionIdx +
-											this.barHeight / 2
-									: this.padding.top +
-											this.barHeight * 3 * sessionIdx +
-											this.barHeight / 2 +
-											8;
-							}.bind(this)
-						)
-						.attr("font-size", "0.6rem")
-						.attr("text-anchor", "left")
-						.attr("fill", "black")
-						.text((d) => {
-							return d;
-						});
 				}
 				if (sessionIdx > 0) {
 					// show correlation between the previous session
@@ -986,6 +1037,54 @@ export default class ClusteringHistory extends React.Component {
 						.text("x")
 						.on("click", this.removeClusteringSession().bind(this));
 				}
+                // timestamps
+                if ($("text.clusteringHistoryTimeStamps_" + sessionId).length) {
+                    sessionGroup
+                        .selectAll("text.clusteringHistoryTimeStamps_" + sessionId)
+                        .attr(
+                            "y",
+                            function (d, i) {
+                                return i === 0
+                                    ? this.padding.top +
+                                            this.barHeight * 3 * sessionIdx +
+                                            this.barHeight / 2
+                                    : this.padding.top +
+                                            this.barHeight * 3 * sessionIdx +
+                                            this.barHeight / 2 +
+                                            8;
+                            }.bind(this)
+                        );
+                } else {
+                    let timeStamps = this.state.sessions[sessionId].timeStamp
+                        .toLocaleString("en-US")
+                        .split(", ");
+                    sessionGroup
+                        .selectAll("text.clusteringHistoryTimeStamps_" + sessionId)
+                        .data(timeStamps)
+                        .enter()
+                        .append("text")
+                        .attr("class", "clusteringHistoryTimeStamps_" + sessionId)
+                        .attr("x", 5)
+                        .attr(
+                            "y",
+                            function (d, i) {
+                                return i === 0
+                                    ? this.padding.top +
+                                            this.barHeight * 3 * sessionIdx +
+                                            this.barHeight / 2
+                                    : this.padding.top +
+                                            this.barHeight * 3 * sessionIdx +
+                                            this.barHeight / 2 +
+                                            8;
+                            }.bind(this)
+                        )
+                        .attr("font-size", "0.6rem")
+                        .attr("text-anchor", "left")
+                        .attr("fill", "black")
+                        .text((d) => {
+                            return d;
+                        });
+                }
 				for (let i = 0; i < this.clusters[sessionId].length; i++) {
 					if (
 						sessionGroup
@@ -1021,21 +1120,6 @@ export default class ClusteringHistory extends React.Component {
 							)
 							.attr("width", barWidth)
 							.attr("height", this.barHeight);
-						sessionGroup
-							.selectAll("text.clusteringHistoryTimeStamps_" + sessionId)
-							.attr(
-								"y",
-								function (d, i) {
-									return i === 0
-										? this.padding.top +
-												this.barHeight * 3 * sessionIdx +
-												this.barHeight / 2
-										: this.padding.top +
-												this.barHeight * 3 * sessionIdx +
-												this.barHeight / 2 +
-												8;
-								}.bind(this)
-							);
 					} else {
 						let color = this.state.sessions[sessionId].clusterColors[i];
 						sessionGroup
@@ -1096,35 +1180,6 @@ export default class ClusteringHistory extends React.Component {
 							.attr("fill", d3.hsl(color[0], color[1], color[2]))
 							.on("mouseover", this.onMouseOverRectOnSessionBar().bind(this))
 							.on("mouseout", this.onMouseOutRectOnSessionBar().bind(this));
-						let timeStamps = this.state.sessions[sessionId].timeStamp
-							.toLocaleString("en-US")
-							.split(", ");
-						sessionGroup
-							.selectAll("text.clusteringHistoryTimeStamps_" + sessionId)
-							.data(timeStamps)
-							.enter()
-							.append("text")
-							.attr("class", "clusteringHistoryTimeStamps_" + sessionId)
-							.attr("x", 5)
-							.attr(
-								"y",
-								function (d, i) {
-									return i === 0
-										? this.padding.top +
-												this.barHeight * 3 * sessionIdx +
-												this.barHeight / 2
-										: this.padding.top +
-												this.barHeight * 3 * sessionIdx +
-												this.barHeight / 2 +
-												8;
-								}.bind(this)
-							)
-							.attr("font-size", "0.6rem")
-							.attr("text-anchor", "left")
-							.attr("fill", "black")
-							.text((d) => {
-								return d;
-							});
 					}
 					if (sessionIdx > 0) {
 						let previousSession = this.state.sessions[
@@ -1818,4 +1873,21 @@ export default class ClusteringHistory extends React.Component {
                 .style('stroke-width', 0);
         };
 	}
+
+    onClickRecoverButton() {
+        return function(d) {
+            let targetId = d3.event.target.id;
+            if (targetId) {
+                let targetEle = targetId.split('_');
+                let selectedSession = this.state.sessions[targetEle[1]];
+                let currentDatasets = [];
+                for (let key in selectedSession.datasets) {
+                    currentDatasets.push(DataStore.getIdFromName(selectedSession.datasets[key]));
+                }
+                selectedSession.datasets = currentDatasets;
+                recoverClusteringSession(selectedSession);
+            }
+        };
+    }
+
 }
