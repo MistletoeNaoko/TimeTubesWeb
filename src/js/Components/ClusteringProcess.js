@@ -102,6 +102,36 @@ export default class ClusteringProcess extends React.Component {
                 updatedSS: ClusteringStore.getUpdatedSS()
             });
         });
+        ClusteringStore.on('recoverClusteringSession', () => {
+            // cannot show clustering process
+            // this.filteringProcess = ClusteringStore.getFilteringProcess();
+            // this.steps = Object.keys(this.filteringProcess);
+            // this.steps = this.steps.filter(ele => ele !== 'subsequences');
+            // this.steps.sort(function(a, b) {
+            //     let aSSNum = 0;
+            //     for (let key in this.filteringProcess[a]) { 
+            //         aSSNum += this.filteringProcess[a][key].length;
+            //     }
+            //     let bSSNum = 0;
+            //     for (let key in this.filteringProcess[b]) { 
+            //         bSSNum += this.filteringProcess[b][key].length;
+            //     }
+            //     return (aSSNum < bSSNum? 1: -1);
+            // }.bind(this));
+            // this.datasetsIdx = ClusteringStore.getDatasets();
+            // this.variables = ClusteringStore.getClusteringParameters().variables;
+            // this.variables = this.variables.filter(ele => ele !== 'z');
+            // this.clusterColors = ClusteringStore.getClusterColors();
+            // this.subsequences = ClusteringStore.getSubsequences();
+            // this.labels = ClusteringStore.getLabels();
+            // this.createVariableLabels();
+            // this.filteringSummary();
+            // this.initSparklines();
+            // this.setState({
+            //     selectedSS: ClusteringStore.getSelectedSS(),//selectedSS,
+            //     updatedSS: ClusteringStore.getUpdatedSS()//updatedSS
+            // });
+        });
     }
 
     componentWillUnmount() {

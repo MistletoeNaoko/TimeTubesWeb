@@ -269,10 +269,13 @@ class ClusteringStore extends EventEmitter {
         this.clusteringScores = sessionInfo.clusteringScores;
         this.resultsCoordinates = sessionInfo.resultsCoordinates;
         this.SSEClusters = sessionInfo.SSEClusters;
+        let div = this.viewportSize * Math.PI / this.clusterCenters.length;
+        this.gridSize = div * 0.8;
+        this.filteringProcess = {};
         this.selectedSS = {};
         this.updatedSS = {};
         this.selectedCluster = -1;
-        this.emit('showClusteringResults');
+        this.emit('recoverClusteringSession');
     }
 }
 

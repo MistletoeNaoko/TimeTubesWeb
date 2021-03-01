@@ -98,6 +98,13 @@ export default class TimeSelector extends React.Component {
             this.clearClusteringResults();
             this.showClusteringResults(subsequences, labels, colors);
         });
+        ClusteringStore.on('recoverClusteringSession', () => {
+            let subsequences = ClusteringStore.getSubsequences();
+            let labels = ClusteringStore.getLabels();
+            let colors = ClusteringStore.getClusterColors();
+            this.clearClusteringResults();
+            this.showClusteringResults(subsequences, labels, colors);
+        });
     }
 
     initializeElements() {

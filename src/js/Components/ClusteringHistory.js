@@ -953,7 +953,7 @@ export default class ClusteringHistory extends React.Component {
 								if (removedFlag) removed.push(i);
 							}
 						}
-					} else if (!SSParametersEqual) {
+					} else if (!SSparametersEqual) {
 						// case 4: different subsequence parameters
 						console.log("different SS parameters");
 						// no correlation charts
@@ -1775,7 +1775,7 @@ export default class ClusteringHistory extends React.Component {
 							}
 						} else if (!datasetsEqual && SSparametersEqual && !SSEqual) {
 							// case 3: datasets are different
-						} else if (!SSParametersEqual) {
+						} else if (!SSparametersEqual) {
 							// case 4: different subsequence parameters
 							console.log("different SS parameters");
 						}
@@ -2012,13 +2012,21 @@ export default class ClusteringHistory extends React.Component {
                     '</td></tr><tr><td>Distance metric</td><td>' + 
                     selectedSession.clusteringParameters.distanceMetric + 
                     '</td></tr></tbody></table>';
+                let overlappingTh;
+                if (selectedSession.subsequenceParameters.overlappingTh) {
+                    overlappingTh = '<tr><td>Overlapping degree</td><td>' + 
+                    selectedSession.subsequenceParameters.overlappingTh +
+                    '%</td></tr>';
+                }
                 let subsequenceParameters = '<h6>Subsequence Parameters</h6><table id="SSParameterTableCluteringHistoryChart"><tbody><tr><td>Subsquence period</td><td>' + 
                     selectedSession.subsequenceParameters.SSperiod[0] + 
                     '-' +
                     selectedSession.subsequenceParameters.SSperiod[1] + 
                     '</td></tr><tr><td>Filtering</td><td>' + 
                     selectedSession.subsequenceParameters.filtering.join(', ') + 
-                    '</td></tr><tr><td>Normalize</td><td>' + 
+                    '</td></tr>' +
+                    overlappingTh +
+                    '<tr><td>Normalize</td><td>' + 
                     selectedSession.subsequenceParameters.normalize + 
                     '</td></tr></tbody></table>';
                 $('#sessionDetailPopoverBody').html(clusteringParameters + subsequenceParameters);

@@ -64,6 +64,15 @@ export default class ClusteringTimeline extends React.Component {
             this.divideDataIntoCluster();
             this.drawTimelines();
         });
+        ClusteringStore.on('recoverClusteringSession', () => {
+            this.datasets = ClusteringStore.getDatasets();
+            this.clusterCenters = ClusteringStore.getClusterCenters();
+            this.subsequences = ClusteringStore.getSubsequences();
+            this.labels = ClusteringStore.getLabels();
+            this.clusterColors = ClusteringStore.getClusterColors();
+            this.divideDataIntoCluster();
+            this.drawTimelines();
+        });
         AppStore.on('resizeExtractionResultsArea', () => {
             if ($('#clusteringResults').length) {
                 this.resizeTimelines();

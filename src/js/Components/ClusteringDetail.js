@@ -123,6 +123,19 @@ export default class ClusteringDetail extends React.Component {
         ClusteringStore.on('updateSSSelection', () => {
             this.showSSStatus();
         });
+        ClusteringStore.on('recoverClusteringSession', () => {
+            this.clusterCenters = ClusteringStore.getClusterCenters();
+            this.clusterColors = ClusteringStore.getClusterColors();
+            this.labels = ClusteringStore.getLabels();
+            this.subsequences = ClusteringStore.getSubsequences();
+            this.datasetsIdx = ClusteringStore.getDatasets();
+            this.clusteringScores = ClusteringStore.getClusteringScores();
+            this.subsequenceParameters = ClusteringStore.getSubsequenceParameters();
+            this.clearCanvas();
+            this.setState({
+                cluster: -1
+            });
+        });
     }
 
     componentWillUnmount() {
