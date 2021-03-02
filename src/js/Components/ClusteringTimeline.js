@@ -158,9 +158,6 @@ export default class ClusteringTimeline extends React.Component {
                     return d;
                 })
                 .on('click', expandTimeline().bind(this));
-                // .on('click', function(data,idx,elem) {
-                //     console.log(data, idx, elem, elem[0].id)
-                // });//this.expandTimeline());
             let xScale = d3.scaleLinear()
                 .domain([data.data.meta.min.z, data.data.meta.max.z])
                 .nice()

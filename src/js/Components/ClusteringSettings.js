@@ -714,7 +714,6 @@ export default class clusteringSettings extends React.Component {
                 resultsCoordinates, 
                 SSEClusters
             ] = performClustering(datasets, clusteringParameters, subsequenceParameters);
-            console.log(SSEClusters)
             // let data = DataStore.getData(0),
             //     clusteringParameters = {
             //         method: 'kmedoids',
