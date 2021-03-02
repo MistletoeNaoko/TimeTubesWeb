@@ -402,7 +402,6 @@ export default class ClusteringHistory extends React.Component {
 					if (datasetsEqual && SSparametersEqual && SSEqual) {
 						// case 1: target datasets, subsequence parameters, subsequences are the same
 						// (does not care the differences of clustering parameters)
-						console.log("SS, parameters, targets are the same");
 						$(
 							"#clusteringHistoryCorrelationGroup_" +
 								sessionIds[sessionIdx - 1] +
@@ -562,7 +561,6 @@ export default class ClusteringHistory extends React.Component {
 						(!datasetsEqual && SSparametersEqual && !SSEqual)
 					) {
 						// case 2: subsequences used in the clustering process are different
-						console.log("SS are different");
 						// SSids coincides between previous session and current session
 						let added = [],
 							removed = [];
@@ -955,7 +953,6 @@ export default class ClusteringHistory extends React.Component {
 						}
 					} else if (!SSparametersEqual) {
 						// case 4: different subsequence parameters
-						console.log("different SS parameters");
 						// no correlation charts
 					}
 				}
@@ -1777,7 +1774,6 @@ export default class ClusteringHistory extends React.Component {
 							// case 3: datasets are different
 						} else if (!SSparametersEqual) {
 							// case 4: different subsequence parameters
-							console.log("different SS parameters");
 						}
 					}
 				}
