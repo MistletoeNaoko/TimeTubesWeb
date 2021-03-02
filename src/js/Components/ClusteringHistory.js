@@ -5,6 +5,7 @@ import {
 	getDataFromSessionStorage,
 	removeClusteringSession,
 } from "../lib/dataLib";
+import {formatValue} from '../lib/2DGraphLib';
 import { recoverClusteringSession } from "../Actions/ClusteringAction";
 import DataStore from "../Stores/DataStore";
 import TimeTubesStore from "../Stores/TimeTubesStore";
@@ -2122,8 +2123,16 @@ export default class ClusteringHistory extends React.Component {
 					"<tr><td>Normalize</td><td>" +
 					selectedSession.subsequenceParameters.normalize +
 					"</td></tr></tbody></table>";
+				let clusteringScores = 
+					'<h6>Clustering scores</h6><table id="clusteringScoreTableCluteringHistoryChart"><tbody><tr><td>Pseudo F</td><td>' +
+					formatValue(selectedSession.clusteringScores.pseudoF) + 
+					"<tr><td>Silhouette coefficient</td><td>" +
+					formatValue(selectedSession.clusteringScores.silhouette) + 
+					"<tr><td>Davis Bouldin index</td><td>" +
+					formatValue(selectedSession.clusteringScores.davisBouldin) + 
+					"</td></tr></tbody></table>";
 				$("#sessionDetailPopoverBody").html(
-					clusteringParameters + subsequenceParameters
+					clusteringParameters + subsequenceParameters + clusteringScores
 				);
 			}
 		};
