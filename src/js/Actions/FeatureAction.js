@@ -62,7 +62,6 @@ export function setQuery(query) {
 }
 
 export function convertResultIntoQuery(id, period, activeVar) {
-    // console.log(id, period, ignored)
     dispatcher.dispatch({type: 'CONVERT_RESULT_INTO_QUERY', id, period, activeVar});
 }
 

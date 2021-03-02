@@ -76,6 +76,8 @@ class ClusteringStore extends EventEmitter {
             case 'REMOVE_SELECTED_SUBSEQUENCE_FROM_COMPARISON_PANEL':
                 this.emit('removeSelectedSubsequenceFromComparisonPanel', action.SSId);
                 break;
+            case 'RECOVER_CLUSTERING_SESSION':
+                this.recoverClusteringSession(action.sessionInfo);
             default:
                 break;
         }
@@ -254,6 +256,26 @@ class ClusteringStore extends EventEmitter {
 
     showSelectedSubsequenceInComparisonPanel(id, period, SSId) {
         this.emit('showSelectedSubsequenceInComparisonPanel', id, period, SSId);
+    }
+
+    recoverClusteringSession(sessionInfo) {
+        this.datasets = sessionInfo.datasets;
+        this.subsequences = sessionInfo.subsequences;
+        this.clusterCenters = sessionInfo.clusterCenters;
+        this.labels = sessionInfo.labels;
+        this.clusterColors = sessionInfo.clusterColors;
+        this.clusteringParameters = sessionInfo.clusteringParameters;
+        this.subsequenceParameters = sessionInfo.subsequenceParameters;
+        this.clusteringScores = sessionInfo.clusteringScores;
+        this.resultsCoordinates = sessionInfo.resultsCoordinates;
+        this.SSEClusters = sessionInfo.SSEClusters;
+        let div = this.viewportSize * Math.PI / this.clusterCenters.length;
+        this.gridSize = div * 0.8;
+        this.filteringProcess = {};
+        this.selectedSS = {};
+        this.updatedSS = {};
+        this.selectedCluster = -1;
+        this.emit('recoverClusteringSession');
     }
 }
 

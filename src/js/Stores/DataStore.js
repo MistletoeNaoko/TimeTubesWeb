@@ -1,7 +1,6 @@
 import {EventEmitter} from 'events';
 import * as THREE from 'three';
 import dispatcher from "../Dispatcher/dispatcher";
-import * as colorMap from '../lib/colorMap';
 
 const dataHeaders = {
     HU: {

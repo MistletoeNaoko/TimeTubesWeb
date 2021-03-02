@@ -633,6 +633,26 @@ img.selectorIcon:active {
     font-size: 0.8rem;
     margin: 0 0.3rem;
 }
+
+.removeClusteringSession {
+    fill: #dfd7ca;
+    font-size: 1.3125rem;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.removeClusteringSession:hover {
+    fill: #b9a78a;
+}
+
+.recoverButtonGroup rect:hover{
+    fill: #284a6c;
+}
+
+.detailButtonGroup rect:hover{
+    fill: #284a6c;
+}
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
@@ -832,6 +852,10 @@ img.selectorIcon:active {
     overflow: auto;
 }
 
+#clusteringHistoryChart {
+    overflow: auto;
+}
+
 #clusteringDetail {
     width: 20%;
     padding: 0px 10px;
@@ -886,6 +910,24 @@ img.selectorIcon:active {
 #clusteringParametersTable tr, #clusteringParametersTable td {
     border: 1px solid;
     border-color: #fff;
+    padding: 0px 5px;
+}
+
+#clusteringParameterTableCluteringHistoryChart tr, #clusteringParameterTableCluteringHistoryChart td {
+    border: 1px solid;
+    border-color: #dfd7ca;
+    padding: 0px 5px;
+}
+
+#SSParameterTableCluteringHistoryChart tr, #SSParameterTableCluteringHistoryChart td {
+    border: 1px solid;
+    border-color: #dfd7ca;
+    padding: 0px 5px;
+}
+
+#clusteringScoreTableCluteringHistoryChart tr, #clusteringScoreTableCluteringHistoryChart td {
+    border: 1px solid;
+    border-color: #dfd7ca;
     padding: 0px 5px;
 }
 

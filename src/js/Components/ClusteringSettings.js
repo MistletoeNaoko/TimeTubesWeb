@@ -3,7 +3,9 @@ import {performClustering} from '../lib/subsequenceClustering';
 import * as ClusteringAction from '../Actions/ClusteringAction';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
+import ClusteringStore from '../Stores/ClusteringStore';
 import {toggleExtractionMenu} from '../lib/domActions';
+import { method } from 'lodash';
 
 export default class clusteringSettings extends React.Component {
     constructor(props) {
@@ -36,6 +38,50 @@ export default class clusteringSettings extends React.Component {
         FeatureStore.on('updateTarget', () => {
             this.setState({
                 targetList: FeatureStore.getTarget()
+            });
+        });
+        ClusteringStore.on('recoverClusteringSession', () => {
+            // recover clustering parameters
+            let subsequenceParameters = ClusteringStore.getSubsequenceParameters(),
+                clusteringParameters = ClusteringStore.getClusteringParameters(),
+                targets = ClusteringStore.getDatasets(),
+                SSEClusters = ClusteringStore.getSSEClusters();
+            // subsequence parameters
+            $('#targetLengthMinClustering').val(subsequenceParameters.SSperiod[0]);
+            $('#targetLengthMaxClustering').val(subsequenceParameters.SSperiod[1]);
+            $('#resolutionOfTimeNormalizedSS').val(subsequenceParameters.isometryLen);
+            if (subsequenceParameters.filtering.indexOf('overlappingDegree') >= 0) {
+                $('#overlappingDegreeThreshold').val(subsequenceParameters.overlappingTh);
+            }
+            $('input[name=clusteringVariables]').each((idx, ele) => {
+                if (clusteringParameters.variables.indexOf($(ele).val()) >= 0) {
+                    $(ele).prop('checked', true);
+                }  else {
+                    $(ele).prop('checked', false);
+                }
+            });
+            // clustering paramters
+            let methodList = document.getElementById('clusteringMethod');
+            for (let i = 0; i < methodList.options.length; i++) {
+                if (methodList.options[i].value === clusteringParameters.method) {
+                    methodList.selectedIndex = i;
+                    break;
+                }
+            }
+            let elbow = typeof(SSEClusters) !== 'undefined'? true: false;
+            if (elbow) {
+                let clusterNums = Object.key(SSEClusters).sort((a, b) => a - b);
+                $('#elbowMethodMinCluster').val(clusterNums[0]);
+                $('#elbowMethodMaxCluster').val(clusterNums[clusterNums.length - 1]);
+            }
+            this.setState({
+                normalize: subsequenceParameters.normalize,
+                clusteringMethod: clusteringParameters.method,
+                distanceMetric: clusteringParameters.distanceMetric,
+                medoidDefinition: clusteringParameters.medoidDefinition,
+                targetList: targets.filter(d => {d >= 0}),
+                filteringSS: subsequenceParameters.filtering,
+                elbow: elbow
             });
         });
     }

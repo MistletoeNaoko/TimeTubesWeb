@@ -72,3 +72,7 @@ export function showSelectedSubsequenceInComparisonPanel(id, period, SSId) {
 export function removeSelectedSubsequenceFromComparisonPanel(SSId) {
     dispatcher.dispatch({type: 'REMOVE_SELECTED_SUBSEQUENCE_FROM_COMPARISON_PANEL', SSId});
 }
+
+export function recoverClusteringSession(sessionInfo) {
+    dispatcher.dispatch({type: 'RECOVER_CLUSTERING_SESSION', sessionInfo});
+}

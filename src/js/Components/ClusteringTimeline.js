@@ -64,6 +64,15 @@ export default class ClusteringTimeline extends React.Component {
             this.divideDataIntoCluster();
             this.drawTimelines();
         });
+        ClusteringStore.on('recoverClusteringSession', () => {
+            this.datasets = ClusteringStore.getDatasets();
+            this.clusterCenters = ClusteringStore.getClusterCenters();
+            this.subsequences = ClusteringStore.getSubsequences();
+            this.labels = ClusteringStore.getLabels();
+            this.clusterColors = ClusteringStore.getClusterColors();
+            this.divideDataIntoCluster();
+            this.drawTimelines();
+        });
         AppStore.on('resizeExtractionResultsArea', () => {
             if ($('#clusteringResults').length) {
                 this.resizeTimelines();
@@ -149,9 +158,6 @@ export default class ClusteringTimeline extends React.Component {
                     return d;
                 })
                 .on('click', expandTimeline().bind(this));
-                // .on('click', function(data,idx,elem) {
-                //     console.log(data, idx, elem, elem[0].id)
-                // });//this.expandTimeline());
             let xScale = d3.scaleLinear()
                 .domain([data.data.meta.min.z, data.data.meta.max.z])
                 .nice()

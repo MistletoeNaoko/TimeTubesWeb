@@ -123,6 +123,19 @@ export default class ClusteringDetail extends React.Component {
         ClusteringStore.on('updateSSSelection', () => {
             this.showSSStatus();
         });
+        ClusteringStore.on('recoverClusteringSession', () => {
+            this.clusterCenters = ClusteringStore.getClusterCenters();
+            this.clusterColors = ClusteringStore.getClusterColors();
+            this.labels = ClusteringStore.getLabels();
+            this.subsequences = ClusteringStore.getSubsequences();
+            this.datasetsIdx = ClusteringStore.getDatasets();
+            this.clusteringScores = ClusteringStore.getClusteringScores();
+            this.subsequenceParameters = ClusteringStore.getSubsequenceParameters();
+            this.clearCanvas();
+            this.setState({
+                cluster: -1
+            });
+        });
     }
 
     componentWillUnmount() {
@@ -402,10 +415,10 @@ export default class ClusteringDetail extends React.Component {
             for (let i = 0; i < this.labels.length; i++) {
                 if (typeof(this.labels[i]) === 'object') {
                     if (this.labels[i].cluster === cluster) {
-                        let SS = this.subsequences[i].slice(0, this.subsequences[i].length);
-                        SS.id = this.subsequences[i].id;
-                        SS.idx = this.subsequences[i].idx;
-                        SS.dataPoints = this.subsequences[i].dataPoints;
+                        let SS = this.subsequences[i];//.slice(0, this.subsequences[i].length);
+                        // SS.id = this.subsequences[i].id;
+                        // SS.idx = this.subsequences[i].idx;
+                        // SS.dataPoints = this.subsequences[i].dataPoints;
                         SS.Silhouette = this.clusteringScores.silhouetteSS[i];
                         this.SSCluster.push(SS);
 
@@ -422,10 +435,10 @@ export default class ClusteringDetail extends React.Component {
                     }
                 } else {
                     if (this.labels[i] === cluster) {
-                        let SS = this.subsequences[i].slice(0, this.subsequences[i].length);
-                        SS.id = this.subsequences[i].id;
-                        SS.idx = this.subsequences[i].idx;
-                        SS.dataPoints = this.subsequences[i].dataPoints;
+                        let SS = this.subsequences[i];//.slice(0, this.subsequences[i].length);
+                        // SS.id = this.subsequences[i].id;
+                        // SS.idx = this.subsequences[i].idx;
+                        // SS.dataPoints = this.subsequences[i].dataPoints;
                         SS.Silhouette = this.clusteringScores.silhouetteSS[i];
                         this.SSCluster.push(SS);
                         

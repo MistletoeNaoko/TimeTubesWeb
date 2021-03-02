@@ -7,6 +7,7 @@ import {resizeExtractionResultsArea} from '../Actions/AppAction';
 import {toggleExtractionMenu} from '../lib/domActions';
 import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
+import ClusteringStore from '../Stores/ClusteringStore';
 
 export default class ExtractionMenu extends React.Component {
     constructor(props) {
@@ -59,6 +60,17 @@ export default class ExtractionMenu extends React.Component {
             for (let i = 0; i < targets.length; i++) {
                 targets[i].checked = true;
             }
+        });
+        ClusteringStore.on('recoverClusteringSession', () => {
+            let targets = ClusteringStore.getDatasets();
+            let targetList = $('input[name=targetList]');
+            targetList.each((idx, ele) => {
+                if (targets.indexOf(Number($(ele).val())) >= 0) {
+                    $(ele).prop('checked', true);
+                } else {
+                    $(ele).prop('checked', false);
+                }
+            });
         });
     }
 

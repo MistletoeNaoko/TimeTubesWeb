@@ -192,6 +192,18 @@ export default class ClusteringOverview extends React.Component {
                 clusteringScores: clusteringScores
             });
         });
+        ClusteringStore.on('recoverClusteringSession', () => {
+            this.clusterCenters = ClusteringStore.getClusterCenters();
+            this.subsequences = ClusteringStore.getSubsequences();
+            this.SSLabels = ClusteringStore.getLabels();
+            this.clusterColors = ClusteringStore.getClusterColors();
+            this.selectedCluster = undefined;
+            this.update2DGraphsFlag = true;
+            let clusteringScores = ClusteringStore.getClusteringScores();
+            this.setState({
+                clusteringScores: clusteringScores
+            });
+        });
     }
 
     componentDidUpdate() {

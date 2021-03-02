@@ -207,3 +207,32 @@ export function createDateLabel() {
     }
     return year + month + day + hour + minute + second;
 }
+
+// for storing clustering sessions
+let clusteringHistory = JSON.parse(sessionStorage.getItem('clusteringHistory'));
+
+export function saveClusteringSession(clusteringSession) {
+    let sessionId = getUniqueId();
+    if (clusteringHistory === null) {
+        clusteringHistory = JSON.parse(sessionStorage.getItem('clusteringHistory'));
+    }
+    clusteringSession.sessionId = sessionId;
+    clusteringHistory[sessionId] = clusteringSession;
+    sessionStorage.setItem('clusteringHistory', JSON.stringify(clusteringHistory));
+}
+
+export function removeClusteringSession(sessionId) {
+    if (sessionId in clusteringHistory) {
+        for (let id in clusteringHistory) {
+            if (clusteringHistory[id].sessionId === sessionId) {
+                delete clusteringHistory[sessionId];
+                sessionStorage.setItem('clusteringHistory', JSON.stringify(clusteringHistory));
+                break;
+            }
+        }
+    }
+}
+
+export function getDataFromSessionStorage(key) {
+    return JSON.parse(sessionStorage.getItem(key));
+}

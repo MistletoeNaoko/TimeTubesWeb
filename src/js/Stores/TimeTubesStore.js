@@ -266,7 +266,11 @@ class TimeTubesStore extends EventEmitter{
     }
 
     getPlotColor(id) {
-        return this.plotColor[id];
+        if (id === -1) {
+            return undefined
+        } else {
+            return this.plotColor[id];
+        }
     }
 
     getInitColorIdx() {
