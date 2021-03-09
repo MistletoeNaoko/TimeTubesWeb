@@ -790,6 +790,8 @@ export default class ClusteringProcess extends React.Component {
                     SSId = Number(targetIdEle[2]);
                 let xMinMax = this.xScale.domain();
                 // show data points on sparklines
+                let subsequenceParameters = ClusteringStore.getSubsequenceParameters();
+                let meta = DataStore.getData(dataId).data.meta;
                 let data = this.filteringProcess.subsequences[dataId][SSId];
                 for (let i = 0; i < this.variables.length; i++) {
                     let svg = d3.select('#subsequenceSVG_' + dataId + '_' + SSId + '_' + this.variables[i]);
@@ -804,7 +806,11 @@ export default class ClusteringProcess extends React.Component {
                             return this.xScale(xVal);
                         }.bind(this))
                         .attr('cy', function(d) {
-                            return this.yScales[this.variables[i]](d[this.variables[i]]);
+                            let val = d[this.variables[i]];
+                            if (!subsequenceParameters.normalize) {
+                                val = (val - meta.mean[this.variables[i]]) / meta.std[this.variables[i]];
+                            }
+                            return this.yScales[this.variables[i]](val);
                         }.bind(this))
                         .attr('fill', 'white')
                         .attr('stroke', 'black')
@@ -936,6 +942,8 @@ export default class ClusteringProcess extends React.Component {
                     SSId = Number(targetIdEle[2]);
                 let xMinMax = this.xScale.domain();
                 // show data points on sparklines
+                let subsequenceParameters = ClusteringStore.getSubsequenceParameters();
+                let meta = DataStore.getData(dataId).data.meta;
                 let data = this.filteringProcess.subsequences[dataId][SSId];
                 for (let i = 0; i < this.variables.length; i++) {
                     let svg = d3.select('#updateSubsequenceSVG_' + dataId + '_' + SSId + '_' + this.variables[i]);
@@ -950,7 +958,11 @@ export default class ClusteringProcess extends React.Component {
                             return this.xScale(xVal);
                         }.bind(this))
                         .attr('cy', function(d) {
-                            return this.yScales[this.variables[i]](d[this.variables[i]]);
+                            let val = d[this.variables[i]];
+                            if (!subsequenceParameters.normalize) {
+                                val = (val - meta.mean[this.variables[i]]) / meta.std[this.variables[i]];
+                            }
+                            return this.yScales[this.variables[i]](val);
                         }.bind(this))
                         .attr('fill', 'white')
                         .attr('stroke', 'black')
@@ -1012,7 +1024,7 @@ export default class ClusteringProcess extends React.Component {
                 let dataId = Number(targetIdEle[1]),
                     SSId = Number(targetIdEle[2]);
                 for (let i = 0; i < this.variables.length; i++) {
-                    let svg = d3.select('#updatedSubsequenceSVG_' + dataId + '_' + SSId + '_' + this.variables[i]);
+                    let svg = d3.select('#updateSubsequenceSVG_' + dataId + '_' + SSId + '_' + this.variables[i]);
                     svg.select('g')
                         .selectAll('circle')
                         .remove();
