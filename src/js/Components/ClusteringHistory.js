@@ -5,12 +5,13 @@ import {
 	getDataFromSessionStorage,
 	removeClusteringSession,
 } from "../lib/dataLib";
-import {formatValue} from '../lib/2DGraphLib';
+import { formatValue } from "../lib/2DGraphLib";
+import { updateTarget } from "../Actions/FeatureAction";
 import { recoverClusteringSession } from "../Actions/ClusteringAction";
 import DataStore from "../Stores/DataStore";
 import TimeTubesStore from "../Stores/TimeTubesStore";
 import ClusteringStore from "../Stores/ClusteringStore";
-import { isEqual } from "lodash";
+import { isEqual, update } from "lodash";
 
 export default class ClusteringHistory extends React.Component {
 	constructor(props) {
@@ -1042,8 +1043,8 @@ export default class ClusteringHistory extends React.Component {
 						return "clusteringHistoryGroup_" + d;
 					});
 			}
-			$('.addedMarksGroup').remove();
-			$('.removedMarksGroup').remove();
+			$(".addedMarksGroup").remove();
+			$(".removedMarksGroup").remove();
 			for (let sessionIdx = 0; sessionIdx < sessionIds.length; sessionIdx++) {
 				let sessionId = sessionIds[sessionIdx];
 				let sessionGroup = this.clusteringHistorySVG.select(
@@ -2023,7 +2024,10 @@ export default class ClusteringHistory extends React.Component {
 			let targetId = d3.event.target.id;
 			if (targetId) {
 				let targetEle = targetId.split("_");
-				let selectedSession = this.state.sessions[targetEle[1]];
+				let selectedSession = Object.assign(
+					{},
+					this.state.sessions[targetEle[1]]
+				);
 				let currentDatasets = [];
 				for (let key in selectedSession.datasets) {
 					currentDatasets.push(
@@ -2031,6 +2035,7 @@ export default class ClusteringHistory extends React.Component {
 					);
 				}
 				selectedSession.datasets = currentDatasets;
+				updateTarget(currentDatasets);
 				recoverClusteringSession(selectedSession);
 			}
 		};
@@ -2123,13 +2128,13 @@ export default class ClusteringHistory extends React.Component {
 					"<tr><td>Normalize</td><td>" +
 					selectedSession.subsequenceParameters.normalize +
 					"</td></tr></tbody></table>";
-				let clusteringScores = 
+				let clusteringScores =
 					'<h6>Clustering scores</h6><table id="clusteringScoreTableCluteringHistoryChart"><tbody><tr><td>Pseudo F</td><td>' +
-					formatValue(selectedSession.clusteringScores.pseudoF) + 
+					formatValue(selectedSession.clusteringScores.pseudoF) +
 					"<tr><td>Silhouette coefficient</td><td>" +
-					formatValue(selectedSession.clusteringScores.silhouette) + 
+					formatValue(selectedSession.clusteringScores.silhouette) +
 					"<tr><td>Davis Bouldin index</td><td>" +
-					formatValue(selectedSession.clusteringScores.davisBouldin) + 
+					formatValue(selectedSession.clusteringScores.davisBouldin) +
 					"</td></tr></tbody></table>";
 				$("#sessionDetailPopoverBody").html(
 					clusteringParameters + subsequenceParameters + clusteringScores
