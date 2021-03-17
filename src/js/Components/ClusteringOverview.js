@@ -1207,9 +1207,8 @@ export default class ClusteringOverview extends React.Component {
                             if (PDMin < 0) {
                                 PDPlus += Math.abs(PDMin);
                             }
-                            let PATmp = 0.5 * Math.PI;
-                            xCur = PDPlus * Math.cos(PATmp);
-                            yCur = PDPlus * Math.sin(PATmp);
+                            xCur = 0;
+                            yCur = PDPlus;
                         }
                         let currentValues = {
                             x: xCur,

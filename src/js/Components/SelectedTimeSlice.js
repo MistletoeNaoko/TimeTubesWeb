@@ -1,11 +1,11 @@
 import React from 'react';
 import * as THREE from 'three';
+import * as d3 from 'd3';
 import DataStore from '../Stores/DataStore';
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import FeatureStore from '../Stores/FeatureStore';
 import ClusteringStore from '../Stores/ClusteringStore';
 import OrbitControls from "three-orbitcontrols";
-import { active } from 'd3';
 
 export default class SelectedTimeSlice extends React.Component {
     constructor(props) {
@@ -160,6 +160,7 @@ export default class SelectedTimeSlice extends React.Component {
         FeatureStore.on('convertClusterCenterIntoQuery', (clusterCenter) => {
         　　 if (FeatureStore.getMode() === 'QBE') {
                 this.clusterCenter = clusterCenter;
+                this.activeVar = clusterCenter.parameters.variables;
                 this.splinesClusterCenter = {}
                 this.computeSplines(clusterCenter);
                 let texture = new THREE.TextureLoader();
@@ -422,19 +423,16 @@ export default class SelectedTimeSlice extends React.Component {
     }
 
     redrawTube() {
-        // let ignoredX = (this.ignoredVariables)? this.ignoredVariables.indexOf('x'): -1,
-        //     ignoredY = (this.ignoredVariables)? this.ignoredVariables.indexOf('y'): -1,
-        //     ignoredRX = (this.ignoredVariables)? this.ignoredVariables.indexOf('r_x'): -1,
-        //     ignoredRY = (this.ignoredVariables)? this.ignoredVariables.indexOf('r_y'): -1,
-        //     ignoredH = (this.ignoredVariables)? this.ignoredVariables.indexOf('H'): -1,
-        //     ignoredV = (this.ignoredVariables)? this.ignoredVariables.indexOf('V'): -1;
         if (this.tube && this.tube.visible) {
+            // draw a tube for a subsequence
             let activeX = (this.activeVar.indexOf('x') >= 0)? true: false,
                 activeY = (this.activeVar.indexOf('y') >= 0)? true: false,
                 activeRX = (this.activeVar.indexOf('r_x') >= 0)? true: false,
                 activeRY = (this.activeVar.indexOf('r_y') >= 0)? true: false,
                 activeH = (this.activeVar.indexOf('H') >= 0)? true: false,
-                activeV = (this.activeVar.indexOf('V') >= 0)? true: false;
+                activeV = (this.activeVar.indexOf('V') >= 0)? true: false,
+                activePA = (this.activeVar.indexOf('PA') >= 0)? true: false,
+                activePD = (this.activeVar.indexOf('PD') >= 0)? true: false;
             // if any ignored variables on positions (x, y, r_x, r_y) are set, recompute position attribute
             let minJD = this.data.data.meta.min.z;
             let maxJD = this.data.data.meta.max.z;
@@ -457,13 +455,30 @@ export default class SelectedTimeSlice extends React.Component {
             let minIdx = Math.ceil((this.selectedPeriod[0] - minJD) / delTime);
             let attrSize = this.tube.geometry.attributes.position.array.length / 3 / this.segment;
             let maxIdx = Math.ceil((this.selectedPeriod[1] - minJD) / delTime);
+            let gridSize = TimeTubesStore.getGridSize();
             let vertices = [], colors = [];
             let deg, cenX, cenY, radX, radY;
             for (let i = minIdx; i < minIdx + attrSize; i++) {//i <= maxIdx; i++) {
-                cenX = (activeX)? cen[i].x: 0;
-                cenY = (activeY)? cen[i].y: 0;
                 radX = (activeRX)? rad[i].x: 1 / range;
                 radY = (activeRY)? rad[i].y: 1 / range;
+                if ((activeX || activeY) || (activePA && activePD)) {
+                    cenX = (activeX || (activePA && activePD))? cen[i].x: 0;
+                    cenY = (activeY || (activePA && activePD))? cen[i].y: 0;
+                } else if (activePA || activePD) {
+                    if (activePA) {
+                        let rad = Math.sqrt(cen[i].x * cen[i].x + cen[i].y * cen[i].y);
+                        let ratio = gridSize / range / rad;
+                        cenX = cen[i].x * ratio;
+                        cenY = cen[i].y * ratio;
+                     } else if (activePD) {
+                        let rad = Math.sqrt(cen[i].x * cen[i].x + cen[i].y * cen[i].y);
+                        cenX = 0;
+                        cenY = rad;
+                    }
+                } else {
+                    cenX = 0;
+                    cenY = 0;
+                }
                 for (let j = 0; j < this.segment; j++) {
                     deg = del * j;
                     vertices.push((cenX * range + radX * range * Math.cos(deg)) * -1);
@@ -479,23 +494,45 @@ export default class SelectedTimeSlice extends React.Component {
             this.tube.geometry.computeVertexNormals();
             this.renderer.render(this.scene, this.camera);
         } else if (this.tubeCluster && this.tubeCluster.visible) {
+            // draw a tube for a cluster center
             let activeX = (this.activeVar.indexOf('x') >= 0)? true: false,
                 activeY = (this.activeVar.indexOf('y') >= 0)? true: false,
                 activeRX = (this.activeVar.indexOf('r_x') >= 0)? true: false,
                 activeRY = (this.activeVar.indexOf('r_y') >= 0)? true: false,
                 activeH = (this.activeVar.indexOf('H') >= 0)? true: false,
-                activeV = (this.activeVar.indexOf('V') >= 0)? true: false;
+                activeV = (this.activeVar.indexOf('V') >= 0)? true: false,
+                activePA = (this.activeVar.indexOf('PA') >= 0)? true: false,
+                activePD = (this.activeVar.indexOf('PD') >= 0)? true: false;
             let dataLen = this.clusterCenter.values[Object.keys(this.clusterCenter.values)[0]].length;
             let divNum = this.division * dataLen;
             let del = Math.PI * 2 / (this.segment - 1);
+            let gridSize = TimeTubesStore.getGridSize();
 
             let cen = this.splinesClusterCenter.position.getSpacedPoints(divNum),
                 rad = this.splinesClusterCenter.radius.getSpacedPoints(divNum);
             let vertices = [];
             let deg, cenX, cenY, radX, radY;
             for (let j = 0; j <= divNum; j++) {
-                cenX = (activeX)? cen[j].x: 0;
-                cenY = (activeY)? cen[j].y: 0;
+                if (activeX || activeY) {
+                    cenX = (activeX)? cen[j].x: 0;
+                    cenY = (activeY)? cen[j].y: 0;
+                } else if (activePA && activePD) {
+                    cenX = (activePA)? cen[j].x: 0;
+                    cenY = (activePD)? cen[j].y: 0;
+                } else if (activePA || activePD) {
+                    let rad = Math.sqrt(cen[j].x * cen[j].x + cen[j].y * cen[j].y);
+                    if (activePA) {
+                        let ratio = gridSize / this.rangeClusterCenter / rad;
+                        cenX = cen[j].x * ratio;
+                        cenY = cen[j].y * ratio;
+                    } else if (activePD) {
+                        cenX = 0;
+                        cenY = rad;
+                    }
+                } else {
+                    cenX = 0;
+                    cenY = 0;
+                }
                 radX = (activeRX)? rad[j].x: 1 / this.rangeClusterCenter;
                 radY = (activeRY)? rad[j].y: 1 / this.rangeClusterCenter;
                 for (let k = 0; k < this.segment; k++) {
@@ -520,11 +557,112 @@ export default class SelectedTimeSlice extends React.Component {
         this.minmax.y = [Infinity, -Infinity];
         this.minmax.H = [Infinity, -Infinity];
         this.minmax.V = [Infinity, -Infinity];
+        this.minmax.PA = [Infinity, -Infinity];
+        this.minmax.PD = [Infinity, -Infinity];
+        
         let position = [], radius = [], color = [];
+        let subsequenceParameters = ClusteringStore.getSubsequenceParameters();
+        let targets = ClusteringStore.getDatasets(),
+            variables = clusterCenter.parameters.variables;
+        let PAMinMax, PARatio, PDMin, means, stds, dataNum;
+        if ('PA' in clusterCenter.values || 'PD' in clusterCenter.values) {
+            PAMinMax = d3.extent(clusterCenter.values.PA, (d) => {
+                return d;
+            });
+            PARatio = Math.PI / Math.max(Math.abs(PAMinMax[0]), Math.abs(PAMinMax[1]));
+            PDMin = d3.min(clusterCenter.values.PD, (d) => {
+                return d;
+            });
+            if (targets.length === 1) {
+                let meta = DataStore.getData(targets[0]).data.meta;
+                means = meta.mean;
+                stds = meta.std;
+            } else {
+                means = {};
+                stds = {};
+                dataNum = {};
+                variables.forEach(d => {
+                    means[d] = 0;
+                    stds[d] = 0;
+                    dataNum[d] = 0;
+                });
+                for (let j = 0; j < targets.length; j++) {
+                    let data = DataStore.getData(targets[j]);
+                    variables.forEach(d => {
+                        let dataCount = 0;
+                        if (d === 'PA' || d === 'PD' || d === 'r_x' || d === 'r_y') {
+                            dataCount = data.data.splines.PDPA.points.length;
+                        } else if (d === 'H') {
+                            dataCount = data.data.splines.hue.points.length;
+                        } else if (d === 'V') {
+                            dataCount = data.data.splines.value.points.length;
+                        }
+                        means[d] += data.data.meta.mean[d] * dataCount;
+                        stds[d] += Math.pow(data.data.meta.std[d], 2) * dataCount;
+                        dataNum[d] += dataCount;
+                    });
+                }
+                variables.forEach(d => {
+                    means[d] /= dataNum[d];
+                    stds[d] = Math.sqrt(stds[d] / dataNum[d]);
+                });
+            }
+        }
         for (let i = 0; i < clusterCenter.values[Object.keys(clusterCenter.values)[0]].length; i++) {
+            let xPos, yPos;
+            if ('x' in clusterCenter.values || 'y' in clusterCenter.values) {
+                xPos = ('x' in clusterCenter.values)? clusterCenter.values.x[i]: 0; 
+                yPos = ('y' in clusterCenter.values)? clusterCenter.values.y[i]: 0;
+            } else if ('PA' in clusterCenter.values && 'PD' in clusterCenter.values) {
+                if (subsequenceParameters.normalize) {
+                    let PARad = clusterCenter.values.PA[i] * PARatio;
+                    let PDPlus = clusterCenter.values.PD[i];
+                    if (PDMin < 0) {
+                        PDPlus += Math.abs(PDMin);
+                    }
+                    xPos = PDPlus * Math.cos(PARad);
+                    yPos = PDPlus * Math.sin(PARad);
+                } else {
+                    let PARad = clusterCenter.values.PA[i] * stds.PA + means.PA;
+                    if (90 < PARad && PARad <= 180) {
+                        PARad -= 180;
+                    }
+                    PARad *= 2;
+                    PARad = PARad * Math.PI / 180;
+                    let PDOrg = clusterCenter.values.PD[i] * stds.PD + means.PD;
+                    xPos = PDOrg * Math.cos(PARad);
+                    yPos = PDOrg * Math.sin(PARad);
+                }
+            } else if ('PA' in clusterCenter.values) {
+                if (subsequenceParameters.normalize) {
+                    xPos = Math.cos(clusterCenter.values.PA[i] * PARatio);
+                    yPos = Math.sin(clusterCenter.values.PA[i] * PARatio);
+                } else {
+                    let PARad = clusterCenter.values.PA[i] * stds.PA + means.PA;
+                    if (90 < PARad && PARad <= 180) {
+                        PARad -= 180;
+                    }
+                    PARad *= 2;
+                    PARad = PARad * Math.PI / 180;
+                    xPos = Math.cos(PARad);
+                    yPos =  Math.sin(PARad);
+                }
+            } else if ('PD' in clusterCenter.values) {
+                if (subsequenceParameters.normalize) {
+                    let PDPlus = clusterCenter.values.PD[i];
+                    if (PDMin < 0) {
+                        PDPlus += Math.abs(PDMin);
+                    }
+                    xPos = 0;
+                    yPos = PDPlus;
+                } else {
+                    xPos = (clusterCenter.values.PD[i] * stds.PD + means.PD) * Math.cos(0.5 * Math.PI);
+                    yPos = (clusterCenter.values.PD[i] * stds.PD + means.PD) * Math.sin(0.5 * Math.PI);
+                }
+            }
             let currentValues = {
-                x: 'x' in clusterCenter.values? clusterCenter.values.x[i]: 0,
-                y: 'y' in clusterCenter.values? clusterCenter.values.y[i]: 0,
+                x: xPos,
+                y: yPos,
                 r_x: 'r_x' in clusterCenter.values? clusterCenter.values.r_x[i]: 1,
                 r_y: 'r_y' in clusterCenter.values? clusterCenter.values.r_y[i]: 1,
                 H: 'H' in clusterCenter.values? clusterCenter.values.H[i]: 0.5,
