@@ -5,7 +5,6 @@ import DataStore from '../Stores/DataStore';
 import FeatureStore from '../Stores/FeatureStore';
 import ClusteringStore from '../Stores/ClusteringStore';
 import {toggleExtractionMenu} from '../lib/domActions';
-import { method } from 'lodash';
 
 export default class clusteringSettings extends React.Component {
     constructor(props) {
@@ -61,6 +60,7 @@ export default class clusteringSettings extends React.Component {
                 }
             });
             // clustering paramters
+            $('#clusterNumber').val(clusteringParameters.clusterNum);
             let methodList = document.getElementById('clusteringMethod');
             for (let i = 0; i < methodList.options.length; i++) {
                 if (methodList.options[i].value === clusteringParameters.method) {
@@ -70,7 +70,7 @@ export default class clusteringSettings extends React.Component {
             }
             let elbow = typeof(SSEClusters) !== 'undefined'? true: false;
             if (elbow) {
-                let clusterNums = Object.key(SSEClusters).sort((a, b) => a - b);
+                let clusterNums = Object.keys(SSEClusters).sort((a, b) => a - b);
                 $('#elbowMethodMinCluster').val(clusterNums[0]);
                 $('#elbowMethodMaxCluster').val(clusterNums[clusterNums.length - 1]);
             }
@@ -79,7 +79,7 @@ export default class clusteringSettings extends React.Component {
                 clusteringMethod: clusteringParameters.method,
                 distanceMetric: clusteringParameters.distanceMetric,
                 medoidDefinition: clusteringParameters.medoidDefinition,
-                targetList: targets.filter(d => {d >= 0}),
+                targetList: targets.filter(d => {return d >= 0}),
                 filteringSS: subsequenceParameters.filtering,
                 elbow: elbow
             });
