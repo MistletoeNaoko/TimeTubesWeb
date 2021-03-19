@@ -794,13 +794,15 @@ export default class QueryBySketch extends React.Component{
                                     x: event.middlePoint.x - t / l * step.x,
                                     y: event.middlePoint.y - t / l * step.y
                                 };
-                                this.pathWidth.add(top);
-                                this.pathWidth.insert(0, bottom);
-                                this.pathWidth.smooth();
-                                this.radiuses.push(t);
-                                this.penSizeCircle.remove();
-                                this.penSizeCircle = new paper.Path.Circle(event.point, 2.5);
-                                this.penSizeCircle.strokeColor = '#325D88';
+                                if (this.pathWidth) {
+                                    this.pathWidth.add(top);
+                                    this.pathWidth.insert(0, bottom);
+                                    this.pathWidth.smooth();
+                                    this.radiuses.push(t);
+                                    this.penSizeCircle.remove();
+                                    this.penSizeCircle = new paper.Path.Circle(event.point, 2.5);
+                                    this.penSizeCircle.strokeColor = '#325D88';
+                                }
                             } else if (inputType === 'touchmove') {
                                 let pressure = 0;
                                 if (event.event.touches.length > 0) {
@@ -820,13 +822,15 @@ export default class QueryBySketch extends React.Component{
                                         x: event.middlePoint.x - t / l * step.x,
                                         y: event.middlePoint.y - t / l * step.y
                                     };
-                                    this.pathWidth.add(top);
-                                    this.pathWidth.insert(0, bottom);
-                                    this.pathWidth.smooth();
-                                    this.radiuses.push(t);
-                                    this.penSizeCircle.remove();
-                                    this.penSizeCircle = new paper.Path.Circle(event.point, 2.5);
-                                    this.penSizeCircle.strokeColor = '#325D88';
+                                    if (this.pathWidth) {
+                                        this.pathWidth.add(top);
+                                        this.pathWidth.insert(0, bottom);
+                                        this.pathWidth.smooth();
+                                        this.radiuses.push(t);
+                                        this.penSizeCircle.remove();
+                                        this.penSizeCircle = new paper.Path.Circle(event.point, 2.5);
+                                        this.penSizeCircle.strokeColor = '#325D88';
+                                    }
                                 }
                             }
                         }

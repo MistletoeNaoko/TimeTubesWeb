@@ -220,7 +220,20 @@ export default class VisualQuery extends React.Component {
         $('#targetLengthMax').val(Math.floor(this.state.selectedInterval[1]) - Math.ceil(this.state.selectedInterval[0]));
     }
 
-    updateActiveVariables() {
+    updateActiveVariables(e) {
+        let event = e || window.event;
+        let elem = event.target || event.srcElement;
+        let elemId = elem.id;
+        let varName = elemId.split('_')[1];
+        // do not allow to select q, u and PA, PD at the same time
+        if (varName === 'x' || varName === 'y') {
+            // uncheck PA, PD
+            $('#QBEActive_PA').prop('checked', false);
+            $('#QBEActive_PD').prop('checked', false);
+        } else if (varName === 'PA' || varName === 'PD') {
+            $('#QBEActive_x').prop('checked', false);
+            $('#QBEActive_y').prop('checked', false);
+        }
         let activeVar = domActions.getActiveVariables();
         FeatureAction.setActiveVariables(activeVar);
     }
@@ -317,7 +330,7 @@ export default class VisualQuery extends React.Component {
             if (activeVariables.length === 0) {
                 for (let key in lookup) {
                     let label = '';
-                    if (key !== 'z' && key !== 'PA' && key !== 'PD') {
+                    if (key !== 'z') {// && key !== 'PA' && key !== 'PD') {
                         if (lookup[key].length > 1) {
                             label = lookup[key].join(',');
                         } else {
@@ -350,7 +363,7 @@ export default class VisualQuery extends React.Component {
                     } else {
                         label = lookup[key];
                     }
-                    if (key !== 'z' && key !== 'PA' && key !== 'PD') {
+                    if (key !== 'z') {// && key !== 'PA' && key !== 'PD') {
                         let defaultChecked = (activeVariables.indexOf(key) >= 0)? true: false;
                         items.push(
                             <div className="form-check form-check-inline"
@@ -376,11 +389,12 @@ export default class VisualQuery extends React.Component {
         } else if (this.state.source < 0 && Object.keys(this.clusterCenter).length > 0) {
             // source file is not selected and cluster center is shown as a QBE
             let lookup = {};
-            let targets = FeatureStore.getTarget();
-            let activeVariables = FeatureStore.getActive();
+            // let targets = FeatureStore.getTarget();
+            let allData = DataStore.getAllData();
+            // let activeVariables = FeatureStore.getActive();
             let variables = this.clusterCenter.parameters.variables;
-            for (let i = 0; i < targets.length; i++) {
-                let lookupTmp = DataStore.getData(targets[i]).data.lookup;
+            for (let i = 0; i < allData.length; i++) {
+                let lookupTmp = allData[i].data.lookup;
                 for (let j = 0; j < variables.length; j++) {
                     if (lookup[variables[j]]) {
                         for (let k = 0; k < lookupTmp[variables[j]].length; k++){
@@ -401,8 +415,8 @@ export default class VisualQuery extends React.Component {
                 } else {
                     label = lookup[key];
                 }
-                if (key !== 'z' && key !== 'PA' && key !== 'PD') {
-                    let defaultChecked = (activeVariables.indexOf(key) >= 0)? true: false;
+                if (key !== 'z') {// && key !== 'PA' && key !== 'PD') {
+                    // let defaultChecked = (activeVariables.indexOf(key) >= 0)? true: false;
                     items.push(
                         <div className="form-check form-check-inline"
                             key={key}>
@@ -411,7 +425,7 @@ export default class VisualQuery extends React.Component {
                                 type="checkbox"
                                 name='QBEActive'
                                 value={key}
-                                defaultChecked={defaultChecked}
+                                defaultChecked={true}
                                 id={"QBEActive_" + key}
                             />
                             <label

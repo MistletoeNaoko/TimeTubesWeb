@@ -3,7 +3,6 @@ import dispatcher from "../Dispatcher/dispatcher";
 import TimeTubesStore from '../Stores/TimeTubesStore';
 import DataStore from '../Stores/DataStore';
 import {uncheckActiveVariables} from '../lib/domActions';
-import { active } from 'd3';
 
 class FeatureStore extends EventEmitter {
     constructor() {

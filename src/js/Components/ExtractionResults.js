@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDOM from "react-dom";
+import * as d3 from 'd3';
 import LineChart from './LineChart';
 import ResultTimeline from './ResultTimeline';
 import DistanceHistogram from './DistanceHistogram';
@@ -588,6 +588,7 @@ export default class ExtractionResults extends React.Component {
             if (this.state.selected.period && !this.state.selected.angle) {
                 let targetData = DataStore.getDataArray(this.state.selected.id, 1);
                 let query = FeatureStore.getQuery();
+                let parameters = FeatureStore.getParameters();
                 let timeSlice;
                 let minIdx = targetData.z.indexOf(this.state.selected.start),
                     maxIdx = targetData.z.indexOf(this.state.selected.start + this.state.selected.period);
@@ -604,14 +605,30 @@ export default class ExtractionResults extends React.Component {
                             if (!flag) continue;
                         }
                         let propertyName = key;
-                        if (key === 'r') {
-                            timeSlice = targetData['PD'].slice(minIdx, maxIdx + 1);
-                            propertyName = 'PD';
-                        } else if (key === 'theta') {
-                            timeSlice = targetData['PA'].slice(minIdx, maxIdx + 1);
-                            propertyName = 'PA';
+                        // normalize data if needed
+                        if (query.query.source !== 'clustering') {
+                            // r and theta is only used when polar coordinate option is selected (different from PAPD)
+                            if (key === 'r') {
+                                timeSlice = targetData['PD'].slice(minIdx, maxIdx + 1);
+                                // propertyName = 'PD';
+                            } else if (key === 'theta') {
+                                timeSlice = targetData['PA'].slice(minIdx, maxIdx + 1);
+                                // propertyName = 'PA';
+                            } else {
+                                timeSlice = targetData[key].slice(minIdx, maxIdx + 1);
+                            }
                         } else {
+                            // matching with a cluster center
                             timeSlice = targetData[key].slice(minIdx, maxIdx + 1);
+                            if (parameters.normalize) {
+                                if (parameters.normalizationOption === 'zScore') {
+                                    let mean = d3.mean(timeSlice),
+                                        std = d3.deviation(timeSlice);
+                                    for (let i = 0; i < timeSlice.length; i++) {
+                                        timeSlice[i] = (timeSlice[i] - mean) / std;
+                                    }
+                                }
+                            }
                         }
                         lineCharts.push(
                             <LineChart

@@ -23,16 +23,21 @@ export default class LineChart extends React.Component {
             this.filter = true;
         }
         this.yMinMax;
+        if (this.item === 'PD') {
+            console.log(this.query)
+        }
         if (!this.filter) {
             let minQuery = Math.min.apply(null, this.query),
                 maxQuery = Math.max.apply(null, this.query);
-            if (this.item === 'PA') {
+            if (this.item === 'theta') {
                 minQuery /= 2;
                 maxQuery /= 2;
+                // this.item = 'PA';
             }
-            if (this.item === 'PD') {
+            if (this.item === 'r') {
                 minQuery *= 100;
                 maxQuery *= 100;
+                // this.item = 'PD';
             }
             this.yMinMax = [
                 Math.min(minQuery, Math.min.apply(null, this.target)),
@@ -90,6 +95,9 @@ export default class LineChart extends React.Component {
             .attr('width', this.state.width)
             .attr('height', this.state.height);
 
+        let graphName = this.itemName;
+        if (graphName === 'theta') graphName = 'PA';
+        if (graphName === 'r') graphName = 'PD';
         this.graphName = this.svg
             .append('text')
             .attr('x', this.margin.left + width / 2)
@@ -97,7 +105,7 @@ export default class LineChart extends React.Component {
             .attr('text-anchor', 'middle')
             .style('fill', 'black')
             .style('font-size', '0.8rem')
-            .text(this.itemName);
+            .text(graphName);
 
         this.xScale = d3.scaleLinear()
             .domain([0, (!this.filter)?Math.max(this.query.length - 1, this.target.length - 1): this.target.length - 1])
@@ -141,8 +149,8 @@ export default class LineChart extends React.Component {
                     }.bind(this))
                     .y(function(d) {
                         let dNum = d;
-                        if (this.item === 'PA') dNum /= 2;
-                        if (this.item === 'PD') dNum *= 100;
+                        if (this.item === 'theta') dNum /= 2;
+                        if (this.item === 'r') dNum *= 100;
                         return this.yScale(dNum);
                     }.bind(this))
                 )
@@ -314,8 +322,8 @@ export default class LineChart extends React.Component {
                     }.bind(this))
                     .y(function(d) {
                         let dNum = d;
-                        if (this.item === 'PA') dNum /= 2;
-                        if (this.item === 'PD') dNum *= 100;
+                        if (this.item === 'theta') dNum /= 2;
+                        if (this.item === 'r') dNum *= 100;
                         return this.yScale(dNum);
                     }.bind(this))
                 );
