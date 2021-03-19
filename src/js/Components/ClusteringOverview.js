@@ -214,6 +214,7 @@ export default class ClusteringOverview extends React.Component {
             this.computeTubePositions();
             this.drawClusterCentersAsTubes();
             this.drawClusterRadiusesAsRings(clusteringScores.clusterRadiuses);
+            this.drawInterClusterTransitionLink();
             this.showClusteringParameters();
             this.resetDetailView();
             this.drawMDSScatterplots();
@@ -1451,6 +1452,250 @@ export default class ClusteringOverview extends React.Component {
         });
         this.clusterRadiuses = new THREE.LineSegments(circleGeometry, circleMaterial);
         this.scene.add(this.clusterRadiuses);
+    }
+
+    drawInterClusterTransitionLink() {
+        // remove previous paths
+
+        let minWidth = 1, maxWidth = 10;
+        let clusterBefore = [],
+            clusterAfter = [];
+        for (let i = 0; i < this.clusterCenters.length; i++) {
+            clusterBefore.push(new Array(this.clusterCenters.length).fill(0));
+            clusterAfter.push(new Array(this.clusterCenters.length).fill(0));
+        }
+        if (typeof(this.SSLabels[0]) === 'object') {
+            for (let i = 0; i < this.SSLabels.length; i++) {
+                if (i - 1 >= 0) {
+                    clusterBefore[this.SSLabels[i].cluster][this.SSLabels[i - 1].cluster]++;
+                }
+                if (i + 1 < this.SSLabels.length) {
+                    clusterAfter[this.SSLabels[i].cluster][this.SSLabels[i + 1].cluster]++;
+                }
+            }
+        } else {
+            for (let i = 0; i < this.SSLabels.length; i++) {
+                if (i - 1 >= 0) {
+                    clusterBefore[this.SSLabels[i - 1]]++;
+                }
+                if (i + 1 < this.SSLabels.length) {
+                    clusterAfter[this.SSLabels[i + 1]]++;
+                }
+            }
+        }
+        let maxCount = -Infinity, minCount = Infinity;
+        for (let i = 0; i < this.clusterCenters.length; i++) {
+            let minMax = d3.extent(clusterBefore[i]);
+            if (minMax[0] < minCount) {
+                minCount = minMax[0];
+            }
+            if (maxCount < minMax[1]) {
+                maxCount = minMax[1];
+            }
+        }
+        let axisSize = this.gridSize * 0.7 * 2;
+        const segments = 50;
+        let geometry = new THREE.BufferGeometry();
+        geometry.setAttribute( 'position', new THREE.BufferAttribute( new Float32Array( segments * 3 ), 3 ) );
+        for (let i = 0; i < this.clusterCenters.length; i++) {
+            for (let j = 0; j < this.clusterCenters.length; j++) {
+                if (i !== j) {
+                    let xCoordDiff = Math.abs(this.tubeCoords[i].x - this.tubeCoords[j].x),
+                        yCoordDiff = Math.abs(this.tubeCoords[i].y - this.tubeCoords[j].y);
+                    if (xCoordDiff < axisSize) {
+                        // connect top & bottom
+                        let topIdx = (this.tubeCoords[i].y > this.tubeCoords[j].y)? i: j,
+                            bottomIdx = (this.tubeCoords[i].y <= this.tubeCoords[j].y)? i: j;
+                        let topPoint = {
+                            x: this.tubeCoords[topIdx].x,
+                            y: this.tubeCoords[topIdx].y - axisSize / 2
+                        };
+                        let bottomPoint = {
+                            x: this.tubeCoords[bottomIdx].x,
+                            y: this.tubeCoords[bottomIdx].y + axisSize / 2
+                        };
+                        let shiftSize = 2;
+                        let normalTilt = -1 * (topPoint.x - bottomPoint.x) / (topPoint.y - bottomPoint.y);
+                        let deltaX = Math.sqrt(shiftSize * shiftSize / (1 + normalTilt * normalTilt));
+                        let deltaY = normalTilt * deltaX;
+                        let beforeSpline = new THREE.CatmullRomCurve3( [
+                            new THREE.Vector3( topPoint.x, topPoint.y, 0 ),
+                            new THREE.Vector3( 
+                                topPoint.x + (bottomPoint.x - topPoint.x) / 2 - deltaX,
+                                topPoint.y + (bottomPoint.y - topPoint.y) / 2 - deltaY, 
+                                0 
+                            ),
+                            new THREE.Vector3( bottomPoint.x, bottomPoint.y, 0 )
+                        ]);
+                        let afterSpline = new THREE.CatmullRomCurve3( [
+                            new THREE.Vector3( topPoint.x, topPoint.y, 0 ),
+                            new THREE.Vector3( 
+                                topPoint.x + (bottomPoint.x - topPoint.x) / 2 + deltaX,
+                                topPoint.y + (bottomPoint.y - topPoint.y) / 2 + deltaY, 
+                                0 
+                            ),
+                            new THREE.Vector3( bottomPoint.x, bottomPoint.y, 0 )
+                        ]);
+                        let beforePoints = beforeSpline.getPoints( 50 );
+                        let beforeGeometry = new THREE.BufferGeometry().setFromPoints( beforePoints );
+                        let beforeMaterial = new THREE.LineBasicMaterial( { color : 0xff0000 } );
+                        let beforeCurveObject = new THREE.Line( beforeGeometry, beforeMaterial );
+                        this.scene.add(beforeCurveObject);
+                    } else if (yCoordDiff < axisSize) {
+                        // connect left & right
+                        let leftIdx = (this.tubeCoords[i].x < this.tubeCoords[j].x)? i: j,
+                            rightIdx = (this.tubeCoords[i].x >= this.tubeCoords[j].x)? i: j;
+                        let leftPoint = {
+                            x: this.tubeCoords[leftIdx].x + axisSize / 2,
+                            y: this.tubeCoords[leftIdx].y
+                        };
+                        let rightPoint = {
+                            x: this.tubeCoords[rightIdx].x - axisSize / 2,
+                            y: this.tubeCoords[rightIdx].y
+                        };
+                        let shiftSize = 2;
+                        let normalTilt = -1 * (rightPoint.x - leftPoint.x) / (rightPoint.y - leftPoint.y);
+                        let deltaX = Math.sqrt(shiftSize * shiftSize / (1 + normalTilt * normalTilt));
+                        let deltaY = normalTilt * deltaX;
+                        let beforeSpline = new THREE.CatmullRomCurve3( [
+                            new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
+                            new THREE.Vector3( 
+                                leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
+                                leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
+                                0 
+                            ),
+                            new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
+                        ]);
+                        let afterSpline = new THREE.CatmullRomCurve3( [
+                            new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
+                            new THREE.Vector3( 
+                                leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX,
+                                leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY, 
+                                0 
+                            ),
+                            new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
+                        ]);
+                        let beforePoints = beforeSpline.getPoints( 50 );
+                        let beforeGeometry = new THREE.BufferGeometry().setFromPoints( beforePoints );
+                        let beforeMaterial = new THREE.LineBasicMaterial( { color : 0xff0000 } );
+                        let beforeCurveObject = new THREE.Line( beforeGeometry, beforeMaterial );
+                        this.scene.add(beforeCurveObject);
+                    } else {
+                        // connect bottom-left/right-top
+                        let leftIdx = (this.tubeCoords[i].x < this.tubeCoords[j].x)? i: j,
+                            rightIdx = (this.tubeCoords[i].x >= this.tubeCoords[j].x)? i: j,
+                            topIdx = (this.tubeCoords[i].y > this.tubeCoords[j].y)? i: j,
+                            bottomIdx = (this.tubeCoords[i].y <= this.tubeCoords[j].y)? i: j;
+                        let baryCenterX = this.tubeCoords[leftIdx].x + (this.tubeCoords[rightIdx].x - this.tubeCoords[leftIdx].x) / 2;
+                        if (baryCenterX > 0) {
+                            // the tubes are located in the left side of the view
+                            // right top/right bottomt 
+                            let leftPoint, rightPoint;
+                            if (leftIdx === topIdx) {
+                                // right top
+                                leftPoint = {
+                                    x: this.tubeCoords[leftIdx].x + axisSize / 2,
+                                    y: this.tubeCoords[leftIdx].y
+                                };
+                                rightPoint = {
+                                    x: this.tubeCoords[rightIdx].x,
+                                    y: this.tubeCoords[rightIdx].y + axisSize / 2
+                                };
+                            } else if (rightIdx === topIdx) {
+                                // right bottom
+                                leftPoint = {
+                                    x: this.tubeCoords[leftIdx].x + axisSize / 2,
+                                    y: this.tubeCoords[leftIdx].y
+                                };
+                                rightPoint = {
+                                    x: this.tubeCoords[rightIdx].x,
+                                    y: this.tubeCoords[rightIdx].y - axisSize / 2
+                                };
+                            } 
+                            let shiftSize = 2;
+                            let normalTilt = -1 * (rightPoint.x - leftPoint.x) / (rightPoint.y - leftPoint.y);
+                            let deltaX = Math.sqrt(shiftSize * shiftSize / (1 + normalTilt * normalTilt));
+                            let deltaY = normalTilt * deltaX;
+                            let beforeSpline = new THREE.CatmullRomCurve3( [
+                                new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
+                                new THREE.Vector3( 
+                                    leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
+                                    leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
+                                    0 
+                                ),
+                                new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
+                            ]);
+                            let afterSpline = new THREE.CatmullRomCurve3( [
+                                new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
+                                new THREE.Vector3( 
+                                    leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX,
+                                    leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY, 
+                                    0 
+                                ),
+                                new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
+                            ]);
+                            let beforePoints = beforeSpline.getPoints( 50 );
+                            let beforeGeometry = new THREE.BufferGeometry().setFromPoints( beforePoints );
+                            let beforeMaterial = new THREE.LineBasicMaterial( { color : 0xff0000 } );
+                            let beforeCurveObject = new THREE.Line( beforeGeometry, beforeMaterial );
+                            this.scene.add(beforeCurveObject);
+                        } else if (0 >= baryCenterX) {
+                            // the tubes are located in the right side of the view
+                            // bottom left/top left
+                            let leftPoint, rightPoint;
+                            if (leftIdx === topIdx) {
+                                // bottom left
+                                leftPoint = {
+                                    x: this.tubeCoords[leftIdx].x,
+                                    y: this.tubeCoords[leftIdx].y - axisSize / 2
+                                };
+                                rightPoint = {
+                                    x: this.tubeCoords[rightIdx].x - axisSize / 2,
+                                    y: this.tubeCoords[rightIdx].y
+                                };
+                            } else if (rightIdx === topIdx) {
+                                // top left
+                                leftPoint = {
+                                    x: this.tubeCoords[leftIdx].x,
+                                    y: this.tubeCoords[leftIdx].y + axisSize / 2
+                                };
+                                rightPoint = {
+                                    x: this.tubeCoords[rightIdx].x - axisSize / 2,
+                                    y: this.tubeCoords[rightIdx].y
+                                };
+                            }
+                            let shiftSize = 2;
+                            let normalTilt = -1 * (rightPoint.x - leftPoint.x) / (rightPoint.y - leftPoint.y);
+                            let deltaX = Math.sqrt(shiftSize * shiftSize / (1 + normalTilt * normalTilt));
+                            let deltaY = normalTilt * deltaX;
+                            let beforeSpline = new THREE.CatmullRomCurve3( [
+                                new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
+                                new THREE.Vector3( 
+                                    leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
+                                    leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
+                                    0 
+                                ),
+                                new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
+                            ]);
+                            let afterSpline = new THREE.CatmullRomCurve3( [
+                                new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
+                                new THREE.Vector3( 
+                                    leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX,
+                                    leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY, 
+                                    0 
+                                ),
+                                new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
+                            ]);
+                            let beforePoints = beforeSpline.getPoints( 50 );
+                            let beforeGeometry = new THREE.BufferGeometry().setFromPoints( beforePoints );
+                            let beforeMaterial = new THREE.LineBasicMaterial( { color : 0xff0000 } );
+                            let beforeCurveObject = new THREE.Line( beforeGeometry, beforeMaterial );
+                            this.scene.add(beforeCurveObject);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     computeTubePositions() {

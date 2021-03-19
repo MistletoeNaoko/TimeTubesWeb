@@ -1895,7 +1895,7 @@ function kMedoidsEach(data, clusterNum, distanceParameters, variables, maxTrial,
         // silhouette: silhouette coefficient for whole clustering results
         // silhouetteSS: silhouette coefficients for each SS
         let silhouette, silhouetteSS = [];
-        silhouetteSS = Array(data.length).fill(0);
+        silhouetteSS = new Array(data.length).fill(0);
         for (let i = 0; i < clusters.length; i++) {
             for (let j = 0; j < clusters[i].length; j++) {
                 // focus on data[clusters[i][j]]
@@ -2377,7 +2377,7 @@ function kMedoidsUnified(data, clusterNum, distanceParameters, variables, maxTri
         // silhouette: silhouette coefficient for whole clustering results
         // silhouetteSS: silhouette coefficients for each SS
         let silhouette, silhouetteSS = [];
-        silhouetteSS = Array(data.length).fill(0);
+        silhouetteSS = new Array(data.length).fill(0);
         for (let i = 0; i < clusters.length; i++) {
             for (let j = 0; j < clusters[i].length; j++) {
                 // focus on data[clusters[i][j]]
@@ -2757,7 +2757,7 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial, elbow
         // silhouette: silhouette coefficient for whole clustering results
         // silhouetteSS: silhouette coefficients for each SS
         let silhouette, silhouetteSS = [];
-        silhouetteSS = Array(data.length).fill(0);
+        silhouetteSS = new Array(data.length).fill(0);
         for (let i = 0; i < clusters.length; i++) {
             for (let j = 0; j < clusters[i].length; j++) {
                 // focus on data[clusters[i][j]]

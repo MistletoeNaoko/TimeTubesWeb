@@ -589,7 +589,6 @@ export default class ExtractionResults extends React.Component {
                 let targetData = DataStore.getDataArray(this.state.selected.id, 1);
                 let query = FeatureStore.getQuery();
                 let parameters = FeatureStore.getParameters();
-                console.log(parameters)
                 let timeSlice;
                 let minIdx = targetData.z.indexOf(this.state.selected.start),
                     maxIdx = targetData.z.indexOf(this.state.selected.start + this.state.selected.period);
