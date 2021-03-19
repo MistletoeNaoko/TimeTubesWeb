@@ -64,6 +64,7 @@ export default class ClusteringOverview extends React.Component {
             elbowLineChart: {width: 0, height: 0},
             featureHeatmap: {width: 0, height: 0}
         };
+        this.correlationPathGroup;
         this.state = {
             clusteringScores: {}
         };
@@ -1456,8 +1457,13 @@ export default class ClusteringOverview extends React.Component {
 
     drawInterClusterTransitionLink() {
         // remove previous paths
+        if (this.correlationPathGroup) {
+            this.scene.remove(this.correlationPathGroup);
+            this.correlationPathGroup = undefined;
+        }
 
-        let minWidth = 1, maxWidth = 10;
+        this.correlationPathGroup = new THREE.Group();
+
         let clusterBefore = [],
             clusterAfter = [];
         for (let i = 0; i < this.clusterCenters.length; i++) {
@@ -1476,29 +1482,39 @@ export default class ClusteringOverview extends React.Component {
         } else {
             for (let i = 0; i < this.SSLabels.length; i++) {
                 if (i - 1 >= 0) {
-                    clusterBefore[this.SSLabels[i - 1]]++;
+                    clusterBefore[this.SSLabels[i]][this.SSLabels[i - 1]]++;
                 }
                 if (i + 1 < this.SSLabels.length) {
-                    clusterAfter[this.SSLabels[i + 1]]++;
+                    clusterAfter[this.SSLabels[i]][this.SSLabels[i + 1]]++;
                 }
             }
         }
         let maxCount = -Infinity, minCount = Infinity;
         for (let i = 0; i < this.clusterCenters.length; i++) {
-            let minMax = d3.extent(clusterBefore[i]);
-            if (minMax[0] < minCount) {
-                minCount = minMax[0];
+            let clusterBeforeMoreThan0 = clusterBefore[i].filter(d => d > 0),
+                clusterAfterMoreThan0 = clusterAfter[i].filter(d => d > 0);
+            let minMaxBef = d3.extent(clusterBeforeMoreThan0);
+            let minMaxAft = d3.extent(clusterAfterMoreThan0);
+            if (minMaxBef[0] < minCount) {
+                minCount = minMaxBef[0];
             }
-            if (maxCount < minMax[1]) {
-                maxCount = minMax[1];
+            if (maxCount < minMaxBef[1]) {
+                maxCount = minMaxBef[1];
+            }
+            if (minMaxAft[0] < minCount) {
+                minCount = minMaxAft[0];
+            }
+            if (maxCount < minMaxAft[1]) {
+                maxCount = minMaxAft[1];
             }
         }
         let axisSize = this.gridSize * 0.7 * 2;
+        let coneSize = axisSize * 0.1;
+        let minPathWidth = 0.01, maxPathWidth = this.gridSize * 0.7 / 4;
         const segments = 50;
-        let geometry = new THREE.BufferGeometry();
-        geometry.setAttribute( 'position', new THREE.BufferAttribute( new Float32Array( segments * 3 ), 3 ) );
-        for (let i = 0; i < this.clusterCenters.length; i++) {
-            for (let j = 0; j < this.clusterCenters.length; j++) {
+        let zpos = 0;//this.clusterCenters[0].length;
+        for (let i = 0; i < this.clusterCenters.length - 1; i++) {
+            for (let j = i + 1; j < this.clusterCenters.length; j++) {
                 if (i !== j) {
                     let xCoordDiff = Math.abs(this.tubeCoords[i].x - this.tubeCoords[j].x),
                         yCoordDiff = Math.abs(this.tubeCoords[i].y - this.tubeCoords[j].y);
@@ -1518,29 +1534,84 @@ export default class ClusteringOverview extends React.Component {
                         let normalTilt = -1 * (topPoint.x - bottomPoint.x) / (topPoint.y - bottomPoint.y);
                         let deltaX = Math.sqrt(shiftSize * shiftSize / (1 + normalTilt * normalTilt));
                         let deltaY = normalTilt * deltaX;
-                        let beforeSpline = new THREE.CatmullRomCurve3( [
-                            new THREE.Vector3( topPoint.x, topPoint.y, 0 ),
-                            new THREE.Vector3( 
-                                topPoint.x + (bottomPoint.x - topPoint.x) / 2 - deltaX,
-                                topPoint.y + (bottomPoint.y - topPoint.y) / 2 - deltaY, 
-                                0 
-                            ),
-                            new THREE.Vector3( bottomPoint.x, bottomPoint.y, 0 )
-                        ]);
+                        let beforeClusterIdx = Math.min(topIdx, bottomIdx);
+                        let afterClusterIdx = Math.max(topIdx, bottomIdx);
+                        if (clusterAfter[beforeClusterIdx][afterClusterIdx] > 0) {
+                            let beforeSpline, conePos = {x: 0, y: 0}, coneRotate = 0;
+                            if (afterClusterIdx === bottomIdx) {
+                                // bottom is the goal of the path
+                                beforeSpline = new THREE.CatmullRomCurve3( [
+                                    new THREE.Vector3( topPoint.x, topPoint.y, zpos ),
+                                    new THREE.Vector3( 
+                                        topPoint.x + (bottomPoint.x - topPoint.x) / 2 - deltaX,
+                                        topPoint.y + (bottomPoint.y - topPoint.y) / 2 - deltaY, 
+                                        zpos 
+                                    ),
+                                    new THREE.Vector3( bottomPoint.x, bottomPoint.y, zpos )
+                                ]);
+                                conePos.x = bottomPoint.x;
+                                conePos.y = bottomPoint.y;
+                                coneRotate =  -0.5 * Math.PI + Math.atan2(
+                                    (bottomPoint.y - (topPoint.y + (bottomPoint.y - topPoint.y) / 2 - deltaY)),
+                                    (bottomPoint.x - (topPoint.x + (bottomPoint.x - topPoint.x) / 2 - deltaX))
+                                );
+                            } else if (afterClusterIdx === topIdx) {
+                                // top is the goal of the path
+                                beforeSpline = new THREE.CatmullRomCurve3( [
+                                    new THREE.Vector3( topPoint.x, topPoint.y, zpos ),
+                                    new THREE.Vector3( 
+                                        topPoint.x + (bottomPoint.x - topPoint.x) / 2 - deltaX,
+                                        topPoint.y + (bottomPoint.y - topPoint.y) / 2 - deltaY, 
+                                        zpos 
+                                    ),
+                                    new THREE.Vector3( bottomPoint.x, bottomPoint.y, zpos )
+                                ]);
+                                conePos.x = topPoint.x;
+                                conePos.y = topPoint.y;
+                                coneRotate = -0.5 * Math.PI + Math.atan2(
+                                    (topPoint.y - (topPoint.y + (bottomPoint.y - topPoint.y) / 2 - deltaY)),
+                                    (topPoint.x - (topPoint.x + (bottomPoint.x - topPoint.x) / 2 - deltaX))
+                                );
+                            }
+                            beforeSpline.curveType = 'catmullrom';
+                            beforeSpline.tention = 1;
+                            let beforeRad = minPathWidth + 
+                                (maxPathWidth - minPathWidth) / 
+                                (maxCount - minCount) * 
+                                clusterAfter[beforeClusterIdx][afterClusterIdx];
+                            let beforeGeometry = new THREE.TubeGeometry(
+                                beforeSpline, 
+                                20, 
+                                beforeRad, 
+                                16, 
+                                false
+                            );
+                            let beforeMaterial = new THREE.MeshBasicMaterial({
+                                color: new THREE.Color(
+                                    'hsl(' + 
+                                    this.clusterColors[beforeClusterIdx][0] + ', 50%, 50%)'
+                                )
+                            });
+                            let beforeMesh = new THREE.Mesh(beforeGeometry, beforeMaterial);
+                            let beforeConeGeometry = new THREE.ConeGeometry(beforeRad * 2, coneSize, 16);
+                            let beforeConeMesh = new THREE.Mesh(beforeConeGeometry, beforeMaterial);
+                            beforeConeMesh.rotateZ(coneRotate);
+                            beforeConeMesh.position.x = conePos.x;
+                            beforeConeMesh.position.y = conePos.y;
+                            this.correlationPathGroup.add(beforeMesh);
+                            this.correlationPathGroup.add(beforeConeMesh);
+                        }
                         let afterSpline = new THREE.CatmullRomCurve3( [
-                            new THREE.Vector3( topPoint.x, topPoint.y, 0 ),
+                            new THREE.Vector3( topPoint.x, topPoint.y, zpos ),
                             new THREE.Vector3( 
                                 topPoint.x + (bottomPoint.x - topPoint.x) / 2 + deltaX,
                                 topPoint.y + (bottomPoint.y - topPoint.y) / 2 + deltaY, 
-                                0 
+                                zpos 
                             ),
-                            new THREE.Vector3( bottomPoint.x, bottomPoint.y, 0 )
+                            new THREE.Vector3( bottomPoint.x, bottomPoint.y, zpos )
                         ]);
-                        let beforePoints = beforeSpline.getPoints( 50 );
-                        let beforeGeometry = new THREE.BufferGeometry().setFromPoints( beforePoints );
-                        let beforeMaterial = new THREE.LineBasicMaterial( { color : 0xff0000 } );
-                        let beforeCurveObject = new THREE.Line( beforeGeometry, beforeMaterial );
-                        this.scene.add(beforeCurveObject);
+                        afterSpline.curveType = 'catmullrom';
+                        afterSpline.tention = 1;
                     } else if (yCoordDiff < axisSize) {
                         // connect left & right
                         let leftIdx = (this.tubeCoords[i].x < this.tubeCoords[j].x)? i: j,
@@ -1557,35 +1628,90 @@ export default class ClusteringOverview extends React.Component {
                         let normalTilt = -1 * (rightPoint.x - leftPoint.x) / (rightPoint.y - leftPoint.y);
                         let deltaX = Math.sqrt(shiftSize * shiftSize / (1 + normalTilt * normalTilt));
                         let deltaY = normalTilt * deltaX;
-                        let beforeSpline = new THREE.CatmullRomCurve3( [
-                            new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
-                            new THREE.Vector3( 
-                                leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
-                                leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
-                                0 
-                            ),
-                            new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
-                        ]);
+                        let beforeClusterIdx = Math.min(leftIdx, rightIdx);
+                        let afterClusterIdx = Math.max(leftIdx, rightIdx);
+                        if (clusterAfter[beforeClusterIdx][afterClusterIdx] > 0) {
+                            let beforeSpline, conePos = {x: 0, y: 0}, coneRotate = 0;
+                            if (afterClusterIdx === leftIdx) {
+                                // left is the goal of the path
+                                beforeSpline = new THREE.CatmullRomCurve3( [
+                                    new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
+                                    new THREE.Vector3( 
+                                        leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
+                                        leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
+                                        0 
+                                    ),
+                                    new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
+                                ]);
+                                conePos.x = leftPoint.x;
+                                conePos.y = leftPoint.y;
+                                coneRotate = Math.atan2(
+                                    (leftPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY)),
+                                    (leftPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX))
+                                ) - 0.5 * Math.PI;
+                            } else if (afterClusterIdx === rightIdx) {
+                                // right is the goal of the path
+                                beforeSpline = new THREE.CatmullRomCurve3( [
+                                    new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
+                                    new THREE.Vector3( 
+                                        leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
+                                        leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
+                                        0 
+                                    ),
+                                    new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
+                                ]);
+                                conePos.x = rightPoint.x;
+                                conePos.y = rightPoint.y;
+                                coneRotate = Math.atan2(
+                                    (rightPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY)), 
+                                    (rightPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX))
+                                ) - 0.5 * Math.PI;
+                            }
+                            beforeSpline.curveType = 'catmullrom';
+                            beforeSpline.tention = 1;
+                            let beforeRad = minPathWidth + 
+                                (maxPathWidth - minPathWidth) / 
+                                (maxCount - minCount) * 
+                                clusterAfter[beforeClusterIdx][afterClusterIdx];
+                            let beforeGeometry = new THREE.TubeGeometry(
+                                beforeSpline, 
+                                20, 
+                                beforeRad, 
+                                16, 
+                                false
+                            );
+                            let beforeMaterial = new THREE.MeshBasicMaterial({
+                                color: new THREE.Color(
+                                    'hsl(' + 
+                                    this.clusterColors[beforeClusterIdx][0] + ', 50%, 50%)'
+                                )
+                            });
+                            let beforeMesh = new THREE.Mesh(beforeGeometry, beforeMaterial);
+                            let beforeConeGeometry = new THREE.ConeGeometry(beforeRad * 2, coneSize, 16);
+                            let beforeConeMesh = new THREE.Mesh(beforeConeGeometry, beforeMaterial);
+                            beforeConeMesh.rotateZ(coneRotate);
+                            beforeConeMesh.position.x = conePos.x;
+                            beforeConeMesh.position.y = conePos.y;
+                            this.correlationPathGroup.add(beforeMesh);
+                            this.correlationPathGroup.add(beforeConeMesh);
+                        }
                         let afterSpline = new THREE.CatmullRomCurve3( [
-                            new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
+                            new THREE.Vector3( leftPoint.x, leftPoint.y, zpos ),
                             new THREE.Vector3( 
                                 leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX,
                                 leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY, 
-                                0 
+                                zpos 
                             ),
-                            new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
+                            new THREE.Vector3( rightPoint.x, rightPoint.y, zpos )
                         ]);
-                        let beforePoints = beforeSpline.getPoints( 50 );
-                        let beforeGeometry = new THREE.BufferGeometry().setFromPoints( beforePoints );
-                        let beforeMaterial = new THREE.LineBasicMaterial( { color : 0xff0000 } );
-                        let beforeCurveObject = new THREE.Line( beforeGeometry, beforeMaterial );
-                        this.scene.add(beforeCurveObject);
                     } else {
                         // connect bottom-left/right-top
                         let leftIdx = (this.tubeCoords[i].x < this.tubeCoords[j].x)? i: j,
                             rightIdx = (this.tubeCoords[i].x >= this.tubeCoords[j].x)? i: j,
                             topIdx = (this.tubeCoords[i].y > this.tubeCoords[j].y)? i: j,
                             bottomIdx = (this.tubeCoords[i].y <= this.tubeCoords[j].y)? i: j;
+                        let beforeClusterIdx = Math.min(leftIdx, rightIdx);
+                        let afterClusterIdx = Math.max(leftIdx, rightIdx);
                         let baryCenterX = this.tubeCoords[leftIdx].x + (this.tubeCoords[rightIdx].x - this.tubeCoords[leftIdx].x) / 2;
                         if (baryCenterX > 0) {
                             // the tubes are located in the left side of the view
@@ -1616,29 +1742,80 @@ export default class ClusteringOverview extends React.Component {
                             let normalTilt = -1 * (rightPoint.x - leftPoint.x) / (rightPoint.y - leftPoint.y);
                             let deltaX = Math.sqrt(shiftSize * shiftSize / (1 + normalTilt * normalTilt));
                             let deltaY = normalTilt * deltaX;
-                            let beforeSpline = new THREE.CatmullRomCurve3( [
-                                new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
-                                new THREE.Vector3( 
-                                    leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
-                                    leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
-                                    0 
-                                ),
-                                new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
-                            ]);
+                            if (clusterAfter[beforeClusterIdx][afterClusterIdx] > 0) {
+                                let beforeSpline, conePos = {x: 0, y: 0}, coneRotate = 0;
+                                if (afterClusterIdx === leftIdx) {
+                                    // left is the goal of the path
+                                    beforeSpline = new THREE.CatmullRomCurve3( [
+                                        new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
+                                        new THREE.Vector3( 
+                                            leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
+                                            leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
+                                            0 
+                                        ),
+                                        new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
+                                    ]);
+                                    conePos.x = leftPoint.x;
+                                    conePos.y = leftPoint.y;
+                                    coneRotate = Math.atan2(
+                                        (leftPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY)),
+                                        (leftPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX))
+                                    ) - 0.5 * Math.PI;
+                                } else if (afterClusterIdx === rightIdx) {
+                                    // right is the goal of the path
+                                    beforeSpline = new THREE.CatmullRomCurve3( [
+                                        new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
+                                        new THREE.Vector3( 
+                                            leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
+                                            leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
+                                            0 
+                                        ),
+                                        new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
+                                    ]);
+                                    conePos.x = rightPoint.x;
+                                    conePos.y = rightPoint.y;
+                                    coneRotate = Math.atan2(
+                                        (rightPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY)), 
+                                        (rightPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX))
+                                    ) - 0.5 * Math.PI;
+                                }
+                                beforeSpline.curveType = 'catmullrom';
+                                beforeSpline.tention = 1;
+                                let beforeRad = minPathWidth + 
+                                    (maxPathWidth - minPathWidth) / 
+                                    (maxCount - minCount) * 
+                                    clusterAfter[beforeClusterIdx][afterClusterIdx];
+                                let beforeGeometry = new THREE.TubeGeometry(
+                                    beforeSpline, 
+                                    20, 
+                                    beforeRad, 
+                                    16, 
+                                    false
+                                );
+                                let beforeMaterial = new THREE.MeshBasicMaterial({
+                                    color: new THREE.Color(
+                                        'hsl(' + 
+                                        this.clusterColors[beforeClusterIdx][0] + ', 50%, 50%)'
+                                    )
+                                });
+                                let beforeMesh = new THREE.Mesh(beforeGeometry, beforeMaterial);
+                                let beforeConeGeometry = new THREE.ConeGeometry(beforeRad * 2, coneSize, 16);
+                                let beforeConeMesh = new THREE.Mesh(beforeConeGeometry, beforeMaterial);
+                                beforeConeMesh.rotateZ(coneRotate);
+                                beforeConeMesh.position.x = conePos.x;
+                                beforeConeMesh.position.y = conePos.y;
+                                this.correlationPathGroup.add(beforeMesh);
+                                this.correlationPathGroup.add(beforeConeMesh);
+                            }
                             let afterSpline = new THREE.CatmullRomCurve3( [
-                                new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
+                                new THREE.Vector3( leftPoint.x, leftPoint.y, zpos ),
                                 new THREE.Vector3( 
                                     leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX,
                                     leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY, 
-                                    0 
+                                    zpos 
                                 ),
-                                new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
+                                new THREE.Vector3( rightPoint.x, rightPoint.y, zpos )
                             ]);
-                            let beforePoints = beforeSpline.getPoints( 50 );
-                            let beforeGeometry = new THREE.BufferGeometry().setFromPoints( beforePoints );
-                            let beforeMaterial = new THREE.LineBasicMaterial( { color : 0xff0000 } );
-                            let beforeCurveObject = new THREE.Line( beforeGeometry, beforeMaterial );
-                            this.scene.add(beforeCurveObject);
                         } else if (0 >= baryCenterX) {
                             // the tubes are located in the right side of the view
                             // bottom left/top left
@@ -1668,15 +1845,73 @@ export default class ClusteringOverview extends React.Component {
                             let normalTilt = -1 * (rightPoint.x - leftPoint.x) / (rightPoint.y - leftPoint.y);
                             let deltaX = Math.sqrt(shiftSize * shiftSize / (1 + normalTilt * normalTilt));
                             let deltaY = normalTilt * deltaX;
-                            let beforeSpline = new THREE.CatmullRomCurve3( [
-                                new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
-                                new THREE.Vector3( 
-                                    leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
-                                    leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
-                                    0 
-                                ),
-                                new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
-                            ]);
+                            let beforeClusterIdx = Math.min(leftIdx, rightIdx);
+                            let afterClusterIdx = Math.max(leftIdx, rightIdx);
+                            if (clusterAfter[beforeClusterIdx][afterClusterIdx] > 0) {
+                                let beforeSpline, conePos = {x: 0, y: 0}, coneRotate = 0;
+                                if (afterClusterIdx === leftIdx) {
+                                    // left is the goal of the path
+                                    beforeSpline = new THREE.CatmullRomCurve3( [
+                                        new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
+                                        new THREE.Vector3( 
+                                            leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
+                                            leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
+                                            0 
+                                        ),
+                                        new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
+                                    ]);
+                                    conePos.x = leftPoint.x;
+                                    conePos.y = leftPoint.y;
+                                    coneRotate = Math.atan2(
+                                        (leftPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY)),
+                                        (leftPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX))
+                                    ) - 0.5 * Math.PI;
+                                } else if (afterClusterIdx === rightIdx) {
+                                    // right is the goal of the path
+                                    beforeSpline = new THREE.CatmullRomCurve3( [
+                                        new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
+                                        new THREE.Vector3( 
+                                            leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
+                                            leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
+                                            0 
+                                        ),
+                                        new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
+                                    ]);
+                                    conePos.x = rightPoint.x;
+                                    conePos.y = rightPoint.y;
+                                    coneRotate = Math.atan2(
+                                        (rightPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY)), 
+                                        (rightPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX))
+                                    ) - 0.5 * Math.PI;
+                                }
+                                beforeSpline.curveType = 'catmullrom';
+                                beforeSpline.tention = 1;
+                                let beforeRad = minPathWidth + 
+                                    (maxPathWidth - minPathWidth) / 
+                                    (maxCount - minCount) * 
+                                    clusterAfter[beforeClusterIdx][afterClusterIdx];
+                                let beforeGeometry = new THREE.TubeGeometry(
+                                    beforeSpline, 
+                                    20, 
+                                    beforeRad, 
+                                    16, 
+                                    false
+                                );
+                                let beforeMaterial = new THREE.MeshBasicMaterial({
+                                    color: new THREE.Color(
+                                        'hsl(' + 
+                                        this.clusterColors[beforeClusterIdx][0] + ', 50%, 50%)'
+                                    )
+                                });
+                                let beforeMesh = new THREE.Mesh(beforeGeometry, beforeMaterial);
+                                let beforeConeGeometry = new THREE.ConeGeometry(beforeRad * 2, coneSize, 16);
+                                let beforeConeMesh = new THREE.Mesh(beforeConeGeometry, beforeMaterial);
+                                beforeConeMesh.rotateZ(coneRotate);
+                                beforeConeMesh.position.x = conePos.x;
+                                beforeConeMesh.position.y = conePos.y;
+                                this.correlationPathGroup.add(beforeMesh);
+                                this.correlationPathGroup.add(beforeConeMesh);
+                            }
                             let afterSpline = new THREE.CatmullRomCurve3( [
                                 new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ),
                                 new THREE.Vector3( 
@@ -1686,16 +1921,12 @@ export default class ClusteringOverview extends React.Component {
                                 ),
                                 new THREE.Vector3( rightPoint.x, rightPoint.y, 0 )
                             ]);
-                            let beforePoints = beforeSpline.getPoints( 50 );
-                            let beforeGeometry = new THREE.BufferGeometry().setFromPoints( beforePoints );
-                            let beforeMaterial = new THREE.LineBasicMaterial( { color : 0xff0000 } );
-                            let beforeCurveObject = new THREE.Line( beforeGeometry, beforeMaterial );
-                            this.scene.add(beforeCurveObject);
                         }
                     }
                 }
             }
         }
+        this.scene.add(this.correlationPathGroup);
     }
 
     computeTubePositions() {
