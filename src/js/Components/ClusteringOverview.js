@@ -215,7 +215,7 @@ export default class ClusteringOverview extends React.Component {
             this.computeTubePositions();
             this.drawClusterCentersAsTubes();
             this.drawClusterRadiusesAsRings(clusteringScores.clusterRadiuses);
-            this.drawInterClusterTransitionLink();
+            // this.drawInterClusterTransitionLink();
             this.showClusteringParameters();
             this.resetDetailView();
             this.drawMDSScatterplots();
@@ -1536,7 +1536,7 @@ export default class ClusteringOverview extends React.Component {
                         let deltaY = normalTilt * deltaX;
                         let beforeClusterIdx = Math.min(topIdx, bottomIdx);
                         let afterClusterIdx = Math.max(topIdx, bottomIdx);
-                        if (clusterAfter[beforeClusterIdx][afterClusterIdx] > 0) {
+                        if (clusterBefore[afterClusterIdx][beforeClusterIdx] > 0) {//clusterAfter[beforeClusterIdx][afterClusterIdx] > 0) {
                             let beforeSpline, conePos = {x: 0, y: 0}, coneRotate = 0;
                             if (afterClusterIdx === bottomIdx) {
                                 // bottom is the goal of the path
@@ -1578,7 +1578,7 @@ export default class ClusteringOverview extends React.Component {
                             let beforeRad = minPathWidth + 
                                 (maxPathWidth - minPathWidth) / 
                                 (maxCount - minCount) * 
-                                clusterAfter[beforeClusterIdx][afterClusterIdx];
+                                clusterBefore[afterClusterIdx][beforeClusterIdx];
                             let beforeGeometry = new THREE.TubeGeometry(
                                 beforeSpline, 
                                 20, 
@@ -1601,17 +1601,72 @@ export default class ClusteringOverview extends React.Component {
                             this.correlationPathGroup.add(beforeMesh);
                             this.correlationPathGroup.add(beforeConeMesh);
                         }
-                        let afterSpline = new THREE.CatmullRomCurve3( [
-                            new THREE.Vector3( topPoint.x, topPoint.y, zpos ),
-                            new THREE.Vector3( 
-                                topPoint.x + (bottomPoint.x - topPoint.x) / 2 + deltaX,
-                                topPoint.y + (bottomPoint.y - topPoint.y) / 2 + deltaY, 
-                                zpos 
-                            ),
-                            new THREE.Vector3( bottomPoint.x, bottomPoint.y, zpos )
-                        ]);
-                        afterSpline.curveType = 'catmullrom';
-                        afterSpline.tention = 1;
+                        
+                        if (clusterBefore[afterClusterIdx][beforeClusterIdx] > 0) {
+                            let afterSpline, conePos = {x: 0, y: 0}, coneRotate = 0;
+                            if (afterClusterIdx === bottomIdx) {
+                                // arrow from bottom to top
+                                afterSpline = new THREE.CatmullRomCurve3( [
+                                    new THREE.Vector3( bottomPoint.x, bottomPoint.y, zpos ),
+                                    new THREE.Vector3( 
+                                        topPoint.x + (bottomPoint.x - topPoint.x) / 2 + deltaX,
+                                        topPoint.y + (bottomPoint.y - topPoint.y) / 2 + deltaY, 
+                                        zpos 
+                                    ),
+                                    new THREE.Vector3( topPoint.x, topPoint.y, zpos )
+                                ]);
+                                conePos.x = topPoint.x;
+                                conePos.y = topPoint.y;
+                                coneRotate = -0.5 * Math.PI + Math.atan2(
+                                    (topPoint.y - (topPoint.y + (bottomPoint.y - topPoint.y) / 2 + deltaY)),
+                                    (topPoint.x - (topPoint.x + (bottomPoint.x - topPoint.x) / 2 + deltaX))
+                                );
+                            } else if (afterClusterIdx === topIdx) {
+                                // arrow from top to bottom
+                                afterSpline = new THREE.CatmullRomCurve3( [
+                                    new THREE.Vector3( topPoint.x, topPoint.y, zpos ),
+                                    new THREE.Vector3( 
+                                        topPoint.x + (bottomPoint.x - topPoint.x) / 2 + deltaX,
+                                        topPoint.y + (bottomPoint.y - topPoint.y) / 2 + deltaY, 
+                                        zpos 
+                                    ),
+                                    new THREE.Vector3( bottomPoint.x, bottomPoint.y, zpos )
+                                ]);
+                                conePos.x = bottomPoint.x;
+                                conePos.y = bottomPoint.y;
+                                coneRotate =  -0.5 * Math.PI + Math.atan2(
+                                    (bottomPoint.y - (topPoint.y + (bottomPoint.y - topPoint.y) / 2 + deltaY)),
+                                    (bottomPoint.x - (topPoint.x + (bottomPoint.x - topPoint.x) / 2 + deltaX))
+                                );
+                            }
+                            afterSpline.curveType = 'catmullrom';
+                            afterSpline.tention = 1;
+                            let afterRad = minPathWidth + 
+                                (maxPathWidth - minPathWidth) / 
+                                (maxCount - minCount) * 
+                                clusterBefore[afterClusterIdx][beforeClusterIdx];
+                            let afterGeometry = new THREE.TubeGeometry(
+                                afterSpline, 
+                                20, 
+                                afterRad, 
+                                16, 
+                                false
+                            );
+                            let beforeMaterial = new THREE.MeshBasicMaterial({
+                                color: new THREE.Color(
+                                    'hsl(' + 
+                                    this.clusterColors[afterClusterIdx][0] + ', 50%, 50%)'
+                                )
+                            });
+                            let afterMesh = new THREE.Mesh(afterGeometry, afterMaterial);
+                            let afterConeGeometry = new THREE.ConeGeometry(afterRad * 2, coneSize, 16);
+                            let afterConeMesh = new THREE.Mesh(afterConeGeometry, afterMaterial);
+                            afterConeMesh.rotateZ(coneRotate);
+                            afterConeMesh.position.x = conePos.x;
+                            afterConeMesh.position.y = conePos.y;
+                            this.correlationPathGroup.add(afterMesh);
+                            this.correlationPathGroup.add(afterConeMesh);
+                        }
                     } else if (yCoordDiff < axisSize) {
                         // connect left & right
                         let leftIdx = (this.tubeCoords[i].x < this.tubeCoords[j].x)? i: j,
@@ -1630,7 +1685,7 @@ export default class ClusteringOverview extends React.Component {
                         let deltaY = normalTilt * deltaX;
                         let beforeClusterIdx = Math.min(leftIdx, rightIdx);
                         let afterClusterIdx = Math.max(leftIdx, rightIdx);
-                        if (clusterAfter[beforeClusterIdx][afterClusterIdx] > 0) {
+                        if (clusterBefore[afterClusterIdx][beforeClusterIdx] > 0) {
                             let beforeSpline, conePos = {x: 0, y: 0}, coneRotate = 0;
                             if (afterClusterIdx === leftIdx) {
                                 // left is the goal of the path
@@ -1672,7 +1727,7 @@ export default class ClusteringOverview extends React.Component {
                             let beforeRad = minPathWidth + 
                                 (maxPathWidth - minPathWidth) / 
                                 (maxCount - minCount) * 
-                                clusterAfter[beforeClusterIdx][afterClusterIdx];
+                                clusterBefore[afterClusterIdx][beforeClusterIdx];
                             let beforeGeometry = new THREE.TubeGeometry(
                                 beforeSpline, 
                                 20, 
@@ -1742,7 +1797,7 @@ export default class ClusteringOverview extends React.Component {
                             let normalTilt = -1 * (rightPoint.x - leftPoint.x) / (rightPoint.y - leftPoint.y);
                             let deltaX = Math.sqrt(shiftSize * shiftSize / (1 + normalTilt * normalTilt));
                             let deltaY = normalTilt * deltaX;
-                            if (clusterAfter[beforeClusterIdx][afterClusterIdx] > 0) {
+                            if (clusterBefore[afterClusterIdx][beforeClusterIdx] > 0) {
                                 let beforeSpline, conePos = {x: 0, y: 0}, coneRotate = 0;
                                 if (afterClusterIdx === leftIdx) {
                                     // left is the goal of the path
@@ -1784,7 +1839,7 @@ export default class ClusteringOverview extends React.Component {
                                 let beforeRad = minPathWidth + 
                                     (maxPathWidth - minPathWidth) / 
                                     (maxCount - minCount) * 
-                                    clusterAfter[beforeClusterIdx][afterClusterIdx];
+                                    clusterBefore[afterClusterIdx][beforeClusterIdx];
                                 let beforeGeometry = new THREE.TubeGeometry(
                                     beforeSpline, 
                                     20, 
@@ -1847,7 +1902,7 @@ export default class ClusteringOverview extends React.Component {
                             let deltaY = normalTilt * deltaX;
                             let beforeClusterIdx = Math.min(leftIdx, rightIdx);
                             let afterClusterIdx = Math.max(leftIdx, rightIdx);
-                            if (clusterAfter[beforeClusterIdx][afterClusterIdx] > 0) {
+                            if (clusterBefore[afterClusterIdx][beforeClusterIdx] > 0) {
                                 let beforeSpline, conePos = {x: 0, y: 0}, coneRotate = 0;
                                 if (afterClusterIdx === leftIdx) {
                                     // left is the goal of the path
@@ -1889,7 +1944,7 @@ export default class ClusteringOverview extends React.Component {
                                 let beforeRad = minPathWidth + 
                                     (maxPathWidth - minPathWidth) / 
                                     (maxCount - minCount) * 
-                                    clusterAfter[beforeClusterIdx][afterClusterIdx];
+                                    clusterBefore[afterClusterIdx][beforeClusterIdx];
                                 let beforeGeometry = new THREE.TubeGeometry(
                                     beforeSpline, 
                                     20, 
