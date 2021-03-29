@@ -20,7 +20,6 @@
     "@babel/plugin-proposal-throw-expressions": "^7.10.4",
     "@babel/plugin-syntax-dynamic-import": "^7.8.3",
     "@babel/plugin-syntax-import-meta": "^7.10.4",
-    "@babel/preset-env": "^7.0.0",
     "@babel/preset-react": "^7.10.4",
     "@seregpie/three.text-sprite": "^3.2.0",
     "babel-plugin-add-module-exports": "^1.0.4",
@@ -39,9 +38,7 @@
     "svg-z-order": "^1.2.1",
     "three": "^0.116.1",
     "three-orbitcontrols": "^2.110.3",
-    "three.textsprite": "^20.0.0"
-  },
-  "devDependencies": {
+    "three.textsprite": "^20.0.0",
     "@babel/core": "^7.11.6",
     "@babel/preset-env": "^7.11.5",
     "babel-loader": "^8.1.0",
@@ -49,7 +46,9 @@
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "webpack": "^4.44.2",
-    "webpack-cli": "^3.3.12",
+    "webpack-cli": "^3.3.12"
+  },
+  "devDependencies": {
     "webpack-dev-server": "^3.11.0"
   },
   "scripts": {
