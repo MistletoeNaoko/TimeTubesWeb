@@ -1,6 +1,6 @@
 TimeTubes Web
 ====
-**For now, clustering funcions only work only on local.**
+**For now, clustering funcions work only on local.**
 
 ## Introduction
 TimeTubes Web is a web-based visualization tool for **BLAZAR** observation data. 
