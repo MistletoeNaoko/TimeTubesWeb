@@ -64,9 +64,11 @@ export default class ClusteringOverview extends React.Component {
             elbowLineChart: {width: 0, height: 0},
             featureHeatmap: {width: 0, height: 0}
         };
-        this.correlationPathGroup;
+        this.correlationPathGroupLeft;
+        this.correlationPathGroupRight;
         this.state = {
-            clusteringScores: {}
+            clusteringScores: {},
+            interclusterTransitions: {left: true, right: true}
         };
     }
 
@@ -360,6 +362,17 @@ export default class ClusteringOverview extends React.Component {
                         <div id='clusteringOverviewTimeTubes' 
                             className="carousel-item active"
                             style={{height: height + 'px'}}>
+                            <div className="form-group form-inline">
+                                <h6>Intercluster transitions</h6>
+                                <div className="custom-control custom-switch interClusterTransitions" onChange={this.onSwitchInterclusterTransLeft.bind(this)}>
+                                    <input type="checkbox" className="custom-control-input" id="interclusterTransLeft" checked={this.state.interclusterTransitions.left}/>
+                                    <label className="custom-control-label" htmlFor="interclusterTransLeft">Left</label>
+                                </div>
+                                <div className="custom-control custom-switch interClusterTransitions" onChange={this.onSwitchInterclusterTransRight.bind(this)}>
+                                    <input type="checkbox" className="custom-control-input" id="interclusterTransRight" checked={this.state.interclusterTransitions.right}/>
+                                    <label className="custom-control-label" htmlFor="interclusterTransRight">Right</label>
+                                </div>
+                            </div>
                             <canvas id='clusteringOverviewTimeTubesCanvas'
                                 width='2000' height='2000'
                                 style={{width: width + 'px', height: height + 'px', position: 'absolute'}}></canvas>
@@ -1457,12 +1470,17 @@ export default class ClusteringOverview extends React.Component {
 
     drawInterClusterTransitionLink() {
         // remove previous paths
-        if (this.correlationPathGroup) {
-            this.scene.remove(this.correlationPathGroup);
-            this.correlationPathGroup = undefined;
+        if (this.correlationPathGroupLeft) {
+            this.scene.remove(this.correlationPathGroupLeft);
+            this.correlationPathGroupLeft = undefined;
+        }
+        if (this.correlationPathGroupRight) {
+            this.scene.remove(this.correlationPathGroupRight);
+            this.correlationPathGroupRight = undefined;
         }
 
-        this.correlationPathGroup = new THREE.Group();
+        this.correlationPathGroupLeft = new THREE.Group();
+        this.correlationPathGroupRight = new THREE.Group();
 
         let clusterBefore = [],
             clusterAfter = [];
@@ -1598,8 +1616,8 @@ export default class ClusteringOverview extends React.Component {
                             beforeConeMesh.rotateZ(coneRotate);
                             beforeConeMesh.position.x = conePos.x;
                             beforeConeMesh.position.y = conePos.y;
-                            this.correlationPathGroup.add(beforeMesh);
-                            this.correlationPathGroup.add(beforeConeMesh);
+                            this.correlationPathGroupLeft.add(beforeMesh);
+                            this.correlationPathGroupLeft.add(beforeConeMesh);
                         }
                         
                         if (clusterAfter[afterClusterIdx][beforeClusterIdx] > 0) {
@@ -1664,8 +1682,8 @@ export default class ClusteringOverview extends React.Component {
                             afterConeMesh.rotateZ(coneRotate);
                             afterConeMesh.position.x = conePos.x;
                             afterConeMesh.position.y = conePos.y;
-                            this.correlationPathGroup.add(afterMesh);
-                            this.correlationPathGroup.add(afterConeMesh);
+                            this.correlationPathGroupRight.add(afterMesh);
+                            this.correlationPathGroupRight.add(afterConeMesh);
                         }
                     } else if (yCoordDiff < axisSize) {
                         // connect left & right
@@ -1747,8 +1765,8 @@ export default class ClusteringOverview extends React.Component {
                             beforeConeMesh.rotateZ(coneRotate);
                             beforeConeMesh.position.x = conePos.x;
                             beforeConeMesh.position.y = conePos.y;
-                            this.correlationPathGroup.add(beforeMesh);
-                            this.correlationPathGroup.add(beforeConeMesh);
+                            this.correlationPathGroupLeft.add(beforeMesh);
+                            this.correlationPathGroupLeft.add(beforeConeMesh);
                         }
 
                         if (clusterAfter[afterClusterIdx][beforeClusterIdx] > 0) {
@@ -1814,8 +1832,8 @@ export default class ClusteringOverview extends React.Component {
                             afterConeMesh.rotateZ(coneRotate);
                             afterConeMesh.position.x = conePos.x;
                             afterConeMesh.position.y = conePos.y;
-                            this.correlationPathGroup.add(afterMesh);
-                            this.correlationPathGroup.add(afterConeMesh);
+                            this.correlationPathGroupRight.add(afterMesh);
+                            this.correlationPathGroupRight.add(afterConeMesh);
                         }
                     } else {
                         // connect bottom-left/right-top
@@ -1917,8 +1935,8 @@ export default class ClusteringOverview extends React.Component {
                                 beforeConeMesh.rotateZ(coneRotate);
                                 beforeConeMesh.position.x = conePos.x;
                                 beforeConeMesh.position.y = conePos.y;
-                                this.correlationPathGroup.add(beforeMesh);
-                                this.correlationPathGroup.add(beforeConeMesh);
+                                this.correlationPathGroupLeft.add(beforeMesh);
+                                this.correlationPathGroupLeft.add(beforeConeMesh);
                             }
                             if (clusterAfter[afterClusterIdx][beforeClusterIdx] > 0) {
                                 let afterSpline, conePos = {x: 0, y: 0}, coneRotate = 0;
@@ -1982,8 +2000,8 @@ export default class ClusteringOverview extends React.Component {
                                 afterConeMesh.rotateZ(coneRotate);
                                 afterConeMesh.position.x = conePos.x;
                                 afterConeMesh.position.y = conePos.y;
-                                this.correlationPathGroup.add(afterMesh);
-                                this.correlationPathGroup.add(afterConeMesh);
+                                this.correlationPathGroupRight.add(afterMesh);
+                                this.correlationPathGroupRight.add(afterConeMesh);
                             }
                         } else if (0 >= baryCenterX) {
                             // the tubes are located in the right side of the view
@@ -2078,8 +2096,8 @@ export default class ClusteringOverview extends React.Component {
                                 beforeConeMesh.rotateZ(coneRotate);
                                 beforeConeMesh.position.x = conePos.x;
                                 beforeConeMesh.position.y = conePos.y;
-                                this.correlationPathGroup.add(beforeMesh);
-                                this.correlationPathGroup.add(beforeConeMesh);
+                                this.correlationPathGroupLeft.add(beforeMesh);
+                                this.correlationPathGroupLeft.add(beforeConeMesh);
                             }
 
                             if (clusterAfter[afterClusterIdx][beforeClusterIdx] > 0) {
@@ -2144,15 +2162,18 @@ export default class ClusteringOverview extends React.Component {
                                 afterConeMesh.rotateZ(coneRotate);
                                 afterConeMesh.position.x = conePos.x;
                                 afterConeMesh.position.y = conePos.y;
-                                this.correlationPathGroup.add(afterMesh);
-                                this.correlationPathGroup.add(afterConeMesh);
+                                this.correlationPathGroupRight.add(afterMesh);
+                                this.correlationPathGroupRight.add(afterConeMesh);
                             }
                         }
                     }
                 }
             }
         }
-        this.scene.add(this.correlationPathGroup);
+        this.scene.add(this.correlationPathGroupLeft);
+        this.scene.add(this.correlationPathGroupRight);
+        this.correlationPathGroupLeft.visible = this.state.interclusterTransitions.left;
+        this.correlationPathGroupRight.visible = this.state.interclusterTransitions.right;
     }
 
     computeTubePositions() {
@@ -3811,5 +3832,25 @@ export default class ClusteringOverview extends React.Component {
                     .attr('x', (parentWidth * this.chartsSize.featureHeatmap.width - 15 * 3) - svgPadding.right / 2 - 2);
             }
         }
+    }
+    
+    onSwitchInterclusterTransLeft() {
+        let current = this.state.interclusterTransitions;
+        if (this.correlationPathGroupLeft) {
+            this.correlationPathGroupLeft.visible = !current.left;
+        }
+        this.setState({
+            interclusterTransitions: {left: !current.left, right: current.right}
+        });
+    }
+
+    onSwitchInterclusterTransRight() {
+        let current = this.state.interclusterTransitions;
+        if (this.correlationPathGroupRight) {
+            this.correlationPathGroupRight.visible = !current.right;
+        }
+        this.setState({
+            interclusterTransitions: {left: current.left, right: !current.right}
+        });
     }
 }

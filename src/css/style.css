@@ -653,6 +653,12 @@ img.selectorIcon:active {
 .detailButtonGroup rect:hover{
     fill: #284a6c;
 }
+.interClusterTransitions {
+    margin: 0 0.5rem;
+}
+.interClusterTransitions .custom-control-label{
+    font-size: 0.8rem;
+}
 /*#Controllers {*/
     /*background: #f8f9fa;*/
     /*font-size: 0.8rem;*/
