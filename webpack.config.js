@@ -30,6 +30,7 @@
 //     ],
 // };
 module.exports = {
+    mode: "development",
     entry: "./src/js/client.js",
     output: {
         path:__dirname+ '/src/',
@@ -54,9 +55,9 @@ module.exports = {
                 // }
             }
         ]
-    },
-    node: {
-        fs: 'empty'
-    }
+    }//,
+    // node: {
+    //     fs: 'empty'
+    // }
 
 };
