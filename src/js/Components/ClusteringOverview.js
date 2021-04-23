@@ -68,7 +68,7 @@ export default class ClusteringOverview extends React.Component {
         this.correlationPathGroupRight;
         this.state = {
             clusteringScores: {},
-            interclusterTransitions: {left: true, right: true}
+            interclusterTransitions: {left: false, right: false}
         };
     }
 
