@@ -1905,9 +1905,11 @@ export function updateSortResultsPulldown() {
 export function extractAnomalies(targets) {
     let results = [];
     for (let targetIdx = 0; targetIdx < targets.length; targetIdx++) {
+        let resultsTmp = [];
         let targetId = targets[targetIdx];
         let targetData = DataStore.getData(targetId);
         let spatial = targetData.data.spatial;
+        let minPolar = Infinity, maxPolar = -Infinity;
         // compute the rate of variability of polarization, color, intensity between 2 observation points
         // in the case that the time stamps between polarization, color, intensity do not coincide, use the interpolated values
         for (let i = 0; i < spatial.length - 1; i++) {
@@ -1924,6 +1926,12 @@ export function extractAnomalies(targets) {
             if (polar === 0 || isNaN(polar)) {
                 polar = 1;
             }
+            if (maxPolar < polar) {
+                maxPolar = polar;
+            }
+            if (polar < minPolar) {
+                minPolar = polar;
+            }
 
             let intensity = Math.abs(data2.V - data1.V) 
                 / (targetData.data.meta.max.V - targetData.data.meta.min.V) 
@@ -1939,10 +1947,20 @@ export function extractAnomalies(targets) {
                 color = 1;
             }
 
-            results.push({
+            resultsTmp.push({
                 id: targetId,
                 start: z1,
-                anomalyDegree: polar * intensity * color
+                polar: polar,
+                intensity: intensity,
+                color: color
+                // anomalyDegree: polar * intensity * color
+            });
+        }
+        for (let i = 0; i < spatial.length - 1; i++) {
+            results.push({
+                id: resultsTmp[i].id,
+                start: resultsTmp[i].start,
+                anomalyDegree: ((resultsTmp[i].polar - minPolar) / (maxPolar - minPolar)) * resultsTmp[i].intensity * resultsTmp[i].color
             });
         }
     }
@@ -2101,27 +2119,32 @@ export function extractRotations(targets, period, diameter, angle, sigma, stdCon
                         break;
                     }
                 }
-                let center = {x: 0, y: 0};
+                let center = {x: 0, y: 0},
+                    average = {x: 0, y: 0};
                 let dataByDay = [];
                 
                 // compute the mean of the time period
                 if (sigma === 0) {
                     // arithmetic average
-                    for (let j = 0; j < i; j++) {
+                    for (let j = 0; j <= i; j++) {
                         let currentData = DataStore.getValues(targetId, targetData[firstIdx].z + j - targetData[0].z);
                         dataByDay.push(currentData);
                         center.x += currentData.x;
                         center.y += currentData.y;
+                        average.x += currentData.x;
+                        average.y += currentData.y;
                     }
-                    center.x /= i;
-                    center.y /= i;
+                    center.x /= (i + 1);
+                    center.y /= (i + 1);
+                    average.x /= (i + 1);
+                    average.y /= (i + 1);
                 } else {
                     // weighted mean
                     let delGauss = 8 / i;
                     let currentGauss = -4;
                     let weightSum = 0;
 
-                    for (let j = 0; j < i; j++) {
+                    for (let j = 0; j <= i; j++) {
                         let currentData = DataStore.getValues(targetId, targetData[firstIdx].z + j - targetData[0].z);
                         dataByDay.push(currentData);
                         let weightTmp = mathLib.getGaussValue(currentGauss, sigma)
@@ -2129,9 +2152,13 @@ export function extractRotations(targets, period, diameter, angle, sigma, stdCon
                         center.y += weightTmp * currentData.y;
                         weightSum += weightTmp;
                         currentGauss += delGauss;
+                        average.x += currentData.x;
+                        average.y += currentData.y;
                     }
                     center.x /= weightSum;
                     center.y /= weightSum;
+                    average.x /= (i + 1);
+                    average.y /= (i + 1);
                 }
 
                 // convert orthogonal coordinates into polar cordinates
@@ -2140,15 +2167,16 @@ export function extractRotations(targets, period, diameter, angle, sigma, stdCon
                 let minVal = {x: dataByDay[0].x, y: dataByDay[0].y},
                     maxVal = {x: dataByDay[0].x, y: dataByDay[0].y};
                 let angList = [], degList = [];
-                for (let j = 0; j < i; j++) {
+                for (let j = 0; j <= i; j++) {
                     let pos = {x: dataByDay[j].x, y: dataByDay[j].y};
                     let angle = calcAngle(pos, center);
                     let degree = calcDegree(pos, center);
                     angList.push({z: dataByDay[j].z, angle: angle});
                     degList.push({z: dataByDay[j].z, degree: degree});
 
-                    numeratorStd.x += Math.pow(dataByDay[j].x - center.x, 2.0);
-                    numeratorStd.y += Math.pow(dataByDay[j].y - center.y, 2.0);
+                    // ここが違う！！！！！回転中心じゃなくて平均を引くのよ！！！
+                    numeratorStd.x += Math.pow(dataByDay[j].x - average.x, 2.0);
+                    numeratorStd.y += Math.pow(dataByDay[j].y - average.y, 2.0);
 
                     if (dataByDay[j].x < minVal.x) {
                         minVal.x = dataByDay[j].x;
@@ -2163,7 +2191,7 @@ export function extractRotations(targets, period, diameter, angle, sigma, stdCon
                         maxVal.y = dataByDay[j].y;
                     }
                 }
-                let std = {x: Math.sqrt(numeratorStd.x / i), y: Math.sqrt(numeratorStd.y / i)};
+                let std = {x: Math.sqrt(numeratorStd.x / (i + 1)), y: Math.sqrt(numeratorStd.y / (i + 1))};
 
                 // check whether the period has larger variation
                 if (!missingFlg && ((maxVal.x - minVal.x) > diameter || (maxVal.y - minVal.y) > diameter)) {
@@ -2204,12 +2232,13 @@ export function extractRotations(targets, period, diameter, angle, sigma, stdCon
                             flag = false;
                             break;
                     }
+                    
                     if (flag) {
                         let rotationAng = 0,
                             before = angList[0],
                             alpha = alphaES,
                             predAngBef = angList[0].angle;
-                        for (let j = 0; j < i; j++) {
+                        for (let j = 0; j <= i; j++) {
                             // sum up the differences of angle between two data points
                             // use the exponential smoothing to find the tendency of the time series
                             // according to the prediction by the exponential smoothing, 
@@ -2236,14 +2265,14 @@ export function extractRotations(targets, period, diameter, angle, sigma, stdCon
                                 if ((getQuadrantAngle(angList[j].angle) === 1 && getQuadrantAngle(angList[j - 1].angle) === 4)
                                 || (getQuadrantAngle(angList[j].angle) === 4 && getQuadrantAngle(angList[j - 1].angle) === 1)) {
                                     predAngBef = angList[j].angle;
-                                } else {
-                                    predAngBef = predAng;
-                                }
+                                } //else {
+                                //     predAngBef = predAng;
+                                // }
                             } else {
                                 divDeg = angList[j].angle - before.angle;
-                                predAngBef = predAng;
+                                // predAngBef = predAng;
                             }
-
+                            predAngBef = predAng;
                             rotationAng += divDeg;
                             before = angList[j];
                         }

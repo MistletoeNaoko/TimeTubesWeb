@@ -91,7 +91,7 @@ export default class AutomaticExtraction extends React.Component {
         $('#rotationPeriodMin').val(20);
         $('#rotationPeriodMax').val(30);
         $('#rotationAngle').val(270);
-        $('#alphaES').val(0.5);
+        $('#alphaES').val(0.1);
     }
 
     setGaussCurve() {

@@ -13,7 +13,7 @@ export function getGaussData(sigma) {
 }
 
 export function getGaussValue(xPos, sigma) {
-    return Math.exp(-xPos * xPos / (2 * sigma * sigma)) / Math.sqrt(2 * Math.PI * sigma * sigma);
+    return Math.exp(- Math.pow(xPos, 2) / (2 * Math.pow(sigma, 2))) / Math.sqrt(2 * Math.PI * Math.pow(sigma, 2));
 }
 
 export function ordinalSuffixOf(num) {
