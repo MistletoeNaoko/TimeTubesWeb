@@ -18,6 +18,7 @@ import * as MeshLine from 'three.meshline'
 // import TextSprite from 'three.textsprite';
 import TextSprite from '@seregpie/three.text-sprite';
 import {formatValue} from '../lib/2DGraphLib';
+import { before } from 'lodash';
 
 d3.selection.prototype.moveToFront =
     function() {
@@ -1635,8 +1636,22 @@ export default class ClusteringOverview extends React.Component {
                             let arrowMeshLine = new MeshLine.MeshLine();
                             arrowMeshLine.setGeometry(arrowGeometry);
                             let beforeArrowMesh = new THREE.Mesh(arrowMeshLine.geometry, beforeMeshLineMaterial);
+                            let beforeLabel = new TextSprite({
+                                alignment: 'center',
+                                color: 'hsl(' + this.clusterColors[beforeClusterIdx][0] + ', 50%, 50%)',
+                                fontFamily: 'Arial, Helvetica, sans-serif',
+                                textSize: 0.5,
+                                text: String(clusterBefore[afterClusterIdx][beforeClusterIdx])
+                            });
+                            beforeLabel.name = 'beforeTransition_' + afterClusterIdx + '_' + beforeClusterIdx;
+                            beforeLabel.position.set(
+                                topPoint.x + (bottomPoint.x - topPoint.x) / 2 - deltaX - shiftSize / 2,
+                                topPoint.y + (bottomPoint.y - topPoint.y) / 2 - deltaY,
+                                zpos    
+                            );
                             this.correlationPathGroupLeft.add(beforeMesh);
                             this.correlationPathGroupLeft.add(beforeArrowMesh);
+                            this.correlationPathGroupLeft.add(beforeLabel);
                         }
                         
                         if (clusterAfter[afterClusterIdx][beforeClusterIdx] > 0) {
@@ -1718,8 +1733,22 @@ export default class ClusteringOverview extends React.Component {
                             let arrowMeshLine = new MeshLine.MeshLine();
                             arrowMeshLine.setGeometry(arrowGeometry);
                             let afterArrowMesh = new THREE.Mesh(arrowMeshLine.geometry, afterMeshLineMaterial);
+                            let afterLabel = new TextSprite({
+                                alignment: 'center',
+                                color: 'hsl(' + this.clusterColors[afterClusterIdx][0] + ', 50%, 50%)',
+                                fontFamily: 'Arial, Helvetica, sans-serif',
+                                textSize: 0.5,
+                                text: String(clusterAfter[afterClusterIdx][beforeClusterIdx])
+                            });
+                            afterLabel.name = 'afterTransition_' + afterClusterIdx + '_' + beforeClusterIdx;
+                            afterLabel.position.set(
+                                topPoint.x + (bottomPoint.x - topPoint.x) / 2 + deltaX + shiftSize / 2,
+                                topPoint.y + (bottomPoint.y - topPoint.y) / 2 + deltaY, 
+                                zpos    
+                            );
                             this.correlationPathGroupRight.add(afterMesh);
                             this.correlationPathGroupRight.add(afterArrowMesh);
+                            this.correlationPathGroupRight.add(afterLabel);
                         }
                     } else if (yCoordDiff < axisSize) {
                         // connect left & right
@@ -1744,13 +1773,13 @@ export default class ClusteringOverview extends React.Component {
                             let points = [], arrowPoints = [];
                             if (afterClusterIdx === leftIdx) {
                                 // left is the goal of the path
-                                points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ));
+                                points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, zpos ));
                                 points.push(new THREE.Vector3( 
                                     leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
                                     leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
-                                    0 
+                                    zpos 
                                 ));
-                                points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, 0 ));
+                                points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, zpos ));
                                 coneRotate = Math.atan2(
                                     (leftPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY)),
                                     (leftPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX))
@@ -1775,13 +1804,13 @@ export default class ClusteringOverview extends React.Component {
                                 );
                             } else if (afterClusterIdx === rightIdx) {
                                 // right is the goal of the path
-                                points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ));
+                                points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, zpos ));
                                 points.push(new THREE.Vector3( 
                                     leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
                                     leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
-                                    0 
+                                    zpos 
                                 ));
-                                points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, 0 ));
+                                points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, zpos ));
                                 coneRotate = Math.atan2(
                                     (rightPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY)), 
                                     (rightPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX))
@@ -1819,8 +1848,22 @@ export default class ClusteringOverview extends React.Component {
                             let arrowMeshLine = new MeshLine.MeshLine();
                             arrowMeshLine.setGeometry(arrowGeometry);
                             let beforeArrowMesh = new THREE.Mesh(arrowMeshLine.geometry, beforeMeshLineMaterial);
+                            let beforeLabel = new TextSprite({
+                                alignment: 'center',
+                                color: 'hsl(' + this.clusterColors[beforeClusterIdx][0] + ', 50%, 50%)',
+                                fontFamily: 'Arial, Helvetica, sans-serif',
+                                textSize: 0.5,
+                                text: String(clusterBefore[afterClusterIdx][beforeClusterIdx])
+                            });
+                            beforeLabel.name = 'beforeTransition_' + afterClusterIdx + '_' + beforeClusterIdx;
+                            beforeLabel.position.set(
+                                leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
+                                leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY + shiftSize / 2, 
+                                zpos   
+                            );
                             this.correlationPathGroupLeft.add(beforeMesh);
                             this.correlationPathGroupLeft.add(beforeArrowMesh);
+                            this.correlationPathGroupLeft.add(beforeLabel);
                         }
 
                         if (clusterAfter[afterClusterIdx][beforeClusterIdx] > 0) {
@@ -1829,13 +1872,13 @@ export default class ClusteringOverview extends React.Component {
                             // connect left & right
                             if (afterClusterIdx === leftIdx) {
                                 // right is the goal of the path
-                                points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ));
+                                points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, zpos ));
                                 points.push(new THREE.Vector3( 
                                     leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX,
                                     leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY, 
-                                    0 
+                                    zpos 
                                 ));
-                                points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, 0 ));
+                                points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, zpos ));
                                 coneRotate = Math.atan2(
                                     (rightPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY)), 
                                     (rightPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX))
@@ -1859,13 +1902,13 @@ export default class ClusteringOverview extends React.Component {
                                 );
                             } else if (afterClusterIdx === rightIdx) {
                                 // left is the goal of the path
-                                points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ));
+                                points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, zpos ));
                                 points.push(new THREE.Vector3( 
                                     leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX,
                                     leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY, 
-                                    0 
+                                    zpos 
                                 ));
-                                points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, 0 ));
+                                points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, zpos ));
                                 coneRotate = Math.atan2(
                                     (leftPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY)),
                                     (leftPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX))
@@ -1903,8 +1946,22 @@ export default class ClusteringOverview extends React.Component {
                             let arrowMeshLine = new MeshLine.MeshLine();
                             arrowMeshLine.setGeometry(arrowGeometry);
                             let afterArrowMesh = new THREE.Mesh(arrowMeshLine.geometry, afterMeshLineMaterial);
+                            let afterLabel = new TextSprite({
+                                alignment: 'center',
+                                color: 'hsl(' + this.clusterColors[afterClusterIdx][0] + ', 50%, 50%)',
+                                fontFamily: 'Arial, Helvetica, sans-serif',
+                                textSize: 0.5,
+                                text: String(clusterAfter[afterClusterIdx][beforeClusterIdx])
+                            });
+                            afterLabel.name = 'afterTransition_' + afterClusterIdx + '_' + beforeClusterIdx;
+                            afterLabel.position.set(
+                                leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX,
+                                leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY - shiftSize / 2, 
+                                zpos
+                            );
                             this.correlationPathGroupRight.add(afterMesh);
                             this.correlationPathGroupRight.add(afterArrowMesh);
+                            this.correlationPathGroupRight.add(afterLabel);
                         }
                     } else {
                         // connect bottom-left/right-top
@@ -1917,7 +1974,7 @@ export default class ClusteringOverview extends React.Component {
                         let baryCenterX = this.tubeCoords[leftIdx].x + (this.tubeCoords[rightIdx].x - this.tubeCoords[leftIdx].x) / 2;
                         if (baryCenterX > 0) {
                             // the tubes are located in the left side of the view
-                            // right top/right bottomt 
+                            // right top/right bottom 
                             let leftPoint, rightPoint;
                             if (leftIdx === topIdx) {
                                 // right top
@@ -1948,13 +2005,13 @@ export default class ClusteringOverview extends React.Component {
                                 let conePos = {x: 0, y: 0}, coneRotate = 0;
                                 let points = [], arrowPoints = [];
                                 if (afterClusterIdx === leftIdx) {
-                                    points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ));
+                                    points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, zpos ));
                                     points.push(new THREE.Vector3( 
                                         leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
                                         leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
-                                        0 
+                                        zpos
                                     ));
-                                    points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, 0 ));
+                                    points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, zpos ));
                                     coneRotate = Math.atan2(
                                         (leftPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY)),
                                         (leftPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX))
@@ -1978,13 +2035,13 @@ export default class ClusteringOverview extends React.Component {
                                     );
                                 } else if (afterClusterIdx === rightIdx) {
                                     // right is the goal of the path
-                                    points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ));
+                                    points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, zpos ));
                                     points.push(new THREE.Vector3( 
                                         leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
                                         leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
-                                        0 
+                                        zpos
                                     ));
-                                    points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, 0 ));
+                                    points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, zpos ));
                                     coneRotate = Math.atan2(
                                         (rightPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY)), 
                                         (rightPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX))
@@ -2023,21 +2080,43 @@ export default class ClusteringOverview extends React.Component {
                                 let arrowMeshLine = new MeshLine.MeshLine();
                                 arrowMeshLine.setGeometry(arrowGeometry);
                                 let beforeArrowMesh = new THREE.Mesh(arrowMeshLine.geometry, beforeMeshLineMaterial);
+                                let beforeLabel = new TextSprite({
+                                    alignment: 'center',
+                                    color: 'hsl(' + this.clusterColors[beforeClusterIdx][0] + ', 50%, 50%)',
+                                    fontFamily: 'Arial, Helvetica, sans-serif',
+                                    textSize: 0.5,
+                                    text: String(clusterBefore[afterClusterIdx][beforeClusterIdx])
+                                });
+                                beforeLabel.name = 'beforeTransition_' + afterClusterIdx + '_' + beforeClusterIdx;
+                                if (leftIdx === topIdx) {
+                                    beforeLabel.position.set(
+                                        leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
+                                        leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY - shiftSize / 2, 
+                                        zpos   
+                                    );
+                                } else {
+                                    beforeLabel.position.set(
+                                        leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
+                                        leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY + shiftSize / 2, 
+                                        zpos   
+                                    );
+                                }
                                 this.correlationPathGroupLeft.add(beforeMesh);
                                 this.correlationPathGroupLeft.add(beforeArrowMesh);
+                                this.correlationPathGroupLeft.add(beforeLabel);
                             }
                             if (clusterAfter[afterClusterIdx][beforeClusterIdx] > 0) {
                                 let conePos = {x: 0, y: 0}, coneRotate = 0;
                                 let points = [], arrowPoints = [];
                                 if (afterClusterIdx === leftIdx) {
                                     // right is the goal of the path
-                                    points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ));
+                                    points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, zpos ));
                                     points.push(new THREE.Vector3( 
                                         leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX,
                                         leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY, 
-                                        0 
+                                        zpos 
                                     ));
-                                    points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, 0 ));
+                                    points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, zpos ));
                                     coneRotate = Math.atan2(
                                         (rightPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY)), 
                                         (rightPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX))
@@ -2061,13 +2140,13 @@ export default class ClusteringOverview extends React.Component {
                                     );
                                 } else if (afterClusterIdx === rightIdx) {
                                     // left is the goal of the path
-                                    points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ));
+                                    points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, zpos ));
                                     points.push(new THREE.Vector3( 
                                         leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX,
                                         leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY, 
-                                        0 
+                                        zpos
                                     ));
-                                    points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, 0 ));
+                                    points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, zpos ));
                                     coneRotate = Math.atan2(
                                         (leftPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY)),
                                         (leftPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX))
@@ -2105,8 +2184,30 @@ export default class ClusteringOverview extends React.Component {
                                 let arrowMeshLine = new MeshLine.MeshLine();
                                 arrowMeshLine.setGeometry(arrowGeometry);
                                 let afterArrowMesh = new THREE.Mesh(arrowMeshLine.geometry, afterMeshLineMaterial);
+                                let afterLabel = new TextSprite({
+                                    alignment: 'center',
+                                    color: 'hsl(' + this.clusterColors[afterClusterIdx][0] + ', 50%, 50%)',
+                                    fontFamily: 'Arial, Helvetica, sans-serif',
+                                    textSize: 0.5,
+                                    text: String(clusterAfter[afterClusterIdx][beforeClusterIdx])
+                                });
+                                afterLabel.name = 'afterTransition_' + afterClusterIdx + '_' + beforeClusterIdx;
+                                if (leftIdx === topIdx) {
+                                    afterLabel.position.set(
+                                        leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX,
+                                        leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY + shiftSize / 2, 
+                                        zpos   
+                                    );
+                                } else {
+                                    afterLabel.position.set(
+                                        leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX,
+                                        leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY - shiftSize / 2, 
+                                        zpos   
+                                    );
+                                }
                                 this.correlationPathGroupRight.add(afterMesh);
                                 this.correlationPathGroupRight.add(afterArrowMesh);
+                                this.correlationPathGroupRight.add(afterLabel);
                             }
                         } else if (0 >= baryCenterX) {
                             // the tubes are located in the right side of the view
@@ -2144,13 +2245,13 @@ export default class ClusteringOverview extends React.Component {
                                 let points = [], arrowPoints = [];
                                 if (afterClusterIdx === leftIdx) {
                                     // left is the goal of the path
-                                    points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ));
+                                    points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, zpos ));
                                     points.push(new THREE.Vector3( 
                                         leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
                                         leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
-                                        0 
+                                        zpos 
                                     ));
-                                    points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, 0 ));
+                                    points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, zpos ));
                                     coneRotate = Math.atan2(
                                         (leftPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY)),
                                         (leftPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX))
@@ -2174,13 +2275,13 @@ export default class ClusteringOverview extends React.Component {
                                     );
                                 } else if (afterClusterIdx === rightIdx) {
                                     // right is the goal of the path
-                                    points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ));
+                                    points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, zpos ));
                                     points.push(new THREE.Vector3( 
                                         leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
                                         leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY, 
-                                        0 
+                                        zpos 
                                     ));
-                                    points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, 0 ));
+                                    points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, zpos ));
                                     coneRotate = Math.atan2(
                                         (rightPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY)), 
                                         (rightPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX))
@@ -2218,8 +2319,30 @@ export default class ClusteringOverview extends React.Component {
                                 let arrowMeshLine = new MeshLine.MeshLine();
                                 arrowMeshLine.setGeometry(arrowGeometry);
                                 let beforeArrowMesh = new THREE.Mesh(arrowMeshLine.geometry, beforeMeshLineMaterial);
+                                let beforeLabel = new TextSprite({
+                                    alignment: 'center',
+                                    color: 'hsl(' + this.clusterColors[beforeClusterIdx][0] + ', 50%, 50%)',
+                                    fontFamily: 'Arial, Helvetica, sans-serif',
+                                    textSize: 0.5,
+                                    text: String(clusterBefore[afterClusterIdx][beforeClusterIdx])
+                                });
+                                beforeLabel.name = 'beforeTransition_' + afterClusterIdx + '_' + beforeClusterIdx;
+                                if (rightIdx === topIdx) {
+                                    beforeLabel.position.set(
+                                        leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
+                                        leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY + shiftSize / 2, 
+                                        zpos 
+                                    );
+                                } else {
+                                    beforeLabel.position.set(
+                                        leftPoint.x + (rightPoint.x - leftPoint.x) / 2 - deltaX,
+                                        leftPoint.y + (rightPoint.y - leftPoint.y) / 2 - deltaY - shiftSize / 2, 
+                                        zpos 
+                                    );
+                                }
                                 this.correlationPathGroupLeft.add(beforeMesh);
                                 this.correlationPathGroupLeft.add(beforeArrowMesh);
+                                this.correlationPathGroupLeft.add(beforeLabel);
                             }
 
                             if (clusterAfter[afterClusterIdx][beforeClusterIdx] > 0) {
@@ -2227,13 +2350,13 @@ export default class ClusteringOverview extends React.Component {
                                 let points = [], arrowPoints = [];
                                 if (afterClusterIdx === leftIdx) {
                                     // right is the goal of the path
-                                    points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ));
+                                    points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, zpos ));
                                     points.push(new THREE.Vector3( 
                                         leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX,
                                         leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY, 
-                                        0 
+                                        zpos
                                     ));
-                                    points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, 0 ));
+                                    points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, zpos ));
                                     coneRotate = Math.atan2(
                                         (rightPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY)), 
                                         (rightPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX))
@@ -2257,13 +2380,13 @@ export default class ClusteringOverview extends React.Component {
                                     );
                                 } else if (afterClusterIdx === rightIdx) {
                                     // left is the goal of the path
-                                    points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, 0 ));
+                                    points.push(new THREE.Vector3( leftPoint.x, leftPoint.y, zpos ));
                                     points.push(new THREE.Vector3( 
                                         leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX,
                                         leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY, 
-                                        0 
+                                        zpos 
                                     ));
-                                    points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, 0 ));
+                                    points.push(new THREE.Vector3( rightPoint.x, rightPoint.y, zpos ));
                                     coneRotate = Math.atan2(
                                         (leftPoint.y - (leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY)),
                                         (leftPoint.x - (leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX))
@@ -2301,8 +2424,30 @@ export default class ClusteringOverview extends React.Component {
                                 let arrowMeshLine = new MeshLine.MeshLine();
                                 arrowMeshLine.setGeometry(arrowGeometry);
                                 let afterArrowMesh = new THREE.Mesh(arrowMeshLine.geometry, afterMeshLineMaterial);
+                                let afterLabel = new TextSprite({
+                                    alignment: 'center',
+                                    color: 'hsl(' + this.clusterColors[afterClusterIdx][0] + ', 50%, 50%)',
+                                    fontFamily: 'Arial, Helvetica, sans-serif',
+                                    textSize: 0.5,
+                                    text: String(clusterAfter[afterClusterIdx][beforeClusterIdx])
+                                });
+                                afterLabel.name = 'afterTransition_' + afterClusterIdx + '_' + beforeClusterIdx;
+                                if (rightIdx === topIdx) {
+                                    afterLabel.position.set(
+                                        leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX,
+                                        leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY - shiftSize / 2, 
+                                        zpos    
+                                    );
+                                } else {
+                                    afterLabel.position.set(
+                                        leftPoint.x + (rightPoint.x - leftPoint.x) / 2 + deltaX,
+                                        leftPoint.y + (rightPoint.y - leftPoint.y) / 2 + deltaY + shiftSize / 2, 
+                                        zpos    
+                                    );
+                                }
                                 this.correlationPathGroupRight.add(afterMesh);
                                 this.correlationPathGroupRight.add(afterArrowMesh);
+                                this.correlationPathGroupRight.add(afterLabel);
                             }
                         }
                     }
