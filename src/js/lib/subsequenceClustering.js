@@ -3332,6 +3332,7 @@ function kMeans(data, clusterNum, distanceParameters, variables, maxTrial, elbow
                 //     centroidTmp.push(tmp);
                 // }
                 let centroidTmp = [];//data[maxIdx];//centroidTmp;
+                console.log(maxIdx, clusterCount)
                 let dataKeys = Object.keys(data[maxIdx][0]);
                 for (let j = 0; j < data[maxIdx].length; j++) {
                     let dataTmp = Object.assign({}, data[maxIdx][j]);
