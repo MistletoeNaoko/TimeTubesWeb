@@ -24,6 +24,7 @@ Currently, TimeTubes Web does not operate smoothly on Google Chrome (you can use
 
 ## Install
 To run TimeTubes Web from its source code, run the following commands:
+This application works only on Node.js v14.x.
 ```
 npm install
 npm run build
